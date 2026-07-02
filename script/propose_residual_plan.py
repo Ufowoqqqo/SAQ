@@ -80,6 +80,10 @@ def format_plan(plan: Plan) -> str:
     )
 
 
+def compact_seg_plan(plan: Plan) -> str:
+    return ",".join(f"{seg['dim_len']}:{seg['bits']}" for seg in plan)
+
+
 def dynamic_programming(
     risk_vector: np.ndarray,
     avg_bits: float,
@@ -404,6 +408,7 @@ def main() -> int:
         used_bits = plan_used_bits(plan, num_bit_factors)
         costs[plan_name] = {
             "plan": format_plan(plan),
+            "seg_plan": compact_seg_plan(plan),
             "segments": [
                 {
                     "start_dim": int(seg["start_dim"]),

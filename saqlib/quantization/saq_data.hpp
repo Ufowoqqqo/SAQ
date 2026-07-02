@@ -65,6 +65,7 @@ class SaqDataMaker {
     const size_t num_dim_;
     const size_t num_dim_padded_; // padded dimension
     std::unique_ptr<SaqData> data_;
+    QuantPlanT custom_quant_plan_;
 
   public:
     explicit SaqDataMaker(QuantizeConfig cfg, size_t num_dim)
@@ -77,6 +78,13 @@ class SaqDataMaker {
     size_t getPaddedDim() const { return num_dim_padded_; }
     const SaqData *get_data() const { return data_.get(); }
     auto return_data() { return std::move(data_); }
+
+    void set_custom_quant_plan(QuantPlanT quant_plan) {
+        custom_quant_plan_ = std::move(quant_plan);
+        if (is_variance_set()) {
+            prepare_quantizers();
+        }
+    }
 
     bool is_variance_set() const {
         return data_->data_variance.cols() != 0;
@@ -119,7 +127,11 @@ class SaqDataMaker {
     void analyze_plan() {
         DCHECK_EQ(num_dim_padded_ % kDimPaddingSize, 0);
 
-        if (data_->cfg.enable_segmentation) {
+        if (!custom_quant_plan_.empty()) {
+            validate_quant_plan(custom_quant_plan_);
+            data_->quant_plan = custom_quant_plan_;
+            LOG(INFO) << "Using custom SAQ quantization plan";
+        } else if (data_->cfg.enable_segmentation) {
             if (data_->cfg.seg_eqseg > 0) {
                 data_->quant_plan = equal_segmentation(data_->cfg.seg_eqseg);
             } else {
@@ -128,6 +140,24 @@ class SaqDataMaker {
         } else {
             data_->quant_plan = equal_segmentation(1);
         }
+    }
+
+    void validate_quant_plan(const QuantPlanT &quant_plan) const {
+        CHECK(!quant_plan.empty()) << "custom quantization plan is empty";
+        size_t dims_sum = 0;
+        for (size_t i = 0; i < quant_plan.size(); ++i) {
+            const auto [dim_len, bits] = quant_plan[i];
+            CHECK_GT(dim_len, 0ul) << "custom plan segment dimension must be positive";
+            CHECK_EQ(dim_len % kDimPaddingSize, 0ul)
+                << "custom plan segment dimension must be a multiple of " << kDimPaddingSize;
+            CHECK_LE(bits, kMaxQuantBit) << "custom plan bits exceed max quantization bits";
+            CHECK(bits > 0 || i + 1 == quant_plan.size())
+                << "only the final custom plan segment may use 0 bits";
+            dims_sum += dim_len;
+            CHECK_LE(dims_sum, num_dim_padded_) << "custom plan dimensions exceed padded dimension";
+        }
+        CHECK_EQ(dims_sum, num_dim_padded_)
+            << "custom plan dimensions must sum to padded dimension";
     }
 
     QuantPlanT equal_segmentation(int num_segs) {

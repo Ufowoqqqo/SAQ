@@ -9,6 +9,7 @@ docs/saq_paper_code_alignment_2026_07_02.md
 docs/saq_segment_diagnostic_2026_07_02.md
 docs/saq_gist_higher_dim_segment_diagnostic_2026_07_02.md
 docs/saq_residual_aware_dp_prototype_2026_07_02.md
+docs/saq_custom_plan_injection_2026_07_02.md
 ```
 
 This note records the advisor feedback after the SAQ pivot:
@@ -212,5 +213,6 @@ same budget and segment-overhead constraints, reducing the pooled residual DP
 cost by 2.38% and 3.38% respectively. On audio, it cannot change the plan under
 SAQ's current segment-count constraints.
 
-The next implementation step is a custom-plan injection path for `create_index`,
-so the residual-aware plan can be encoded and evaluated end to end.
+The custom-plan injection path for `create_index` is now implemented. The next
+step is to evaluate default vs residual-aware custom indexes on relative error
+and recall.

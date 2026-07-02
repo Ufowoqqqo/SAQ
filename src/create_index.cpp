@@ -45,6 +45,12 @@ class IndexCreator {
         // Create IVF index using unique_ptr
         ivf_ = std::make_unique<IVF>(num_vecs, num_dim, K, cfg);
 
+        auto custom_quant_plan = parseSegPlanSpec(FLAGS_seg_plan);
+        if (!custom_quant_plan.empty()) {
+            LOG(INFO) << "Custom SAQ segment plan: " << FLAGS_seg_plan;
+            ivf_->set_custom_quant_plan(std::move(custom_quant_plan));
+        }
+
         // Set variance if available
         if (data_vars_.rows() != 0) {
             ivf_->set_variance(std::move(data_vars_));

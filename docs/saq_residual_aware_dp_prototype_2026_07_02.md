@@ -178,3 +178,21 @@ A conservative path is:
 
 The official GIST/K4096 reproduction remains important before making a strong
 research claim, but it no longer needs to block this minimal prototype step.
+
+## 7. Custom Plan Injection Update
+
+The minimal custom-plan injection path is now implemented and documented in:
+
+```text
+docs/saq_custom_plan_injection_2026_07_02.md
+```
+
+The key flag is:
+
+```text
+-seg_plan=dim:bits,dim:bits,...
+```
+
+GIST sampled B=4 and B=3 residual-aware plans were successfully encoded through
+`create_index`. The next step is relative-error / recall evaluation against SAQ
+default, starting with B=4.

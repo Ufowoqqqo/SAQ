@@ -16,6 +16,7 @@ docs/saq_paper_code_alignment_2026_07_02.md
 docs/saq_segment_diagnostic_2026_07_02.md
 docs/saq_gist_higher_dim_segment_diagnostic_2026_07_02.md
 docs/saq_residual_aware_dp_prototype_2026_07_02.md
+docs/saq_custom_plan_injection_2026_07_02.md
 ```
 
 The revised conclusion is:
@@ -269,13 +270,14 @@ The original immediate diagnostic sequence is now complete:
 3. `script/propose_residual_plan.py` showed that a residual-aware DP objective can
    generate different plans under the same SAQ budget model.
 
-The next useful experiment is no longer another offline table. It should be:
+The custom-plan injection path is now implemented. The next useful experiment is
+no longer another offline table or another build-path change. It should be:
 
 ```text
-custom-plan injection for create_index, followed by relative-error / recall
-comparison between SAQ default and residual-aware plans.
+relative-error / recall comparison between SAQ default and residual-aware custom
+plans.
 ```
 
-Start with GIST sampled B=3/4 because the offline residual cost reductions were
-largest there. Full official GIST/K4096 reproduction remains necessary before
-strong claims, but it should not block this implementation step.
+Start with GIST sampled B=4 because both default and residual-aware custom-plan
+indexes were successfully encoded. Full official GIST/K4096 reproduction remains
+necessary before strong claims, but it should not block this evaluation step.

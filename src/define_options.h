@@ -1,9 +1,16 @@
 #pragma once
 
+#include <algorithm>
+#include <cctype>
 #include <cstring>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <fmt/core.h>
 #include <gflags/gflags.h>
+#include <glog/logging.h>
 
 #include "quantization/config.h"
 
@@ -26,12 +33,73 @@ DEFINE_int32(caq_ori_qB, 0, "(Experiment Only) Original quantization bits. 0 mea
 // SAQ config
 DEFINE_bool(enable_segmentation, true, "enable segmentation");
 DEFINE_int32(seg_eqseg, 0, "segmentation equalization");
+DEFINE_string(seg_plan, "", "custom SAQ segment plan override, format dim:bits,dim:bits,...");
 DEFINE_bool(use_compact_layout, false, "use compact memory layout");
 DEFINE_double(q_firstdim, 0, "only quantization first dimension");
 
 // Searcher config
 DEFINE_double(searcher_vars_bound_m, 4, "");
 DEFINE_int32(searcher_dist_type, 0, "searcher distance type. 0: L2Sqr, 1: IP");
+
+
+inline std::string compactPlanForPath(const std::string &plan_spec) {
+    if (plan_spec.empty()) {
+        return "";
+    }
+    std::string suffix = "_plan";
+    for (unsigned char ch : plan_spec) {
+        if (std::isdigit(ch)) {
+            suffix.push_back(static_cast<char>(ch));
+        } else if (ch == ':' || ch == 'x' || ch == 'X') {
+            suffix.push_back('x');
+        } else if (ch == ',' || ch == ';' || std::isspace(ch)) {
+            if (suffix.back() != '_') {
+                suffix.push_back('_');
+            }
+        }
+    }
+    if (suffix.back() == '_') {
+        suffix.pop_back();
+    }
+    return suffix;
+}
+
+inline std::vector<std::pair<size_t, size_t>> parseSegPlanSpec(const std::string &plan_spec) {
+    std::vector<std::pair<size_t, size_t>> plan;
+    if (plan_spec.empty()) {
+        return plan;
+    }
+
+    std::stringstream ss(plan_spec);
+    std::string token;
+    while (std::getline(ss, token, ',')) {
+        token.erase(std::remove_if(token.begin(), token.end(), [](unsigned char ch) {
+                        return std::isspace(ch);
+                    }),
+                    token.end());
+        if (token.empty()) {
+            continue;
+        }
+        auto sep = token.find(':');
+        if (sep == std::string::npos) {
+            sep = token.find('x');
+        }
+        if (sep == std::string::npos) {
+            sep = token.find('X');
+        }
+        CHECK(sep != std::string::npos) << "Bad -seg_plan token: " << token;
+
+        size_t end_pos = 0;
+        size_t dim_len = std::stoull(token.substr(0, sep), &end_pos);
+        CHECK_EQ(end_pos, sep) << "Bad segment dimension in -seg_plan token: " << token;
+        std::string bits_str = token.substr(sep + 1);
+        size_t bits = std::stoull(bits_str, &end_pos);
+        CHECK_EQ(end_pos, bits_str.size()) << "Bad segment bits in -seg_plan token: " << token;
+        plan.emplace_back(dim_len, bits);
+    }
+    CHECK(!plan.empty()) << "-seg_plan was provided but no valid segment was parsed";
+    return plan;
+}
 
 inline std::string parseArgs(saqlib::QuantizeConfig *config = nullptr) {
     saqlib::QuantizeConfig cfg;
@@ -60,6 +128,7 @@ inline std::string parseArgs(saqlib::QuantizeConfig *config = nullptr) {
     }
 
     args_str += cfg.toString();
+    args_str += compactPlanForPath(FLAGS_seg_plan);
 
     if (config)
         *config = cfg;
