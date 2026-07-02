@@ -12,6 +12,7 @@ It complements:
 docs/saq_code_audit_2026_07_02.md
 docs/audio_quant_plan_probe_2026_07_02.md
 docs/saq_query_unaware_pivot_2026_07_02.md
+docs/saq_paper_code_alignment_2026_07_02.md
 ```
 
 The revised conclusion is:
