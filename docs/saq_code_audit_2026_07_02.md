@@ -18,6 +18,12 @@ Related handoff memo in the previous exploration repo:
 /rwproject/kdd-db/kluaq/vectordb/docs/saq_limitation_transfer_memo_2026_07_02.md
 ```
 
+Follow-up priority note distilled from the paper-review discussion:
+
+```text
+docs/saq_followup_priorities_2026_07_02.md
+```
+
 ## 1. Local Repository State
 
 SAQ checkout:
