@@ -2,6 +2,13 @@
 
 Date: 2026-07-02
 
+Related notes:
+
+```text
+docs/saq_paper_code_alignment_2026_07_02.md
+docs/saq_segment_diagnostic_2026_07_02.md
+```
+
 This note records the advisor feedback after the SAQ pivot:
 
 ```text

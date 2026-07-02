@@ -36,6 +36,7 @@ Follow-up notes:
 docs/saq_followup_priorities_2026_07_02.md
 docs/saq_query_unaware_pivot_2026_07_02.md
 docs/saq_paper_code_alignment_2026_07_02.md
+docs/saq_segment_diagnostic_2026_07_02.md
 ```
 
 ## 1. Local Repository State
