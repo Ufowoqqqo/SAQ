@@ -221,3 +221,6 @@ Run per-query comparison and segment-level attribution for `boundary_4seg` again
 The specific question is whether `boundary_4seg` fixes the persistent lost-neighbor cases seen in residual-aggressive while avoiding the broad mean-error penalty introduced by `eq_s0_to_s1`.
 
 If it passes that check, the next step is to promote boundary-aware DP from prototype into a more systematic sweep over B values and at least one additional high-dimensional dataset.
+
+
+Follow-up status: this review has now been completed in `docs/saq_gist_sample100k_B4_boundary_4seg_review_2026_07_02.md`. The result is mixed: `boundary_4seg` keeps the best aggregate mean-error tradeoff, but it only partially fixes residual persistent-worse queries and introduces query 35 as a new stable failure. The recommended next design is boundary-aware DP v2 with an intra-segment risk penalty, not a stronger global segment-count penalty.
