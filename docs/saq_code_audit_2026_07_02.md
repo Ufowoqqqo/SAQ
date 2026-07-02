@@ -1,15 +1,27 @@
-# SAQ Code Audit: Rank-Boundary Limitation Entry Points
+# SAQ Code Audit: Query-Unaware Limitation Entry Points
 
 Date: 2026-07-02
 
 This note starts the post-meeting pivot from the previous `vectordb`
 exploration into the SAQ codebase. The goal is not to claim that SAQ is weak.
 SAQ is the closest and strongest prior for the current direction. The goal is
-to identify which part of SAQ can be audited for a possible limitation:
+to identify which part of SAQ can be audited for a possible limitation under a
+query-unaware build setting.
+
+Advisor feedback after the initial SAQ follow-up discussion:
 
 ```text
-SAQ optimizes PCA-segmented, variance/distance-error-driven quantization.
-It may not explicitly optimize top-k boundary stability for a query workload.
+Query-aware or workload-aware indexing is not a good primary scenario. The next
+SAQ follow-up should preferably be query-unaware.
+```
+
+The revised limitation hypothesis is therefore:
+
+```text
+SAQ optimizes a global PCA-segmented, variance/distance-error-driven
+quantization plan. It may not capture query-unaware structure such as
+cluster-local residual covariance, within-segment concentration, or base-neighbor
+boundary instability.
 ```
 
 Related handoff memo in the previous exploration repo:
@@ -18,10 +30,11 @@ Related handoff memo in the previous exploration repo:
 /rwproject/kdd-db/kluaq/vectordb/docs/saq_limitation_transfer_memo_2026_07_02.md
 ```
 
-Follow-up priority note distilled from the paper-review discussion:
+Follow-up notes:
 
 ```text
 docs/saq_followup_priorities_2026_07_02.md
+docs/saq_query_unaware_pivot_2026_07_02.md
 ```
 
 ## 1. Local Repository State
@@ -32,20 +45,21 @@ SAQ checkout:
 /rwproject/kdd-db/kluaq/saq
 ```
 
-Current branch and commit observed before this note:
+Initial upstream state observed before the fork pivot:
 
 ```text
 branch = main
 HEAD = 2163ebc Refactor encoder; fix ip stats;
 ```
 
-Pre-existing untracked file:
+Current working branch after the fork pivot:
 
 ```text
-2509.12086.pdf
+branch = saq-boundary-audit
+HEAD before this query-unaware doc update = 455866b
 ```
 
-This note does not depend on modifying that PDF.
+Local paper source and PDF artifacts are intentionally excluded from Git.
 
 ## 2. Source Map
 
@@ -120,7 +134,8 @@ prerequisite before formal SAQ experiments.
 5. quantize each cluster independently with `SAQuantizer`.
 
 The plan is global for the dataset, not cluster-specific. Cluster residuals are
-quantized according to the same segment/bit plan.
+quantized according to the same segment/bit plan. This is now the most relevant
+query-unaware limitation entry point.
 
 ### 4.3 Dynamic Segmentation Is Variance-Driven
 
@@ -155,9 +170,9 @@ num_bit_factors = 2 * sizeof(float) * 8
 Interpretation:
 
 ```text
-SAQ allocates more bits to contiguous PCA segments with larger variance.
-It optimizes a distance/quantization-error proxy, not an explicit top-k
-boundary objective.
+SAQ allocates more bits to contiguous PCA segments with larger global variance.
+It optimizes a distance/quantization-error proxy, not an explicit local-residual
+or nearest-neighbor-boundary objective.
 ```
 
 This is the most important audit entry point.
@@ -175,9 +190,10 @@ slices the vector and centroid by segment, then calls per-segment CAQ quantizers
 4. packs the codes;
 5. records an inner-product-related error metric.
 
-This means a possible rank-aware extension should first target the global
-segment/bit plan, not the CAQ inner loop. The CAQ machinery is a strong existing
-component and should be preserved unless the audit shows a specific failure.
+This means a follow-up should first target the global segment/bit plan or its
+interaction with cluster residuals, not the CAQ inner loop. The CAQ machinery is
+a strong existing component and should be preserved unless the audit shows a
+specific failure.
 
 ### 4.5 Search Estimation Aggregates Segments
 
@@ -190,37 +206,41 @@ sum_j variance_j * query_j^2
 ```
 
 This is query-dependent at search time for pruning/estimation, but it is not the
-same as using query workload during index-time bit allocation.
+same as using query workload during index-time bit allocation. Under the revised
+plan, query-dependent search statistics are evaluation behavior, not build-time
+signals.
 
 ## 5. Main Limitation Hypothesis
 
 The first hypothesis to test is:
 
 ```text
-SAQ's variance-driven segment DP may under-allocate dimensions or segments that
-matter disproportionately for top-k boundary decisions, even when global distance
-or relative error looks good.
+SAQ's global variance-driven segment DP may under-allocate dimensions or
+segments that matter for local residual quantization or base-neighbor boundary
+stability, even when no query workload is used during indexing.
 ```
 
-This follows from the previous `vectordb` exploration:
+This keeps the useful lesson from the previous `vectordb` exploration while
+respecting the query-unaware boundary:
 
 - PCA is necessary but not novel.
-- PCA reconstruction allocation is consistently worse than PCA rank-boundary
-  allocation under the same compressed scan code.
-- Rank-boundary weights are query-workload-aware and focus on exact top-k
-  boundary pairs.
-- Residual beyond variance is not robust enough to be the main story, but it
-  warns that R@10 and R@100 can move differently.
+- PCA reconstruction or global variance allocation can disagree with
+  nearest-neighbor quality.
+- Rank-boundary weights from representative queries should now be treated only
+  as a diagnostic or upper-bound comparison, not as the main method.
+- Residual/local structure is more aligned with SAQ's IVF setting because each
+  cluster is quantized under a global plan.
 
 ## 6. Audit Questions
 
-### Q1: Does SAQ's variance share match rank-boundary share?
+### Q1: Does Global Variance Match Cluster-Local Residual Variance?
 
 For each SAQ segment, compare:
 
 ```text
-variance_share(segment)
-rank_boundary_share(segment)
+global_variance_share(segment)
+cluster_residual_variance_share_mean(segment)
+cluster_residual_variance_share_p90(segment)
 allocated_bits(segment)
 segment_length
 ```
@@ -228,60 +248,64 @@ segment_length
 Positive audit signal:
 
 ```text
-A segment has modest variance share but high rank-boundary share, and SAQ gives
-it low bits or discards it.
+A segment has modest global PCA variance but high residual variance in many IVF
+clusters, and SAQ gives it low bits or discards it.
 ```
 
 Negative audit signal:
 
 ```text
-Rank-boundary share almost exactly follows variance share, leaving little room
-for rank-aware allocation to improve SAQ.
+Cluster-local residual variance almost exactly follows global PCA variance,
+leaving little room for local or data-structure-aware allocation to improve SAQ.
 ```
 
-### Q2: Does contiguous segmentation hide high-risk dimensions?
+### Q2: Does Contiguous Segmentation Hide Concentrated Dimensions?
 
-Within each SAQ segment, inspect the distribution of per-dimension
-rank-boundary weights.
+Within each SAQ segment, inspect the distribution of per-dimension global
+variance and residual variance.
 
 Positive audit signal:
 
 ```text
-A long segment contains a few high-risk dimensions diluted by many low-risk
-dimensions.
+A long segment contains a few high-contribution dimensions diluted by many
+low-contribution dimensions.
 ```
 
-This would motivate rank-aware segment boundary selection rather than only
-rank-aware segment bit allocation.
+This would motivate data-only segment boundary selection rather than query-aware
+segment bit allocation.
 
-### Q3: Do relative-error metrics predict recall near the boundary?
+### Q3: Do Relative-Error Metrics Predict Recall Near The Boundary?
 
 SAQ reports relative/distance error metrics, and search tests report recall/QPS.
 The previous exploration shows allocation changes can improve top-rank recall
 while hurting deeper recall, or the reverse.
 
-The audit should track at least:
+Under the revised boundary, track standard held-out-query metrics only after the
+index plan is learned from base/index data:
 
 ```text
 relative error
 R@10
 R@100
-boundary-pair error
+base-as-pseudo-query boundary error, with self matches removed
 false negatives around exact top-k boundary
 ```
 
-### Q4: Is workload-aware indexing acceptable?
+### Q4: Can A Better Query-Unaware Plan Fit SAQ's Metadata Budget?
 
-Rank-boundary allocation uses representative queries at build time. This is both
-a contribution opportunity and a leakage/generalization risk.
-
-Minimum hygiene if used:
+Any local or flexible plan must preserve SAQ's systems story. Audit the overhead
+of:
 
 ```text
-allocation queries != eval queries
-same-distribution held-out first
-cross-workload validation later
+number of plans
+segments per plan
+per-cluster plan id storage
+per-segment factors
+training and encoding time
 ```
+
+A method that improves recall but adds large metadata or encoding overhead may
+not be a useful SAQ follow-up.
 
 ## 7. First Concrete Experiment
 
@@ -308,7 +332,7 @@ Before formal comparison, either:
 1. make a controlled environment with `faiss`, or
 2. document a small fallback preprocessing path and label it as smoke-only.
 
-### 7.2 Minimal run matrix
+### 7.2 Minimal Run Matrix
 
 Use one small dataset first:
 
@@ -331,27 +355,31 @@ R@10 / R@100 from search path
 runtime/QPS if available
 ```
 
-### 7.3 Join with previous diagnostic data
+### 7.3 Query-Unaware Segment Diagnostics
 
-From `vectordb`, compute or reuse:
+From SAQ's data files, compute:
 
 ```text
 PCA variance per dimension
-rank-boundary weight per dimension
-allocation/eval query split metadata
+cluster ids and centroids
+base residuals to assigned centroids
+optional base-as-pseudo-query neighbor pairs, excluding self
 ```
 
 Then aggregate to SAQ segments:
 
 ```text
-segment_id,start_dim,end_dim,segment_len,bits,variance_sum,rank_boundary_sum
+segment_id,start_dim,end_dim,segment_len,bits,
+global_variance_sum,global_variance_share,
+cluster_residual_variance_mean,cluster_residual_variance_p90,
+within_segment_top_dim_share
 ```
 
-This should produce the first decisive diagnostic table.
+This should produce the first decisive query-unaware diagnostic table.
 
 ## 8. Possible Extension If The Audit Is Positive
 
-### 8.1 Rank-Aware SAQ Segment Cost
+### 8.1 Data-Structure-Aware SAQ Segment Cost
 
 Current proxy:
 
@@ -359,48 +387,51 @@ Current proxy:
 cost(segment, b) = variance_sum(segment) / 2^b
 ```
 
-Candidate risk-weighted proxy:
+Candidate query-unaware proxy:
 
 ```text
 cost(segment, b) = risk_sum(segment) / 2^b
 ```
 
-where a conservative first risk could be:
+where a conservative first risk could combine global variance and local residual
+statistics:
 
 ```text
-risk_j = variance_j * (1 - lambda + lambda * normalized_rank_boundary_j)
+risk_j = global_var_j * (1 - lambda) + residual_var_j * lambda
 ```
 
 This preserves the SAQ segment/CAQ machinery while making the bit plan more
-rank-aware.
+sensitive to IVF residual structure.
 
-### 8.2 Rank-Aware Segmentation
+### 8.2 Data-Only Segmentation
 
-If the problem is segment granularity rather than bit assignment, use both
-variance and rank-boundary signal to choose segment boundaries.
+If the problem is segment granularity rather than bit assignment, use global and
+cluster-local data statistics to choose segment boundaries.
 
 This is more distinct from a simple reweighting and may be a stronger
 contribution if supported by evidence.
 
-### 8.3 Boundary-Aware Diagnostics Only
+### 8.3 Query-Aware Diagnostics Only
 
-If modifications do not improve SAQ robustly, a weaker but still useful output is
-a diagnostic:
+If useful, keep the previous rank-boundary diagnostic as an upper-bound or
+stress test:
 
 ```text
 relative error alone is insufficient to predict top-k boundary behavior;
 boundary-pair diagnostics reveal unsafe quantization regimes.
 ```
 
+Do not make query-aware allocation the main algorithm.
+
 ## 9. Stop Conditions
 
 Stop this line early if:
 
-- SAQ segment variance share and rank-boundary share are nearly identical across
-  datasets;
-- rank-aware reweighting improves one metric but consistently regresses another;
-- benefits disappear under held-out query rows;
-- the only positive signal requires query leakage that cannot be justified.
+- SAQ segment global variance, local residual variance, and base-neighbor
+  diagnostics are nearly identical across datasets;
+- data-only reweighting improves one metric but consistently regresses another;
+- benefits disappear when moving from smoke settings to normal SAQ settings;
+- the only positive signal requires query workload information at build time.
 
 ## 10. Immediate Next Implementation Tasks
 
@@ -426,9 +457,10 @@ Stop this line early if:
 2. Re-establish reproducible `audio` preprocessing with either real faiss IVF/PCA
    or a clearly labeled fallback.
 3. Run SAQ default and CAQ-only/equal-segment controls on `audio` B=2/4.
-4. Export a segment table compatible with the previous `vectordb` rank-boundary
-   allocation dump.
-5. Decide whether to implement rank-aware segment-cost DP in SAQ.
+4. Export a segment table with global variance, cluster-local residual variance,
+   and within-segment concentration statistics.
+5. Decide whether to implement data-structure-aware segment-cost DP or local
+   shared SAQ plans.
 
 ## 11. First Probe Result
 
