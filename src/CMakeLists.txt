@@ -20,3 +20,5 @@ target_link_libraries(test_ivf PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
 
 add_executable(compare_search_results compare_search_results.cpp)
 target_link_libraries(compare_search_results PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
+add_executable(segment_attribution segment_attribution.cpp)
+target_link_libraries(segment_attribution PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
