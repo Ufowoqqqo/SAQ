@@ -17,3 +17,6 @@ target_link_libraries(compute_gt PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES}
 
 add_executable(test_ivf test_ivf.cpp)
 target_link_libraries(test_ivf PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
+
+add_executable(compare_search_results compare_search_results.cpp)
+target_link_libraries(compare_search_results PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
