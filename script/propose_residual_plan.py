@@ -91,6 +91,7 @@ def dynamic_programming(
     max_quant_bit: int = K_MAX_QUANT_BIT,
     num_short_factors: int = K_NUM_SHORT_FACTORS,
     segment_penalty: float = 0.0,
+    intra_segment_penalty_scale: float = 0.0,
 ) -> tuple[Plan, dict[str, Any]]:
     padded_dim = int(risk_vector.size)
     if padded_dim % padding_size != 0:
@@ -100,7 +101,8 @@ def dynamic_programming(
     num_bit_factors = num_short_factors * FLOAT_BITS
     total_bits = int(avg_bits * padded_dim + num_bit_factors)
     max_num_segs = blocks if avg_bits < 2 else blocks // 2
-    prefix = np.concatenate([[0.0], np.cumsum(np.asarray(risk_vector, dtype=np.float64))])
+    risk = np.asarray(risk_vector, dtype=np.float64)
+    block_risk = risk.reshape(blocks, padding_size).sum(axis=1)
 
     # dp[ns][i][used_bits] = cost. i is measured in 64-dimensional blocks.
     dp: list[list[dict[int, float]]] = [
@@ -128,16 +130,19 @@ def dynamic_programming(
                     continue
 
                 var_sum = 0.0
+                max_block_sum = 0.0
                 for j in range(1, blocks - i + 1):
-                    start = (i + j - 1) * padding_size
-                    end = (i + j) * padding_size
-                    var_sum += float(prefix[end] - prefix[start])
+                    curr_block_sum = float(block_risk[i + j - 1])
+                    var_sum += curr_block_sum
+                    max_block_sum = max(max_block_sum, curr_block_sum)
+                    intra_penalty = max_block_sum - var_sum / j
+                    adjusted_var_sum = var_sum + intra_segment_penalty_scale * intra_penalty
 
                     for bits in range(1, max_quant_bit + 1):
                         new_used_bits = used_bits + bits * j * padding_size + num_bit_factors
                         if new_used_bits > total_bits:
                             break
-                        new_cost = cur_cost + var_sum / (1 << bits) + segment_penalty
+                        new_cost = cur_cost + adjusted_var_sum / (1 << bits) + segment_penalty
                         key = (ns + 1, i + j, new_used_bits)
                         old_cost = dp[ns + 1][i + j].get(new_used_bits, math.inf)
                         if old_cost > new_cost:
@@ -145,7 +150,7 @@ def dynamic_programming(
                             prev[key] = (i, used_bits, bits)
 
                 # SAQ allows only the final tail segment to be assigned 0 bits.
-                new_cost = cur_cost + var_sum + segment_penalty
+                new_cost = cur_cost + adjusted_var_sum + segment_penalty
                 old_cost = dp[ns + 1][blocks].get(used_bits, math.inf)
                 if old_cost > new_cost:
                     dp[ns + 1][blocks][used_bits] = new_cost
@@ -177,6 +182,8 @@ def dynamic_programming(
         "padding_size": int(padding_size),
         "max_quant_bit": int(max_quant_bit),
         "segment_penalty": float(segment_penalty),
+        "intra_segment_penalty_scale": float(intra_segment_penalty_scale),
+        "intra_segment_penalty": "max_64block_sum_minus_mean_64block_sum",
     }
     return plan, meta
 
@@ -355,6 +362,27 @@ def make_boundary_risk_vector(
     return boundary.astype(np.float64, copy=False), meta
 
 
+def block_risk_sums(vector: np.ndarray, padding_size: int = K_DIM_PADDING_SIZE) -> np.ndarray:
+    vector = np.asarray(vector, dtype=np.float64)
+    if vector.size % padding_size != 0:
+        raise ValueError(f"vector length {vector.size} is not divisible by {padding_size}")
+    return vector.reshape(vector.size // padding_size, padding_size).sum(axis=1)
+
+
+def segment_intra_penalty(
+    vector: np.ndarray,
+    start: int,
+    end: int,
+    padding_size: int = K_DIM_PADDING_SIZE,
+) -> float:
+    if start % padding_size != 0 or end % padding_size != 0:
+        raise ValueError(f"segment [{start}, {end}) is not aligned to {padding_size}")
+    blocks = block_risk_sums(vector, padding_size)[start // padding_size : end // padding_size]
+    if blocks.size <= 1:
+        return 0.0
+    return float(blocks.max() - blocks.mean())
+
+
 def plan_used_bits(plan: Plan, num_bit_factors: int) -> int:
     total = 0
     for seg in plan:
@@ -364,12 +392,19 @@ def plan_used_bits(plan: Plan, num_bit_factors: int) -> int:
     return int(total)
 
 
-def plan_cost(plan: Plan, risk_vector: np.ndarray, segment_penalty: float = 0.0) -> float:
+def plan_cost(
+    plan: Plan,
+    risk_vector: np.ndarray,
+    segment_penalty: float = 0.0,
+    intra_segment_penalty_scale: float = 0.0,
+) -> float:
     cost = 0.0
     for seg in plan:
         risk_sum = float(slice_segment(risk_vector, seg["start_dim"], seg["end_dim"]).sum())
+        intra_penalty = segment_intra_penalty(risk_vector, seg["start_dim"], seg["end_dim"])
+        adjusted_risk = risk_sum + intra_segment_penalty_scale * intra_penalty
         bits = int(seg["bits"])
-        cost += risk_sum / (1 << bits) if bits > 0 else risk_sum
+        cost += adjusted_risk / (1 << bits) if bits > 0 else adjusted_risk
         cost += segment_penalty
     return float(cost)
 
@@ -387,6 +422,7 @@ def describe_plan_rows(
     global_vector: np.ndarray,
     residual_vector: np.ndarray,
     boundary_vector: np.ndarray | None = None,
+    intra_segment_penalty_scale: float = 0.0,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for seg in plan:
@@ -394,10 +430,15 @@ def describe_plan_rows(
         residual_sum, residual_share = risk_share(residual_vector, seg["start_dim"], seg["end_dim"])
         if boundary_vector is not None:
             boundary_sum, boundary_share = risk_share(boundary_vector, seg["start_dim"], seg["end_dim"])
+            boundary_intra_penalty = segment_intra_penalty(
+                boundary_vector, seg["start_dim"], seg["end_dim"]
+            )
         else:
             boundary_sum, boundary_share = 0.0, 0.0
+            boundary_intra_penalty = 0.0
         bits = int(seg["bits"])
         denom = (1 << bits) if bits > 0 else 1
+        boundary_intra_cost = intra_segment_penalty_scale * boundary_intra_penalty / denom
         rows.append(
             {
                 "plan_name": plan_name,
@@ -416,6 +457,9 @@ def describe_plan_rows(
                 "boundary_risk_sum": boundary_sum,
                 "boundary_risk_share": boundary_share,
                 "boundary_cost_contrib": boundary_sum / denom,
+                "boundary_intra_penalty": boundary_intra_penalty,
+                "boundary_intra_cost_contrib": boundary_intra_cost,
+                "boundary_v2_cost_contrib": boundary_sum / denom + boundary_intra_cost,
             }
         )
     return rows
@@ -440,6 +484,9 @@ def write_plan_csv(rows: list[dict[str, Any]], output: Path) -> None:
         "boundary_risk_sum",
         "boundary_risk_share",
         "boundary_cost_contrib",
+        "boundary_intra_penalty",
+        "boundary_intra_cost_contrib",
+        "boundary_v2_cost_contrib",
     ]
     with output.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
@@ -466,6 +513,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--boundary-tail-quantile", type=float, default=0.95, help="Quantile used for residual tail-excess risk.")
     parser.add_argument("--boundary-global-blend", type=float, default=0.0, help="Blend normalized global PCA variance into boundary-aware DP.")
     parser.add_argument("--segment-penalty-scale", type=float, default=0.0, help="Per-segment DP penalty as a multiple of total boundary risk / 2^B.")
+    parser.add_argument("--intra-segment-penalty-scale", type=float, default=0.0, help="Penalty scale for max 64-block risk excess inside a segment.")
     parser.add_argument("--chunk-rows", type=int, default=2048, help="Rows per residual accumulation chunk.")
     parser.add_argument("--output", type=Path, required=True, help="Output CSV with compared plans.")
     parser.add_argument("--summary-output", type=Path, default=None, help="Optional JSON summary output path.")
@@ -526,7 +574,10 @@ def main() -> int:
     global_plan, global_dp_meta = dynamic_programming(global_vector, avg_bits)
     residual_plan, residual_dp_meta = dynamic_programming(residual_vector, avg_bits)
     boundary_plan, boundary_dp_meta = dynamic_programming(
-        boundary_vector, avg_bits, segment_penalty=boundary_segment_penalty
+        boundary_vector,
+        avg_bits,
+        segment_penalty=boundary_segment_penalty,
+        intra_segment_penalty_scale=args.intra_segment_penalty_scale,
     )
     num_bit_factors = int(global_dp_meta["num_bit_factors"])
 
@@ -535,12 +586,22 @@ def main() -> int:
         plans.append(("default_saq", "saq_global_variance", default_plan))
     plans.append(("global_dp_reimpl", "global_pca_variance", global_plan))
     plans.append(("residual_dp", args.residual_risk_stat, residual_plan))
-    plans.append(("boundary_dp", "boundary_tail_blend", boundary_plan))
+    plans.append(("boundary_dp", "boundary_tail_blend_intra", boundary_plan))
 
     rows: list[dict[str, Any]] = []
     costs: dict[str, Any] = {}
     for plan_name, risk_source, plan in plans:
-        rows.extend(describe_plan_rows(plan_name, risk_source, plan, global_vector, residual_vector, boundary_vector))
+        rows.extend(
+            describe_plan_rows(
+                plan_name,
+                risk_source,
+                plan,
+                global_vector,
+                residual_vector,
+                boundary_vector,
+                args.intra_segment_penalty_scale,
+            )
+        )
         used_bits = plan_used_bits(plan, num_bit_factors)
         costs[plan_name] = {
             "plan": format_plan(plan),
@@ -559,8 +620,13 @@ def main() -> int:
             "effective_avg_bits_including_overhead": float(used_bits / padded_dim),
             "global_cost": plan_cost(plan, global_vector),
             "residual_cost": plan_cost(plan, residual_vector),
-            "boundary_cost": plan_cost(plan, boundary_vector, boundary_segment_penalty),
-            "boundary_cost_without_segment_penalty": plan_cost(plan, boundary_vector),
+            "boundary_cost": plan_cost(
+                plan, boundary_vector, boundary_segment_penalty, args.intra_segment_penalty_scale
+            ),
+            "boundary_cost_without_segment_penalty": plan_cost(
+                plan, boundary_vector, 0.0, args.intra_segment_penalty_scale
+            ),
+            "boundary_cost_without_penalties": plan_cost(plan, boundary_vector),
         }
 
     write_plan_csv(rows, args.output)
@@ -596,6 +662,7 @@ def main() -> int:
         "boundary_meta": boundary_meta,
         "boundary_tail_summary": tail_summary,
         "boundary_segment_penalty": float(boundary_segment_penalty),
+        "boundary_intra_segment_penalty_scale": float(args.intra_segment_penalty_scale),
         "default_plan_csv": str(args.default_plan_csv) if args.default_plan_csv else None,
         "default_matches_global_dp_reimpl": (
             plan_signature(default_plan) == plan_signature(global_plan) if default_plan is not None else None

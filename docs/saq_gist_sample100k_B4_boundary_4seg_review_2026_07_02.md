@@ -153,6 +153,8 @@ But the per-query review shows two remaining problems:
 
 The next planner change should not simply increase the global segment penalty. Strong penalty already produced the 3-segment plan `192:8,320:4,448:2`, whose recall dropped to `0.989840` at np200. The better direction is boundary-aware DP v2 with an additional within-segment risk term, for example a max-block or tail-block penalty inside a segment. That would discourage wide risky segments like `128-512` without forcing the whole plan to collapse into too few segments.
 
+Follow-up status: v2 has now been implemented and reviewed in `docs/saq_boundary_aware_dp_v2_intra_segment_2026_07_02.md`. The v2 candidate `64:9,64:7,128:6,320:4,256:2,128:0` fixes the wide `128-512` failure mode and improves the aggregate recall/error tradeoff, but it introduces a QPS cost and leaves new per-query tail cases.
+
 ## 7. Artifacts
 
 Per-query compare CSVs:
