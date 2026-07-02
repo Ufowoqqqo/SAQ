@@ -90,6 +90,7 @@ def dynamic_programming(
     padding_size: int = K_DIM_PADDING_SIZE,
     max_quant_bit: int = K_MAX_QUANT_BIT,
     num_short_factors: int = K_NUM_SHORT_FACTORS,
+    segment_penalty: float = 0.0,
 ) -> tuple[Plan, dict[str, Any]]:
     padded_dim = int(risk_vector.size)
     if padded_dim % padding_size != 0:
@@ -136,7 +137,7 @@ def dynamic_programming(
                         new_used_bits = used_bits + bits * j * padding_size + num_bit_factors
                         if new_used_bits > total_bits:
                             break
-                        new_cost = cur_cost + var_sum / (1 << bits)
+                        new_cost = cur_cost + var_sum / (1 << bits) + segment_penalty
                         key = (ns + 1, i + j, new_used_bits)
                         old_cost = dp[ns + 1][i + j].get(new_used_bits, math.inf)
                         if old_cost > new_cost:
@@ -144,7 +145,7 @@ def dynamic_programming(
                             prev[key] = (i, used_bits, bits)
 
                 # SAQ allows only the final tail segment to be assigned 0 bits.
-                new_cost = cur_cost + var_sum
+                new_cost = cur_cost + var_sum + segment_penalty
                 old_cost = dp[ns + 1][blocks].get(used_bits, math.inf)
                 if old_cost > new_cost:
                     dp[ns + 1][blocks][used_bits] = new_cost
@@ -175,6 +176,7 @@ def dynamic_programming(
         "max_num_segs": int(max_num_segs),
         "padding_size": int(padding_size),
         "max_quant_bit": int(max_quant_bit),
+        "segment_penalty": float(segment_penalty),
     }
     return plan, meta
 
@@ -262,6 +264,97 @@ def compute_residual_risk(
     return risk.astype(np.float64, copy=False), summary
 
 
+def normalize_sum_like(vector: np.ndarray, reference: np.ndarray) -> np.ndarray:
+    vector = np.asarray(vector, dtype=np.float64)
+    reference_sum = float(np.asarray(reference, dtype=np.float64).sum())
+    vector_sum = float(vector.sum())
+    if vector_sum <= 0 or reference_sum <= 0:
+        return np.zeros_like(vector, dtype=np.float64)
+    return vector * (reference_sum / vector_sum)
+
+
+def compute_residual_tail_risk(
+    base: np.ndarray,
+    centroids: np.ndarray,
+    cids: np.ndarray,
+    min_cluster_size: int,
+    tail_quantile: float,
+    chunk_rows: int,
+) -> tuple[np.ndarray, dict[str, Any]]:
+    if not 0.0 < tail_quantile < 1.0:
+        raise ValueError(f"tail quantile must be in (0, 1), got {tail_quantile}")
+    if cids.ndim == 2:
+        if cids.shape[1] != 1:
+            raise ValueError(f"cluster id ivecs must have dimension 1, got {cids.shape[1]}")
+        cids = cids[:, 0]
+    cids = cids.astype(np.int64, copy=False).reshape(-1)
+    counts = np.bincount(cids, minlength=centroids.shape[0]).astype(np.int64)
+    valid_cluster = counts >= min_cluster_size
+
+    chunks: list[np.ndarray] = []
+    used_rows = 0
+    for start in range(0, base.shape[0], chunk_rows):
+        stop = min(start + chunk_rows, base.shape[0])
+        labels = cids[start:stop]
+        row_mask = valid_cluster[labels]
+        if not np.any(row_mask):
+            continue
+        labels = labels[row_mask]
+        residual = base[start:stop][row_mask].astype(np.float32, copy=False) - centroids[labels].astype(
+            np.float32, copy=False
+        )
+        chunks.append(np.square(residual, dtype=np.float32))
+        used_rows += int(residual.shape[0])
+    if not chunks:
+        raise ValueError("no rows remain after min-cluster-size filtering")
+
+    residual_sq = np.concatenate(chunks, axis=0)
+    mean_sq = residual_sq.mean(axis=0, dtype=np.float64)
+    tail_sq = np.quantile(residual_sq, tail_quantile, axis=0).astype(np.float64, copy=False)
+    tail_excess = np.maximum(tail_sq - mean_sq, 0.0)
+    summary = {
+        "tail_quantile": float(tail_quantile),
+        "used_rows": int(used_rows),
+        "mean_sq_sum": float(mean_sq.sum()),
+        "tail_sq_sum": float(tail_sq.sum()),
+        "tail_excess_sum": float(tail_excess.sum()),
+        "tail_excess_top64_share": float(np.sort(tail_excess)[-64:].sum() / tail_excess.sum())
+        if tail_excess.sum() > 0
+        else 0.0,
+    }
+    return tail_excess, summary
+
+
+def make_boundary_risk_vector(
+    global_vector: np.ndarray,
+    residual_vector: np.ndarray,
+    tail_vector: np.ndarray | None,
+    global_blend: float,
+    tail_alpha: float,
+) -> tuple[np.ndarray, dict[str, Any]]:
+    if not 0.0 <= global_blend <= 1.0:
+        raise ValueError(f"global blend must be in [0, 1], got {global_blend}")
+    if tail_alpha < 0:
+        raise ValueError(f"tail alpha must be non-negative, got {tail_alpha}")
+
+    global_norm = normalize_sum_like(global_vector, residual_vector)
+    boundary = (1.0 - global_blend) * residual_vector + global_blend * global_norm
+    tail_norm_sum = 0.0
+    if tail_vector is not None and tail_alpha > 0:
+        tail_norm = normalize_sum_like(tail_vector, residual_vector)
+        boundary = boundary + tail_alpha * tail_norm
+        tail_norm_sum = float(tail_norm.sum())
+    meta = {
+        "global_blend": float(global_blend),
+        "tail_alpha": float(tail_alpha),
+        "global_norm_sum": float(global_norm.sum()),
+        "residual_sum": float(residual_vector.sum()),
+        "tail_norm_sum": tail_norm_sum,
+        "boundary_sum": float(boundary.sum()),
+    }
+    return boundary.astype(np.float64, copy=False), meta
+
+
 def plan_used_bits(plan: Plan, num_bit_factors: int) -> int:
     total = 0
     for seg in plan:
@@ -271,12 +364,13 @@ def plan_used_bits(plan: Plan, num_bit_factors: int) -> int:
     return int(total)
 
 
-def plan_cost(plan: Plan, risk_vector: np.ndarray) -> float:
+def plan_cost(plan: Plan, risk_vector: np.ndarray, segment_penalty: float = 0.0) -> float:
     cost = 0.0
     for seg in plan:
         risk_sum = float(slice_segment(risk_vector, seg["start_dim"], seg["end_dim"]).sum())
         bits = int(seg["bits"])
         cost += risk_sum / (1 << bits) if bits > 0 else risk_sum
+        cost += segment_penalty
     return float(cost)
 
 
@@ -292,11 +386,16 @@ def describe_plan_rows(
     plan: Plan,
     global_vector: np.ndarray,
     residual_vector: np.ndarray,
+    boundary_vector: np.ndarray | None = None,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for seg in plan:
         global_sum, global_share = risk_share(global_vector, seg["start_dim"], seg["end_dim"])
         residual_sum, residual_share = risk_share(residual_vector, seg["start_dim"], seg["end_dim"])
+        if boundary_vector is not None:
+            boundary_sum, boundary_share = risk_share(boundary_vector, seg["start_dim"], seg["end_dim"])
+        else:
+            boundary_sum, boundary_share = 0.0, 0.0
         bits = int(seg["bits"])
         denom = (1 << bits) if bits > 0 else 1
         rows.append(
@@ -314,6 +413,9 @@ def describe_plan_rows(
                 "residual_risk_share": residual_share,
                 "global_cost_contrib": global_sum / denom,
                 "residual_cost_contrib": residual_sum / denom,
+                "boundary_risk_sum": boundary_sum,
+                "boundary_risk_share": boundary_share,
+                "boundary_cost_contrib": boundary_sum / denom,
             }
         )
     return rows
@@ -335,6 +437,9 @@ def write_plan_csv(rows: list[dict[str, Any]], output: Path) -> None:
         "residual_risk_share",
         "global_cost_contrib",
         "residual_cost_contrib",
+        "boundary_risk_sum",
+        "boundary_risk_share",
+        "boundary_cost_contrib",
     ]
     with output.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
@@ -357,6 +462,10 @@ def parse_args() -> argparse.Namespace:
         help="Residual risk vector used by residual-aware DP.",
     )
     parser.add_argument("--min-cluster-size", type=int, default=2, help="Skip clusters smaller than this size.")
+    parser.add_argument("--boundary-tail-alpha", type=float, default=0.0, help="Blend normalized residual tail-excess risk into boundary-aware DP.")
+    parser.add_argument("--boundary-tail-quantile", type=float, default=0.95, help="Quantile used for residual tail-excess risk.")
+    parser.add_argument("--boundary-global-blend", type=float, default=0.0, help="Blend normalized global PCA variance into boundary-aware DP.")
+    parser.add_argument("--segment-penalty-scale", type=float, default=0.0, help="Per-segment DP penalty as a multiple of total boundary risk / 2^B.")
     parser.add_argument("--chunk-rows", type=int, default=2048, help="Rows per residual accumulation chunk.")
     parser.add_argument("--output", type=Path, required=True, help="Output CSV with compared plans.")
     parser.add_argument("--summary-output", type=Path, default=None, help="Optional JSON summary output path.")
@@ -391,8 +500,34 @@ def main() -> int:
     )
     residual_vector = padded_vector(residual_vector_raw, padded_dim).astype(np.float64, copy=False)
 
+    tail_vector = None
+    tail_summary = None
+    if args.boundary_tail_alpha > 0:
+        tail_vector_raw, tail_summary = compute_residual_tail_risk(
+            base,
+            centroids,
+            cids,
+            args.min_cluster_size,
+            args.boundary_tail_quantile,
+            args.chunk_rows,
+        )
+        tail_vector = padded_vector(tail_vector_raw, padded_dim).astype(np.float64, copy=False)
+    boundary_vector, boundary_meta = make_boundary_risk_vector(
+        global_vector,
+        residual_vector,
+        tail_vector,
+        args.boundary_global_blend,
+        args.boundary_tail_alpha,
+    )
+    boundary_segment_penalty = (
+        args.segment_penalty_scale * float(boundary_vector.sum()) / (2.0 ** float(avg_bits))
+    )
+
     global_plan, global_dp_meta = dynamic_programming(global_vector, avg_bits)
     residual_plan, residual_dp_meta = dynamic_programming(residual_vector, avg_bits)
+    boundary_plan, boundary_dp_meta = dynamic_programming(
+        boundary_vector, avg_bits, segment_penalty=boundary_segment_penalty
+    )
     num_bit_factors = int(global_dp_meta["num_bit_factors"])
 
     plans: list[tuple[str, str, Plan]] = []
@@ -400,11 +535,12 @@ def main() -> int:
         plans.append(("default_saq", "saq_global_variance", default_plan))
     plans.append(("global_dp_reimpl", "global_pca_variance", global_plan))
     plans.append(("residual_dp", args.residual_risk_stat, residual_plan))
+    plans.append(("boundary_dp", "boundary_tail_blend", boundary_plan))
 
     rows: list[dict[str, Any]] = []
     costs: dict[str, Any] = {}
     for plan_name, risk_source, plan in plans:
-        rows.extend(describe_plan_rows(plan_name, risk_source, plan, global_vector, residual_vector))
+        rows.extend(describe_plan_rows(plan_name, risk_source, plan, global_vector, residual_vector, boundary_vector))
         used_bits = plan_used_bits(plan, num_bit_factors)
         costs[plan_name] = {
             "plan": format_plan(plan),
@@ -423,6 +559,8 @@ def main() -> int:
             "effective_avg_bits_including_overhead": float(used_bits / padded_dim),
             "global_cost": plan_cost(plan, global_vector),
             "residual_cost": plan_cost(plan, residual_vector),
+            "boundary_cost": plan_cost(plan, boundary_vector, boundary_segment_penalty),
+            "boundary_cost_without_segment_penalty": plan_cost(plan, boundary_vector),
         }
 
     write_plan_csv(rows, args.output)
@@ -430,6 +568,7 @@ def main() -> int:
     default_key = "default_saq" if default_plan is not None else "global_dp_reimpl"
     default_residual_cost = costs[default_key]["residual_cost"]
     residual_cost = costs["residual_dp"]["residual_cost"]
+    boundary_cost = costs["boundary_dp"]["boundary_cost"]
     default_global_cost = costs[default_key]["global_cost"]
     residual_global_cost = costs["residual_dp"]["global_cost"]
 
@@ -453,6 +592,10 @@ def main() -> int:
         "residual_summary": residual_summary,
         "global_dp_meta": global_dp_meta,
         "residual_dp_meta": residual_dp_meta,
+        "boundary_dp_meta": boundary_dp_meta,
+        "boundary_meta": boundary_meta,
+        "boundary_tail_summary": tail_summary,
+        "boundary_segment_penalty": float(boundary_segment_penalty),
         "default_plan_csv": str(args.default_plan_csv) if args.default_plan_csv else None,
         "default_matches_global_dp_reimpl": (
             plan_signature(default_plan) == plan_signature(global_plan) if default_plan is not None else None
@@ -463,6 +606,11 @@ def main() -> int:
         ),
         "global_cost_change_vs_default": (
             residual_global_cost / default_global_cost - 1.0 if default_global_cost > 0 else 0.0
+        ),
+        "boundary_cost_reduction_vs_default": (
+            1.0 - boundary_cost / costs[default_key]["boundary_cost"]
+            if costs[default_key]["boundary_cost"] > 0
+            else 0.0
         ),
         "global_vs_residual_share_total_variation": share_tv,
         "global_vs_residual_vector_pearson": pearson,
