@@ -14,6 +14,7 @@ docs/audio_quant_plan_probe_2026_07_02.md
 docs/saq_query_unaware_pivot_2026_07_02.md
 docs/saq_paper_code_alignment_2026_07_02.md
 docs/saq_segment_diagnostic_2026_07_02.md
+docs/saq_gist_higher_dim_segment_diagnostic_2026_07_02.md
 ```
 
 The revised conclusion is:
@@ -152,6 +153,17 @@ Why this matters:
 
 This is likely a stronger systems direction later, but it is a larger project
 than the immediate query-unaware SAQ audit.
+
+### 2.5 Higher-Dimensional Segment Diagnostic Update
+
+The GIST sampled diagnostic adds a stronger P0 signal than `audio` because the
+default SAQ planner creates multiple segments on `D=960`. The main observation
+is that global PCA variance overweights the first 64 dimensions relative to IVF
+residuals, while the first post-head block carries substantially more local
+residual share than its global variance share suggests.
+
+This keeps `cluster-aware` or `residual-aware` SAQ as the highest-priority
+query-unaware direction.
 
 ## 3. Diagnostic-Only Directions
 

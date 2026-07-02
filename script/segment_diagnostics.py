@@ -195,10 +195,10 @@ def compute_cluster_diagnostics(
         "min_cluster_size": int(min_cluster_size),
         "base_count": int(base.shape[0]),
         "dimension": int(base.shape[1]),
-        "cluster_size_min": int(cluster_sizes.min(initial=0)),
-        "cluster_size_p50": float(np.percentile(cluster_sizes, 50)),
-        "cluster_size_p90": float(np.percentile(cluster_sizes, 90)),
-        "cluster_size_max": int(cluster_sizes.max(initial=0)),
+        "cluster_size_min": int(cluster_sizes.min()) if cluster_sizes.size else 0,
+        "cluster_size_p50": float(np.percentile(cluster_sizes, 50)) if cluster_sizes.size else 0.0,
+        "cluster_size_p90": float(np.percentile(cluster_sizes, 90)) if cluster_sizes.size else 0.0,
+        "cluster_size_max": int(cluster_sizes.max()) if cluster_sizes.size else 0,
     }
     return rows, summary
 

@@ -174,3 +174,16 @@ The next concrete step should be one of:
 
 Do not switch back to query-aware allocation unless the advisor explicitly
 reopens that setting.
+
+## 7. Follow-Up: GIST Higher-Dimensional Smoke Run
+
+The higher-dimensional follow-up is recorded in:
+
+```text
+docs/saq_gist_higher_dim_segment_diagnostic_2026_07_02.md
+```
+
+The GIST sampled run uses `N=100,000`, `D=960`, `K=512` and shows the same
+query-unaware mismatch with non-trivial default SAQ plans: the `0-64` head has
+77.7% global PCA variance but only 62.9% weighted cluster-local residual share,
+while `64-256` has 16.0% global variance but 27.0% weighted residual share.

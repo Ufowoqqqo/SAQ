@@ -7,6 +7,7 @@ Related notes:
 ```text
 docs/saq_paper_code_alignment_2026_07_02.md
 docs/saq_segment_diagnostic_2026_07_02.md
+docs/saq_gist_higher_dim_segment_diagnostic_2026_07_02.md
 ```
 
 This note records the advisor feedback after the SAQ pivot:
@@ -183,3 +184,16 @@ within_segment_top_dim_share
 
 Held-out query recall should be reported only after the data-only plan or audit
 signal is defined.
+
+## 6. Higher-Dimensional Diagnostic Update
+
+The GIST sampled diagnostic strengthens the P0 audit signal without introducing
+query-aware assumptions. On `gist_sample100k` (`D=960`, `K=512`), SAQ's default
+plans allocate many bits to the `0-64` head because it has 77.7% global PCA
+variance, but that head carries only 62.9% weighted cluster-local residual
+share. The first post-head segment, `64-256`, has 16.0% global variance but
+27.0% weighted residual share.
+
+This supports the revised query-unaware hypothesis: after IVF clustering, the
+residual distribution can shift away from the global PCA variance profile used
+by SAQ's dynamic planner.
