@@ -8,6 +8,7 @@ Related notes:
 docs/saq_paper_code_alignment_2026_07_02.md
 docs/saq_segment_diagnostic_2026_07_02.md
 docs/saq_gist_higher_dim_segment_diagnostic_2026_07_02.md
+docs/saq_residual_aware_dp_prototype_2026_07_02.md
 ```
 
 This note records the advisor feedback after the SAQ pivot:
@@ -197,3 +198,19 @@ share. The first post-head segment, `64-256`, has 16.0% global variance but
 This supports the revised query-unaware hypothesis: after IVF clustering, the
 residual distribution can shift away from the global PCA variance profile used
 by SAQ's dynamic planner.
+
+## 7. Residual-Aware DP Prototype Update
+
+The offline residual-aware DP prototype is now implemented in:
+
+```text
+script/propose_residual_plan.py
+```
+
+On GIST sampled B=3/4, it produces plans that differ from SAQ default under the
+same budget and segment-overhead constraints, reducing the pooled residual DP
+cost by 2.38% and 3.38% respectively. On audio, it cannot change the plan under
+SAQ's current segment-count constraints.
+
+The next implementation step is a custom-plan injection path for `create_index`,
+so the residual-aware plan can be encoded and evaluated end to end.

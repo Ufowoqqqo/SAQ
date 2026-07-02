@@ -15,6 +15,7 @@ docs/saq_query_unaware_pivot_2026_07_02.md
 docs/saq_paper_code_alignment_2026_07_02.md
 docs/saq_segment_diagnostic_2026_07_02.md
 docs/saq_gist_higher_dim_segment_diagnostic_2026_07_02.md
+docs/saq_residual_aware_dp_prototype_2026_07_02.md
 ```
 
 The revised conclusion is:
@@ -261,22 +262,20 @@ SAQ reproduction and P0/P1 audit are stable.
 
 ## 5. Immediate Next Experiment
 
-Because audio B=2/4 default SAQ is a single segment, the next useful experiment
-should be one of these:
+The original immediate diagnostic sequence is now complete:
 
-1. `audio`, B=1, default SAQ, use its two segments only as a plumbing sanity
-   case for data-only segment diagnostics.
-2. `audio`, B=2/4, force equal segmentation with `-seg_eqseg`, then check
-   whether segment-level local residual share differs from global variance
-   share.
-3. Move to a higher-dimensional dataset where SAQ's default DP creates multiple
-   segments at normal bit budgets.
+1. `audio` validated the segment diagnostic pipeline.
+2. GIST sampled provided a higher-dimensional multi-segment signal.
+3. `script/propose_residual_plan.py` showed that a residual-aware DP objective can
+   generate different plans under the same SAQ budget model.
 
-The fastest next step is option 1, because the quant plan already exists:
+The next useful experiment is no longer another offline table. It should be:
 
 ```text
-B=1: 0 -> 64 (64d 3b); 64 -> 192 (128d 0b)
+custom-plan injection for create_index, followed by relative-error / recall
+comparison between SAQ default and residual-aware plans.
 ```
 
-This gives a minimal end-to-end test of the segment diagnostic pipeline before
-spending time on larger datasets.
+Start with GIST sampled B=3/4 because the offline residual cost reductions were
+largest there. Full official GIST/K4096 reproduction remains necessary before
+strong claims, but it should not block this implementation step.

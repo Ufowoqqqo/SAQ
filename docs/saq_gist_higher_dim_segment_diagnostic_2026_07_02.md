@@ -242,10 +242,20 @@ that the result is not tied to the fallback K512 sampled setup.
 
 ## 8. Immediate Next Steps
 
-1. Reproduce this diagnostic on official SAQ-preprocessed GIST if faiss is
+Priority clarification after the residual-aware discussion:
+
+1. Prototype residual-aware DP offline first, comparing its proposed plan against
+   SAQ's default plan before changing encoding/search. This is now recorded in:
+
+   ```text
+   docs/saq_residual_aware_dp_prototype_2026_07_02.md
+   ```
+
+2. Add a minimal custom-plan injection path so the residual-aware plan can be
+   encoded and evaluated against SAQ default on relative error / recall.
+3. Reproduce the diagnostic on official SAQ-preprocessed GIST if faiss is
    available, or install/build the missing preprocessing dependency in a clean
-   environment.
-2. Investigate the B=3 `create_index` segmentation fault because odd average bit
-   budgets may be useful for plan sweeps.
-3. Prototype a residual-aware DP cost as an offline diagnostic first, comparing
-   its proposed plan against SAQ's default plan before changing encoding/search.
+   environment. This is required before making a strong research claim, but it
+   does not need to block the offline/custom-plan prototype.
+4. Investigate the B=3 `create_index` segmentation fault if it blocks useful
+   odd-bit sweeps.
