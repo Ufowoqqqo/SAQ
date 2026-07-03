@@ -61,6 +61,7 @@ def float_label(value: float) -> str:
 def plan_metrics(plan: list[dict[str, int]]) -> dict[str, Any]:
     nonzero = [seg for seg in plan if int(seg["bits"]) > 0]
     largest = max(nonzero or plan, key=lambda seg: int(seg["dim_len"]))
+    positive_bits = [int(seg["bits"]) for seg in nonzero]
     zero_tail = 0
     if plan and int(plan[-1]["bits"]) == 0:
         zero_tail = int(plan[-1]["dim_len"])
@@ -70,7 +71,16 @@ def plan_metrics(plan: list[dict[str, int]]) -> dict[str, Any]:
         "max_segment_dim_len": int(max(int(seg["dim_len"]) for seg in plan)),
         "max_nonzero_segment_dim_len": int(max(int(seg["dim_len"]) for seg in nonzero)) if nonzero else 0,
         "largest_nonzero_segment": f"{largest['start_dim']}-{largest['end_dim']}:{largest['bits']}b",
+        "positive_bitwidths": ";".join(str(bit) for bit in positive_bits),
+        "min_positive_bits": int(min(positive_bits)) if positive_bits else 0,
         "zero_tail_dim_len": int(zero_tail),
+        "has_positive_1bit_segment": any(bit == 1 for bit in positive_bits),
+        "has_internal_1bit_segment": any(
+            int(seg["bits"]) == 1 and 0 < idx < len(plan) - 1 for idx, seg in enumerate(plan)
+        ),
+        "has_nonfinal_1bit_segment": any(
+            int(seg["bits"]) == 1 and idx < len(plan) - 1 for idx, seg in enumerate(plan)
+        ),
         "has_128_512_segment": any(
             int(seg["start_dim"]) == 128 and int(seg["end_dim"]) == 512 for seg in plan
         ),
@@ -79,6 +89,25 @@ def plan_metrics(plan: list[dict[str, int]]) -> dict[str, Any]:
             for seg in plan
         ),
     }
+
+
+def plan_feasibility_reasons(metrics: dict[str, Any], args: argparse.Namespace) -> list[str]:
+    reasons: list[str] = []
+    if args.min_positive_bits > 0 and int(metrics["min_positive_bits"]) < args.min_positive_bits:
+        reasons.append(f"min_positive_bits<{args.min_positive_bits}")
+    if args.min_zero_tail_dim > 0:
+        zero_tail = int(metrics["zero_tail_dim_len"])
+        if 0 < zero_tail < args.min_zero_tail_dim:
+            reasons.append(f"zero_tail_dim_len<{args.min_zero_tail_dim}")
+    if args.max_segments > 0 and int(metrics["segment_count"]) > args.max_segments:
+        reasons.append(f"segment_count>{args.max_segments}")
+    if args.max_nonzero_segment_dim > 0 and int(metrics["max_nonzero_segment_dim_len"]) > args.max_nonzero_segment_dim:
+        reasons.append(f"max_nonzero_segment_dim_len>{args.max_nonzero_segment_dim}")
+    if args.exclude_internal_1bit and bool(metrics["has_internal_1bit_segment"]):
+        reasons.append("internal_1bit_segment")
+    if args.exclude_nonfinal_1bit and bool(metrics["has_nonfinal_1bit_segment"]):
+        reasons.append("nonfinal_1bit_segment")
+    return reasons
 
 
 def write_csv(path: Path, rows: list[dict[str, Any]], fields: list[str]) -> None:
@@ -109,6 +138,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--boundary-tail-alphas", default=DEFAULT_TAIL_ALPHAS, help="Comma-separated tail alpha grid.")
     parser.add_argument("--segment-penalty-scales", default=DEFAULT_SEGMENT_PENALTY_SCALES, help="Comma-separated segment penalty scale grid.")
     parser.add_argument("--intra-segment-penalty-scales", default=DEFAULT_INTRA_SEGMENT_PENALTY_SCALES, help="Comma-separated intra-segment penalty scale grid.")
+    parser.add_argument("--min-positive-bits", type=int, default=0, help="Guard: require every positive-bit segment to use at least this many bits; 0 disables.")
+    parser.add_argument("--min-zero-tail-dim", type=int, default=0, help="Guard: reject nonempty zero-bit tails shorter than this many dimensions; 0 disables.")
+    parser.add_argument("--max-segments", type=int, default=0, help="Guard: reject plans with more than this many segments; 0 disables.")
+    parser.add_argument("--max-nonzero-segment-dim", type=int, default=0, help="Guard: reject plans whose widest positive-bit segment exceeds this width; 0 disables.")
+    parser.add_argument("--exclude-internal-1bit", action="store_true", help="Guard: reject plans with a 1-bit segment that is neither first nor last.")
+    parser.add_argument("--exclude-nonfinal-1bit", action="store_true", help="Guard: reject plans with a 1-bit segment before the final segment.")
+    parser.add_argument("--filter-infeasible", action="store_true", help="Write only feasible rows/unique plans under the enabled guards.")
     parser.add_argument("--chunk-rows", type=int, default=2048, help="Rows per residual accumulation chunk.")
     parser.add_argument("--output-prefix", type=Path, required=True, help="Prefix for .csv, .unique.csv, and .summary.json outputs.")
     return parser.parse_args()
@@ -201,6 +237,7 @@ def main() -> int:
                     reduction = 1.0 - candidate_cost / default_cost if default_cost > 0 else 0.0
                     sig = compact_seg_plan(plan)
                     metrics = plan_metrics(plan)
+                    infeasible_reasons = plan_feasibility_reasons(metrics, args)
                     row = {
                         "config_id": config_id,
                         "boundary_global_blend": float(global_blend),
@@ -224,12 +261,27 @@ def main() -> int:
                         "residual_sum": float(boundary_meta["residual_sum"]),
                         "tail_norm_sum": float(boundary_meta["tail_norm_sum"]),
                         **metrics,
+                        "is_feasible": not infeasible_reasons,
+                        "infeasible_reasons": ";".join(infeasible_reasons),
                     }
                     rows.append(row)
                     groups[sig].append(row)
                     config_id += 1
 
+    all_rows = rows
+    all_groups = groups
+    feasible_rows = [row for row in all_rows if row["is_feasible"]]
+    if args.filter_infeasible:
+        rows = feasible_rows
+        groups = defaultdict(list)
+        for row in rows:
+            groups[row["seg_plan"]].append(row)
+
     rows.sort(key=lambda row: (-row["boundary_cost_reduction_vs_default"], row["boundary_cost"], row["seg_plan"]))
+    all_rows_by_reduction = sorted(
+        all_rows,
+        key=lambda row: (-row["boundary_cost_reduction_vs_default"], row["boundary_cost"], row["seg_plan"]),
+    )
 
     unique_rows: list[dict[str, Any]] = []
     for plan_id, (seg_plan, group_rows) in enumerate(
@@ -252,9 +304,16 @@ def main() -> int:
                 "max_segment_dim_len": best["max_segment_dim_len"],
                 "max_nonzero_segment_dim_len": best["max_nonzero_segment_dim_len"],
                 "largest_nonzero_segment": best["largest_nonzero_segment"],
+                "positive_bitwidths": best["positive_bitwidths"],
+                "min_positive_bits": best["min_positive_bits"],
                 "zero_tail_dim_len": best["zero_tail_dim_len"],
+                "has_positive_1bit_segment": best["has_positive_1bit_segment"],
+                "has_internal_1bit_segment": best["has_internal_1bit_segment"],
+                "has_nonfinal_1bit_segment": best["has_nonfinal_1bit_segment"],
                 "has_128_512_segment": best["has_128_512_segment"],
                 "has_wide_128_512_5bit": best["has_wide_128_512_5bit"],
+                "is_feasible": best["is_feasible"],
+                "infeasible_reasons": best["infeasible_reasons"],
                 "global_blends": ";".join(sorted({float_label(row["boundary_global_blend"]) for row in group_rows})),
                 "tail_alphas": ";".join(sorted({float_label(row["boundary_tail_alpha"]) for row in group_rows})),
                 "segment_penalty_scales": ";".join(sorted({float_label(row["segment_penalty_scale"]) for row in group_rows})),
@@ -304,9 +363,16 @@ def main() -> int:
         "max_segment_dim_len",
         "max_nonzero_segment_dim_len",
         "largest_nonzero_segment",
+        "positive_bitwidths",
+        "min_positive_bits",
         "zero_tail_dim_len",
+        "has_positive_1bit_segment",
+        "has_internal_1bit_segment",
+        "has_nonfinal_1bit_segment",
         "has_128_512_segment",
         "has_wide_128_512_5bit",
+        "is_feasible",
+        "infeasible_reasons",
     ]
     unique_fields = [
         "plan_rank",
@@ -323,9 +389,16 @@ def main() -> int:
         "max_segment_dim_len",
         "max_nonzero_segment_dim_len",
         "largest_nonzero_segment",
+        "positive_bitwidths",
+        "min_positive_bits",
         "zero_tail_dim_len",
+        "has_positive_1bit_segment",
+        "has_internal_1bit_segment",
+        "has_nonfinal_1bit_segment",
         "has_128_512_segment",
         "has_wide_128_512_5bit",
+        "is_feasible",
+        "infeasible_reasons",
         "global_blends",
         "tail_alphas",
         "segment_penalty_scales",
@@ -362,9 +435,25 @@ def main() -> int:
             "meta": residual_dp_meta,
         },
         "default_plan": compact_seg_plan(default_plan) if default_plan is not None else None,
+        "feasibility_guard": {
+            "min_positive_bits": int(args.min_positive_bits),
+            "min_zero_tail_dim": int(args.min_zero_tail_dim),
+            "max_segments": int(args.max_segments),
+            "max_nonzero_segment_dim": int(args.max_nonzero_segment_dim),
+            "exclude_internal_1bit": bool(args.exclude_internal_1bit),
+            "exclude_nonfinal_1bit": bool(args.exclude_nonfinal_1bit),
+            "filter_infeasible": bool(args.filter_infeasible),
+        },
+        "all_config_count": len(all_rows),
+        "feasible_config_count": len(feasible_rows),
+        "infeasible_config_count": len(all_rows) - len(feasible_rows),
+        "selected_config_count": len(rows),
+        "all_unique_plan_count": len(all_groups),
+        "feasible_unique_plan_count": len({row["seg_plan"] for row in feasible_rows}),
         "unique_plan_count": len(unique_rows),
         "top_unique_by_frequency": unique_rows[:20],
         "top_configs_by_reduction": rows[:20],
+        "top_all_configs_by_reduction": all_rows_by_reduction[:20],
         "outputs": {
             "config_csv": str(output_csv),
             "unique_csv": str(unique_csv),
@@ -375,8 +464,12 @@ def main() -> int:
     summary_json.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
 
     print(json.dumps({
-        "configs": len(rows),
-        "unique_plans": len(unique_rows),
+        "all_configs": len(all_rows),
+        "feasible_configs": len(feasible_rows),
+        "selected_configs": len(rows),
+        "all_unique_plans": len(all_groups),
+        "selected_unique_plans": len(unique_rows),
+        "filter_infeasible": bool(args.filter_infeasible),
         "config_csv": str(output_csv),
         "unique_csv": str(unique_csv),
         "summary_json": str(summary_json),

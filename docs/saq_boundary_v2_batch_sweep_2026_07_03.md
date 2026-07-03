@@ -175,3 +175,124 @@ Before expanding to more datasets or larger grids, the next implementation step 
 4. Evaluate the best remaining feasible candidates against `v2_split64` rather than chasing objective reduction alone.
 
 This keeps the next search query-unaware and aligned with the current SAQ follow-up direction.
+
+## 9. Feasibility Guard Implementation
+
+The next step from Section 8 has now been implemented in `script/sweep_boundary_plan.py`.
+
+The driver now emits plan-shape diagnostics for every candidate:
+
+```text
+positive_bitwidths
+min_positive_bits
+has_positive_1bit_segment
+has_internal_1bit_segment
+has_nonfinal_1bit_segment
+zero_tail_dim_len
+is_feasible
+infeasible_reasons
+```
+
+New guard knobs:
+
+```text
+--min-positive-bits
+--min-zero-tail-dim
+--max-segments
+--max-nonzero-segment-dim
+--exclude-internal-1bit
+--exclude-nonfinal-1bit
+--filter-infeasible
+```
+
+By default, the driver remains backward-compatible: if no guard is enabled and `--filter-infeasible` is not set, it still writes the full sweep. With guards enabled, every row is annotated. With `--filter-infeasible`, the main CSV, unique CSV, and top-summary lists contain only feasible plans.
+
+## 10. Filtered Sweep
+
+Filtered command:
+
+```bash
+python script/sweep_boundary_plan.py \
+  --data-dir /tmp/saq-run/data/gist_sample100k \
+  --dataset gist_sample100k \
+  --k 512 \
+  --avg-bits 4 \
+  --min-positive-bits 2 \
+  --min-zero-tail-dim 128 \
+  --max-segments 6 \
+  --max-nonzero-segment-dim 384 \
+  --exclude-nonfinal-1bit \
+  --filter-infeasible \
+  --output-prefix /tmp/saq-run/reports/gist_sample100k_K512_B4_boundary_v2_filtered_sweep_2026_07_03
+```
+
+Guard policy:
+
+| guard | value | purpose |
+|---|---:|---|
+| minimum positive bitwidth | 2 | remove the risky non-final 1-bit segment pattern |
+| minimum nonempty zero tail | 128 dims | remove 64-dim zero-tail plans seen in unstable high-reduction candidates |
+| maximum segments | 6 | remove overly fragmented 7-segment plans |
+| maximum positive segment width | 384 dims | remove very broad 448-dim positive segments |
+| exclude non-final 1-bit | true | explicitly remove the rank-3 failure shape |
+
+Raw local outputs:
+
+```text
+/tmp/saq-run/reports/gist_sample100k_K512_B4_boundary_v2_filtered_sweep_2026_07_03.csv
+/tmp/saq-run/reports/gist_sample100k_K512_B4_boundary_v2_filtered_sweep_2026_07_03.unique.csv
+/tmp/saq-run/reports/gist_sample100k_K512_B4_boundary_v2_filtered_sweep_2026_07_03.summary.json
+```
+
+Filtered summary:
+
+| metric | value |
+|---|---:|
+| all configs | 560 |
+| feasible configs | 382 |
+| infeasible configs | 178 |
+| all unique plans | 14 |
+| feasible unique plans | 6 |
+| selected unique plans | 6 |
+
+Retained unique plans:
+
+| rank | configs | plan | max nonzero segment | objective reduction | prior status |
+|---:|---:|---|---:|---:|---|
+| 0 | 134 | `64:9,64:7,128:6,320:4,256:2,128:0` | 320 | 0.092336 | `v2_split64`; best evaluated automatic candidate |
+| 1 | 121 | `128:9,384:5,320:2,128:0` | 384 | 0.066049 | `boundary_4seg`; known wide `128-512` issue |
+| 2 | 68 | `64:8,192:7,320:4,256:2,128:0` | 320 | 0.066803 | evaluated as `sweep_rank2`; weaker |
+| 3 | 30 | `64:9,256:6,256:4,256:2,128:0` | 256 | 0.033804 | residual-style candidate |
+| 4 | 22 | `64:10,192:7,256:4,320:2,128:0` | 320 | 0.032904 | `v2_mid`; lower error but weaker recall |
+| 5 | 7 | `64:10,320:6,384:3,192:0` | 384 | 0.061480 | retained new feasible candidate; not yet recall-evaluated |
+
+Filtered-out unique plans:
+
+| original rank | configs | plan | reasons |
+|---:|---:|---|---|
+| 3 | 60 | `64:9,64:7,128:6,192:4,256:3,192:1,64:0` | `min_positive_bits<2`; `zero_tail_dim_len<128`; `segment_count>6`; `nonfinal_1bit_segment` |
+| 4 | 33 | `192:8,320:4,448:2` | `max_nonzero_segment_dim_len>384` |
+| 6 | 29 | `64:8,64:6,128:6,192:4,192:3,256:2,64:0` | `zero_tail_dim_len<128`; `segment_count>6` |
+| 7 | 22 | `64:9,192:6,256:4,448:2` | `max_nonzero_segment_dim_len>384` |
+| 9 | 21 | `64:8,64:6,128:6,320:4,320:2,64:0` | `zero_tail_dim_len<128` |
+| 11 | 6 | `64:9,64:6,64:5,192:5,256:3,256:2,64:0` | `zero_tail_dim_len<128`; `segment_count>6` |
+| 12 | 4 | `64:9,192:6,320:4,320:2,64:0` | `zero_tail_dim_len<128` |
+| 13 | 3 | `64:8,192:7,256:4,384:2,64:0` | `zero_tail_dim_len<128` |
+
+## 11. Updated Decision
+
+The filtered sweep strengthens the previous decision rather than changing it:
+
+```text
+v2_split64 remains the best current automatic planner candidate.
+```
+
+The new guard is useful because it removes the exact type of high-objective but risky plan that caused the `create_index` failure, while preserving `v2_split64` and the other already evaluated feasible baselines.
+
+The only retained candidate not yet recall-evaluated is:
+
+```text
+64:10,320:6,384:3,192:0
+```
+
+It appears in only 7 configs, but it has a moderate objective reduction and passes the conservative shape guard. The next experimental step should be to build/evaluate this one retained new plan, then decide whether to expand the filtered sweep to other B values or datasets.
