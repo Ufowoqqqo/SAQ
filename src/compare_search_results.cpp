@@ -144,6 +144,7 @@ int main(int argc, char *argv[]) {
     searcher_cfg.searcher_vars_bound_m = FLAGS_searcher_vars_bound_m;
     searcher_cfg.searcher_full_refine = FLAGS_searcher_full_refine;
     searcher_cfg.searcher_force_accurate_scan = FLAGS_searcher_force_accurate_scan;
+    searcher_cfg.searcher_safe_block_min = FLAGS_searcher_safe_block_min;
 
     const std::string custom_plan = FLAGS_seg_plan;
     const std::string default_args = make_args_for_plan("");

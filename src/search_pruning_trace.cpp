@@ -342,12 +342,15 @@ class SearchPruningTracer : public SaqCluEstimator<DistType::Any> {
     static constexpr size_t FAST_ARRAY = KFastScanSize / 16;
 
     const bool full_refine_;
+    const bool safe_block_min_;
     float *clu_dist_ = nullptr;
     __m512 *clu_dist512_ = nullptr;
 
   public:
     SearchPruningTracer(const SaqData &data, const SearcherConfig &searcher_cfg, const FloatVec &query)
-        : Base(data, searcher_cfg, query), full_refine_(searcher_cfg.searcher_full_refine) {
+        : Base(data, searcher_cfg, query),
+          full_refine_(searcher_cfg.searcher_full_refine),
+          safe_block_min_(searcher_cfg.searcher_safe_block_min) {
         const auto clus_num = data.base_datas.size();
         clu_dist_ = memory::align_mm<64, float>(clus_num * KFastScanSize);
         clu_dist512_ = memory::align_mm<64, __m512>(clus_num * FAST_ARRAY);
@@ -356,6 +359,56 @@ class SearchPruningTracer : public SaqCluEstimator<DistType::Any> {
     ~SearchPruningTracer() override {
         std::free(clu_dist512_);
         std::free(clu_dist_);
+    }
+
+    struct BlockMinStats {
+        float scalar_min = std::numeric_limits<float>::max();
+        int nonfinite_count = 0;
+        int first_nonfinite_pos = -1;
+        int64_t first_nonfinite_pid = -1;
+    };
+
+    BlockMinStats inspectBlock(const __m512 *dist,
+                               size_t valid_lanes,
+                               size_t blk_begin,
+                               const SaqCluData *saq_clust,
+                               float *scratch) const {
+        _mm512_store_ps(scratch, dist[0]);
+        _mm512_store_ps(scratch + 16, dist[1]);
+        uint32_t PORTABLE_ALIGN64 bits[KFastScanSize];
+        _mm512_store_si512(reinterpret_cast<__m512i *>(bits), _mm512_castps_si512(dist[0]));
+        _mm512_store_si512(reinterpret_cast<__m512i *>(bits + 16), _mm512_castps_si512(dist[1]));
+
+        BlockMinStats stats;
+        for (size_t lane = 0; lane < valid_lanes; ++lane) {
+            if (!raw_bits_are_finite(bits[lane])) {
+                if (stats.first_nonfinite_pos < 0) {
+                    stats.first_nonfinite_pos = static_cast<int>(lane);
+                    stats.first_nonfinite_pid = static_cast<int64_t>(saq_clust->ids()[blk_begin + lane]);
+                }
+                stats.nonfinite_count += 1;
+            } else if (scratch[lane] < stats.scalar_min) {
+                stats.scalar_min = scratch[lane];
+            }
+        }
+        return stats;
+    }
+
+    float blockMin(const __m512 *dist,
+                   size_t valid_lanes,
+                   size_t blk_begin,
+                   const SaqCluData *saq_clust,
+                   float *scratch,
+                   BlockMinStats *stats_out = nullptr) const {
+        if (!safe_block_min_ && stats_out == nullptr) {
+            return _mm512_reduce_min_ps(_mm512_min_ps(dist[0], dist[1]));
+        }
+
+        BlockMinStats stats = inspectBlock(dist, valid_lanes, blk_begin, saq_clust, scratch);
+        if (stats_out != nullptr) {
+            *stats_out = stats;
+        }
+        return safe_block_min_ ? stats.scalar_min : _mm512_reduce_min_ps(_mm512_min_ps(dist[0], dist[1]));
     }
 
     void traceCluster(const SaqCluData *saq_clust,
@@ -377,6 +430,7 @@ class SearchPruningTracer : public SaqCluEstimator<DistType::Any> {
             curr_dist512[0] = _mm512_setzero_ps();
             curr_dist512[1] = _mm512_setzero_ps();
             const auto blk_begin = blk_idx * KFastScanSize;
+            const auto valid_lanes = std::min(KFastScanSize, num_points - blk_begin);
             float distk = KNNs.distk();
             float mi = std::numeric_limits<float>::max();
 
@@ -401,10 +455,10 @@ class SearchPruningTracer : public SaqCluEstimator<DistType::Any> {
                 curr_dist512[0] = _mm512_add_ps(curr_dist512[0], cd[0]);
                 curr_dist512[1] = _mm512_add_ps(curr_dist512[1], cd[1]);
             }
-            mi = _mm512_reduce_min_ps(_mm512_min_ps(curr_dist512[0], curr_dist512[1]));
+            BlockMinStats variance_stats;
+            mi = blockMin(curr_dist512, valid_lanes, blk_begin, saq_clust, curr_dist,
+                          block_targets.empty() ? nullptr : &variance_stats);
             if (!block_targets.empty()) {
-                _mm512_store_ps(curr_dist, curr_dist512[0]);
-                _mm512_store_ps(curr_dist + 16, curr_dist512[1]);
                 for (auto *row : block_targets) {
                     row->variance_mi = mi;
                     row->variance_target = curr_dist[row->block_pos];
@@ -434,39 +488,18 @@ class SearchPruningTracer : public SaqCluEstimator<DistType::Any> {
                 curr_dist512[0] = _mm512_add_ps(curr_dist512[0], cd[0]);
                 curr_dist512[1] = _mm512_add_ps(curr_dist512[1], cd[1]);
 
-                mi = _mm512_reduce_min_ps(_mm512_min_ps(curr_dist512[0], curr_dist512[1]));
+                BlockMinStats fast_stats;
+                mi = blockMin(curr_dist512, valid_lanes, blk_begin, saq_clust, curr_dist,
+                              block_targets.empty() ? nullptr : &fast_stats);
                 if (!block_targets.empty()) {
-                    _mm512_store_ps(curr_dist, curr_dist512[0]);
-                    _mm512_store_ps(curr_dist + 16, curr_dist512[1]);
-                    uint32_t PORTABLE_ALIGN64 curr_bits[KFastScanSize];
-                    _mm512_store_si512(reinterpret_cast<__m512i *>(curr_bits),
-                                       _mm512_castps_si512(curr_dist512[0]));
-                    _mm512_store_si512(reinterpret_cast<__m512i *>(curr_bits + 16),
-                                       _mm512_castps_si512(curr_dist512[1]));
-                    int nonfinite_count = 0;
-                    int first_nonfinite_pos = -1;
-                    int64_t first_nonfinite_pid = -1;
-                    float scalar_min = std::numeric_limits<float>::max();
-                    const size_t valid_lanes = std::min(KFastScanSize, num_points - blk_begin);
-                    for (size_t lane = 0; lane < valid_lanes; ++lane) {
-                        if (!raw_bits_are_finite(curr_bits[lane])) {
-                            if (first_nonfinite_pos < 0) {
-                                first_nonfinite_pos = static_cast<int>(lane);
-                                first_nonfinite_pid = static_cast<int64_t>(saq_clust->ids()[blk_begin + lane]);
-                            }
-                            nonfinite_count += 1;
-                        } else {
-                            scalar_min = std::min(scalar_min, curr_dist[lane]);
-                        }
-                    }
                     for (auto *row : block_targets) {
                         row->fast_break_segment = static_cast<int>(c_i);
                         row->fast_mi = mi;
-                        row->fast_scalar_min = scalar_min;
+                        row->fast_scalar_min = fast_stats.scalar_min;
                         row->fast_target = curr_dist[row->block_pos];
-                        row->fast_nonfinite_count = nonfinite_count;
-                        row->fast_first_nonfinite_pos = first_nonfinite_pos;
-                        row->fast_first_nonfinite_pid = first_nonfinite_pid;
+                        row->fast_nonfinite_count = fast_stats.nonfinite_count;
+                        row->fast_first_nonfinite_pos = fast_stats.first_nonfinite_pos;
+                        row->fast_first_nonfinite_pid = fast_stats.first_nonfinite_pid;
                     }
                 }
                 if (mi > distk) {
@@ -720,6 +753,7 @@ int main(int argc, char *argv[]) {
     searcher_cfg.searcher_vars_bound_m = FLAGS_searcher_vars_bound_m;
     searcher_cfg.searcher_full_refine = FLAGS_searcher_full_refine;
     searcher_cfg.searcher_force_accurate_scan = FLAGS_searcher_force_accurate_scan;
+    searcher_cfg.searcher_safe_block_min = FLAGS_searcher_safe_block_min;
 
     const std::string custom_plan = FLAGS_seg_plan;
     const std::string default_args = make_args_for_plan("");

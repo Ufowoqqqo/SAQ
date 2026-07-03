@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <bit>
 #include <cstring>
 #include <immintrin.h>
@@ -27,6 +28,7 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
     __m512 *clu_dist512_;
     const bool full_refine_;
     const bool force_accurate_scan_;
+    const bool safe_block_min_;
     QueryRuntimeMetrics runtime_metrics_;
 
   public:
@@ -42,7 +44,8 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
     SAQSearcher(const SaqData &data, const SearcherConfig &searcher_cfg, const Eigen::RowVectorXf &query)
         : SaqCluEstimator<kDistType>(data, searcher_cfg, query),
           full_refine_(searcher_cfg.searcher_full_refine),
-          force_accurate_scan_(searcher_cfg.searcher_force_accurate_scan) {
+          force_accurate_scan_(searcher_cfg.searcher_force_accurate_scan),
+          safe_block_min_(searcher_cfg.searcher_safe_block_min) {
         CHECK(kDistType == DistType::Any || kDistType == searcher_cfg.dist_type) << "distance type mismatch";
         auto clus_num = data.base_datas.size();
         clu_dist_ = memory::align_mm<64, float>(clus_num * KFastScanSize);
@@ -98,6 +101,7 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
             curr_dist512[1] = _mm512_setzero_ps();
 
             const auto blk_begin = blk_idx * KFastScanSize;
+            const auto curr_num_points = std::min(KFastScanSize, num_points - blk_begin);
             float mi = std::numeric_limits<float>::max();
 
             // 1. computes distance estimates using variance information for early pruning.
@@ -111,7 +115,7 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
                     curr_dist512[1] = _mm512_add_ps(curr_dist512[1], cd[1]);
                 }
 
-                mi = _mm512_reduce_min_ps(_mm512_min_ps(curr_dist512[0], curr_dist512[1]));
+                mi = blockMin(curr_dist512, curr_num_points, curr_dist);
                 if (mi > distk) {
                     continue;
                 }
@@ -134,7 +138,7 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
                 curr_dist512[0] = _mm512_add_ps(curr_dist512[0], cd[0]);
                 curr_dist512[1] = _mm512_add_ps(curr_dist512[1], cd[1]);
 
-                mi = _mm512_reduce_min_ps(_mm512_min_ps(curr_dist512[0], curr_dist512[1]));
+                mi = blockMin(curr_dist512, curr_num_points, curr_dist);
                 if (mi > distk) {
                     break;
                 }
@@ -182,6 +186,28 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
     }
 
   private:
+    static bool rawFinite(float value) {
+        uint32_t bits = 0;
+        std::memcpy(&bits, &value, sizeof(bits));
+        return (bits & 0x7f800000u) != 0x7f800000u;
+    }
+
+    float blockMin(const __m512 *dist, size_t valid_lanes, float *scratch) const {
+        if (!safe_block_min_) {
+            return _mm512_reduce_min_ps(_mm512_min_ps(dist[0], dist[1]));
+        }
+
+        _mm512_store_ps(scratch, dist[0]);
+        _mm512_store_ps(scratch + 16, dist[1]);
+        float mi = std::numeric_limits<float>::max();
+        for (size_t i = 0; i < valid_lanes; ++i) {
+            if (rawFinite(scratch[i]) && scratch[i] < mi) {
+                mi = scratch[i];
+            }
+        }
+        return mi;
+    }
+
     void scanClusterAccurate(const SaqCluData *saq_clust, utils::ResultPool &KNNs) {
         CHECK_EQ(saq_clust->num_segments_, estimators_.size());
         this->prepare(saq_clust);

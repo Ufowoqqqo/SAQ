@@ -143,3 +143,6 @@ The next controlled experiment should add a searcher ablation with a safe block-
 4. compare recall and QPS against current search, full-refine, and force-accurate scan.
 
 If this recovers query 580/500 without the huge force-accurate QPS loss, then part of the observed `b5_rank1` behavior is a searcher implementation issue rather than a segment-plan quality issue.
+
+
+Follow-up status: this ablation is now completed in `docs/saq_gist_sample100k_B5_safe_block_min_ablation_2026_07_03.md`. Safe block-min recovers q580/q500 and makes default vs `b5_rank1` nearly tied under B=5.
