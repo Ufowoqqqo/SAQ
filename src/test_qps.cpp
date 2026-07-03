@@ -255,6 +255,8 @@ int main(int argc, char *argv[]) {
     // Setup searcher config
     SearcherConfig searcher_cfg;
     searcher_cfg.searcher_vars_bound_m = FLAGS_searcher_vars_bound_m;
+    searcher_cfg.searcher_full_refine = FLAGS_searcher_full_refine;
+    searcher_cfg.searcher_force_accurate_scan = FLAGS_searcher_force_accurate_scan;
     if (FLAGS_searcher_dist_type == 0) {
         searcher_cfg.dist_type = DistType::L2Sqr;
     } else if (FLAGS_searcher_dist_type == 1) {
@@ -269,6 +271,12 @@ int main(int argc, char *argv[]) {
                                           dataset_str, args_str.c_str(), FLAGS_fix_thread, FLAGS_fix_nprobe);
 
     result_file += fmt::format("_sm{}", FLAGS_searcher_vars_bound_m);
+    if (FLAGS_searcher_full_refine) {
+        result_file += "_fullrefine";
+    }
+    if (FLAGS_searcher_force_accurate_scan) {
+        result_file += "_accuratescan";
+    }
     if (FLAGS_searcher_dist_type == 1) {
         result_file += "_ip";
     }

@@ -25,6 +25,8 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
 
     float *clu_dist_;
     __m512 *clu_dist512_;
+    const bool full_refine_;
+    const bool force_accurate_scan_;
     QueryRuntimeMetrics runtime_metrics_;
 
   public:
@@ -38,7 +40,9 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
      * @param query Pointer to query vector (Eigen row vector format)
      */
     SAQSearcher(const SaqData &data, const SearcherConfig &searcher_cfg, const Eigen::RowVectorXf &query)
-        : SaqCluEstimator<kDistType>(data, searcher_cfg, query) {
+        : SaqCluEstimator<kDistType>(data, searcher_cfg, query),
+          full_refine_(searcher_cfg.searcher_full_refine),
+          force_accurate_scan_(searcher_cfg.searcher_force_accurate_scan) {
         CHECK(kDistType == DistType::Any || kDistType == searcher_cfg.dist_type) << "distance type mismatch";
         auto clus_num = data.base_datas.size();
         clu_dist_ = memory::align_mm<64, float>(clus_num * KFastScanSize);
@@ -69,6 +73,11 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
     void searchCluster(const SaqCluData *saq_clust, utils::ResultPool &KNNs) {
         auto clus_num = saq_clust->num_segments_;
         CHECK_EQ(clus_num, estimators_.size());
+
+        if (force_accurate_scan_) {
+            scanClusterAccurate(saq_clust, KNNs);
+            return;
+        }
 
         if (clus_num == 1) {
             scanCluster(&saq_clust->get_segment(0), KNNs);
@@ -150,7 +159,7 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
                         for (size_t c_i = 0; c_i < clus_num; ++c_i) {
                             auto &estimator = estimators_[c_i];
                             acc_dist += estimator.compAccurateDist(idx) - clu_dist_[c_i * KFastScanSize + j];
-                            if (acc_dist >= distk) {
+                            if (!full_refine_ && acc_dist >= distk) {
                                 break;
                             }
                         }
@@ -173,6 +182,41 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
     }
 
   private:
+    void scanClusterAccurate(const SaqCluData *saq_clust, utils::ResultPool &KNNs) {
+        CHECK_EQ(saq_clust->num_segments_, estimators_.size());
+        this->prepare(saq_clust);
+
+        const auto num_blocks = saq_clust->num_blocks_;
+        const auto num_points = saq_clust->num_vec_;
+        __m512 scratch[FAST_ARRAY];
+        for (size_t blk_idx = 0; blk_idx < num_blocks; ++blk_idx) {
+            for (size_t c_i = 0; c_i < estimators_.size(); ++c_i) {
+                estimators_[c_i].compFastDist(blk_idx, scratch);
+            }
+            const size_t blk_begin = blk_idx * KFastScanSize;
+            for (size_t j = 0; j < KFastScanSize; ++j) {
+                const size_t idx = blk_begin + j;
+                if (idx >= num_points) {
+                    break;
+                }
+                float acc_dist = 0;
+                for (size_t c_i = 0; c_i < estimators_.size(); ++c_i) {
+                    acc_dist += estimators_[c_i].compAccurateDist(idx);
+                }
+                KNNs.insert(saq_clust->ids()[idx], acc_dist);
+            }
+        }
+
+        runtime_metrics_.fast_bitsum = 0;
+        runtime_metrics_.acc_bitsum = 0;
+        for (auto &estimator : estimators_) {
+            auto metrics = estimator.getRuntimeMetrics();
+            runtime_metrics_.acc_bitsum += metrics.acc_bitsum;
+            runtime_metrics_.fast_bitsum += metrics.fast_bitsum;
+        }
+        runtime_metrics_.total_comp_cnt += num_blocks * KFastScanSize;
+    }
+
     void scanCluster(const CAQClusterData *clusters, utils::ResultPool &KNNs) {
         auto &estimator = estimators_[0];
         estimator.prepare(clusters);

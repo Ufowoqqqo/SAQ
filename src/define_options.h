@@ -39,6 +39,8 @@ DEFINE_double(q_firstdim, 0, "only quantization first dimension");
 
 // Searcher config
 DEFINE_double(searcher_vars_bound_m, 4, "");
+DEFINE_bool(searcher_full_refine, false, "disable per-segment early break during accurate refinement");
+DEFINE_bool(searcher_force_accurate_scan, false, "scan all probed IVF candidates with full-code distances");
 DEFINE_int32(searcher_dist_type, 0, "searcher distance type. 0: L2Sqr, 1: IP");
 
 

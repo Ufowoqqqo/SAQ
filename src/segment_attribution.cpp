@@ -315,6 +315,8 @@ int main(int argc, char *argv[]) {
         CHECK_EQ(FLAGS_searcher_dist_type, 0) << "segment attribution currently supports only L2 squared distance";
     }
     searcher_cfg.searcher_vars_bound_m = FLAGS_searcher_vars_bound_m;
+    searcher_cfg.searcher_full_refine = FLAGS_searcher_full_refine;
+    searcher_cfg.searcher_force_accurate_scan = FLAGS_searcher_force_accurate_scan;
 
     const std::string custom_plan = FLAGS_seg_plan;
     const std::string default_args = make_args_for_plan("");

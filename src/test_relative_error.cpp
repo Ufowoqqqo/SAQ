@@ -259,9 +259,17 @@ int main(int argc, char *argv[]) {
     std::string result_file;
     result_file = fmt::format("{}/{}_{}_sm{}", paths.result_path,
                               FLAGS_dataset, args_str, FLAGS_searcher_vars_bound_m);
+    if (FLAGS_searcher_full_refine) {
+        result_file += "_fullrefine";
+    }
+    if (FLAGS_searcher_force_accurate_scan) {
+        result_file += "_accuratescan";
+    }
 
     SearcherConfig searcher_cfg;
     searcher_cfg.searcher_vars_bound_m = FLAGS_searcher_vars_bound_m;
+    searcher_cfg.searcher_full_refine = FLAGS_searcher_full_refine;
+    searcher_cfg.searcher_force_accurate_scan = FLAGS_searcher_force_accurate_scan;
     if (FLAGS_searcher_dist_type == 0) {
         searcher_cfg.dist_type = DistType::L2Sqr;
     } else if (FLAGS_searcher_dist_type == 1) {
