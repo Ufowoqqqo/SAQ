@@ -245,3 +245,19 @@ Review summaries:
 /tmp/saq-run/reports/gist_sample100k_B4_v2_split64_segment_attribution_summary.csv
 /tmp/saq-run/reports/gist_sample100k_B4_v2_split64_segment_attribution_events.csv
 ```
+
+## 11. Batch Sweep Follow-Up
+
+A systematic 560-config batch sweep was run on 2026-07-03 with the new driver:
+
+```text
+script/sweep_boundary_plan.py
+```
+
+The follow-up note is:
+
+```text
+docs/saq_boundary_v2_batch_sweep_2026_07_03.md
+```
+
+Main update: `v2_split64` is stable across the tested v2 hyperparameter grid and remains the best evaluated automatic candidate. The sweep also exposed that high objective-reduction plans can be unsafe for the current `create_index` path, so the next implementation step is adding plan-shape feasibility guards before expanding the search.
