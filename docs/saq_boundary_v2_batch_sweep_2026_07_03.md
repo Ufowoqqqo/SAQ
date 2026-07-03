@@ -296,3 +296,66 @@ The only retained candidate not yet recall-evaluated is:
 ```
 
 It appears in only 7 configs, but it has a moderate objective reduction and passes the conservative shape guard. The next experimental step should be to build/evaluate this one retained new plan, then decide whether to expand the filtered sweep to other B values or datasets.
+
+## 12. Retained New Candidate Evaluation
+
+The filtered sweep left one feasible candidate that had not yet been recall-evaluated:
+
+```text
+filtered_new = 64:10,320:6,384:3,192:0
+```
+
+Build command:
+
+```bash
+LD_LIBRARY_PATH=/tmp/saq-deps/usr/lib64 \
+  /rwproject/kdd-db/kluaq/saq/bin/create_index \
+  -dataset gist_sample100k \
+  -K 512 \
+  -B 4 \
+  -enable_PCA=true \
+  -seg_plan=64:10,320:6,384:3,192:0 \
+  -logtostderr=1
+```
+
+The index built successfully:
+
+```text
+/tmp/saq-run/data/gist_sample100k/ivf512_b4_caq_adj_seg_plan64x10_320x6_384x3_192x0_pca.index
+```
+
+Evaluation used the same setup as the earlier B=4 runs: PCA-space `gist_sample100k`, IVF512, B=4, top1000 groundtruth, R@100, `searcher_vars_bound_m=4`, and 24 threads for QPS.
+
+Raw local summaries:
+
+```text
+/tmp/saq-run/reports/gist_sample100k_B4_filtered_new_candidate_qps.csv
+/tmp/saq-run/reports/gist_sample100k_B4_filtered_new_candidate_summary.csv
+```
+
+Aggregate comparison:
+
+| name | R@100 np20 | np50 | np100 | np200 | np400 | QPS np200 | err_tot_avg | err_tot_max |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| default | 0.759150 | 0.927500 | 0.980870 | 0.990870 | 0.991190 | 9299.8 | 0.000476260 | 0.006655460 |
+| boundary_4seg | 0.759060 | 0.927420 | 0.980750 | 0.991010 | 0.991390 | 11252.8 | 0.000463861 | 0.006829680 |
+| v2_split64 | 0.758890 | 0.927660 | 0.981110 | 0.991300 | 0.991590 | 8798.5 | 0.000456743 | 0.007399120 |
+| v2_mid | 0.758450 | 0.926870 | 0.980500 | 0.990710 | 0.991080 | 9357.4 | 0.000434397 | 0.007538950 |
+| sweep_rank2 | 0.757670 | 0.925780 | 0.979400 | 0.989520 | 0.989910 | 9367.1 | 0.000545425 | 0.007289770 |
+| filtered_new | 0.758610 | 0.926940 | 0.980820 | 0.990970 | 0.991290 | 10290.7 | 0.000440546 | 0.011613200 |
+
+Readout:
+
+- `filtered_new` is buildable and passes the conservative plan-shape guard.
+- It improves np200 R@100 over default by only `+0.000100`, and is below `v2_split64` by `-0.000330`.
+- Its mean relative error is better than default, boundary_4seg, and v2_split64, but worse than `v2_mid`.
+- Its max relative error is the worst among the listed candidates, which suggests the broad `384-768` 3-bit segment creates tail-risk cases.
+- Its np200 QPS is faster than default and v2_split64, but slower than boundary_4seg.
+
+Decision:
+
+```text
+filtered_new is not a replacement for v2_split64.
+```
+
+It is useful as a tradeoff point: lower mean error and better speed than `v2_split64`, but weaker recall and worse max error. The GIST B=4 filtered sweep can now be considered closed unless we want a per-query review of `filtered_new` specifically. The higher-value next step is to apply the guarded sweep/evaluation loop to another B value or dataset.
