@@ -1,6 +1,7 @@
 #include <cstring>
 #include <iostream>
 #include <set>
+#include <string>
 
 #include "define_options.h"
 
@@ -13,8 +14,11 @@
 
 using namespace saqlib;
 
-constexpr size_t TOPK = 1000;
-const size_t kNumThread = 100;
+DEFINE_int32(gt_topk, 1000, "top-k exact groundtruth depth to compute");
+DEFINE_int32(gt_threads, 100, "number of threads used for exact groundtruth computation");
+DEFINE_string(gt_output, "", "optional output ivecs path; defaults to the dataset groundtruth path");
+DEFINE_bool(gt_overwrite, false, "overwrite an existing groundtruth output file");
+DEFINE_bool(gt_check_existing, true, "when output exists and overwrite is false, compare it against the computed GT");
 
 size_t N;
 size_t DIM;
@@ -26,6 +30,10 @@ int main(int argc, char *argv[]) {
 
     std::string DATASET = FLAGS_dataset;
     DataFilePaths paths;
+    CHECK_GT(FLAGS_gt_topk, 0);
+    CHECK_GT(FLAGS_gt_threads, 0);
+    const size_t topk = static_cast<size_t>(FLAGS_gt_topk);
+    const std::string output_file = FLAGS_gt_output.empty() ? paths.gt_file : FLAGS_gt_output;
 
     FloatRowMat data;
     FloatRowMat queries;
@@ -46,8 +54,8 @@ int main(int argc, char *argv[]) {
     std::cout << "query loaded\n";
     std::cout << "\tNQ: " << NQ << '\n';
 
-    BS::thread_pool pool(kNumThread);
-    gt.resize(NQ, TOPK);
+    BS::thread_pool pool(static_cast<size_t>(FLAGS_gt_threads));
+    gt.resize(NQ, topk);
 
     // if (FLAGS_DEBUG) {
     //     NQ = 1;
@@ -56,7 +64,7 @@ int main(int argc, char *argv[]) {
     for (size_t qi = 0; qi < NQ; qi++) {
         pool.detach_task([&, qi]() {
             FloatVec query = queries.row(qi);
-            utils::ResultPool KNNs(TOPK, FLAGS_searcher_dist_type == 1);
+            utils::ResultPool KNNs(topk, FLAGS_searcher_dist_type == 1);
             if (FLAGS_searcher_dist_type == 0) { // L2Sqr
                 for (size_t id = 0; id < N; ++id) {
                     auto dist = (data.row(id) - query).squaredNorm();
@@ -74,18 +82,23 @@ int main(int argc, char *argv[]) {
     }
     pool.wait();
 
-    if (utils::file_exists(paths.gt_file.data())) {
-        std::cout << "ground truth file exists\n";
+    if (utils::file_exists(output_file.data()) && !FLAGS_gt_overwrite) {
+        std::cout << "ground truth file exists: " << output_file << '\n';
+        if (!FLAGS_gt_check_existing) {
+            std::cout << "skip existing ground truth check\n";
+            return 0;
+        }
         std::cout << "check if the ground truth is correct\n";
         UintRowMat gt_test;
-        utils::load_something<PID, UintRowMat>(paths.gt_file.data(), gt_test);
+        utils::load_something<PID, UintRowMat>(output_file.data(), gt_test);
+        CHECK_GE(gt_test.cols(), topk) << "existing GT depth is smaller than gt_topk";
 
         for (size_t i = 0; i < NQ; ++i) {
             std::set<PID> gt_set;
-            for (size_t j = 0; j < TOPK; ++j) {
+            for (size_t j = 0; j < topk; ++j) {
                 gt_set.insert(gt_test(i, j));
             }
-            for (size_t j = 0; j < TOPK; ++j) {
+            for (size_t j = 0; j < topk; ++j) {
                 if (gt_set.find(gt(i, j)) == gt_set.end()) {
                     std::cerr << "ground truth not match\n";
                     std::cerr << "query: " << i << '\n';
@@ -103,8 +116,8 @@ int main(int argc, char *argv[]) {
     // if (FLAGS_DEBUG) {
     //     return 0;
     // }
-    utils::save_vecs<float, UintRowMat>(paths.gt_file.data(), gt);
-    std::cout << "ground truth saved to " << paths.gt_file << '\n';
+    utils::save_vecs<float, UintRowMat>(output_file.data(), gt);
+    std::cout << "ground truth saved to " << output_file << '\n';
 
     return 0;
 }
