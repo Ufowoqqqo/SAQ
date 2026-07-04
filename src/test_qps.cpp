@@ -258,6 +258,7 @@ int main(int argc, char *argv[]) {
     searcher_cfg.searcher_full_refine = FLAGS_searcher_full_refine;
     searcher_cfg.searcher_force_accurate_scan = FLAGS_searcher_force_accurate_scan;
     searcher_cfg.searcher_safe_block_min = FLAGS_searcher_safe_block_min;
+    searcher_cfg.searcher_safe_block_min_mode = FLAGS_searcher_safe_block_min_mode;
     if (FLAGS_searcher_dist_type == 0) {
         searcher_cfg.dist_type = DistType::L2Sqr;
     } else if (FLAGS_searcher_dist_type == 1) {
@@ -278,8 +279,13 @@ int main(int argc, char *argv[]) {
     if (FLAGS_searcher_force_accurate_scan) {
         result_file += "_accuratescan";
     }
-    if (FLAGS_searcher_safe_block_min) {
+    const int safe_block_min_mode = FLAGS_searcher_safe_block_min && FLAGS_searcher_safe_block_min_mode == 0
+                                    ? 1
+                                    : FLAGS_searcher_safe_block_min_mode;
+    if (safe_block_min_mode == 1) {
         result_file += "_safeblockmin";
+    } else if (safe_block_min_mode == 2) {
+        result_file += "_safeblockminsimd";
     }
     if (FLAGS_searcher_dist_type == 1) {
         result_file += "_ip";

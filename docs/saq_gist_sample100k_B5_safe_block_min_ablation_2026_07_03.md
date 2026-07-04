@@ -149,9 +149,35 @@ The current multi-stage searcher can silently skip good blocks when the AVX512 b
 
 ## 8. Next Step
 
-Before more planner sweeps, decide whether to treat safe block-min as:
+Follow-up completed in `docs/saq_gist_sample100k_B5_block_min_root_cause_and_simd_safe_2026_07_04.md`.
+
+The root cause is now more precise than this first ablation could show:
+
+- The bad q580/q500 block is a partial last block with only 12 valid lanes.
+- The valid input lanes are finite, which is why the first trace showed `fast_nonfinite_count = 0`.
+- The native reduction performs `_mm512_min_ps(dist[0], dist[1])` before applying a valid-lane mask, so padded high-half lanes can inject NaNs into the pairwise-min vector.
+- A low-overhead SIMD-safe reduction masks invalid lanes and replaces non-finite lanes with `FLT_MAX` before the pairwise min.
+
+The SIMD-safe mode matches scalar-safe recall and restores q580/q500 to 100/100 hits at nprobe 200, while the measured QPS is essentially the same as the native path in the local run:
+
+| mode | plan | R@100 | QPS |
+|---|---|---:|---:|
+| native | default | 0.993370 | 9090.3 |
+| native | b5_rank1 | 0.994450 | 10396.1 |
+| scalar safe | default | 0.994780 | 8436.5 |
+| scalar safe | b5_rank1 | 0.994760 | 9724.8 |
+| SIMD safe | default | 0.994780 | 9128.7 |
+| SIMD safe | b5_rank1 | 0.994760 | 10379.4 |
+
+Before more planner sweeps, decide whether to treat SIMD-safe block-min as:
 
 1. a production robustness fix to keep enabled, possibly replacing the scalar fallback with a cheaper NaN-safe SIMD reduction; or
 2. an ablation-only guard used to separate planner quality from search-path artifacts.
 
-The immediate technical follow-up should be a lower-overhead safe reduction implementation. The scalar fallback is useful for diagnosis, but a production path should avoid storing/scanning 32 lanes on every block if possible.
+The immediate technical recommendation is to run future planner-quality comparisons with:
+
+```text
+-searcher_safe_block_min_mode=2
+```
+
+This avoids attributing partial-block reduction artifacts to the quantization plan.

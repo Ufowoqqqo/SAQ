@@ -77,7 +77,8 @@ struct SearcherConfig {
     float searcher_vars_bound_m = 4;           // searcher variance prune bound m. Larger value means more accurate but slower.
     bool searcher_full_refine = false;         // compute all segment refinements once a vector reaches accurate refinement.
     bool searcher_force_accurate_scan = false; // compute full-code distances for all probed IVF candidates.
-    bool searcher_safe_block_min = false;      // use a NaN-safe scalar fallback for multi-segment block minima.
+    bool searcher_safe_block_min = false;      // compatibility alias for scalar safe block-min mode.
+    int searcher_safe_block_min_mode = 0;      // 0: native, 1: scalar finite min, 2: SIMD finite min.
     DistType dist_type = DistType::L2Sqr;      // distance type. L2Sqr or IP
 };
 } // namespace saqlib

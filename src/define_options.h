@@ -41,7 +41,8 @@ DEFINE_double(q_firstdim, 0, "only quantization first dimension");
 DEFINE_double(searcher_vars_bound_m, 4, "");
 DEFINE_bool(searcher_full_refine, false, "disable per-segment early break during accurate refinement");
 DEFINE_bool(searcher_force_accurate_scan, false, "scan all probed IVF candidates with full-code distances");
-DEFINE_bool(searcher_safe_block_min, false, "use NaN-safe scalar fallback for multi-segment block minima");
+DEFINE_bool(searcher_safe_block_min, false, "compatibility alias for -searcher_safe_block_min_mode=1");
+DEFINE_int32(searcher_safe_block_min_mode, 0, "safe block-min mode. 0: native, 1: scalar finite min, 2: SIMD finite min");
 DEFINE_int32(searcher_dist_type, 0, "searcher distance type. 0: L2Sqr, 1: IP");
 
 

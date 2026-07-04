@@ -342,7 +342,7 @@ class SearchPruningTracer : public SaqCluEstimator<DistType::Any> {
     static constexpr size_t FAST_ARRAY = KFastScanSize / 16;
 
     const bool full_refine_;
-    const bool safe_block_min_;
+    const int safe_block_min_mode_;
     float *clu_dist_ = nullptr;
     __m512 *clu_dist512_ = nullptr;
 
@@ -350,7 +350,7 @@ class SearchPruningTracer : public SaqCluEstimator<DistType::Any> {
     SearchPruningTracer(const SaqData &data, const SearcherConfig &searcher_cfg, const FloatVec &query)
         : Base(data, searcher_cfg, query),
           full_refine_(searcher_cfg.searcher_full_refine),
-          safe_block_min_(searcher_cfg.searcher_safe_block_min) {
+          safe_block_min_mode_(normalizeSafeBlockMinMode(searcher_cfg)) {
         const auto clus_num = data.base_datas.size();
         clu_dist_ = memory::align_mm<64, float>(clus_num * KFastScanSize);
         clu_dist512_ = memory::align_mm<64, __m512>(clus_num * FAST_ARRAY);
@@ -359,6 +359,49 @@ class SearchPruningTracer : public SaqCluEstimator<DistType::Any> {
     ~SearchPruningTracer() override {
         std::free(clu_dist512_);
         std::free(clu_dist_);
+    }
+
+    static int normalizeSafeBlockMinMode(const SearcherConfig &cfg) {
+        CHECK_GE(cfg.searcher_safe_block_min_mode, 0);
+        CHECK_LE(cfg.searcher_safe_block_min_mode, 2);
+        if (cfg.searcher_safe_block_min && cfg.searcher_safe_block_min_mode == 0) {
+            return 1;
+        }
+        return cfg.searcher_safe_block_min_mode;
+    }
+
+    static __m512 finiteOrMax(__m512 value, __mmask16 valid_mask) {
+        const __m512i bits = _mm512_castps_si512(value);
+        const __m512i exp = _mm512_and_si512(bits, _mm512_set1_epi32(0x7f800000));
+        const __mmask16 finite_mask = _mm512_cmpneq_epi32_mask(exp, _mm512_set1_epi32(0x7f800000));
+        const __mmask16 keep_mask = finite_mask & valid_mask;
+        return _mm512_mask_blend_ps(keep_mask, _mm512_set1_ps(std::numeric_limits<float>::max()), value);
+    }
+
+    static float hmin16(__m512 value) {
+        const __m256 lo = _mm512_castps512_ps256(value);
+        const __m256 hi = _mm512_extractf32x8_ps(value, 1);
+        const __m256 v8 = _mm256_min_ps(lo, hi);
+        const __m128 v8_lo = _mm256_castps256_ps128(v8);
+        const __m128 v8_hi = _mm256_extractf128_ps(v8, 1);
+        const __m128 v4 = _mm_min_ps(v8_lo, v8_hi);
+        const __m128 shuf1 = _mm_movehdup_ps(v4);
+        const __m128 v2 = _mm_min_ps(v4, shuf1);
+        const __m128 shuf2 = _mm_movehl_ps(shuf1, v2);
+        const __m128 v1 = _mm_min_ss(v2, shuf2);
+        return _mm_cvtss_f32(v1);
+    }
+
+    static __mmask16 lowMask(size_t n) {
+        return n >= 16 ? 0xffff : static_cast<__mmask16>((1u << n) - 1u);
+    }
+
+    static float simdFiniteBlockMin(const __m512 *dist, size_t valid_lanes) {
+        const __mmask16 mask0 = lowMask(std::min<size_t>(valid_lanes, 16));
+        const __mmask16 mask1 = valid_lanes > 16 ? lowMask(valid_lanes - 16) : 0;
+        const __m512 v0 = finiteOrMax(dist[0], mask0);
+        const __m512 v1 = finiteOrMax(dist[1], mask1);
+        return hmin16(_mm512_min_ps(v0, v1));
     }
 
     struct BlockMinStats {
@@ -400,15 +443,28 @@ class SearchPruningTracer : public SaqCluEstimator<DistType::Any> {
                    const SaqCluData *saq_clust,
                    float *scratch,
                    BlockMinStats *stats_out = nullptr) const {
-        if (!safe_block_min_ && stats_out == nullptr) {
+        if (safe_block_min_mode_ == 0 && stats_out == nullptr) {
             return _mm512_reduce_min_ps(_mm512_min_ps(dist[0], dist[1]));
+        }
+        if (safe_block_min_mode_ == 2 && stats_out == nullptr) {
+            return simdFiniteBlockMin(dist, valid_lanes);
         }
 
         BlockMinStats stats = inspectBlock(dist, valid_lanes, blk_begin, saq_clust, scratch);
         if (stats_out != nullptr) {
             *stats_out = stats;
         }
-        return safe_block_min_ ? stats.scalar_min : _mm512_reduce_min_ps(_mm512_min_ps(dist[0], dist[1]));
+        switch (safe_block_min_mode_) {
+        case 0:
+            return _mm512_reduce_min_ps(_mm512_min_ps(dist[0], dist[1]));
+        case 1:
+            return stats.scalar_min;
+        case 2:
+            return simdFiniteBlockMin(dist, valid_lanes);
+        default:
+            CHECK(false) << "bad safe block-min mode: " << safe_block_min_mode_;
+            return std::numeric_limits<float>::max();
+        }
     }
 
     void traceCluster(const SaqCluData *saq_clust,
@@ -754,6 +810,7 @@ int main(int argc, char *argv[]) {
     searcher_cfg.searcher_full_refine = FLAGS_searcher_full_refine;
     searcher_cfg.searcher_force_accurate_scan = FLAGS_searcher_force_accurate_scan;
     searcher_cfg.searcher_safe_block_min = FLAGS_searcher_safe_block_min;
+    searcher_cfg.searcher_safe_block_min_mode = FLAGS_searcher_safe_block_min_mode;
 
     const std::string custom_plan = FLAGS_seg_plan;
     const std::string default_args = make_args_for_plan("");
