@@ -124,6 +124,12 @@ delta np200 = +0.00043
 QPS ratio = 0.993x
 ```
 
+Follow-up review: `docs/saq_gist_sample100k_B5_b5_rank0_safe_review_2026_07_04.md`
+checks the per-query and segment attribution behavior. It finds no severe
+stable regression; the worst corrected query loses 2 hits, and the gain/loss
+events are mostly rank-98/99 boundary cases dominated by the `256-512` and
+`512-896` custom segments.
+
 `b5_rank2` is also downgraded: it ties default recall at np200/np400 but is slower, so it is dominated by default for practical purposes.
 
 The corrected B=5 Pareto readout is:
