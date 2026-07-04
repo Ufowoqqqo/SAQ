@@ -18,10 +18,11 @@ This note validates those candidates on full GIST with the corrected safe search
 -searcher_safe_block_min_mode=2
 ```
 
-It contains two complementary checks:
+It contains three complementary checks:
 
 1. Official top10 GIST groundtruth, reported as R@10.
-2. Newly computed PCA-space exact top100 groundtruth, reported as R@100.
+2. Newly computed PCA-space exact top100 groundtruth, used as an intermediate R@100 check.
+3. Newly computed original-space exact top100 groundtruth, used as the final R@100 check.
 
 ## 2. Scope and Groundtruth
 
@@ -44,22 +45,36 @@ The official local GIST GT file is:
 
 It has shape `1000 x 10`, so the first validation uses official R@10.
 
-For R@100, we computed a new exact top100 file over the prepared PCA-space full-GIST data:
+For R@100, we first computed a top100 file over the prepared PCA-space full-GIST data:
 
 ```text
 /tmp/saq-run/data/gist_full/gist_full_groundtruth_top100.ivecs
 ```
 
-This file has shape `1000 x 100`. It is the exact top100 for the PCA-projected base/query vectors used by this SAQ fallback pipeline. It is not an official original-space GIST top100 file.
+Then we computed an original-space top100 file directly from the raw GIST base/query vectors:
+
+```text
+/tmp/saq-run/data/gist_full/gist_full_groundtruth_top100_original_l2.ivecs
+```
+
+Both files have shape `1000 x 100`. The final R@100 table below uses the original-space top100 file. The PCA-space file is still useful as a consistency check because this pipeline keeps all 960 PCA dimensions, so the transform should preserve L2 neighborhoods except for floating-point/tie-order effects.
 
 Sanity check against the official top10:
 
 | check | result |
 |---|---:|
 | exact ordered top10 match | 878 / 1000 queries |
-| official top10 set covered by PCA-space top100 first 10 | 986 / 1000 queries |
+| computed first-10 set match with official top10 | 986 / 1000 queries |
+| official top10 covered by original-space top100 | 1000 / 1000 queries |
 
-The mismatch is small but real. Treat the R@100 results below as an internal PCA-space validation of the candidate plans, while R@10 remains the official GT check available locally.
+PCA-space top100 vs original-space top100:
+
+| check | result |
+|---|---:|
+| exact ordered top100 match | 992 / 1000 queries |
+| top100 set match | 1000 / 1000 queries |
+
+The official top10 order mismatch is small but real and appears to be an ordering/tie/numerical issue: every official top10 neighbor is present in the computed original-space top100. Since PCA-space and original-space top100 sets match exactly for all queries, the previous PCA-space R@100 conclusion is not changed by the original-space rerun.
 
 ## 3. Preparation
 
@@ -121,13 +136,30 @@ env LD_LIBRARY_PATH=/tmp/saq-deps/usr/lib64 \
   -logtostderr=1
 ```
 
+Original-space top100 command:
+
+```bash
+env LD_LIBRARY_PATH=/tmp/saq-deps/usr/lib64 \
+  /rwproject/kdd-db/kluaq/saq/bin/compute_gt \
+  -dataset gist_raw \
+  -enable_PCA=false \
+  -searcher_dist_type=0 \
+  -gt_topk=100 \
+  -gt_threads=24 \
+  -gt_output=/tmp/saq-run/data/gist_full/gist_full_groundtruth_top100_original_l2.ivecs \
+  -gt_overwrite=true \
+  -logtostderr=1
+```
+
+Here `gist_raw` is a temporary `/tmp/saq-run/data/gist_raw` dataset mapping whose base/query files symlink to the raw local GIST files under `/rwproject/kdd-db/kluaq/dataset/gist/`.
+
 For the R@100 run, the original copied top10 file was preserved as:
 
 ```text
 /tmp/saq-run/data/gist_full/gist_full_groundtruth_top10_official.ivecs
 ```
 
-and the dataset-default GT path was switched to the computed top100:
+and the dataset-default GT path was switched to the computed original-space top100:
 
 ```text
 /tmp/saq-run/data/gist_full/gist_full_groundtruth.ivecs
@@ -176,30 +208,30 @@ R@10 readout:
 - At low nprobe, `b5_rank0` is slightly worse: `-0.0008` at np20/np50.
 - At np100/200/400, it is only marginally positive.
 
-## 6. PCA-Space Full-GIST R@100
+## 6. Original-Space Full-GIST R@100
 
-All rows use safe searcher mode 2 and the computed PCA-space top100 GT.
+All rows use safe searcher mode 2 and the computed original-space top100 GT. The recall values match the earlier PCA-space R@100 run because the PCA-space and original-space top100 sets are identical for all queries.
 
 ### B=4 R@100
 
 | name | R@100 np20 | np50 | np100 | np200 | np400 | delta np200 | QPS np200 | QPS ratio | better/equal/worse at np200 | worst/best query at np200 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
-| default B=4 | 0.83615 | 0.95397 | 0.98444 | 0.98897 | 0.98904 | 0.00000 | 919.4 | 1.000x | 0/1000/0 | n/a |
-| `v2_split64` | 0.83637 | 0.95480 | 0.98587 | 0.99049 | 0.99058 | +0.00152 | 810.3 | 0.881x | 336/446/218 | q397:-3 / q62:+3 |
-| `filtered_new` | 0.83601 | 0.95441 | 0.98528 | 0.98998 | 0.99007 | +0.00101 | 996.0 | 1.083x | 309/463/228 | q715:-3 / q150:+3 |
+| default B=4 | 0.83615 | 0.95397 | 0.98444 | 0.98897 | 0.98904 | 0.00000 | 920.1 | 1.000x | 0/1000/0 | n/a |
+| `v2_split64` | 0.83637 | 0.95480 | 0.98587 | 0.99049 | 0.99058 | +0.00152 | 813.2 | 0.884x | 336/446/218 | q397:-3 / q62:+3 |
+| `filtered_new` | 0.83601 | 0.95441 | 0.98528 | 0.98998 | 0.99007 | +0.00101 | 995.5 | 1.082x | 309/463/228 | q715:-3 / q150:+3 |
 
 R@100 readout:
 
 - `v2_split64` remains the best B=4 recall candidate: `+0.00152` at np200 and `+0.00154` at np400.
-- `filtered_new` remains the Pareto speed/recall candidate: `+0.00101` at np200 with `1.083x` QPS.
+- `filtered_new` remains the Pareto speed/recall candidate: `+0.00101` at np200 with `1.082x` QPS.
 - R@100 reinforces the B=4 conclusion from R@10 rather than weakening it.
 
 ### B=5 R@100
 
 | name | R@100 np20 | np50 | np100 | np200 | np400 | delta np200 | QPS np200 | QPS ratio | better/equal/worse at np200 | worst/best query at np200 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
-| default B=5 | 0.83657 | 0.95622 | 0.98870 | 0.99377 | 0.99389 | 0.00000 | 887.8 | 1.000x | 0/1000/0 | n/a |
-| `b5_rank0` | 0.83668 | 0.95649 | 0.98923 | 0.99428 | 0.99439 | +0.00051 | 864.0 | 0.973x | 215/609/176 | q463:-3 / q4:+2 |
+| default B=5 | 0.83657 | 0.95622 | 0.98870 | 0.99377 | 0.99389 | 0.00000 | 884.1 | 1.000x | 0/1000/0 | n/a |
+| `b5_rank0` | 0.83668 | 0.95649 | 0.98923 | 0.99428 | 0.99439 | +0.00051 | 863.4 | 0.977x | 215/609/176 | q463:-3 / q4:+2 |
 
 R@100 readout:
 
@@ -209,7 +241,7 @@ R@100 readout:
 
 ## 7. Cross-Scale Decision
 
-| candidate | sample100k corrected result | full GIST K512 R@10 | full GIST K512 R@100 | decision |
+| candidate | sample100k corrected result | full GIST K512 R@10 | full GIST K512 original R@100 | decision |
 |---|---|---|---|---|
 | B=4 `v2_split64` | best B=4 recall | still best B=4 recall | still best B=4 recall | keep as recall candidate |
 | B=4 `filtered_new` | balanced speed/recall | positive and faster | positive and faster | keep as Pareto candidate |
@@ -232,6 +264,7 @@ Prepared full-GIST K512 artifacts:
 /tmp/saq-run/data/gist_full/gist_full_query_pca.fvecs
 /tmp/saq-run/data/gist_full/gist_full_groundtruth_top10_official.ivecs
 /tmp/saq-run/data/gist_full/gist_full_groundtruth_top100.ivecs
+/tmp/saq-run/data/gist_full/gist_full_groundtruth_top100_original_l2.ivecs
 /tmp/saq-run/data/gist_full/gist_full_groundtruth.ivecs
 ```
 
@@ -243,7 +276,15 @@ Official R@10 summaries:
 /tmp/saq-run/reports/gist_full_safe_corrected_minset_top10_leaderboard_2026_07_04.json
 ```
 
-PCA-space R@100 summaries:
+Original-space R@100 summaries:
+
+```text
+/tmp/saq-run/reports/gist_full_safe_corrected_minset_original_top100_leaderboard_2026_07_04.csv
+/tmp/saq-run/reports/gist_full_safe_corrected_minset_original_top100_compare_rows_2026_07_04.csv
+/tmp/saq-run/reports/gist_full_safe_corrected_minset_original_top100_leaderboard_2026_07_04.json
+```
+
+Earlier PCA-space R@100 summaries:
 
 ```text
 /tmp/saq-run/reports/gist_full_safe_corrected_minset_top100_leaderboard_2026_07_04.csv
@@ -255,15 +296,16 @@ QPS logs:
 
 ```text
 /tmp/saq-run/results/saq/qps_gist_full_*_top10_safeblockminsimd.csv
-/tmp/saq-run/results/saq/qps_gist_full_*_top100_safeblockminsimd.csv
+/tmp/saq-run/results/saq/qps_gist_full_*_sm4_safeblockminsimd.csv
+/tmp/saq-run/results/saq/qps_gist_full_*_safeblockminsimd_original_top100.csv
 ```
 
 ## 9. Next Step
 
-The immediate R@100 validation is complete. The highest-signal next step depends on which claim we want to strengthen:
+The original-space R@100 validation is complete. The highest-signal next step depends on which claim we want to strengthen:
 
-1. If we need official benchmark rigor, compute or obtain original-space full-GIST top100 and rerun the same R@100 comparison against that GT.
-2. If we want a system-scale SAQ setting, move from fallback K512 to a K4096/FAISS-style GIST pipeline.
-3. If we want robustness beyond GIST, repeat the guarded candidate validation on another higher-dimensional dataset.
+1. If we want a system-scale SAQ setting, move from fallback K512 to a K4096/FAISS-style GIST pipeline.
+2. If we want robustness beyond GIST, repeat the guarded candidate validation on another higher-dimensional dataset.
+3. If we want to understand why `filtered_new` is faster while still improving recall, run targeted segment/refinement attribution on full GIST for that plan.
 
 Given the current evidence, the practical candidate to carry forward is B=4 `filtered_new`; the recall-stress candidate is B=4 `v2_split64`.
