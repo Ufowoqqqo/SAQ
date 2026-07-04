@@ -304,7 +304,7 @@ QPS logs:
 
 The original-space R@100 validation is complete. The highest-signal next step depends on which claim we want to strengthen:
 
-1. If we want a system-scale SAQ setting, move from fallback K512 to a K4096/FAISS-style GIST pipeline.
+1. If we want a system-scale SAQ setting, move from fallback K512 to a K4096/FAISS-style GIST pipeline. This follow-up is now completed for the fallback K4096 path in `docs/saq_gist_full_k4096_official_style_validation_2026_07_04.md`.
 2. If we want robustness beyond GIST, repeat the guarded candidate validation on another higher-dimensional dataset.
 3. If we want to understand why `filtered_new` is faster while still improving recall, run targeted segment/refinement attribution on full GIST for that plan.
 
