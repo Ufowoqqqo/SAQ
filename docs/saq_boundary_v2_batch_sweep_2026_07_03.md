@@ -2,6 +2,12 @@
 
 Date: 2026-07-03
 
+Correction note, 2026-07-04: the B=4 qualitative conclusion that `v2_split64`
+is the best current automatic recall candidate still holds under the corrected
+safe searcher, but the exact recall/QPS leaderboard has been updated in
+`docs/saq_gist_sample100k_safe_corrected_leaderboard_2026_07_04.md`. Future
+comparisons should use `-searcher_safe_block_min_mode=2`.
+
 This note records the first systematic batch sweep for the boundary-aware DP v2 planner on `gist_sample100k`. The sweep is planner-level: it enumerates v2 hyperparameters after loading the GIST sample artifacts once, deduplicates the generated segment plans, and then we selectively build/evaluate the most relevant candidates.
 
 ## 1. Why Batch Sweep

@@ -2,6 +2,13 @@
 
 Date: 2026-07-03
 
+Correction note, 2026-07-04: the aggregate recall/QPS table below was produced
+with the native block-min search path, which was later found to be affected by
+partial-block padded lanes. The corrected safe-searcher leaderboard is in
+`docs/saq_gist_sample100k_safe_corrected_leaderboard_2026_07_04.md`. Under
+`-searcher_safe_block_min_mode=2`, `b5_rank1` is no longer the recall winner;
+`b5_rank0` becomes the strongest corrected B=5 recall candidate.
+
 This note extends the GIST `B=4` boundary-aware v2 sweep to `B=5`. The goal is to test whether the v2 planner signal is specific to one bit budget or remains useful when the average code budget is higher.
 
 ## 1. Setup

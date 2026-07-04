@@ -1,5 +1,11 @@
 # GIST sample100k B=4 Conservative Custom-Plan Sweep
 
+Correction note, 2026-07-04: this sweep used the native block-min search path.
+The corrected safe-searcher leaderboard is in
+`docs/saq_gist_sample100k_safe_corrected_leaderboard_2026_07_04.md`. The broad
+B=4 readout remains useful, but exact recall/QPS values should be taken from the
+corrected leaderboard with `-searcher_safe_block_min_mode=2`.
+
 This sweep tests whether the residual-aware custom plan can be made less aggressive after the segment-level attribution showed boundary regressions in mid/low-bit segments. All runs use PCA-space `gist_sample100k`, IVF512, B=4, CAQ adjustment, R@100, and 24 threads for QPS.
 
 ## Candidate Plans

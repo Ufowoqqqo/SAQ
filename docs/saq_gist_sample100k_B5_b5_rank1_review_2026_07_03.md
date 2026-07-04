@@ -2,6 +2,14 @@
 
 Date: 2026-07-03
 
+Correction note, 2026-07-04: this review explains the native-searcher behavior
+of `b5_rank1`. A later block-min root-cause diagnostic showed that partial-block
+padded lanes contaminated the native search path. The corrected safe-searcher
+leaderboard is in
+`docs/saq_gist_sample100k_safe_corrected_leaderboard_2026_07_04.md`. Under
+`-searcher_safe_block_min_mode=2`, `b5_rank1` is best understood as a faster
+but recall-neutral/slightly negative B=5 plan, not as the strongest recall plan.
+
 This note follows up the B=5 guarded sweep. The candidate under review is the best practical B=5 plan from that sweep:
 
 ```text
