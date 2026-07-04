@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import time
 from pathlib import Path
 
@@ -152,6 +153,8 @@ def parse_args() -> argparse.Namespace:
         description="Prepare sampled PCA/IVF artifacts for SAQ diagnostics without faiss."
     )
     parser.add_argument("--input", type=Path, required=True, help="Input base fvecs path.")
+    parser.add_argument("--query-input", type=Path, help="Optional query fvecs path to transform with the learned PCA.")
+    parser.add_argument("--groundtruth-input", type=Path, help="Optional groundtruth ivecs path to copy into the output.")
     parser.add_argument("--output-dir", type=Path, required=True, help="SAQ dataset output directory.")
     parser.add_argument("--dataset", required=True, help="Output dataset prefix.")
     parser.add_argument("--sample-size", type=int, default=100_000, help="Number of prefix rows to sample.")
@@ -185,6 +188,36 @@ def main() -> int:
     write_fvecs(out / f"{prefix}_centroid_{args.k}_pca.fvecs", centroids)
     write_ivecs(out / f"{prefix}_cluster_id_{args.k}.ivecs", labels.reshape(-1, 1))
 
+    query_summary = None
+    if args.query_input is not None:
+        log(f"Reading query input {args.query_input}")
+        query_raw = read_fvecs_prefix(args.query_input, None)
+        if query_raw.shape[1] != raw.shape[1]:
+            raise ValueError(f"query dim {query_raw.shape[1]} != base dim {raw.shape[1]}")
+        log(f"Applying PCA to query shape={query_raw.shape}")
+        query_centered = query_raw.astype(np.float32, copy=True)
+        query_centered -= mean
+        query_pca = query_centered @ components
+        write_fvecs(out / f"{prefix}_query_pca.fvecs", query_pca.astype(np.float32))
+        query_summary = {
+            "query_input": str(args.query_input),
+            "query_rows": int(query_raw.shape[0]),
+            "query_dimension": int(query_raw.shape[1]),
+        }
+        (out / f"{prefix}_query_pca_summary.json").write_text(
+            json.dumps(query_summary, indent=2) + "\n", encoding="utf-8"
+        )
+
+    gt_summary = None
+    if args.groundtruth_input is not None:
+        gt_output = out / f"{prefix}_groundtruth.ivecs"
+        log(f"Copying groundtruth {args.groundtruth_input} to {gt_output}")
+        shutil.copyfile(args.groundtruth_input, gt_output)
+        gt_summary = {
+            "groundtruth_input": str(args.groundtruth_input),
+            "groundtruth_output": str(gt_output),
+        }
+
     summary = {
         "input": str(args.input),
         "output_dir": str(out),
@@ -202,6 +235,8 @@ def main() -> int:
         "empty_clusters": int((counts == 0).sum()),
         "variance_top1_share": float(variance[0] / variance.sum()) if variance.sum() > 0 else 0.0,
         "variance_top64_share": float(variance[:64].sum() / variance.sum()) if variance.sum() > 0 else 0.0,
+        "query": query_summary,
+        "groundtruth": gt_summary,
     }
     (out / f"{prefix}_sampled_pca_ivf_summary.json").write_text(
         json.dumps(summary, indent=2) + "\n", encoding="utf-8"

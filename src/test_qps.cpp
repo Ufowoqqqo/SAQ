@@ -5,6 +5,7 @@
 
 #include <fmt/core.h>
 #include <gflags/gflags.h>
+#include <glog/logging.h>
 
 #include "define_options.h"
 
@@ -19,8 +20,8 @@ using namespace saqlib;
 
 DEFINE_int32(fix_nprobe, 0, "Fixed nprobe value for QPS test. 0 means [5, 4000]");
 DEFINE_int32(fix_thread, 24, "Fixed thread value for QPS test. 0 means [1, 48]");
+DEFINE_int32(qps_topk, 100, "top-k used for QPS recall/ratio evaluation");
 
-constexpr size_t TOPK = 100;
 constexpr size_t ROUND = 10;
 
 struct Stats {
@@ -48,10 +49,13 @@ class QPSTester {
   private:
     Stats run_search(const size_t nprobe, SearcherConfig &searcher_cfg, size_t num_threads) {
         size_t NQ = query_.rows();
-        size_t total_count = TOPK * NQ;
+        CHECK_GT(FLAGS_qps_topk, 0);
+        CHECK_GE(gt_.cols(), FLAGS_qps_topk) << "groundtruth has fewer columns than qps_topk";
+        const size_t topk = static_cast<size_t>(FLAGS_qps_topk);
+        size_t total_count = topk * NQ;
         std::atomic<size_t> total_correct = 0;
 
-        std::vector<std::vector<PID>> results(NQ, std::vector<PID>(TOPK));
+        std::vector<std::vector<PID>> results(NQ, std::vector<PID>(topk));
         std::vector<QueryRuntimeMetrics> runtime_metrics(NQ);
         std::vector<float> tm_ms(NQ);
         std::vector<float> dist_ratios(NQ);
@@ -78,17 +82,17 @@ class QPSTester {
         utils::StopW tot_stopw;
         pool.detach_loop(0, NQ, [&](size_t i) {
             utils::StopW stopw;
-            ivf_.search(query_.row(i), TOPK, nprobe, searcher_cfg, results[i].data(), &runtime_metrics[i]);
+            ivf_.search(query_.row(i), topk, nprobe, searcher_cfg, results[i].data(), &runtime_metrics[i]);
             tm_ms[i] = stopw.getElapsedTimeMicro() / 1000.0;
         });
         pool.wait();
         auto tot_tm_ms = tot_stopw.getElapsedTimeMili();
 
         pool.detach_loop(0, NQ, [&](size_t i) {
-            dist_ratios[i] = utils::get_ratio(i, query_, data_, gt_, results[i].data(), TOPK, utils::L2Sqr) / TOPK;
+            dist_ratios[i] = utils::get_ratio(i, query_, data_, gt_, results[i].data(), topk, utils::L2Sqr) / topk;
             size_t correct_count = 0;
-            for (size_t j = 0; j < TOPK; ++j) {
-                for (size_t k = 0; k < TOPK; ++k) {
+            for (size_t j = 0; j < topk; ++j) {
+                for (size_t k = 0; k < topk; ++k) {
                     if (gt_(i, k) == results[i][j]) {
                         correct_count++;
                         break;
@@ -273,6 +277,9 @@ int main(int argc, char *argv[]) {
                                           dataset_str, args_str.c_str(), FLAGS_fix_thread, FLAGS_fix_nprobe);
 
     result_file += fmt::format("_sm{}", FLAGS_searcher_vars_bound_m);
+    if (FLAGS_qps_topk != 100) {
+        result_file += fmt::format("_top{}", FLAGS_qps_topk);
+    }
     if (FLAGS_searcher_full_refine) {
         result_file += "_fullrefine";
     }
