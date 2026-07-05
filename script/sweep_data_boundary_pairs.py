@@ -53,9 +53,17 @@ DEFAULT_TAIL_ALPHAS = "0,0.25"
 DEFAULT_PAIR_ALPHAS = "0,0.5,1,2"
 DEFAULT_INVERSION_PENALTY_SCALES = "0,0.02,0.05"
 DEFAULT_RUNTIME_PENALTY_SCALES = "0,0.005"
+DEFAULT_WEIGHTED_RATIO_PENALTY_SCALES = "0"
+DEFAULT_SPEED_PROXY_SCALES = "0"
 
 
 Plan = list[dict[str, int]]
+
+
+def plan_zero_tail_dim(plan: Plan) -> int:
+    if plan and int(plan[-1]["bits"]) == 0:
+        return int(plan[-1]["dim_len"])
+    return 0
 
 
 def normalize_cids(cids: np.ndarray) -> np.ndarray:
@@ -320,6 +328,117 @@ def evaluate_pair_inversion_proxy(
     }
 
 
+def evaluate_speed_proxy(
+    plan: Plan,
+    padded_dim: int,
+    avg_bits: float,
+    nonzero_segment_weight: float,
+    segment_weight: float,
+    nonzero_dim_weight: float,
+    bitwork_weight: float,
+    zero_tail_reward: float,
+) -> dict[str, Any]:
+    """Estimate relative search/refinement cost from plan shape.
+
+    Lower is better. This is a query-unaware systems proxy, not a measured QPS
+    model. It captures the mechanisms observed in the K4096 audits: fewer
+    positive-bit segments, less nonzero dimensional coverage, and lower payload
+    work usually make refinement/search cheaper.
+    """
+    nonzero = [seg for seg in plan if int(seg["bits"]) > 0]
+    nonzero_dim_len = int(sum(int(seg["dim_len"]) for seg in nonzero))
+    zero_tail_dim_len = plan_zero_tail_dim(plan)
+    bit_dim_sum = int(sum(int(seg["dim_len"]) * int(seg["bits"]) for seg in nonzero))
+    denom_bits = max(float(avg_bits) * float(padded_dim), np.finfo(np.float64).eps)
+    nonzero_dim_fraction = float(nonzero_dim_len / padded_dim) if padded_dim > 0 else 0.0
+    zero_tail_fraction = float(zero_tail_dim_len / padded_dim) if padded_dim > 0 else 0.0
+    bitwork_ratio_to_budget = float(bit_dim_sum / denom_bits)
+    raw = (
+        nonzero_segment_weight * float(len(nonzero))
+        + segment_weight * float(len(plan))
+        + nonzero_dim_weight * nonzero_dim_fraction
+        + bitwork_weight * bitwork_ratio_to_budget
+        - zero_tail_reward * zero_tail_fraction
+    )
+    return {
+        "speed_proxy_raw": float(raw),
+        "speed_proxy_nonzero_segment_count": int(len(nonzero)),
+        "speed_proxy_segment_count": int(len(plan)),
+        "speed_proxy_nonzero_dim_len": int(nonzero_dim_len),
+        "speed_proxy_zero_tail_dim_len": int(zero_tail_dim_len),
+        "speed_proxy_nonzero_dim_fraction": nonzero_dim_fraction,
+        "speed_proxy_zero_tail_fraction": zero_tail_fraction,
+        "speed_proxy_bit_dim_sum": int(bit_dim_sum),
+        "speed_proxy_bitwork_ratio_to_budget": bitwork_ratio_to_budget,
+    }
+
+
+def pareto_frontier(
+    rows: list[dict[str, Any]],
+    recall_field: str,
+    speed_field: str,
+) -> list[dict[str, Any]]:
+    frontier: list[dict[str, Any]] = []
+    for row in rows:
+        recall_value = float(row[recall_field])
+        speed_value = float(row[speed_field])
+        dominated = False
+        for other in rows:
+            if other is row:
+                continue
+            other_recall = float(other[recall_field])
+            other_speed = float(other[speed_field])
+            if (
+                other_recall <= recall_value
+                and other_speed <= speed_value
+                and (other_recall < recall_value or other_speed < speed_value)
+            ):
+                dominated = True
+                break
+        if not dominated:
+            frontier.append(dict(row))
+    frontier.sort(key=lambda row: (float(row[recall_field]), float(row[speed_field]), row["seg_plan"]))
+    for idx, row in enumerate(frontier):
+        row["pareto_rank"] = idx
+    return frontier
+
+
+def role_shortlist(unique_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if not unique_rows:
+        return []
+    selections: list[tuple[str, str, dict[str, Any]]] = [
+        (
+            "recall_risk_min",
+            "lowest combined recall-risk proxy",
+            min(unique_rows, key=lambda row: (float(row["best_recall_risk_score"]), row["seg_plan"])),
+        ),
+        (
+            "combined_min",
+            "lowest recall-risk plus speed-proxy score",
+            min(unique_rows, key=lambda row: (float(row["best_ranking_score"]), row["seg_plan"])),
+        ),
+        (
+            "speed_proxy_min",
+            "lowest plan-shape speed proxy among feasible plans",
+            min(
+                unique_rows,
+                key=lambda row: (
+                    float(row["best_speed_proxy_ratio_vs_default"]),
+                    float(row["best_recall_risk_score"]),
+                    row["seg_plan"],
+                ),
+            ),
+        ),
+    ]
+    out: list[dict[str, Any]] = []
+    for role, reason, row in selections:
+        role_row = dict(row)
+        role_row["role"] = role
+        role_row["selection_reason"] = reason
+        out.append(role_row)
+    return out
+
+
 def make_data_boundary_vector(
     global_vector: np.ndarray,
     residual_vector: np.ndarray,
@@ -382,7 +501,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--segment-penalty-scales", default=DEFAULT_SEGMENT_PENALTY_SCALES, help="Comma-separated segment penalty scale grid.")
     parser.add_argument("--intra-segment-penalty-scales", default=DEFAULT_INTRA_SEGMENT_PENALTY_SCALES, help="Comma-separated intra-segment penalty scale grid.")
     parser.add_argument("--inversion-penalty-scales", default=DEFAULT_INVERSION_PENALTY_SCALES, help="Comma-separated plan-level inversion penalty scale grid.")
-    parser.add_argument("--runtime-penalty-scales", default=DEFAULT_RUNTIME_PENALTY_SCALES, help="Comma-separated plan-level nonzero-segment penalty scale grid.")
+    parser.add_argument("--weighted-ratio-penalty-scales", default=DEFAULT_WEIGHTED_RATIO_PENALTY_SCALES, help="Comma-separated penalty scale grid for weighted pair-ratio risk.")
+    parser.add_argument("--runtime-penalty-scales", default=DEFAULT_RUNTIME_PENALTY_SCALES, help="Legacy comma-separated nonzero-segment penalty scale grid.")
+    parser.add_argument("--speed-proxy-scales", default=DEFAULT_SPEED_PROXY_SCALES, help="Comma-separated plan-shape speed proxy scale grid.")
+    parser.add_argument("--speed-nonzero-segment-weight", type=float, default=0.55, help="Speed proxy weight for positive-bit segment count.")
+    parser.add_argument("--speed-segment-weight", type=float, default=0.10, help="Speed proxy weight for total segment count.")
+    parser.add_argument("--speed-nonzero-dim-weight", type=float, default=0.25, help="Speed proxy weight for nonzero-dimensional coverage.")
+    parser.add_argument("--speed-bitwork-weight", type=float, default=0.10, help="Speed proxy weight for dim*bit payload relative to budget.")
+    parser.add_argument("--speed-zero-tail-reward", type=float, default=0.0, help="Speed proxy reward for a wider final zero-bit tail.")
     parser.add_argument("--min-positive-bits", type=int, default=0, help="Guard: require every positive-bit segment to use at least this many bits; 0 disables.")
     parser.add_argument("--min-zero-tail-dim", type=int, default=0, help="Guard: reject nonempty zero-bit tails shorter than this many dimensions; 0 disables.")
     parser.add_argument("--max-segments", type=int, default=0, help="Guard: reject plans with more than this many segments; 0 disables.")
@@ -412,7 +538,9 @@ def main() -> int:
     segment_penalty_scales = parse_float_list(args.segment_penalty_scales)
     intra_segment_penalty_scales = parse_float_list(args.intra_segment_penalty_scales)
     inversion_penalty_scales = parse_float_list(args.inversion_penalty_scales)
+    weighted_ratio_penalty_scales = parse_float_list(args.weighted_ratio_penalty_scales)
     runtime_penalty_scales = parse_float_list(args.runtime_penalty_scales)
+    speed_proxy_scales = parse_float_list(args.speed_proxy_scales)
 
     base = read_fvecs(args.data_dir / f"{args.dataset}_base_pca.fvecs")
     centroids = read_fvecs(args.data_dir / f"{args.dataset}_centroid_{args.k}_pca.fvecs")
@@ -499,7 +627,9 @@ def main() -> int:
         * len(segment_penalty_scales)
         * len(intra_segment_penalty_scales)
         * len(inversion_penalty_scales)
+        * len(weighted_ratio_penalty_scales)
         * len(runtime_penalty_scales)
+        * len(speed_proxy_scales)
     )
 
     reference_plans: list[tuple[str, Plan]] = [
@@ -529,6 +659,17 @@ def main() -> int:
     )
     default_soft_penalty = float(default_pair_metrics["pair_proxy_weighted_soft_inversion_penalty"])
     default_weighted_ratio = float(default_pair_metrics["pair_proxy_weighted_ratio_mean"])
+    default_speed_metrics = evaluate_speed_proxy(
+        default_key_plan,
+        padded_dim,
+        avg_bits,
+        args.speed_nonzero_segment_weight,
+        args.speed_segment_weight,
+        args.speed_nonzero_dim_weight,
+        args.speed_bitwork_weight,
+        args.speed_zero_tail_reward,
+    )
+    default_speed_proxy_raw = float(default_speed_metrics["speed_proxy_raw"])
 
     for global_blend in global_blends:
         for tail_alpha in tail_alphas:
@@ -580,55 +721,94 @@ def main() -> int:
                         weighted_ratio_ratio = (
                             weighted_ratio / default_weighted_ratio if default_weighted_ratio > 0 else 0.0
                         )
+                        speed_metrics = evaluate_speed_proxy(
+                            plan,
+                            padded_dim,
+                            avg_bits,
+                            args.speed_nonzero_segment_weight,
+                            args.speed_segment_weight,
+                            args.speed_nonzero_dim_weight,
+                            args.speed_bitwork_weight,
+                            args.speed_zero_tail_reward,
+                        )
+                        speed_proxy_raw = float(speed_metrics["speed_proxy_raw"])
+                        speed_proxy_ratio = (
+                            speed_proxy_raw / default_speed_proxy_raw if default_speed_proxy_raw > 0 else 1.0
+                        )
+                        speed_proxy_score = speed_proxy_ratio - 1.0
                         for inversion_penalty_scale in inversion_penalty_scales:
-                            for runtime_penalty_scale in runtime_penalty_scales:
-                                runtime_penalty = runtime_penalty_scale * float(metrics["nonzero_segment_count"])
-                                ranking_score = (
-                                    (candidate_cost / default_cost if default_cost > 0 else candidate_cost)
-                                    + inversion_penalty_scale * (soft_penalty_ratio - 1.0)
-                                    + runtime_penalty
-                                )
-                                row = {
-                                    "config_id": config_id,
-                                    "boundary_global_blend": float(global_blend),
-                                    "boundary_tail_alpha": float(tail_alpha),
-                                    "boundary_pair_alpha": float(pair_alpha),
-                                    "segment_penalty_scale": float(segment_penalty_scale),
-                                    "segment_penalty": float(segment_penalty),
-                                    "intra_segment_penalty_scale": float(intra_scale),
-                                    "inversion_penalty_scale": float(inversion_penalty_scale),
-                                    "runtime_penalty_scale": float(runtime_penalty_scale),
-                                    "ranking_score": float(ranking_score),
-                                    "runtime_penalty": float(runtime_penalty),
-                                    "seg_plan": sig,
-                                    "plan": format_plan(plan),
-                                    "dp_cost": float(meta["dp_cost"]),
-                                    "dp_used_bits": int(meta["dp_used_bits"]),
-                                    "used_bits_including_nonzero_segment_overhead": int(used_bits),
-                                    "effective_avg_bits_including_overhead": float(used_bits / padded_dim),
-                                    "boundary_cost": float(candidate_cost),
-                                    "default_boundary_cost": float(default_cost),
-                                    "global_boundary_cost": float(global_cost),
-                                    "residual_boundary_cost": float(residual_cost),
-                                    "boundary_cost_reduction_vs_default": float(reduction),
-                                    "boundary_cost_ratio_vs_default": float(candidate_cost / default_cost)
-                                    if default_cost > 0
-                                    else 0.0,
-                                    "boundary_sum": boundary_sum,
-                                    "global_norm_sum": float(boundary_meta["global_norm_sum"]),
-                                    "residual_sum": float(boundary_meta["residual_sum"]),
-                                    "tail_norm_sum": float(boundary_meta["tail_norm_sum"]),
-                                    "pair_norm_sum": float(boundary_meta["pair_norm_sum"]),
-                                    **metrics,
-                                    **pair_metrics,
-                                    "pair_proxy_weighted_soft_inversion_penalty_ratio_vs_default": soft_penalty_ratio,
-                                    "pair_proxy_weighted_ratio_mean_ratio_vs_default": weighted_ratio_ratio,
-                                    "is_feasible": not infeasible_reasons,
-                                    "infeasible_reasons": ";".join(infeasible_reasons),
-                                }
-                                rows.append(row)
-                                groups[sig].append(row)
-                                config_id += 1
+                            for weighted_ratio_penalty_scale in weighted_ratio_penalty_scales:
+                                for runtime_penalty_scale in runtime_penalty_scales:
+                                    for speed_proxy_scale in speed_proxy_scales:
+                                        boundary_cost_ratio = (
+                                            candidate_cost / default_cost if default_cost > 0 else candidate_cost
+                                        )
+                                        soft_inversion_penalty = inversion_penalty_scale * (
+                                            soft_penalty_ratio - 1.0
+                                        )
+                                        weighted_ratio_penalty = weighted_ratio_penalty_scale * (
+                                            weighted_ratio_ratio - 1.0
+                                        )
+                                        recall_risk_score = (
+                                            boundary_cost_ratio
+                                            + soft_inversion_penalty
+                                            + weighted_ratio_penalty
+                                        )
+                                        runtime_penalty = runtime_penalty_scale * float(
+                                            metrics["nonzero_segment_count"]
+                                        )
+                                        speed_penalty = speed_proxy_scale * speed_proxy_score
+                                        ranking_score = recall_risk_score + runtime_penalty + speed_penalty
+                                        row = {
+                                            "config_id": config_id,
+                                            "boundary_global_blend": float(global_blend),
+                                            "boundary_tail_alpha": float(tail_alpha),
+                                            "boundary_pair_alpha": float(pair_alpha),
+                                            "segment_penalty_scale": float(segment_penalty_scale),
+                                            "segment_penalty": float(segment_penalty),
+                                            "intra_segment_penalty_scale": float(intra_scale),
+                                            "inversion_penalty_scale": float(inversion_penalty_scale),
+                                            "weighted_ratio_penalty_scale": float(weighted_ratio_penalty_scale),
+                                            "runtime_penalty_scale": float(runtime_penalty_scale),
+                                            "speed_proxy_scale": float(speed_proxy_scale),
+                                            "ranking_score": float(ranking_score),
+                                            "recall_risk_score": float(recall_risk_score),
+                                            "boundary_cost_ratio_term": float(boundary_cost_ratio),
+                                            "soft_inversion_penalty_term": float(soft_inversion_penalty),
+                                            "weighted_ratio_penalty_term": float(weighted_ratio_penalty),
+                                            "runtime_penalty": float(runtime_penalty),
+                                            "legacy_runtime_penalty": float(runtime_penalty),
+                                            "speed_penalty": float(speed_penalty),
+                                            "speed_proxy_score": float(speed_proxy_score),
+                                            "speed_proxy_ratio_vs_default": float(speed_proxy_ratio),
+                                            "seg_plan": sig,
+                                            "plan": format_plan(plan),
+                                            "dp_cost": float(meta["dp_cost"]),
+                                            "dp_used_bits": int(meta["dp_used_bits"]),
+                                            "used_bits_including_nonzero_segment_overhead": int(used_bits),
+                                            "effective_avg_bits_including_overhead": float(used_bits / padded_dim),
+                                            "boundary_cost": float(candidate_cost),
+                                            "default_boundary_cost": float(default_cost),
+                                            "global_boundary_cost": float(global_cost),
+                                            "residual_boundary_cost": float(residual_cost),
+                                            "boundary_cost_reduction_vs_default": float(reduction),
+                                            "boundary_cost_ratio_vs_default": float(boundary_cost_ratio),
+                                            "boundary_sum": boundary_sum,
+                                            "global_norm_sum": float(boundary_meta["global_norm_sum"]),
+                                            "residual_sum": float(boundary_meta["residual_sum"]),
+                                            "tail_norm_sum": float(boundary_meta["tail_norm_sum"]),
+                                            "pair_norm_sum": float(boundary_meta["pair_norm_sum"]),
+                                            **metrics,
+                                            **pair_metrics,
+                                            **speed_metrics,
+                                            "pair_proxy_weighted_soft_inversion_penalty_ratio_vs_default": soft_penalty_ratio,
+                                            "pair_proxy_weighted_ratio_mean_ratio_vs_default": weighted_ratio_ratio,
+                                            "is_feasible": not infeasible_reasons,
+                                            "infeasible_reasons": ";".join(infeasible_reasons),
+                                        }
+                                        rows.append(row)
+                                        groups[sig].append(row)
+                                        config_id += 1
 
     all_rows = rows
     all_groups = groups
@@ -650,6 +830,8 @@ def main() -> int:
         sorted(groups.items(), key=lambda item: (min(row["ranking_score"] for row in item[1]), item[0]))
     ):
         best = min(group_rows, key=lambda row: row["ranking_score"])
+        best_recall = min(group_rows, key=lambda row: row["recall_risk_score"])
+        best_speed = min(group_rows, key=lambda row: row["speed_proxy_score"])
         best_reduction = max(group_rows, key=lambda row: row["boundary_cost_reduction_vs_default"])
         unique_rows.append(
             {
@@ -660,6 +842,12 @@ def main() -> int:
                 "config_count": len(group_rows),
                 "best_config_id_by_score": best["config_id"],
                 "best_ranking_score": best["ranking_score"],
+                "best_config_id_by_recall_risk": best_recall["config_id"],
+                "best_recall_risk_score": best_recall["recall_risk_score"],
+                "best_config_id_by_speed_proxy": best_speed["config_id"],
+                "best_speed_proxy_score": best_speed["speed_proxy_score"],
+                "best_speed_proxy_ratio_vs_default": best_speed["speed_proxy_ratio_vs_default"],
+                "best_speed_proxy_raw": best_speed["speed_proxy_raw"],
                 "best_config_id_by_reduction": best_reduction["config_id"],
                 "best_boundary_cost_reduction_vs_default": best_reduction[
                     "boundary_cost_reduction_vs_default"
@@ -692,21 +880,37 @@ def main() -> int:
                     "pair_proxy_weighted_ratio_mean_ratio_vs_default"
                 ],
                 "pair_proxy_ratio_p90": best["pair_proxy_ratio_p90"],
+                "speed_proxy_nonzero_segment_count": best["speed_proxy_nonzero_segment_count"],
+                "speed_proxy_segment_count": best["speed_proxy_segment_count"],
+                "speed_proxy_nonzero_dim_len": best["speed_proxy_nonzero_dim_len"],
+                "speed_proxy_zero_tail_dim_len": best["speed_proxy_zero_tail_dim_len"],
+                "speed_proxy_bit_dim_sum": best["speed_proxy_bit_dim_sum"],
+                "speed_proxy_bitwork_ratio_to_budget": best["speed_proxy_bitwork_ratio_to_budget"],
                 "global_blends": ";".join(sorted({float_label(row["boundary_global_blend"]) for row in group_rows})),
                 "tail_alphas": ";".join(sorted({float_label(row["boundary_tail_alpha"]) for row in group_rows})),
                 "pair_alphas": ";".join(sorted({float_label(row["boundary_pair_alpha"]) for row in group_rows})),
                 "segment_penalty_scales": ";".join(sorted({float_label(row["segment_penalty_scale"]) for row in group_rows})),
                 "intra_segment_penalty_scales": ";".join(sorted({float_label(row["intra_segment_penalty_scale"]) for row in group_rows})),
                 "inversion_penalty_scales": ";".join(sorted({float_label(row["inversion_penalty_scale"]) for row in group_rows})),
+                "weighted_ratio_penalty_scales": ";".join(sorted({float_label(row["weighted_ratio_penalty_scale"]) for row in group_rows})),
                 "runtime_penalty_scales": ";".join(sorted({float_label(row["runtime_penalty_scale"]) for row in group_rows})),
+                "speed_proxy_scales": ";".join(sorted({float_label(row["speed_proxy_scale"]) for row in group_rows})),
             }
         )
     unique_rows.sort(key=lambda row: (row["best_ranking_score"], -row["config_count"], row["seg_plan"]))
     for idx, row in enumerate(unique_rows):
         row["plan_rank"] = idx
+    pareto_rows = pareto_frontier(
+        unique_rows,
+        recall_field="best_recall_risk_score",
+        speed_field="best_speed_proxy_ratio_vs_default",
+    )
+    roles_rows = role_shortlist(unique_rows)
 
     output_csv = args.output_prefix.with_suffix(".csv")
     unique_csv = args.output_prefix.with_suffix(".unique.csv")
+    pareto_csv = args.output_prefix.with_suffix(".pareto.csv")
+    roles_csv = args.output_prefix.with_suffix(".roles.csv")
     pairs_csv = args.output_prefix.with_suffix(".pairs.csv")
     risk_csv = args.output_prefix.with_suffix(".risk.csv")
     summary_json = args.output_prefix.with_suffix(".summary.json")
@@ -720,9 +924,19 @@ def main() -> int:
         "segment_penalty",
         "intra_segment_penalty_scale",
         "inversion_penalty_scale",
+        "weighted_ratio_penalty_scale",
         "runtime_penalty_scale",
+        "speed_proxy_scale",
         "ranking_score",
+        "recall_risk_score",
+        "boundary_cost_ratio_term",
+        "soft_inversion_penalty_term",
+        "weighted_ratio_penalty_term",
         "runtime_penalty",
+        "legacy_runtime_penalty",
+        "speed_penalty",
+        "speed_proxy_score",
+        "speed_proxy_ratio_vs_default",
         "seg_plan",
         "plan",
         "dp_cost",
@@ -765,6 +979,15 @@ def main() -> int:
         "pair_proxy_weighted_hard_inversion_rate",
         "pair_proxy_weighted_soft_inversion_penalty",
         "pair_proxy_weighted_soft_inversion_penalty_ratio_vs_default",
+        "speed_proxy_raw",
+        "speed_proxy_nonzero_segment_count",
+        "speed_proxy_segment_count",
+        "speed_proxy_nonzero_dim_len",
+        "speed_proxy_zero_tail_dim_len",
+        "speed_proxy_nonzero_dim_fraction",
+        "speed_proxy_zero_tail_fraction",
+        "speed_proxy_bit_dim_sum",
+        "speed_proxy_bitwork_ratio_to_budget",
         "is_feasible",
         "infeasible_reasons",
     ]
@@ -776,6 +999,12 @@ def main() -> int:
         "config_count",
         "best_config_id_by_score",
         "best_ranking_score",
+        "best_config_id_by_recall_risk",
+        "best_recall_risk_score",
+        "best_config_id_by_speed_proxy",
+        "best_speed_proxy_score",
+        "best_speed_proxy_ratio_vs_default",
+        "best_speed_proxy_raw",
         "best_config_id_by_reduction",
         "best_boundary_cost_reduction_vs_default",
         "best_boundary_cost_ratio_vs_default",
@@ -798,14 +1027,24 @@ def main() -> int:
         "pair_proxy_weighted_ratio_mean",
         "pair_proxy_weighted_ratio_mean_ratio_vs_default",
         "pair_proxy_ratio_p90",
+        "speed_proxy_nonzero_segment_count",
+        "speed_proxy_segment_count",
+        "speed_proxy_nonzero_dim_len",
+        "speed_proxy_zero_tail_dim_len",
+        "speed_proxy_bit_dim_sum",
+        "speed_proxy_bitwork_ratio_to_budget",
         "global_blends",
         "tail_alphas",
         "pair_alphas",
         "segment_penalty_scales",
         "intra_segment_penalty_scales",
         "inversion_penalty_scales",
+        "weighted_ratio_penalty_scales",
         "runtime_penalty_scales",
+        "speed_proxy_scales",
     ]
+    pareto_fields = ["pareto_rank"] + unique_fields
+    role_fields = ["role", "selection_reason"] + unique_fields
     risk_fields = [
         "block_id",
         "start_dim",
@@ -835,6 +1074,8 @@ def main() -> int:
 
     write_csv(output_csv, rows, row_fields)
     write_csv(unique_csv, unique_rows, unique_fields)
+    write_csv(pareto_csv, pareto_rows, pareto_fields)
+    write_csv(roles_csv, roles_rows, role_fields)
     write_boundary_pairs(pairs_csv, pair_rows)
     write_csv(risk_csv, risk_rows, risk_fields)
 
@@ -852,8 +1093,23 @@ def main() -> int:
             "segment_penalty_scales": segment_penalty_scales,
             "intra_segment_penalty_scales": intra_segment_penalty_scales,
             "inversion_penalty_scales": inversion_penalty_scales,
+            "weighted_ratio_penalty_scales": weighted_ratio_penalty_scales,
             "runtime_penalty_scales": runtime_penalty_scales,
+            "speed_proxy_scales": speed_proxy_scales,
             "total_configs": total_configs,
+        },
+        "scoring": {
+            "planner_version": "data_boundary_pairs_v3",
+            "recall_risk_score": "boundary_cost_ratio + soft_inversion_penalty + weighted_ratio_penalty",
+            "ranking_score": "recall_risk_score + legacy_runtime_penalty + speed_penalty",
+            "speed_proxy": "lower is faster; combines nonzero segment count, segment count, nonzero dimensions, and bitwork",
+            "speed_proxy_weights": {
+                "nonzero_segment_weight": float(args.speed_nonzero_segment_weight),
+                "segment_weight": float(args.speed_segment_weight),
+                "nonzero_dim_weight": float(args.speed_nonzero_dim_weight),
+                "bitwork_weight": float(args.speed_bitwork_weight),
+                "zero_tail_reward": float(args.speed_zero_tail_reward),
+            },
         },
         "residual_risk_stat": args.residual_risk_stat,
         "residual_summary": residual_summary,
@@ -894,12 +1150,17 @@ def main() -> int:
         "all_unique_plan_count": len(all_groups),
         "feasible_unique_plan_count": len({row["seg_plan"] for row in feasible_rows}),
         "unique_plan_count": len(unique_rows),
+        "pareto_plan_count": len(pareto_rows),
         "top_unique_by_score": unique_rows[:20],
+        "pareto_frontier": pareto_rows[:20],
+        "role_shortlist": roles_rows,
         "top_configs_by_score": rows[:20],
         "top_all_configs_by_score": all_rows_by_score[:20],
         "outputs": {
             "config_csv": str(output_csv),
             "unique_csv": str(unique_csv),
+            "pareto_csv": str(pareto_csv),
+            "roles_csv": str(roles_csv),
             "pairs_csv": str(pairs_csv),
             "risk_csv": str(risk_csv),
             "summary_json": str(summary_json),
@@ -927,9 +1188,13 @@ def main() -> int:
                 "filter_infeasible": bool(args.filter_infeasible),
                 "config_csv": str(output_csv),
                 "unique_csv": str(unique_csv),
+                "pareto_csv": str(pareto_csv),
+                "roles_csv": str(roles_csv),
                 "pairs_csv": str(pairs_csv),
                 "risk_csv": str(risk_csv),
                 "summary_json": str(summary_json),
+                "pareto_plan_count": len(pareto_rows),
+                "role_shortlist": roles_rows,
                 "top_unique_by_score": unique_rows[:5],
             },
             indent=2,
