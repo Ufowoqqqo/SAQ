@@ -46,6 +46,11 @@ The default selection policy is conservative:
 3. only when `--allow-risky-fallback` is set, evaluate the best remaining
    non-default candidate to test whether the guard is too strict.
 
+If the generator produces only the default plan, the driver records
+`generator_produced_no_non_default_candidates` and skips the scorer/evaluator.
+This matters for low-dimensional datasets where SAQ's global DP may already be
+a single segment.
+
 Measured recall/QPS always uses:
 
 ```text
@@ -69,6 +74,18 @@ python script/run_default_neighborhood_cross_dataset.py \
 `--allow-risky-fallback` was used only to validate negative cases. It should not
 be interpreted as a promotion policy.
 
+Held-out audio command:
+
+```bash
+python script/run_default_neighborhood_cross_dataset.py \
+  --run audio_K4096_B4 \
+  --evaluate \
+  --max-eval-per-run 1 \
+  --output-prefix /tmp/saq-run/reports/default_neighborhood_audio_holdout_2026_07_06
+```
+
+This run intentionally did not use `--allow-risky-fallback`.
+
 ## 4. Summary
 
 | run | default plan | selected candidate | selection | scorer signal | measured result |
@@ -77,12 +94,15 @@ be interpreted as a promotion policy.
 | DEEP100K B=5 | `64:7,192:4` | `128:5,128:4` | risky fallback | recall-risk 1.6434, speed 0.9970x | +10.4% QPS, but -0.0143 R@100 at np200 |
 | CIFAR60K B=4 | `64:9,192:5,128:3,128:0` | `128:7,256:4,128:0` | frontier-like | recall-risk 0.9617, speed 0.7212x | +7.4% QPS and +0.0004 R@10 at np200 |
 | GIST full K4096 B=4 | `64:11,192:6,320:4,256:2,128:0` | `128:9,320:5,320:3,192:0` | conservative | recall-risk 0.9071, speed 0.7792x | +19.5% QPS and +0.00077 R@100 at np800 |
+| Audio K4096 B=4 | `192:4` | none | no candidate selected | generator produced only default | no scorer/evaluator run |
 
 Full summary:
 
 ```text
 /tmp/saq-run/reports/default_neighborhood_cross_dataset_validation_2026_07_06.csv
 /tmp/saq-run/reports/default_neighborhood_cross_dataset_validation_2026_07_06.json
+/tmp/saq-run/reports/default_neighborhood_audio_holdout_2026_07_06.csv
+/tmp/saq-run/reports/default_neighborhood_audio_holdout_2026_07_06.json
 ```
 
 ## 5. Per-Dataset Readout
@@ -238,6 +258,28 @@ ratio:   1.195x
 This is the strongest positive case: the automated workflow recovers a plan
 that improves both recall and speed on full GIST.
 
+### Audio K4096 B=4 Holdout
+
+The held-out audio run used the fixed policy without risky fallback.
+
+Generated candidates:
+
+```text
+default only: 192:4
+```
+
+Summary row:
+
+```text
+selection_reason: no_candidate_selected
+scorer_skipped_reason: generator_produced_no_non_default_candidates
+```
+
+No custom plan was built or evaluated. This is still a useful holdout result:
+for 192-dimensional audio at B=4, SAQ's global DP is already a single segment,
+so the current default-neighborhood generator has no meaningful local shape to
+perturb. The policy correctly does not force a candidate.
+
 ## 6. Interpretation
 
 The workflow is not a universal "always improve SAQ" rule. It is a useful
@@ -248,6 +290,8 @@ query-unaware triage method:
   path, but the strict conservative guard would miss it.
 - On DEEP, the risky fallback candidates are faster but clearly lose recall,
   and the scorer/guard correctly refuses to promote them.
+- On audio, the generator produces no non-default candidate, so the fixed policy
+  abstains rather than inventing a plan.
 
 This gives a more defensible contribution shape:
 
@@ -264,16 +308,16 @@ validation layer around SAQ, not yet as a guaranteed replacement for SAQ's DP.
 
 ## 7. Remaining Gaps
 
-1. The validation set is still small: two positive datasets/settings and one
-   negative dataset/settings family.
+1. The validation set is still small: two positive datasets/settings, one
+   negative dataset/settings family, and one abstention case.
 2. The conservative guard is safe but can be too strict, as shown by CIFAR.
 3. `frontier_like` selection needs a clearer threshold calibration before it can
    be presented as a fixed method.
 4. The generator currently only explores a small neighborhood around the SAQ
    default. It does not yet cover local/cluster-aware plans or non-contiguous
    dimension grouping.
-5. Audio and larger raw datasets are available but were not included in this
-   run. They are natural next validation targets.
+5. Larger raw datasets are available but were not included in this run. They
+   are natural next validation targets.
 
 ## 8. Artifacts
 
@@ -282,6 +326,8 @@ Main summaries:
 ```text
 /tmp/saq-run/reports/default_neighborhood_cross_dataset_validation_2026_07_06.csv
 /tmp/saq-run/reports/default_neighborhood_cross_dataset_validation_2026_07_06.json
+/tmp/saq-run/reports/default_neighborhood_audio_holdout_2026_07_06.csv
+/tmp/saq-run/reports/default_neighborhood_audio_holdout_2026_07_06.json
 ```
 
 Generated/scored candidate outputs:
@@ -295,6 +341,7 @@ Generated/scored candidate outputs:
 /tmp/saq-run/reports/cifar60k_B4_default_neighborhood_scored_auto_2026_07_06.*
 /tmp/saq-run/reports/gist_full_K4096_B4_default_neighborhood_auto_2026_07_06.*
 /tmp/saq-run/reports/gist_full_K4096_B4_default_neighborhood_scored_auto_2026_07_06.*
+/tmp/saq-run/reports/audio_K4096_B4_default_neighborhood_auto_2026_07_06.*
 ```
 
 Measured compare/QPS outputs are referenced from the summary JSON.

@@ -606,6 +606,32 @@ def run_spec(
     args: argparse.Namespace,
 ) -> dict[str, Any]:
     candidate_csv = maybe_run_generator(spec, root, date, env, args.force, args.dry_run)
+    candidate_rows = [] if args.dry_run else read_csv(candidate_csv)
+    candidate_defaults = [
+        row["seg_plan"] for row in candidate_rows if bool_from_csv(row.get("is_default", ""))
+    ]
+    generated_non_default = [
+        row for row in candidate_rows if not bool_from_csv(row.get("is_default", ""))
+    ]
+    if not generated_non_default:
+        return {
+            "spec": asdict(spec),
+            "candidate_csv": str(candidate_csv),
+            "unique_csv": "",
+            "default_plan": candidate_defaults[0] if candidate_defaults else "",
+            "candidate_count": len(candidate_rows),
+            "unique_plan_count": 0,
+            "scorer_skipped_reason": "generator_produced_no_non_default_candidates",
+            "selected": [],
+            "selection_policy": {
+                "max_eval_per_run": args.max_eval_per_run,
+                "allow_risky_fallback": bool(args.allow_risky_fallback),
+            },
+            "evaluations": [],
+            "top_unique": [],
+            "generated_candidates": candidate_rows,
+        }
+
     unique_csv = maybe_run_scorer(spec, root, date, candidate_csv, env, args.force, args.dry_run)
     unique_rows = [] if args.dry_run else read_csv(unique_csv)
     default_rows = [row for row in unique_rows if bool_from_csv(row.get("candidate_is_default", ""))]
@@ -665,6 +691,7 @@ def flatten_summary_rows(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     "default_plan": result["default_plan"],
                     "candidate_plan": "",
                     "selection_reason": "no_candidate_selected",
+                    "scorer_skipped_reason": result.get("scorer_skipped_reason", ""),
                     "conservative_eligible": "",
                     "best_ranking_score": "",
                     "best_recall_risk_score": "",
@@ -694,6 +721,7 @@ def flatten_summary_rows(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "candidate_plan": candidate["seg_plan"],
                 "candidate_family": candidate.get("candidate_families", ""),
                 "selection_reason": candidate.get("selection_reason", ""),
+                "scorer_skipped_reason": result.get("scorer_skipped_reason", ""),
                 "conservative_eligible": candidate.get("conservative_role_is_eligible", ""),
                 "conservative_reasons": candidate.get("conservative_role_reasons", ""),
                 "best_ranking_score": candidate.get("best_ranking_score", ""),
@@ -776,6 +804,7 @@ def main() -> int:
         "candidate_plan",
         "candidate_family",
         "selection_reason",
+        "scorer_skipped_reason",
         "conservative_eligible",
         "conservative_reasons",
         "best_ranking_score",
