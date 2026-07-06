@@ -110,6 +110,17 @@ BUILTIN_SPECS: dict[str, DatasetSpec] = {
         min_positive_bits=2,
         min_zero_tail_dim=64,
     ),
+    "gist_full_K4096_B3": DatasetSpec(
+        name="gist_full_K4096_B3",
+        dataset="gist_full",
+        k=4096,
+        avg_bits=3,
+        topk=100,
+        qps_nprobe=800,
+        compare_nprobes=(50, 100, 200, 400, 800),
+        min_positive_bits=2,
+        min_zero_tail_dim=128,
+    ),
     "gist_full_K4096_B4": DatasetSpec(
         name="gist_full_K4096_B4",
         dataset="gist_full",
@@ -120,6 +131,17 @@ BUILTIN_SPECS: dict[str, DatasetSpec] = {
         compare_nprobes=(50, 100, 200, 400, 800),
         min_positive_bits=2,
         min_zero_tail_dim=128,
+    ),
+    "gist_full_K4096_B5": DatasetSpec(
+        name="gist_full_K4096_B5",
+        dataset="gist_full",
+        k=4096,
+        avg_bits=5,
+        topk=100,
+        qps_nprobe=800,
+        compare_nprobes=(50, 100, 200, 400, 800),
+        min_positive_bits=2,
+        min_zero_tail_dim=64,
     ),
     "audio_K4096_B4": DatasetSpec(
         name="audio_K4096_B4",
@@ -253,6 +275,18 @@ def write_json(path: Path, obj: Any) -> None:
     path.write_text(json.dumps(obj, indent=2) + "\n", encoding="utf-8")
 
 
+def generator_summary_path(candidate_csv: Path) -> Path:
+    return candidate_csv.with_suffix(".summary.json")
+
+
+def read_generator_default_plan(candidate_csv: Path) -> str:
+    summary_path = generator_summary_path(candidate_csv)
+    if not summary_path.exists():
+        return ""
+    data = json.loads(summary_path.read_text(encoding="utf-8"))
+    return str(data.get("default_plan", ""))
+
+
 def maybe_run_generator(
     spec: DatasetSpec,
     root: Path,
@@ -297,6 +331,7 @@ def maybe_run_scorer(
     root: Path,
     date: str,
     candidate_csv: Path,
+    default_plan: str,
     env: dict[str, str],
     force: bool,
     dry_run: bool,
@@ -320,6 +355,8 @@ def maybe_run_scorer(
         str(spec.k),
         "--avg-bits",
         b_label(spec.avg_bits),
+        "--default-plan",
+        default_plan,
         "--boundary-rank",
         str(spec.boundary_rank),
         "--neighbor-window",
@@ -642,6 +679,8 @@ def run_spec(
     candidate_defaults = [
         row["seg_plan"] for row in candidate_rows if bool_from_csv(row.get("is_default", ""))
     ]
+    generator_default_plan = read_generator_default_plan(candidate_csv) if not args.dry_run else ""
+    default_plan = candidate_defaults[0] if candidate_defaults else generator_default_plan
     generated_non_default = [
         row for row in candidate_rows if not bool_from_csv(row.get("is_default", ""))
     ]
@@ -650,7 +689,7 @@ def run_spec(
             "spec": asdict(spec),
             "candidate_csv": str(candidate_csv),
             "unique_csv": "",
-            "default_plan": candidate_defaults[0] if candidate_defaults else "",
+            "default_plan": default_plan,
             "candidate_count": len(candidate_rows),
             "unique_plan_count": 0,
             "scorer_skipped_reason": "generator_produced_no_non_default_candidates",
@@ -664,10 +703,19 @@ def run_spec(
             "generated_candidates": candidate_rows,
         }
 
-    unique_csv = maybe_run_scorer(spec, root, date, candidate_csv, env, args.force, args.dry_run)
+    unique_csv = maybe_run_scorer(
+        spec,
+        root,
+        date,
+        candidate_csv,
+        default_plan,
+        env,
+        args.force,
+        args.dry_run,
+    )
     unique_rows = [] if args.dry_run else read_csv(unique_csv)
     default_rows = [row for row in unique_rows if bool_from_csv(row.get("candidate_is_default", ""))]
-    default_plan = default_rows[0]["seg_plan"] if default_rows else ""
+    default_plan = default_rows[0]["seg_plan"] if default_rows else default_plan
     selected = select_candidates(unique_rows, args.max_eval_per_run, args.allow_risky_fallback)
 
     evaluations: list[dict[str, Any]] = []
