@@ -403,7 +403,32 @@ def pareto_frontier(
     return frontier
 
 
-def role_shortlist(unique_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def conservative_role_reasons(row: dict[str, Any], args: argparse.Namespace) -> list[str]:
+    reasons: list[str] = []
+    eps = 1e-12
+    soft_ratio = float(row["pair_proxy_weighted_soft_inversion_penalty_ratio_vs_default"])
+    weighted_ratio = float(row["pair_proxy_weighted_ratio_mean_ratio_vs_default"])
+    speed_ratio = float(row["best_speed_proxy_ratio_vs_default"])
+    nonzero_segments = int(row["nonzero_segment_count"])
+    if args.conservative_role_soft_inversion_max > 0 and soft_ratio > args.conservative_role_soft_inversion_max + eps:
+        reasons.append(f"soft_inversion_ratio>{args.conservative_role_soft_inversion_max:g}")
+    if args.conservative_role_weighted_ratio_max > 0 and weighted_ratio > args.conservative_role_weighted_ratio_max + eps:
+        reasons.append(f"weighted_ratio>{args.conservative_role_weighted_ratio_max:g}")
+    if args.conservative_role_speed_proxy_max > 0 and speed_ratio > args.conservative_role_speed_proxy_max + eps:
+        reasons.append(f"speed_proxy_ratio>{args.conservative_role_speed_proxy_max:g}")
+    if args.conservative_role_max_nonzero_segments > 0 and nonzero_segments > args.conservative_role_max_nonzero_segments:
+        reasons.append(f"nonzero_segment_count>{args.conservative_role_max_nonzero_segments}")
+    return reasons
+
+
+def annotate_conservative_roles(unique_rows: list[dict[str, Any]], args: argparse.Namespace) -> None:
+    for row in unique_rows:
+        reasons = conservative_role_reasons(row, args)
+        row["conservative_role_is_eligible"] = not reasons
+        row["conservative_role_reasons"] = ";".join(reasons)
+
+
+def role_shortlist(unique_rows: list[dict[str, Any]], args: argparse.Namespace) -> list[dict[str, Any]]:
     if not unique_rows:
         return []
     selections: list[tuple[str, str, dict[str, Any]]] = [
@@ -430,6 +455,36 @@ def role_shortlist(unique_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             ),
         ),
     ]
+    conservative_rows = [row for row in unique_rows if bool(row.get("conservative_role_is_eligible", False))]
+    if conservative_rows:
+        selections.extend(
+            [
+                (
+                    "conservative_recall_risk_min",
+                    "lowest recall-risk proxy among conservative promotion-eligible plans",
+                    min(
+                        conservative_rows,
+                        key=lambda row: (
+                            float(row["best_recall_risk_score"]),
+                            float(row["best_speed_proxy_ratio_vs_default"]),
+                            row["seg_plan"],
+                        ),
+                    ),
+                ),
+                (
+                    "conservative_combined_min",
+                    "lowest ranking score among conservative promotion-eligible plans",
+                    min(
+                        conservative_rows,
+                        key=lambda row: (
+                            float(row["best_ranking_score"]),
+                            float(row["best_speed_proxy_ratio_vs_default"]),
+                            row["seg_plan"],
+                        ),
+                    ),
+                ),
+            ]
+        )
     out: list[dict[str, Any]] = []
     for role, reason, row in selections:
         role_row = dict(row)
@@ -509,6 +564,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--speed-nonzero-dim-weight", type=float, default=0.25, help="Speed proxy weight for nonzero-dimensional coverage.")
     parser.add_argument("--speed-bitwork-weight", type=float, default=0.10, help="Speed proxy weight for dim*bit payload relative to budget.")
     parser.add_argument("--speed-zero-tail-reward", type=float, default=0.0, help="Speed proxy reward for a wider final zero-bit tail.")
+    parser.add_argument("--conservative-role-soft-inversion-max", type=float, default=1.0, help="Conservative role guard: max weighted soft-inversion ratio vs default; <=0 disables.")
+    parser.add_argument("--conservative-role-weighted-ratio-max", type=float, default=1.0, help="Conservative role guard: max weighted pair-ratio mean vs default; <=0 disables.")
+    parser.add_argument("--conservative-role-speed-proxy-max", type=float, default=1.0, help="Conservative role guard: max speed-proxy ratio vs default; <=0 disables.")
+    parser.add_argument("--conservative-role-max-nonzero-segments", type=int, default=0, help="Conservative role guard: max positive-bit segments; 0 disables.")
     parser.add_argument("--min-positive-bits", type=int, default=0, help="Guard: require every positive-bit segment to use at least this many bits; 0 disables.")
     parser.add_argument("--min-zero-tail-dim", type=int, default=0, help="Guard: reject nonempty zero-bit tails shorter than this many dimensions; 0 disables.")
     parser.add_argument("--max-segments", type=int, default=0, help="Guard: reject plans with more than this many segments; 0 disables.")
@@ -900,12 +959,13 @@ def main() -> int:
     unique_rows.sort(key=lambda row: (row["best_ranking_score"], -row["config_count"], row["seg_plan"]))
     for idx, row in enumerate(unique_rows):
         row["plan_rank"] = idx
+    annotate_conservative_roles(unique_rows, args)
     pareto_rows = pareto_frontier(
         unique_rows,
         recall_field="best_recall_risk_score",
         speed_field="best_speed_proxy_ratio_vs_default",
     )
-    roles_rows = role_shortlist(unique_rows)
+    roles_rows = role_shortlist(unique_rows, args)
 
     output_csv = args.output_prefix.with_suffix(".csv")
     unique_csv = args.output_prefix.with_suffix(".unique.csv")
@@ -1021,6 +1081,8 @@ def main() -> int:
         "has_nonfinal_1bit_segment",
         "is_feasible",
         "infeasible_reasons",
+        "conservative_role_is_eligible",
+        "conservative_role_reasons",
         "pair_proxy_weighted_soft_inversion_penalty",
         "pair_proxy_weighted_soft_inversion_penalty_ratio_vs_default",
         "pair_proxy_weighted_hard_inversion_rate",
@@ -1111,6 +1173,16 @@ def main() -> int:
                 "zero_tail_reward": float(args.speed_zero_tail_reward),
             },
         },
+        "conservative_role_guard": {
+            "soft_inversion_max": float(args.conservative_role_soft_inversion_max),
+            "weighted_ratio_max": float(args.conservative_role_weighted_ratio_max),
+            "speed_proxy_max": float(args.conservative_role_speed_proxy_max),
+            "max_nonzero_segments": int(args.conservative_role_max_nonzero_segments),
+            "eligible_plan_count": len(
+                [row for row in unique_rows if bool(row["conservative_role_is_eligible"])]
+            ),
+            "purpose": "promotion guard only; original ranking, Pareto frontier, and role outputs are still preserved",
+        },
         "residual_risk_stat": args.residual_risk_stat,
         "residual_summary": residual_summary,
         "tail_summary": tail_summary,
@@ -1194,6 +1266,9 @@ def main() -> int:
                 "risk_csv": str(risk_csv),
                 "summary_json": str(summary_json),
                 "pareto_plan_count": len(pareto_rows),
+                "conservative_eligible_plans": len(
+                    [row for row in unique_rows if bool(row["conservative_role_is_eligible"])]
+                ),
                 "role_shortlist": roles_rows,
                 "top_unique_by_score": unique_rows[:5],
             },
