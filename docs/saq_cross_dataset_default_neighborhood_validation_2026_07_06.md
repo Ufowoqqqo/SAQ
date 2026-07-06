@@ -86,6 +86,31 @@ python script/run_default_neighborhood_cross_dataset.py \
 
 This run intentionally did not use `--allow-risky-fallback`.
 
+Held-out word2vec command:
+
+```bash
+python script/run_default_neighborhood_cross_dataset.py \
+  --run word2vec_sample100k_B4 \
+  --evaluate \
+  --max-eval-per-run 1 \
+  --output-prefix /tmp/saq-run/reports/default_neighborhood_word2vec_holdout_2026_07_06
+```
+
+This run also intentionally did not use `--allow-risky-fallback`.
+
+The word2vec artifacts were prepared as a 100k prefix sample with fallback
+NumPy PCA/K512 IVF artifacts, plus sample-specific original-space L2 top100
+groundtruth:
+
+```text
+/tmp/saq-run/data/word2vec_sample100k/word2vec_sample100k_base.fvecs
+/tmp/saq-run/data/word2vec_sample100k/word2vec_sample100k_base_pca.fvecs
+/tmp/saq-run/data/word2vec_sample100k/word2vec_sample100k_query_pca.fvecs
+/tmp/saq-run/data/word2vec_sample100k/word2vec_sample100k_centroid_512_pca.fvecs
+/tmp/saq-run/data/word2vec_sample100k/word2vec_sample100k_cluster_id_512.ivecs
+/tmp/saq-run/data/word2vec_sample100k/word2vec_sample100k_groundtruth.ivecs
+```
+
 ## 4. Summary
 
 | run | default plan | selected candidate | selection | scorer signal | measured result |
@@ -95,6 +120,7 @@ This run intentionally did not use `--allow-risky-fallback`.
 | CIFAR60K B=4 | `64:9,192:5,128:3,128:0` | `128:7,256:4,128:0` | frontier-like | recall-risk 0.9617, speed 0.7212x | +7.4% QPS and +0.0004 R@10 at np200 |
 | GIST full K4096 B=4 | `64:11,192:6,320:4,256:2,128:0` | `128:9,320:5,320:3,192:0` | conservative | recall-risk 0.9071, speed 0.7792x | +19.5% QPS and +0.00077 R@100 at np800 |
 | Audio K4096 B=4 | `192:4` | none | no candidate selected | generator produced only default | no scorer/evaluator run |
+| word2vec100K K512 B=4 | `320:4` | none | no candidate selected | generator produced only default | no scorer/evaluator run |
 
 Full summary:
 
@@ -103,6 +129,8 @@ Full summary:
 /tmp/saq-run/reports/default_neighborhood_cross_dataset_validation_2026_07_06.json
 /tmp/saq-run/reports/default_neighborhood_audio_holdout_2026_07_06.csv
 /tmp/saq-run/reports/default_neighborhood_audio_holdout_2026_07_06.json
+/tmp/saq-run/reports/default_neighborhood_word2vec_holdout_2026_07_06.csv
+/tmp/saq-run/reports/default_neighborhood_word2vec_holdout_2026_07_06.json
 ```
 
 ## 5. Per-Dataset Readout
@@ -280,6 +308,31 @@ for 192-dimensional audio at B=4, SAQ's global DP is already a single segment,
 so the current default-neighborhood generator has no meaningful local shape to
 perturb. The policy correctly does not force a candidate.
 
+### word2vec100K K512 B=4 Holdout
+
+The held-out word2vec run used a 100k prefix sample of the 1M base vectors.
+The raw vectors are 300-dimensional; SAQ pads to 320 dimensions, so the default
+plan is reported over 320 dimensions.
+
+Generated candidates:
+
+```text
+default only: 320:4
+```
+
+Summary row:
+
+```text
+selection_reason: no_candidate_selected
+scorer_skipped_reason: generator_produced_no_non_default_candidates
+```
+
+No custom plan was built or evaluated. This is another abstention case: at B=4
+the reimplemented SAQ global DP chooses a single uniform 4-bit segment over the
+padded 320-dimensional space, leaving no conservative default-neighborhood
+shape to perturb. This result should be interpreted as policy behavior on a
+sampled fallback artifact set, not as an official full word2vec benchmark.
+
 ## 6. Interpretation
 
 The workflow is not a universal "always improve SAQ" rule. It is a useful
@@ -292,6 +345,8 @@ query-unaware triage method:
   and the scorer/guard correctly refuses to promote them.
 - On audio, the generator produces no non-default candidate, so the fixed policy
   abstains rather than inventing a plan.
+- On word2vec100K, the same fixed policy also abstains because the default is a
+  single padded 320-dimensional 4-bit segment.
 
 This gives a more defensible contribution shape:
 
@@ -309,7 +364,7 @@ validation layer around SAQ, not yet as a guaranteed replacement for SAQ's DP.
 ## 7. Remaining Gaps
 
 1. The validation set is still small: two positive datasets/settings, one
-   negative dataset/settings family, and one abstention case.
+   negative dataset/settings family, and two abstention cases.
 2. The conservative guard is safe but can be too strict, as shown by CIFAR.
 3. `frontier_like` selection needs a clearer threshold calibration before it can
    be presented as a fixed method.
@@ -328,6 +383,8 @@ Main summaries:
 /tmp/saq-run/reports/default_neighborhood_cross_dataset_validation_2026_07_06.json
 /tmp/saq-run/reports/default_neighborhood_audio_holdout_2026_07_06.csv
 /tmp/saq-run/reports/default_neighborhood_audio_holdout_2026_07_06.json
+/tmp/saq-run/reports/default_neighborhood_word2vec_holdout_2026_07_06.csv
+/tmp/saq-run/reports/default_neighborhood_word2vec_holdout_2026_07_06.json
 ```
 
 Generated/scored candidate outputs:
@@ -342,6 +399,7 @@ Generated/scored candidate outputs:
 /tmp/saq-run/reports/gist_full_K4096_B4_default_neighborhood_auto_2026_07_06.*
 /tmp/saq-run/reports/gist_full_K4096_B4_default_neighborhood_scored_auto_2026_07_06.*
 /tmp/saq-run/reports/audio_K4096_B4_default_neighborhood_auto_2026_07_06.*
+/tmp/saq-run/reports/word2vec_sample100k_B4_default_neighborhood_auto_2026_07_06.*
 ```
 
 Measured compare/QPS outputs are referenced from the summary JSON.

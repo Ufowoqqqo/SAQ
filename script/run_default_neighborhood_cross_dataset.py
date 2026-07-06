@@ -109,6 +109,16 @@ BUILTIN_SPECS: dict[str, DatasetSpec] = {
         compare_nprobes=(50, 100, 200, 400),
         min_positive_bits=1,
     ),
+    "word2vec_sample100k_B4": DatasetSpec(
+        name="word2vec_sample100k_B4",
+        dataset="word2vec_sample100k",
+        k=512,
+        avg_bits=4,
+        topk=100,
+        qps_nprobe=200,
+        compare_nprobes=(50, 100, 200, 400),
+        min_positive_bits=2,
+    ),
 }
 
 
