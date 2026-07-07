@@ -1510,3 +1510,141 @@ fixed-policy matrix.
 
 Run validation, commit, and push. Then evaluate cached residual/tail feature
 reuse or scoring-grid reduction as the next overhead-reduction step.
+
+## Session 2026-07-07 23:27 HKT
+
+### Goal
+
+Evaluate cached residual/tail scorer features and scorer-grid reduction as
+overhead reductions for the current fixed-policy scorer.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- `git status --short --branch`: clean and aligned with
+  `origin/saq-boundary-audit`
+- Files read:
+  - `AGENTS.md`
+  - `TASK.md`
+  - `EXPERIMENTS.md`
+  - `RESULTS.md`
+  - `docs/saq_fixed_policy_scorer_calibration_full_a1024p2_2026_07_07.md`
+  - scorer implementation files under `script/`
+
+### Hypothesis / plan
+
+Pair-count reduction did not materially reduce full-GIST scorer runtime, so
+the remaining cost might be residual/tail feature computation or scorer-grid
+enumeration. Implement the smallest safe cost reductions and evaluate them
+against exact fixed-policy decision and selected-plan stability.
+
+### Commands run
+
+```bash
+python -m py_compile script/score_default_neighborhood_plans.py script/run_scorer_calibration.py
+python script/run_scorer_calibration.py \
+  --run cifar60k_B4 \
+  --preset a1024_p2_grid_endpoints \
+  --force \
+  --output-prefix /tmp/saq-run/reports/scorer_grid_smoke_cifar_b4_2026_07_07
+python script/run_scorer_calibration.py \
+  --run gist_full_K4096_B4 \
+  --preset a1024_p2_grid_endpoints \
+  --force \
+  --output-prefix /tmp/saq-run/reports/scorer_grid_smoke_gist_b4_endpoints_2026_07_07
+python script/run_scorer_calibration.py \
+  --run gist_full_K4096_B4 \
+  --preset a1024_p2 \
+  --force \
+  --output-prefix /tmp/saq-run/reports/scorer_cache_smoke_gist_b4_2026_07_07
+python script/run_scorer_calibration.py \
+  --run gist_full_K4096_B4 \
+  --preset a1024_p2_grid_endpoints_cached_features \
+  --force \
+  --output-prefix /tmp/saq-run/reports/scorer_feature_cache_gist_b4_first_2026_07_07
+python script/run_scorer_calibration.py \
+  --run gist_full_K4096_B4 \
+  --preset a1024_p2_grid_endpoints_cached_features \
+  --force \
+  --output-prefix /tmp/saq-run/reports/scorer_feature_cache_gist_b4_second_2026_07_07
+python script/run_scorer_calibration.py \
+  --preset a1024_p2_grid_endpoints_cached_features \
+  --force \
+  --feature-cache-dir /tmp/saq-run/reports/fixed_policy_scorer_feature_cache_cold_2026_07_07 \
+  --output-prefix docs/saq_fixed_policy_scorer_cost_reduction_2026_07_07
+python script/run_scorer_calibration.py \
+  --preset a1024_p2_grid_endpoints_cached_features \
+  --force \
+  --feature-cache-dir /tmp/saq-run/reports/fixed_policy_scorer_feature_cache_cold_2026_07_07 \
+  --output-prefix docs/saq_fixed_policy_scorer_cost_reduction_warm_2026_07_07
+```
+
+### Files changed
+
+- `script/score_default_neighborhood_plans.py`
+  - added plan-level pair/speed/static metric caching;
+  - added optional feature-cache support for residual risk, tail risk, and
+    boundary-pair arrays;
+  - added phase timings and cache metadata to summary JSON.
+- `script/run_scorer_calibration.py`
+  - added endpoint-grid and cached-feature presets;
+  - added feature-cache override support;
+  - added config-count ratios, cache status, and phase timings to reports.
+- Added cold-cache and warm-cache scorer cost-reduction reports under `docs/`.
+- Updated `EXPERIMENTS.md` and `RESULTS.md`.
+
+### Artifacts produced
+
+```text
+docs/saq_fixed_policy_scorer_cost_reduction_2026_07_07.md
+docs/saq_fixed_policy_scorer_cost_reduction_2026_07_07.csv
+docs/saq_fixed_policy_scorer_cost_reduction_2026_07_07.json
+docs/saq_fixed_policy_scorer_cost_reduction_warm_2026_07_07.md
+docs/saq_fixed_policy_scorer_cost_reduction_warm_2026_07_07.csv
+docs/saq_fixed_policy_scorer_cost_reduction_warm_2026_07_07.json
+/tmp/saq-run/reports/fixed_policy_scorer_feature_cache_cold_2026_07_07/
+```
+
+### Result
+
+The combined endpoint-grid plus cached-feature setting preserves the current
+fixed-policy matrix exactly:
+
+```text
+cold cache: decision 10/10, plan 10/10, runtime 147.082 s
+warm cache: decision 10/10, plan 10/10, runtime   5.656 s
+reference scorer runtime from overhead table:     481.764 s
+```
+
+The cold-cache phase timing shows the main cost source:
+
+```text
+residual-risk time:        111.166 s
+tail-risk time:             28.985 s
+boundary-pair sampling:      1.251 s
+scoring-grid enumeration:    0.058 s
+```
+
+### Interpretation
+
+The endpoint grid reduces config count to about 0.5% of the previous grid and
+preserves current decisions/plans, but it is not the GIST runtime bottleneck.
+The main practical reduction comes from caching data-only residual/tail/pair
+features across B values for the same dataset/K/sampling setting.
+
+This should be presented as overhead reduction for the fixed-policy scorer,
+not as a new SAQ quantizer or independent algorithmic contribution.
+
+### Problems / limitations
+
+The cache is a local `/tmp` artifact and is not checked into git. It is keyed by
+dataset path, IVF K, padded dimension, sampling parameters, residual-risk
+statistic, and tail-risk quantile. New datasets or changed sampling settings
+still require a cold feature computation.
+
+### Next action
+
+Validate scripts and reports, then commit and push. The next research step
+should decide whether cached-feature scoring should become the default runner
+path, or whether the remaining work should shift back to meeting/paper
+narrative and clean reproducibility instructions.

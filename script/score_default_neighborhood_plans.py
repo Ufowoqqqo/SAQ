@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
+import time
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -122,6 +124,102 @@ def bool_from_csv(value: Any) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "y"}
 
 
+def feature_cache_key(args: argparse.Namespace, padded_dim: int) -> str:
+    params = {
+        "dataset": args.dataset,
+        "data_dir": str(args.data_dir.resolve()),
+        "k": int(args.k),
+        "padded_dim": int(padded_dim),
+        "residual_risk_stat": args.residual_risk_stat,
+        "min_cluster_size": int(args.min_cluster_size),
+        "boundary_rank": int(args.boundary_rank),
+        "neighbor_window": int(args.neighbor_window),
+        "pairs_per_anchor": int(args.pairs_per_anchor),
+        "anchors_per_cluster": int(args.anchors_per_cluster),
+        "max_anchors": int(args.max_anchors),
+        "max_pairs": int(args.max_pairs),
+        "max_candidates_per_anchor": int(args.max_candidates_per_anchor),
+        "pair_seed": int(args.pair_seed),
+        "boundary_tail_quantile": float(args.boundary_tail_quantile),
+        "padding_size": int(K_DIM_PADDING_SIZE),
+    }
+    digest = hashlib.sha1(json.dumps(params, sort_keys=True).encode("utf-8")).hexdigest()[:16]
+    return f"{args.dataset}_k{args.k}_dim{padded_dim}_{digest}"
+
+
+def load_feature_cache(
+    cache_dir: Path | None,
+    cache_key: str,
+    require_tail: bool,
+) -> dict[str, Any] | None:
+    if cache_dir is None:
+        return None
+    npz_path = cache_dir / f"{cache_key}.npz"
+    json_path = cache_dir / f"{cache_key}.json"
+    if not npz_path.exists() or not json_path.exists():
+        return None
+    meta = json.loads(json_path.read_text(encoding="utf-8"))
+    if require_tail and not bool(meta.get("has_tail_vector", False)):
+        return None
+    with np.load(npz_path) as arrays:
+        out = {
+            "residual_vector_raw": arrays["residual_vector_raw"].copy(),
+            "pair_energy": arrays["pair_energy"].copy(),
+            "pair_block_energy": arrays["pair_block_energy"].copy(),
+            "tail_vector_raw": arrays["tail_vector_raw"].copy()
+            if bool(meta.get("has_tail_vector", False))
+            else None,
+            "residual_summary": meta.get("residual_summary", {}),
+            "tail_summary": meta.get("tail_summary"),
+            "pair_summary": meta.get("pair_summary", {}),
+            "pair_rows": meta.get("pair_rows", []),
+        }
+    return out
+
+
+def write_feature_cache(
+    cache_dir: Path | None,
+    cache_key: str,
+    residual_vector_raw: np.ndarray,
+    tail_vector_raw: np.ndarray | None,
+    pair_energy: np.ndarray,
+    pair_block_energy: np.ndarray,
+    residual_summary: dict[str, Any],
+    tail_summary: dict[str, Any] | None,
+    pair_summary: dict[str, Any],
+    pair_rows: list[dict[str, Any]],
+) -> None:
+    if cache_dir is None:
+        return
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    npz_path = cache_dir / f"{cache_key}.npz"
+    json_path = cache_dir / f"{cache_key}.json"
+    arrays: dict[str, np.ndarray] = {
+        "residual_vector_raw": residual_vector_raw,
+        "pair_energy": pair_energy,
+        "pair_block_energy": pair_block_energy,
+    }
+    if tail_vector_raw is not None:
+        arrays["tail_vector_raw"] = tail_vector_raw
+    np.savez(npz_path, **arrays)
+    json_path.write_text(
+        json.dumps(
+            {
+                "cache_key": cache_key,
+                "npz_path": str(npz_path),
+                "has_tail_vector": tail_vector_raw is not None,
+                "residual_summary": residual_summary,
+                "tail_summary": tail_summary,
+                "pair_summary": pair_summary,
+                "pair_rows": pair_rows,
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
 def infer_default_plan_from_candidates(candidates: list[dict[str, Any]]) -> Plan | None:
     defaults = [row["plan_obj"] for row in candidates if bool_from_csv(row.get("is_default", ""))]
     if len(defaults) > 1:
@@ -187,6 +285,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--exclude-nonfinal-1bit", action="store_true", help="Guard: reject plans with a 1-bit segment before the final segment.")
     parser.add_argument("--filter-infeasible", action="store_true", help="Write only feasible rows/unique plans under enabled guards.")
     parser.add_argument("--chunk-rows", type=int, default=2048, help="Rows per residual accumulation chunk.")
+    parser.add_argument("--feature-cache-dir", type=Path, default=None, help="Optional directory for cached residual/tail/boundary-pair scorer features.")
     parser.add_argument("--output-prefix", type=Path, required=True, help="Prefix for .csv, .unique.csv, .pairs.csv, .risk.csv, and .summary.json.")
     return parser.parse_args()
 
@@ -221,10 +320,13 @@ def main() -> int:
     runtime_penalty_scales = parse_float_list(args.runtime_penalty_scales)
     speed_proxy_scales = parse_float_list(args.speed_proxy_scales)
 
+    timings: dict[str, float] = {}
+    stage_start = time.perf_counter()
     base = read_fvecs(args.data_dir / f"{args.dataset}_base_pca.fvecs")
     centroids = read_fvecs(args.data_dir / f"{args.dataset}_centroid_{args.k}_pca.fvecs")
     cids = normalize_cids(read_ivecs(args.data_dir / f"{args.dataset}_cluster_id_{args.k}.ivecs"))
     global_var = read_fvecs(args.data_dir / f"{args.dataset}_base_pca.vars.fvecs").reshape(-1)
+    timings["load_data_s"] = time.perf_counter() - stage_start
     if base.shape[0] != cids.size:
         raise ValueError(f"base rows {base.shape[0]} != cluster ids {cids.size}")
 
@@ -235,32 +337,86 @@ def main() -> int:
             raise ValueError(f"candidate {row['seg_plan']} has dimension {dim}, expected padded dim {padded_dim}")
 
     global_vector = padded_vector(global_var, padded_dim).astype(np.float64, copy=False)
-    residual_vector_raw, residual_summary = compute_residual_risk(
-        base,
-        centroids,
-        cids,
-        args.min_cluster_size,
-        args.residual_risk_stat,
-        args.chunk_rows,
-    )
-    residual_vector = padded_vector(residual_vector_raw, padded_dim).astype(np.float64, copy=False)
 
-    pair_energy, pair_block_energy, pair_rows, pair_summary = sample_boundary_pairs(
-        base=base,
-        cids=cids,
-        cluster_count=centroids.shape[0],
-        boundary_rank=args.boundary_rank,
-        neighbor_window=args.neighbor_window,
-        pairs_per_anchor=args.pairs_per_anchor,
-        anchors_per_cluster=args.anchors_per_cluster,
-        max_anchors=args.max_anchors,
-        max_pairs=args.max_pairs,
-        min_cluster_size=args.min_cluster_size,
-        max_candidates_per_anchor=args.max_candidates_per_anchor,
-        seed=args.pair_seed,
-        padded_dim=padded_dim,
-        padding_size=K_DIM_PADDING_SIZE,
-    )
+    require_tail = any(alpha > 0 for alpha in tail_alphas)
+    cache_key = feature_cache_key(args, padded_dim)
+    cache_status = "off"
+    cached_features = load_feature_cache(args.feature_cache_dir, cache_key, require_tail)
+    if cached_features is not None:
+        cache_status = "hit"
+        residual_vector_raw = cached_features["residual_vector_raw"]
+        residual_summary = cached_features["residual_summary"]
+        tail_vector_raw = cached_features["tail_vector_raw"]
+        tail_summary = cached_features["tail_summary"]
+        pair_energy = cached_features["pair_energy"]
+        pair_block_energy = cached_features["pair_block_energy"]
+        pair_rows = cached_features["pair_rows"]
+        pair_summary = cached_features["pair_summary"]
+        timings["feature_cache_load_s"] = time.perf_counter() - stage_start - timings["load_data_s"]
+    else:
+        if args.feature_cache_dir is not None:
+            cache_status = "miss_written"
+        stage_start = time.perf_counter()
+        residual_vector_raw, residual_summary = compute_residual_risk(
+            base,
+            centroids,
+            cids,
+            args.min_cluster_size,
+            args.residual_risk_stat,
+            args.chunk_rows,
+        )
+        timings["compute_residual_risk_s"] = time.perf_counter() - stage_start
+
+        stage_start = time.perf_counter()
+        pair_energy, pair_block_energy, pair_rows, pair_summary = sample_boundary_pairs(
+            base=base,
+            cids=cids,
+            cluster_count=centroids.shape[0],
+            boundary_rank=args.boundary_rank,
+            neighbor_window=args.neighbor_window,
+            pairs_per_anchor=args.pairs_per_anchor,
+            anchors_per_cluster=args.anchors_per_cluster,
+            max_anchors=args.max_anchors,
+            max_pairs=args.max_pairs,
+            min_cluster_size=args.min_cluster_size,
+            max_candidates_per_anchor=args.max_candidates_per_anchor,
+            seed=args.pair_seed,
+            padded_dim=padded_dim,
+            padding_size=K_DIM_PADDING_SIZE,
+        )
+        timings["sample_boundary_pairs_s"] = time.perf_counter() - stage_start
+
+        tail_vector_raw = None
+        tail_summary = None
+        if require_tail:
+            stage_start = time.perf_counter()
+            tail_vector_raw, tail_summary = compute_residual_tail_risk(
+                base,
+                centroids,
+                cids,
+                args.min_cluster_size,
+                args.boundary_tail_quantile,
+                args.chunk_rows,
+            )
+            timings["compute_residual_tail_risk_s"] = time.perf_counter() - stage_start
+
+        stage_start = time.perf_counter()
+        write_feature_cache(
+            args.feature_cache_dir,
+            cache_key,
+            residual_vector_raw,
+            tail_vector_raw,
+            pair_energy,
+            pair_block_energy,
+            residual_summary,
+            tail_summary,
+            pair_summary,
+            pair_rows,
+        )
+        if args.feature_cache_dir is not None:
+            timings["feature_cache_write_s"] = time.perf_counter() - stage_start
+
+    residual_vector = padded_vector(residual_vector_raw, padded_dim).astype(np.float64, copy=False)
     margins = np.asarray([float(row["margin"]) for row in pair_rows], dtype=np.float64)
     weights, tau = pair_weights(margins, args.pair_weight_tau)
     for row, weight in zip(pair_rows, weights):
@@ -282,21 +438,16 @@ def main() -> int:
     )
 
     tail_vector = None
-    tail_summary = None
-    if any(alpha > 0 for alpha in tail_alphas):
-        tail_vector_raw, tail_summary = compute_residual_tail_risk(
-            base,
-            centroids,
-            cids,
-            args.min_cluster_size,
-            args.boundary_tail_quantile,
-            args.chunk_rows,
-        )
+    if require_tail:
+        if tail_vector_raw is None:
+            raise RuntimeError("tail risk vector is required but missing from feature cache")
         tail_vector = padded_vector(tail_vector_raw, padded_dim).astype(np.float64, copy=False)
 
+    stage_start = time.perf_counter()
     global_plan, global_dp_meta = dynamic_programming(global_vector, avg_bits)
     residual_plan, residual_dp_meta = dynamic_programming(residual_vector, avg_bits)
     num_bit_factors = int(global_dp_meta["num_bit_factors"])
+    timings["reference_dp_s"] = time.perf_counter() - stage_start
 
     default_pair_metrics = evaluate_pair_inversion_proxy(
         default_plan,
@@ -306,6 +457,7 @@ def main() -> int:
         args.inversion_margin_scale,
         K_DIM_PADDING_SIZE,
     )
+    pair_proxy_eval_count = 1
     default_soft_penalty = float(default_pair_metrics["pair_proxy_weighted_soft_inversion_penalty"])
     default_weighted_ratio = float(default_pair_metrics["pair_proxy_weighted_ratio_mean"])
     default_speed_metrics = evaluate_speed_proxy(
@@ -318,26 +470,64 @@ def main() -> int:
         args.speed_bitwork_weight,
         args.speed_zero_tail_reward,
     )
+    speed_proxy_eval_count = 1
     default_speed_proxy_raw = float(default_speed_metrics["speed_proxy_raw"])
+
+    pair_metrics_cache: dict[str, dict[str, Any]] = {
+        compact_seg_plan(default_plan): default_pair_metrics,
+    }
+    speed_metrics_cache: dict[str, dict[str, Any]] = {
+        compact_seg_plan(default_plan): default_speed_metrics,
+    }
+    plan_static_cache: dict[str, dict[str, Any]] = {}
+
+    def cached_pair_metrics(plan: Plan) -> dict[str, Any]:
+        nonlocal pair_proxy_eval_count
+        sig = compact_seg_plan(plan)
+        if sig not in pair_metrics_cache:
+            pair_metrics_cache[sig] = evaluate_pair_inversion_proxy(
+                plan,
+                pair_block_energy,
+                margins,
+                weights,
+                args.inversion_margin_scale,
+                K_DIM_PADDING_SIZE,
+            )
+            pair_proxy_eval_count += 1
+        return pair_metrics_cache[sig]
+
+    def cached_speed_metrics(plan: Plan) -> dict[str, Any]:
+        nonlocal speed_proxy_eval_count
+        sig = compact_seg_plan(plan)
+        if sig not in speed_metrics_cache:
+            speed_metrics_cache[sig] = evaluate_speed_proxy(
+                plan,
+                padded_dim,
+                avg_bits,
+                args.speed_nonzero_segment_weight,
+                args.speed_segment_weight,
+                args.speed_nonzero_dim_weight,
+                args.speed_bitwork_weight,
+                args.speed_zero_tail_reward,
+            )
+            speed_proxy_eval_count += 1
+        return speed_metrics_cache[sig]
+
+    def cached_plan_static(plan: Plan) -> dict[str, Any]:
+        sig = compact_seg_plan(plan)
+        if sig not in plan_static_cache:
+            metrics = plan_metrics(plan)
+            plan_static_cache[sig] = {
+                "metrics": metrics,
+                "infeasible_reasons": plan_feasibility_reasons(metrics, args),
+                "used_bits": plan_used_bits(plan, num_bit_factors),
+            }
+        return plan_static_cache[sig]
 
     reference_metrics = {
         "default_saq": default_pair_metrics,
-        "global_dp_reimpl": evaluate_pair_inversion_proxy(
-            global_plan,
-            pair_block_energy,
-            margins,
-            weights,
-            args.inversion_margin_scale,
-            K_DIM_PADDING_SIZE,
-        ),
-        "residual_dp": evaluate_pair_inversion_proxy(
-            residual_plan,
-            pair_block_energy,
-            margins,
-            weights,
-            args.inversion_margin_scale,
-            K_DIM_PADDING_SIZE,
-        ),
+        "global_dp_reimpl": cached_pair_metrics(global_plan),
+        "residual_dp": cached_pair_metrics(residual_plan),
     }
 
     rows: list[dict[str, Any]] = []
@@ -357,12 +547,13 @@ def main() -> int:
         * len(speed_proxy_scales)
     )
 
+    stage_start = time.perf_counter()
     for global_blend in global_blends:
         for tail_alpha in tail_alphas:
             for pair_alpha in pair_alphas:
-                cache_key = (global_blend, tail_alpha, pair_alpha)
-                if cache_key not in risk_cache:
-                    risk_cache[cache_key] = make_data_boundary_vector(
+                boundary_cache_key = (global_blend, tail_alpha, pair_alpha)
+                if boundary_cache_key not in risk_cache:
+                    risk_cache[boundary_cache_key] = make_data_boundary_vector(
                         global_vector,
                         residual_vector,
                         tail_vector,
@@ -371,7 +562,7 @@ def main() -> int:
                         tail_alpha,
                         pair_alpha,
                     )
-                boundary_vector, boundary_meta = risk_cache[cache_key]
+                boundary_vector, boundary_meta = risk_cache[boundary_cache_key]
                 boundary_sum = float(boundary_vector.sum())
                 for segment_penalty_scale in segment_penalty_scales:
                     segment_penalty = segment_penalty_scale * boundary_sum / (2.0 ** float(avg_bits))
@@ -384,17 +575,11 @@ def main() -> int:
                             sig = compact_seg_plan(plan)
                             candidate_cost = plan_cost(plan, boundary_vector, segment_penalty, intra_scale)
                             reduction = 1.0 - candidate_cost / default_cost if default_cost > 0 else 0.0
-                            metrics = plan_metrics(plan)
-                            infeasible_reasons = plan_feasibility_reasons(metrics, args)
-                            used_bits = plan_used_bits(plan, num_bit_factors)
-                            pair_metrics = evaluate_pair_inversion_proxy(
-                                plan,
-                                pair_block_energy,
-                                margins,
-                                weights,
-                                args.inversion_margin_scale,
-                                K_DIM_PADDING_SIZE,
-                            )
+                            static = cached_plan_static(plan)
+                            metrics = static["metrics"]
+                            infeasible_reasons = static["infeasible_reasons"]
+                            used_bits = static["used_bits"]
+                            pair_metrics = cached_pair_metrics(plan)
                             soft_penalty = float(pair_metrics["pair_proxy_weighted_soft_inversion_penalty"])
                             weighted_ratio = float(pair_metrics["pair_proxy_weighted_ratio_mean"])
                             soft_penalty_ratio = (
@@ -403,16 +588,7 @@ def main() -> int:
                             weighted_ratio_ratio = (
                                 weighted_ratio / default_weighted_ratio if default_weighted_ratio > 0 else 0.0
                             )
-                            speed_metrics = evaluate_speed_proxy(
-                                plan,
-                                padded_dim,
-                                avg_bits,
-                                args.speed_nonzero_segment_weight,
-                                args.speed_segment_weight,
-                                args.speed_nonzero_dim_weight,
-                                args.speed_bitwork_weight,
-                                args.speed_zero_tail_reward,
-                            )
+                            speed_metrics = cached_speed_metrics(plan)
                             speed_proxy_raw = float(speed_metrics["speed_proxy_raw"])
                             speed_proxy_ratio = (
                                 speed_proxy_raw / default_speed_proxy_raw if default_speed_proxy_raw > 0 else 1.0
@@ -491,6 +667,7 @@ def main() -> int:
                                             rows.append(row)
                                             groups[sig].append(row)
                                             config_id += 1
+    timings["scoring_grid_s"] = time.perf_counter() - stage_start
 
     all_rows = rows
     all_groups = groups
@@ -801,6 +978,11 @@ def main() -> int:
             "recall_risk_score": "boundary_cost_ratio + soft_inversion_penalty + weighted_ratio_penalty",
             "ranking_score": "recall_risk_score + legacy_runtime_penalty + speed_penalty",
             "speed_proxy": "lower is faster; combines nonzero segment count, segment count, nonzero dimensions, and bitwork",
+            "pair_proxy_eval_count": int(pair_proxy_eval_count),
+            "pair_proxy_cache_size": int(len(pair_metrics_cache)),
+            "speed_proxy_eval_count": int(speed_proxy_eval_count),
+            "speed_proxy_cache_size": int(len(speed_metrics_cache)),
+            "plan_static_cache_size": int(len(plan_static_cache)),
             "speed_proxy_weights": {
                 "nonzero_segment_weight": float(args.speed_nonzero_segment_weight),
                 "segment_weight": float(args.speed_segment_weight),
@@ -822,6 +1004,12 @@ def main() -> int:
         "residual_summary": residual_summary,
         "tail_summary": tail_summary,
         "pair_summary": pair_summary,
+        "feature_cache": {
+            "status": cache_status,
+            "cache_dir": str(args.feature_cache_dir) if args.feature_cache_dir is not None else "",
+            "cache_key": cache_key,
+        },
+        "timings": timings,
         "inversion_margin_scale": float(args.inversion_margin_scale),
         "global_dp": {
             "seg_plan": compact_seg_plan(global_plan),

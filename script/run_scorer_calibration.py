@@ -28,13 +28,53 @@ from run_default_neighborhood_cross_dataset import (
 DEFAULT_ROOT = Path("/tmp/saq-run")
 DEFAULT_MATRIX_JSON = DEFAULT_ROOT / "reports" / "fixed_policy_matrix_validation_2026_07_07.json"
 DEFAULT_OVERHEAD_SUMMARY_CSV = REPO_ROOT / "docs" / "saq_fixed_policy_overhead_evaluation_2026_07_07.summary.csv"
+DEFAULT_FEATURE_CACHE_DIR = DEFAULT_ROOT / "reports" / "fixed_policy_scorer_feature_cache_2026_07_07"
 DEFAULT_DATE = "2026_07_07"
 
-CALIBRATION_PRESETS: dict[str, dict[str, int]] = {
+CALIBRATION_PRESETS: dict[str, dict[str, Any]] = {
     "a256_p1": {"max_anchors": 256, "max_pairs": 256, "pairs_per_anchor": 1},
     "a512_p1": {"max_anchors": 512, "max_pairs": 512, "pairs_per_anchor": 1},
     "a1024_p2": {"max_anchors": 1024, "max_pairs": 2048, "pairs_per_anchor": 2},
     "a2048_p2": {"max_anchors": 2048, "max_pairs": 4096, "pairs_per_anchor": 2},
+    "a1024_p2_grid_endpoints": {
+        "max_anchors": 1024,
+        "max_pairs": 2048,
+        "pairs_per_anchor": 2,
+        "scorer_args": {
+            "boundary-global-blends": "0,0.4",
+            "boundary-tail-alphas": "0,0.25",
+            "boundary-pair-alphas": "0,2",
+            "segment-penalty-scales": "0,0.04",
+            "intra-segment-penalty-scales": "0",
+            "inversion-penalty-scales": "0,0.05",
+            "runtime-penalty-scales": "0",
+            "speed-proxy-scales": "0",
+        },
+    },
+    "a1024_p2_cached_features": {
+        "max_anchors": 1024,
+        "max_pairs": 2048,
+        "pairs_per_anchor": 2,
+        "scorer_args": {
+            "feature-cache-dir": str(DEFAULT_FEATURE_CACHE_DIR),
+        },
+    },
+    "a1024_p2_grid_endpoints_cached_features": {
+        "max_anchors": 1024,
+        "max_pairs": 2048,
+        "pairs_per_anchor": 2,
+        "scorer_args": {
+            "boundary-global-blends": "0,0.4",
+            "boundary-tail-alphas": "0,0.25",
+            "boundary-pair-alphas": "0,2",
+            "segment-penalty-scales": "0,0.04",
+            "intra-segment-penalty-scales": "0",
+            "inversion-penalty-scales": "0,0.05",
+            "runtime-penalty-scales": "0",
+            "speed-proxy-scales": "0",
+            "feature-cache-dir": str(DEFAULT_FEATURE_CACHE_DIR),
+        },
+    },
 }
 
 
@@ -71,7 +111,8 @@ def scorer_cmd(
     candidate_csv: Path,
     default_plan: str,
     prefix: Path,
-    preset: dict[str, int],
+    preset: dict[str, Any],
+    feature_cache_dir: Path | None,
 ) -> list[str]:
     cmd = [
         "python",
@@ -116,6 +157,11 @@ def scorer_cmd(
     ]
     if spec.exclude_nonfinal_1bit:
         cmd.insert(-2, "--exclude-nonfinal-1bit")
+    scorer_args = dict(preset.get("scorer_args") or {})
+    if feature_cache_dir is not None and "feature-cache-dir" in scorer_args:
+        scorer_args["feature-cache-dir"] = str(feature_cache_dir)
+    for key, value in sorted(scorer_args.items()):
+        cmd.extend([f"--{key}", str(value)])
     return cmd
 
 
@@ -164,8 +210,10 @@ def add_reference_cost_ratios(rows: list[dict[str, Any]], reference_rows: list[d
         reference = reference_by_run.get(row.get("run", ""), {})
         reference_pairs = reference.get("pair_count", "")
         reference_runtime = reference.get("scorer_runtime_s", "")
+        reference_configs = reference.get("all_config_count", "")
         row["reference_pair_count"] = reference_pairs
         row["reference_scorer_runtime_s"] = reference_runtime
+        row["reference_all_config_count"] = reference_configs
 
         current_pairs = float_or_none(row.get("pair_count"))
         base_pairs = float_or_none(reference_pairs)
@@ -180,6 +228,13 @@ def add_reference_cost_ratios(rows: list[dict[str, Any]], reference_rows: list[d
             row["scorer_runtime_ratio_vs_reference"] = current_runtime / base_runtime
         else:
             row["scorer_runtime_ratio_vs_reference"] = ""
+
+        current_configs = float_or_none(row.get("all_config_count"))
+        base_configs = float_or_none(reference_configs)
+        if current_configs is not None and base_configs and base_configs > 0:
+            row["all_config_count_ratio_vs_reference"] = current_configs / base_configs
+        else:
+            row["all_config_count_ratio_vs_reference"] = ""
 
 
 def baseline_from_result(result: dict[str, Any]) -> dict[str, str]:
@@ -208,6 +263,7 @@ def run_one(
     env: dict[str, str],
     force: bool,
     allow_risky_fallback: bool,
+    feature_cache_dir: Path | None,
 ) -> dict[str, Any]:
     spec = BUILTIN_SPECS[result["spec"]["name"]]
     baseline = baseline_from_result(result)
@@ -224,6 +280,7 @@ def run_one(
         "max_anchors": preset["max_anchors"],
         "max_pairs": preset["max_pairs"],
         "pairs_per_anchor": preset["pairs_per_anchor"],
+        "scorer_args": json.dumps(preset.get("scorer_args", {}), sort_keys=True),
         "candidate_count": len(candidate_rows),
         "non_default_candidate_count": non_default_count,
         **baseline,
@@ -257,6 +314,7 @@ def run_one(
                 default_plan=str(result.get("default_plan", "")),
                 prefix=prefix,
                 preset=preset,
+                feature_cache_dir=feature_cache_dir,
             ),
             REPO_ROOT,
             env,
@@ -270,6 +328,8 @@ def run_one(
     decision = policy_decision(reason, bool(selected))
     summary = load_summary(prefix)
     pair_summary = summary.get("pair_summary", {})
+    timings = summary.get("timings", {})
+    feature_cache = summary.get("feature_cache", {})
     out.update(
         {
             "candidate_plan": selected_row.get("seg_plan", ""),
@@ -284,6 +344,14 @@ def run_one(
             "eligible_cluster_count": pair_summary.get("eligible_cluster_count", ""),
             "all_config_count": summary.get("all_config_count", ""),
             "unique_plan_count": summary.get("unique_plan_count", ""),
+            "feature_cache_status": feature_cache.get("status", ""),
+            "load_data_s": timings.get("load_data_s", ""),
+            "feature_cache_load_s": timings.get("feature_cache_load_s", ""),
+            "compute_residual_risk_s": timings.get("compute_residual_risk_s", ""),
+            "sample_boundary_pairs_s": timings.get("sample_boundary_pairs_s", ""),
+            "compute_residual_tail_risk_s": timings.get("compute_residual_tail_risk_s", ""),
+            "feature_cache_write_s": timings.get("feature_cache_write_s", ""),
+            "scoring_grid_s": timings.get("scoring_grid_s", ""),
             "best_ranking_score": selected_row.get("best_ranking_score", ""),
             "best_recall_risk_score": selected_row.get("best_recall_risk_score", ""),
             "best_speed_proxy_ratio_vs_default": selected_row.get("best_speed_proxy_ratio_vs_default", ""),
@@ -296,7 +364,7 @@ def run_one(
 
 def write_markdown(path: Path, rows: list[dict[str, Any]], metadata: dict[str, Any]) -> None:
     lines: list[str] = []
-    lines.append("# SAQ Fixed-Policy Scorer Calibration Evaluation")
+    lines.append("# SAQ Fixed-Policy Scorer Cost Evaluation")
     lines.append("")
     lines.append(f"Date: {DEFAULT_DATE.replace('_', '-')}")
     lines.append("")
@@ -325,15 +393,36 @@ def write_markdown(path: Path, rows: list[dict[str, Any]], metadata: dict[str, A
             )
         )
     lines.append("")
+    reference_runtime = sum(float(row["reference_scorer_runtime_s"] or 0) for row in rows)
+    measured_runtime = sum(float(row["scorer_runtime_s"] or 0) for row in rows)
+    measured_residual = sum(float(row["compute_residual_risk_s"] or 0) for row in rows)
+    measured_tail = sum(float(row["compute_residual_tail_risk_s"] or 0) for row in rows)
+    measured_pair_sample = sum(float(row["sample_boundary_pairs_s"] or 0) for row in rows)
+    measured_grid = sum(float(row["scoring_grid_s"] or 0) for row in rows)
+    cache_hits = sum(row.get("feature_cache_status") == "hit" for row in rows)
+    cache_misses = sum(row.get("feature_cache_status") == "miss_written" for row in rows)
+    if reference_runtime > 0:
+        lines.append("## Cost-Reduction Summary")
+        lines.append("")
+        lines.append(f"- Total measured scorer runtime: {measured_runtime:.3f} s.")
+        lines.append(f"- Reference scorer runtime from the overhead table: {reference_runtime:.3f} s.")
+        lines.append(f"- Runtime ratio vs reference: {measured_runtime / reference_runtime:.3f}.")
+        lines.append(f"- Feature-cache statuses: {cache_hits} hits, {cache_misses} cold misses.")
+        lines.append(f"- Measured residual-risk time in this run: {measured_residual:.3f} s.")
+        lines.append(f"- Measured tail-risk time in this run: {measured_tail:.3f} s.")
+        lines.append(f"- Measured boundary-pair sampling time in this run: {measured_pair_sample:.3f} s.")
+        lines.append(f"- Measured scoring-grid time in this run: {measured_grid:.3f} s.")
+        lines.append("")
     lines.append("## Per-Run Results")
     lines.append("")
-    lines.append("| run | preset | decision | baseline | selected plan | plan match | pairs | pair ratio | runtime s | runtime ratio |")
-    lines.append("|---|---|---|---|---|---:|---:|---:|---:|---:|")
+    lines.append("| run | preset | decision | baseline | selected plan | plan match | pairs | pair ratio | configs | config ratio | cache | pair sample s | grid s | runtime s | runtime ratio |")
+    lines.append("|---|---|---|---|---|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|")
     for row in rows:
         pair_ratio = row.get("pair_count_ratio_vs_reference", "")
+        config_ratio = row.get("all_config_count_ratio_vs_reference", "")
         runtime_ratio = row.get("scorer_runtime_ratio_vs_reference", "")
         lines.append(
-            "| {run} | {preset} | {decision} | {baseline} | `{plan}` | {plan_match} | {pairs} | {pair_ratio} | {runtime} | {runtime_ratio} |".format(
+            "| {run} | {preset} | {decision} | {baseline} | `{plan}` | {plan_match} | {pairs} | {pair_ratio} | {configs} | {config_ratio} | {cache} | {pair_sample} | {grid_time} | {runtime} | {runtime_ratio} |".format(
                 run=row["run"],
                 preset=row["preset"],
                 decision=row["decision"],
@@ -342,6 +431,15 @@ def write_markdown(path: Path, rows: list[dict[str, Any]], metadata: dict[str, A
                 plan_match=row["plan_matches_baseline"],
                 pairs=row.get("pair_count", ""),
                 pair_ratio=f"{float(pair_ratio):.3f}" if pair_ratio not in {"", None} else "",
+                configs=row.get("all_config_count", ""),
+                config_ratio=f"{float(config_ratio):.3f}" if config_ratio not in {"", None} else "",
+                cache=row.get("feature_cache_status", ""),
+                pair_sample=f"{float(row['sample_boundary_pairs_s']):.3f}"
+                if row.get("sample_boundary_pairs_s") not in {"", None}
+                else "",
+                grid_time=f"{float(row['scoring_grid_s']):.3f}"
+                if row.get("scoring_grid_s") not in {"", None}
+                else "",
                 runtime=f"{float(row['scorer_runtime_s']):.3f}" if row.get("scorer_runtime_s") not in {"", None} else "",
                 runtime_ratio=f"{float(runtime_ratio):.3f}" if runtime_ratio not in {"", None} else "",
             )
@@ -354,6 +452,10 @@ def write_markdown(path: Path, rows: list[dict[str, Any]], metadata: dict[str, A
     lines.append("The current stable calibration point is `a1024_p2`: it preserves every fixed-policy decision and selected plan in the checked matrix. Smaller representative settings can preserve the decision while changing the GIST B=4 selected plan, so they are not stable enough for exact-plan reproduction.")
     lines.append("")
     lines.append("Pair-count reduction alone does not fully solve scorer overhead. In the full matrix, `a1024_p2` reduces GIST sampling from 14,740 pairs to 2,048 pairs, but scorer runtime remains close to the full scorer. This indicates that the next cost-reduction target should be cached residual/tail features or a smaller scoring grid, not only fewer sampled pairs.")
+    lines.append("")
+    lines.append("The endpoint grid preset is a scorer-grid reduction evaluation, not a new selection rule. It keeps the boundary-risk endpoints that selected the current matrix plans and should be checked by exact decision/plan stability before use.")
+    lines.append("")
+    lines.append("The feature cache is a data-only reuse mechanism keyed by dataset, IVF setting, sampling parameters, residual-risk statistic, and tail-risk quantile. It does not use held-out query labels. Its main benefit is avoiding repeated residual/tail feature computation across B values for the same dataset/K/sampling setting.")
     lines.append("")
     lines.append("## Output Tables")
     lines.append("")
@@ -373,6 +475,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run", action="append", dest="runs", choices=sorted(BUILTIN_SPECS))
     parser.add_argument("--preset", action="append", dest="presets", choices=sorted(CALIBRATION_PRESETS))
     parser.add_argument("--allow-risky-fallback", action="store_true", default=True)
+    parser.add_argument("--feature-cache-dir", type=Path, default=None, help="Override feature-cache-dir for cached-feature presets.")
     parser.add_argument("--force", action="store_true")
     parser.add_argument(
         "--work-dir",
@@ -414,6 +517,7 @@ def main() -> int:
                     env=env,
                     force=args.force,
                     allow_risky_fallback=bool(args.allow_risky_fallback),
+                    feature_cache_dir=args.feature_cache_dir,
                 )
             )
 
@@ -435,6 +539,7 @@ def main() -> int:
         "max_anchors",
         "max_pairs",
         "pairs_per_anchor",
+        "scorer_args",
         "candidate_count",
         "non_default_candidate_count",
         "baseline_decision",
@@ -453,7 +558,17 @@ def main() -> int:
         "used_anchor_count",
         "eligible_cluster_count",
         "all_config_count",
+        "reference_all_config_count",
+        "all_config_count_ratio_vs_reference",
         "unique_plan_count",
+        "feature_cache_status",
+        "load_data_s",
+        "feature_cache_load_s",
+        "compute_residual_risk_s",
+        "sample_boundary_pairs_s",
+        "compute_residual_tail_risk_s",
+        "feature_cache_write_s",
+        "scoring_grid_s",
         "best_ranking_score",
         "best_recall_risk_score",
         "best_speed_proxy_ratio_vs_default",
@@ -471,6 +586,7 @@ def main() -> int:
         "runs": sorted({row["run"] for row in rows}),
         "presets": presets,
         "allow_risky_fallback": bool(args.allow_risky_fallback),
+        "feature_cache_dir_override": str(args.feature_cache_dir) if args.feature_cache_dir else "",
     }
     write_json(json_path, {"metadata": metadata, "rows": rows})
     write_markdown(md_path, rows, metadata)

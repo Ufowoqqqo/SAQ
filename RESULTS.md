@@ -93,9 +93,8 @@ A minimal fix was needed because the encoder did not export `base_code.code` for
 
 ## Recommended Next Stable Results To Seek
 
-1. Evaluate cached residual/tail features or a smaller scoring grid, because
-   pair-count reduction alone did not materially reduce full-GIST scorer
-   runtime.
+1. Decide whether the feature-cache implementation should become part of the
+   fixed-policy runner by default, and document its disk/cache-key behavior.
 2. Make the fixed-policy matrix reproducible on a clean machine or document the
    exact dataset/artifact preparation gap.
 3. Preserve DEEP reject and audio/word2vec abstention behavior under any future
@@ -103,6 +102,78 @@ A minimal fix was needed because the encoder did not export `base_code.code` for
 4. If expanding the generator, first state the SAQ failure mode and added
    overhead, then validate against GIST/CIFAR positives, DEEP rejects, and
    audio/word2vec abstentions.
+
+## Result 2026-07-07: Feature caching reduces scorer overhead without changing decisions
+
+### Claim
+
+The current scorer overhead is dominated by residual/tail feature computation,
+not by the final scorer grid. A query-unaware feature cache plus a compact
+endpoint grid preserves the current fixed-policy matrix decisions and selected
+plans while substantially reducing measured scorer runtime.
+
+### Evidence
+
+- Cold-cache cost report:
+  `docs/saq_fixed_policy_scorer_cost_reduction_2026_07_07.md`
+- Warm-cache cost report:
+  `docs/saq_fixed_policy_scorer_cost_reduction_warm_2026_07_07.md`
+- Driver changes:
+  - `script/score_default_neighborhood_plans.py`
+  - `script/run_scorer_calibration.py`
+
+Cold-cache full matrix, using a fresh feature-cache directory:
+
+```text
+decision match: 10/10
+plan match:     10/10
+runtime:        147.082 seconds
+reference:      481.764 seconds
+ratio:          0.305
+```
+
+Warm-cache full matrix, with all non-abstention dataset/K feature caches
+already available:
+
+```text
+decision match: 10/10
+plan match:     10/10
+runtime:        5.656 seconds
+reference:      481.764 seconds
+ratio:          0.012
+```
+
+The cold-cache phase timings show why earlier pair-count reduction did not
+solve the cost:
+
+```text
+residual-risk time:        111.166 seconds
+tail-risk time:             28.985 seconds
+boundary-pair sampling:      1.251 seconds
+scoring-grid enumeration:    0.058 seconds
+```
+
+### Interpretation
+
+The endpoint grid is useful for reducing the number of scored configurations
+to about 0.5% of the previous grid while preserving current decisions/plans,
+but the main runtime reduction comes from reusing residual/tail/pair features
+across B values for the same dataset/K/sampling setting. This is an
+implementation-level cost reduction for the fixed-policy scorer, not a new
+quantization method or independent contribution beyond SAQ.
+
+### Limitations
+
+The cache is stored under `/tmp/saq-run/reports/...` in the current evaluation
+and is not a durable checked-in artifact. The feature cache is query-unaware,
+but it is specific to dataset path, IVF K, sampling parameters, residual-risk
+statistic, and tail-risk quantile. If any of those change, the cache key changes
+and the scorer correctly recomputes features.
+
+The compact endpoint grid is calibrated against the current fixed-policy
+matrix. It should be described as a cost-reduction evaluation for this policy,
+not as evidence that the full grid is unnecessary for all future candidate
+families.
 
 ## Result 2026-07-07: Scorer calibration preserves decisions but does not solve full-GIST cost
 

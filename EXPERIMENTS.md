@@ -154,6 +154,38 @@ python -m py_compile \
 - Next cost-reduction direction: evaluate cached residual/tail features or a
   smaller scoring grid before adding new candidate families.
 
+### A6. Scorer feature-cache and endpoint-grid cost evaluation
+
+- Status: `done`
+- Priority: highest after A5
+- Goal: evaluate the two plausible scorer-cost reductions suggested by A5:
+  cached residual/tail features and a smaller scorer grid.
+- Work completed:
+  - added plan-level pair/speed/static metric caching inside
+    `script/score_default_neighborhood_plans.py`;
+  - added optional scorer feature caching for residual risk, tail risk, and
+    boundary-pair feature arrays;
+  - added endpoint-grid cached-feature presets to
+    `script/run_scorer_calibration.py`;
+  - ran cold-cache and warm-cache full fixed-policy matrix evaluations.
+- Result:
+  - `docs/saq_fixed_policy_scorer_cost_reduction_2026_07_07.md`
+  - `docs/saq_fixed_policy_scorer_cost_reduction_2026_07_07.csv`
+  - `docs/saq_fixed_policy_scorer_cost_reduction_2026_07_07.json`
+  - `docs/saq_fixed_policy_scorer_cost_reduction_warm_2026_07_07.md`
+  - `docs/saq_fixed_policy_scorer_cost_reduction_warm_2026_07_07.csv`
+  - `docs/saq_fixed_policy_scorer_cost_reduction_warm_2026_07_07.json`
+- Interpretation: the endpoint grid preserves all current decisions/plans but
+  is not the GIST bottleneck by itself. The cold-cache run preserves 10/10
+  decisions and 10/10 selected plans while reducing total measured scorer time
+  from 481.764 s to 147.082 s. The warm-cache run preserves the same decisions
+  and plans with 5.656 s total measured scorer time. Phase timings show that
+  GIST cost is dominated by residual/tail feature computation, not boundary
+  pair sampling or grid enumeration.
+- Constraint: this is an implementation-level overhead reduction, not a new
+  SAQ quantization contribution. The feature cache is query-unaware and keyed
+  only by dataset/IVF/sampling/risk-statistic parameters.
+
 ## B. Policy Robustness
 
 ### B1. Audit promotion decisions against the clean validation table
