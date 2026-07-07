@@ -58,6 +58,12 @@ Relevant driver:
 script/run_default_neighborhood_cross_dataset.py
 ```
 
+Reproducible report driver:
+
+```text
+script/report_fixed_policy_validation.py
+```
+
 ## 3. Default-Plan Shape Classification
 
 Classify the SAQ default plan before generating candidates.
@@ -303,19 +309,27 @@ a positive 1-bit segment:
 The 1-bit fix makes SAQ's own legal default plan buildable. It is not the
 planner contribution.
 
-The current fixed policy is still empirical. The next step is to turn the
-rules above into a stable implementation/reporting path and rerun one clean
-end-to-end validation matrix.
+The current fixed policy is still empirical. The report driver below makes the
+current evidence reproducible from summary outputs; a broader clean end-to-end
+validation matrix remains the next validation step.
 
-## 11. Next Step
+## 11. Reproducible Report Generation
 
-Recommended next technical task:
+The clean validation table is generated from the scored/evaluated summary
+reports with:
 
 ```text
-Implement a fixed-policy report driver that emits exactly the clean validation
-table schema, including promote/reject/abstain decisions, from the existing
-generator/scorer/evaluator outputs.
+python script/report_fixed_policy_validation.py \
+  --expected-csv docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
 ```
 
-This would make the current method reproducible as a single report rather than
-a collection of experiment-specific notes.
+Default outputs:
+
+```text
+/tmp/saq-run/reports/fixed_policy_validation_2026_07_07.csv
+/tmp/saq-run/reports/fixed_policy_validation_2026_07_07.md
+/tmp/saq-run/reports/fixed_policy_validation_2026_07_07.json
+```
+
+The `--expected-csv` option compares the regenerated rows against the checked-in
+clean table and exits nonzero on mismatch.
