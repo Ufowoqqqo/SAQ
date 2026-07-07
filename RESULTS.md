@@ -93,9 +93,8 @@ A minimal fix was needed because the encoder did not export `base_code.code` for
 
 ## Recommended Next Stable Results To Seek
 
-1. Add reproducible overhead measurements for the current fixed-policy method:
-   candidate counts, scorer runtime, pair counts, index build time, index size,
-   and QPS curves.
+1. Reduce or calibrate the data-only scorer cost, especially on full GIST where
+   planning overhead is now measured at roughly 145-151 seconds per budget.
 2. Make the fixed-policy matrix reproducible on a clean machine or document the
    exact dataset/artifact preparation gap.
 3. Preserve DEEP reject and audio/word2vec abstention behavior under any future
@@ -103,6 +102,59 @@ A minimal fix was needed because the encoder did not export `base_code.code` for
 4. If expanding the generator, first state the SAQ failure mode and added
    overhead, then validate against GIST/CIFAR positives, DEEP rejects, and
    audio/word2vec abstentions.
+
+## Result 2026-07-07: Overhead evaluation identifies scorer cost as the main added cost
+
+### Claim
+
+The fixed-policy layer's deployable overhead is dominated by data-only
+boundary-pair sampling and scorer-grid evaluation, not candidate generation or
+final selected-index build time.
+
+### Evidence
+
+- Report:
+  `docs/saq_fixed_policy_overhead_evaluation_2026_07_07.md`
+- Summary table:
+  `docs/saq_fixed_policy_overhead_evaluation_2026_07_07.summary.csv`
+- QPS curve table:
+  `docs/saq_fixed_policy_overhead_evaluation_2026_07_07.qps_curve.csv`
+- Driver:
+  `script/report_fixed_policy_overhead.py`
+
+Measured planning runtime:
+
+```text
+GIST full K4096 B=3/B=4/B=5: about 145-151 seconds per budget
+CIFAR60K B=3/B=4/B=5:       about 8.5-8.6 seconds per budget
+DEEP100K B=4/B=5:           about 5.8 seconds per budget
+audio/word2vec abstain:     about 0.1 seconds, generator only
+```
+
+The full GIST scorer samples 14,740 boundary pairs from 3,685 anchors. CIFAR
+uses 1,068 pairs from 267 anchors, and DEEP uses 1,904 pairs from 476 anchors.
+
+### Interpretation
+
+The current method can still be described as a one-index deployable pipeline,
+but its planner/scorer overhead is not negligible on full GIST. Any future
+claim of practical value should either reduce the scorer cost, show that this
+offline cost is acceptable relative to large-scale indexing, or demonstrate
+that a smaller sampled scorer preserves the same promote/reject/abstain
+decisions.
+
+### Limitations
+
+Planner runtime is a single wall-clock measurement and includes Python startup,
+I/O, boundary-pair sampling, and scorer-grid evaluation. Index build time is
+read from existing `create_index` metadata rather than newly repeated build
+timing in this run.
+
+### Follow-up
+
+The next useful research step is to evaluate whether scorer cost can be reduced
+without changing the selected plans: fewer anchors, fewer pairs, a smaller
+scorer grid, or cached boundary-pair features.
 
 ## Result 2026-07-07: Novelty and overhead audit narrows the claim
 

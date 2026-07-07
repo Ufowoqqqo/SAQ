@@ -1309,3 +1309,94 @@ correctness, debugging, repository maintenance, and existing artifact paths.
 
 Validate diff, commit, and push this constraint update before continuing with
 the next research step.
+
+## Session 2026-07-07 21:37 HKT
+
+### Goal
+
+Evaluate fixed-policy overhead terms requested for the next step: candidate
+runtime, scorer runtime, pair count, index build time, index size, and QPS
+curve.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- `git status --short --branch`: clean and aligned with
+  `origin/saq-boundary-audit`
+- Required direction: use research-paper terminology and avoid presenting the
+  method as a strict SAQ replacement without overhead accounting.
+
+### Work completed
+
+Added `script/report_fixed_policy_overhead.py`, a reproducible report driver
+that:
+
+- reads `/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07.json`;
+- aggregates candidate counts, pair counts, scorer grid sizes, index metadata,
+  index sizes, and QPS curve rows;
+- optionally measures fresh candidate/scorer runtime;
+- optionally fills missing QPS curve points with corrected safe search
+  (`-searcher_safe_block_min_mode=2`).
+
+Ran the driver with both measurement options:
+
+```bash
+python -m py_compile script/report_fixed_policy_overhead.py
+python script/report_fixed_policy_overhead.py \
+  --measure-planner-runtime \
+  --measure-qps-curve \
+  --output-prefix docs/saq_fixed_policy_overhead_evaluation_2026_07_07
+```
+
+### Files changed
+
+- Added `script/report_fixed_policy_overhead.py`.
+- Added `docs/saq_fixed_policy_overhead_evaluation_2026_07_07.md`.
+- Added `docs/saq_fixed_policy_overhead_evaluation_2026_07_07.summary.csv`.
+- Added `docs/saq_fixed_policy_overhead_evaluation_2026_07_07.qps_curve.csv`.
+- Added `docs/saq_fixed_policy_overhead_evaluation_2026_07_07.json`.
+- Updated `EXPERIMENTS.md` with A4 fixed-policy overhead evaluation.
+- Updated `RESULTS.md` with the stable overhead finding.
+- Updated `PROGRESS.md` with this session log.
+
+### Artifacts produced
+
+```text
+docs/saq_fixed_policy_overhead_evaluation_2026_07_07.md
+docs/saq_fixed_policy_overhead_evaluation_2026_07_07.summary.csv
+docs/saq_fixed_policy_overhead_evaluation_2026_07_07.qps_curve.csv
+docs/saq_fixed_policy_overhead_evaluation_2026_07_07.json
+/tmp/saq-run/reports/fixed_policy_overhead_timing_2026_07_07/
+```
+
+### Result
+
+The overhead evaluation is complete for the current fixed-policy matrix.
+
+Key measured values:
+
+- full GIST K4096 planner runtime: about 145-151 seconds per budget;
+- CIFAR60K planner runtime: about 8.5-8.6 seconds per budget;
+- DEEP100K sample planner runtime: about 5.8 seconds per budget;
+- full GIST pair count: 14,740 pairs from 3,685 anchors;
+- QPS curve rows: 43 total rows, with no missing default/custom QPS values for
+  selected-candidate rows.
+
+### Interpretation
+
+The main added deployable cost is the data-only scorer, not candidate
+generation or final index build. This makes scorer-cost reduction and sampling
+calibration a higher-value next direction than expanding candidate families.
+
+### Problems / limitations
+
+Index build time is read from existing `create_index` metadata rather than
+newly repeated in this run. Planner runtime is a single wall-clock measurement
+and includes Python startup, file I/O, boundary-pair sampling, and scorer-grid
+evaluation.
+
+### Next action
+
+Validate generated docs and script, then commit and push. The next research
+step should evaluate whether fewer anchors/pairs or a smaller scorer grid can
+preserve the same fixed-policy decisions.

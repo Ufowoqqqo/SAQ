@@ -97,6 +97,33 @@ python -m py_compile \
 - Success: all scripts compile.
 - Failure: fix syntax/import-level issues before changing research logic.
 
+### A4. Fixed-policy overhead evaluation
+
+- Status: `done`
+- Priority: highest after A0
+- Goal: measure or aggregate the overhead terms required by the novelty and
+  overhead review: candidate/scorer runtime, pair count, index build time,
+  index size, and QPS curves.
+- Work completed:
+  - added a reproducible report driver,
+    `script/report_fixed_policy_overhead.py`;
+  - measured candidate/scorer runtime with fresh timing artifacts under
+    `/tmp/saq-run/reports/fixed_policy_overhead_timing_2026_07_07`;
+  - aggregated pair counts and scorer grid sizes from scorer summaries;
+  - read index build time from existing `*.index.csv` metadata and index size
+    from serialized `.index` files;
+  - measured/reused QPS curve points across each validation nprobe grid.
+- Result:
+  - `docs/saq_fixed_policy_overhead_evaluation_2026_07_07.md`
+  - `docs/saq_fixed_policy_overhead_evaluation_2026_07_07.summary.csv`
+  - `docs/saq_fixed_policy_overhead_evaluation_2026_07_07.qps_curve.csv`
+  - `docs/saq_fixed_policy_overhead_evaluation_2026_07_07.json`
+- Interpretation: full GIST planning overhead is dominated by the data-only
+  scorer, around 145-151 seconds per budget in the current implementation;
+  CIFAR/DEEP scorer overhead is much lower, around 6-9 seconds. This makes
+  scorer-cost reduction or sampling calibration a more important next question
+  than additional candidate-family expansion.
+
 ## B. Policy Robustness
 
 ### B1. Audit promotion decisions against the clean validation table
