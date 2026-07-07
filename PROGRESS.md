@@ -615,3 +615,85 @@ None.
 Commit and push the E1 summary checkpoint. After that, the highest-value next
 autonomous task is likely C2: a compact applicability classifier/table, unless
 the user wants to pause for meeting review.
+
+## Session 2026-07-07 16:36 HKT
+
+### Goal
+
+Complete C2: make the current applicability boundary more explicit than
+"multi-segment with zero tail."
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- Previous checkpoint: `def250a Add fixed-policy meeting summary`
+- `git status --short --branch`: clean and aligned with `origin/saq-boundary-audit`
+- Files read:
+  - `docs/saq_fixed_policy_method_spec_2026_07_07.md`
+  - `docs/saq_default_neighborhood_applicability_scan_2026_07_06.md`
+  - `docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv`
+  - `script/scan_default_neighborhood_applicability.py`
+  - `script/generate_default_neighborhood_plans.py`
+  - `script/run_default_neighborhood_cross_dataset.py`
+
+### Hypothesis / plan
+
+The policy boundary should be documented as a two-stage classifier:
+pre-scorer applicability based on default-plan shape and feasible candidate
+count, then post-scorer promotion/reject/abstain based on conservative and
+frontier-like scorer signals.
+
+### Commands run
+
+```bash
+git status --short --branch
+sed -n '1,260p' docs/saq_fixed_policy_method_spec_2026_07_07.md
+sed -n '1,220p' docs/saq_default_neighborhood_applicability_scan_2026_07_06.md
+sed -n '1,80p' docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
+rg -n "single_uniform|multi_segment|default_shape|frontier_like|conservative_eligible|risky_fallback" script/run_default_neighborhood_cross_dataset.py script/generate_default_neighborhood_plans.py script/scan_default_neighborhood_applicability.py script/report_fixed_policy_validation.py
+sed -n '1,220p' script/scan_default_neighborhood_applicability.py
+sed -n '1,260p' script/generate_default_neighborhood_plans.py
+sed -n '700,860p' script/run_default_neighborhood_cross_dataset.py
+sed -n '380,455p' script/run_default_neighborhood_cross_dataset.py
+sed -n '260,560p' script/generate_default_neighborhood_plans.py
+sed -n '220,360p' script/scan_default_neighborhood_applicability.py
+date '+%Y-%m-%d %H:%M %Z'
+```
+
+### Files changed
+
+- Added `docs/saq_fixed_policy_applicability_classifier_2026_07_07.md`.
+- Marked C2 done in `EXPERIMENTS.md`.
+- Added this session log in `PROGRESS.md`.
+
+### Artifacts produced
+
+```text
+docs/saq_fixed_policy_applicability_classifier_2026_07_07.md
+```
+
+### Result
+
+The new note defines the current classifier as:
+
+1. pre-scorer applicability from default-plan shape and feasible non-default
+   candidate count;
+2. post-scorer decision from conservative/frontier-like/risky-fallback roles.
+
+It maps GIST, CIFAR, DEEP, audio, and word2vec into positive, reject/control,
+and abstention classes using only existing evidence.
+
+### Interpretation
+
+C2 is satisfied. The method boundary is now easier to discuss without implying
+that shape scan alone proves a positive result.
+
+### Problems / blockers
+
+None.
+
+### Next action
+
+Validate the documentation diff, commit and push this C2 checkpoint. The next
+useful autonomous task is E2: fold the classifier into a more formal
+paper-style method spec, or E3: update the handoff state for future compaction.

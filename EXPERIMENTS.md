@@ -144,7 +144,7 @@ python script/scan_default_neighborhood_applicability.py \
 
 ### C2. Better applicability classifier
 
-- Status: `todo`
+- Status: `done`
 - Priority: medium
 - Hypothesis: the method boundary can be stated more precisely than “multi-segment with zero tail.”
 - Possible features:
@@ -155,6 +155,7 @@ python script/scan_default_neighborhood_applicability.py \
   - middle/tail positive dimensions available for redistribution;
   - whether the default has nonfinal 1-bit segments.
 - Success: produce a small table or doc section that explains when to promote, reject, or abstain before expensive evaluation.
+- Result: `docs/saq_fixed_policy_applicability_classifier_2026_07_07.md`.
 
 ### C3. Robustness of GIST B=3 1-bit fix
 
