@@ -1,8 +1,10 @@
 # Query-Unaware SAQ Follow-Up
 
-Boundary-Aware Planner v3, Conservative Guard, and the Remaining Middle-Plan Gap
+Default-Neighborhood Fixed Policy, Boundary-Risk Scoring, and Current Evidence
 
 Date: 2026-07-06
+
+Updated: 2026-07-07
 
 Audience assumption: familiar with vector search / ANNS, not necessarily with
 SAQ implementation details.
@@ -16,16 +18,17 @@ Explain where the SAQ follow-up currently stands.
 Main message:
 
 ```text
-We should not frame the current result as "we found one better plan".
-The stronger story is:
-v3 exposes recall/speed endpoints, and the remaining gap is generating
-measured-balanced plans.
+We now have a query-unaware fixed-policy story:
+generate small neighborhoods around SAQ's default plan, score them with
+data-only boundary risk, promote only safe candidates, and abstain otherwise.
 ```
 
 Meeting output I want:
 
-- Validate whether this problem framing is worth pursuing.
-- Decide whether the next step should target balanced-plan generation.
+- Decide whether this fixed-policy framing is worth developing as the next
+  contribution.
+- Decide whether the next step should formalize the policy or target
+  balanced/middle-plan generation.
 
 ---
 
@@ -65,19 +68,19 @@ This is:
 - simple and efficient;
 - aligned with reconstruction / distance-estimation quality.
 
-But it is not directly optimizing:
+But it does not directly optimize:
 
 ```text
 top-k boundary stability
-search-time recall/speed tradeoff
-IVF residual behavior after clustering
+search-time segment cost
+local IVF residual behavior after clustering
 ```
 
 ---
 
 ## 4. Research Boundary After Advisor Feedback
 
-We should stay query-unaware.
+We stay query-unaware.
 
 Allowed method signals:
 
@@ -103,13 +106,13 @@ Held-out benchmark queries remain valid for final evaluation.
 ## 5. Current Hypothesis
 
 SAQ's global PCA-variance plan can miss data-only structure that matters for
-ANN ranking.
+ANN ranking and search cost.
 
 More concrete:
 
 ```text
-Global variance, residual reconstruction cost, and top-k boundary behavior can
-disagree even without using query workloads.
+Global PCA variance, residual reconstruction cost, top-k boundary behavior,
+and search-time segment cost can disagree even without using query workloads.
 ```
 
 So the follow-up question becomes:
@@ -121,7 +124,29 @@ candidates than pure global PCA variance?
 
 ---
 
-## 6. Planner v3: Data-Only Boundary Risk
+## 6. Current Workflow
+
+Fixed-policy pipeline:
+
+```text
+SAQ default plan
+  -> default-neighborhood candidate generator
+  -> data-only boundary-pair scorer
+  -> conservative/frontier promotion rule
+  -> safe-searcher recall and QPS validation
+```
+
+The generator only makes small perturbations around the SAQ default plan.
+
+The policy can also abstain:
+
+```text
+single uniform default plan -> no useful local multi-segment neighborhood
+```
+
+---
+
+## 7. Planner v3: Data-Only Boundary Risk
 
 Planner v3 samples base vectors as pseudo-queries inside IVF cells.
 
@@ -144,7 +169,7 @@ easily flip their order.
 
 ---
 
-## 7. Planner v3 Outputs Roles, Not One Winner
+## 8. Planner v3 Outputs Roles, Not One Winner
 
 v3 separates two proxy views.
 
@@ -176,7 +201,7 @@ This is the key framing shift.
 
 ---
 
-## 8. Why We Added A Conservative Guard
+## 9. Why We Added A Conservative Guard
 
 B=5 `gist_sample100k` exposed a false positive.
 
@@ -198,13 +223,11 @@ Raw recall-risk alone was not safe enough for promotion.
 
 ---
 
-## 9. Conservative Guard
+## 10. Promotion Rule
 
-The guard is a promotion-layer rule.
+The conservative guard is a promotion-layer rule.
 
-It does not remove raw diagnostic endpoints.
-
-It only rejects a promotion candidate if it is worse than default on:
+It rejects a candidate if it is worse than default on:
 
 ```text
 weighted soft-inversion ratio
@@ -212,47 +235,28 @@ weighted pair-ratio mean
 speed-proxy ratio
 ```
 
-For the B=5 false positive:
+For borderline cases, we also allow a narrow `frontier_like` role:
 
 ```text
-soft inversion ratio = 1.030461
-weighted ratio       = 1.029477
-speed proxy ratio    = 1.214129
+low recall-risk score
+non-worse speed proxy
+pair ratios only marginally above default
 ```
 
-Conservative roles select:
-
-```text
-b5_rank0 = 64:10,192:8,256:5,384:3,64:0
-```
+Otherwise, the method abstains.
 
 ---
 
-## 10. Full GIST K4096 B=4: Raw v3 Frontier
-
-Full GIST, K=4096, B=4.
+## 11. Full GIST K4096 B=4: Endpoint Story
 
 Raw v3 Pareto endpoints:
 
 | role | plan | proxy readout |
 |---|---|---|
 | recall endpoint | `64:9,64:7,128:6,320:4,256:2,128:0` | best recall-risk, slower |
-| speed endpoint | `128:9,320:5,320:3,192:0` | fastest proxy, lower recall-risk gain |
+| speed endpoint | `128:9,320:5,320:3,192:0` | fastest proxy, positive recall |
 
-Names:
-
-```text
-v2_split64    = recall endpoint
-compact_k4096 = speed endpoint
-```
-
-This supports the "Pareto interpretation" story.
-
----
-
-## 11. Full GIST K4096 B=4: Measured Results
-
-Measured with corrected safe searcher, original-space R@100, nprobe=800.
+Measured with corrected safe searcher, original-space R@100, nprobe=800:
 
 | plan | R@100 | QPS | QPS ratio |
 |---|---:|---:|---:|
@@ -263,189 +267,230 @@ Measured with corrected safe searcher, original-space R@100, nprobe=800.
 
 Interpretation:
 
-- `v2_split64`: best recall, slower.
-- `compact_k4096`: strongest speed point with positive recall.
-- `filtered_new`: measured balanced point.
+```text
+v3 exposes endpoints.
+The guard promotes a safer speed/recall candidate.
+It is not a best-recall selector.
+```
 
 ---
 
-## 12. What Conservative Guard Does On Full GIST
+## 12. GIST Full K4096 Budget Ladder
 
-Conservative guard excludes `v2_split64` only because:
+After fixing the 1-bit default build path, GIST is positive across B=3/B=4/B=5.
 
-```text
-speed_proxy_ratio = 1.215274 > 1
-```
+| budget | promoted plan | R@100 result | QPS result |
+|---:|---|---|---|
+| B=3 | `64:8,320:5,320:2,256:0` | np800: 0.97996 -> 0.98155 | +11.2% |
+| B=4 | `128:9,320:5,320:3,192:0` | np800: 0.98845 -> 0.98922 | +19.5% |
+| B=5 | `128:9,128:7,320:5,320:3,64:0` | np800: 0.99319 -> 0.99347 | +7.9% |
 
-It selects:
-
-```text
-compact_k4096 = 128:9,320:5,320:3,192:0
-```
-
-Important interpretation:
-
-```text
-The conservative guard is not a best-recall selector.
-It is a safer promotion selector.
-```
-
-We should keep both:
-
-- raw endpoint roles for diagnosis;
-- conservative roles for safer promotion.
+This is the strongest current positive family.
 
 ---
 
-## 13. Middle-Role Sanity Check
+## 13. CIFAR Budget Ladder
 
-Question:
+CIFAR uses R@10, but it is also positive across B=3/B=4/B=5.
 
-```text
-Can role selection alone recover the measured balanced point filtered_new?
-```
+| budget | promoted plan | R@10 result | QPS result |
+|---:|---|---|---|
+| B=3 | `128:6,64:4,192:2,128:0` | np200: 0.9617 -> 0.9621 | +7.6% |
+| B=4 | `128:7,256:4,128:0` | np200: 0.9781 -> 0.9785 | +7.4% |
+| B=5 | `128:8,64:6,256:4,64:0` | np200: 0.9865 -> 0.9873 | +6.1% |
 
-Measured balanced plan:
+These are small but consistent gains.
 
-```text
-filtered_new = 64:10,320:6,384:3,192:0
-```
-
-Result from existing v3 unique candidate set:
+Important detail:
 
 ```text
-filtered_new is not present.
+CIFAR uses frontier_like promotion, not strict conservative promotion.
 ```
 
-This means the gap is not only role selection.
+This suggests the hard 1.0 pair-ratio cutoff needs a narrow tolerance.
 
 ---
 
-## 14. Middle Selectors We Tried Offline
+## 14. Negative And Abstention Evidence
 
-Using the existing full GIST K4096 B=4 v3 CSV.
+DEEP is a rejected negative/control.
 
-Selector:
+| run | candidate | measured result |
+|---|---|---|
+| DEEP100K B=4 | `128:4,128:3` | +8.9% QPS, but -0.0276 R@100 at np200 |
+| DEEP100K B=5 | `128:5,128:4` | +10.4% QPS, but -0.0143 R@100 at np200 |
 
-```text
-minimize recall risk subject to speed_proxy_ratio <= threshold
-```
+The scorer rejected these; they were evaluated only as risky fallbacks.
 
-Result:
-
-```text
-always selects compact_k4096
-```
-
-Default-speed window selector:
+Audio and word2vec are abstention cases:
 
 ```text
-speed_proxy_ratio in [0.98, 1.02]
+audio B=3/4/5: single uniform default -> abstain
+word2vec B=3/4/5: single uniform default -> abstain
 ```
-
-Result:
-
-```text
-64:8,192:7,320:4,256:2,128:0
-```
-
-Still not `filtered_new`.
 
 ---
 
-## 15. Current Claim
+## 15. Applicability Boundary
+
+Current method is applicable when SAQ's default plan has:
+
+```text
+multi-segment bit ladder
+zero tail
+enough middle/tail positive dimensions to redistribute
+```
+
+Current method should abstain when:
+
+```text
+default is already a single uniform segment
+```
+
+Current method should reject:
+
+```text
+speed-only perturbations that hurt boundary-risk proxies
+```
+
+This boundary is now part of the contribution candidate.
+
+---
+
+## 16. GIST B=3 Implementation Caveat
+
+GIST B=3 originally crashed because the default plan includes a 1-bit segment:
+
+```text
+64:9,192:5,320:3,192:1,192:0
+```
+
+Root cause:
+
+```text
+encoder exported code only for num_bits > 1
+packer required code for every num_bits > 0
+```
+
+We fixed this locally to make SAQ's own legal default plan buildable.
+
+Important framing:
+
+```text
+The 1-bit fix is not the planner contribution.
+It only unblocks fair default-vs-custom validation.
+```
+
+---
+
+## 17. Current Claim
 
 What we can claim now:
 
-1. v3 gives useful data-only endpoint diagnostics.
-2. Raw recall-risk can produce false positives.
-3. Conservative guard reduces unsafe promotion risk.
-4. Current DP candidate generation still misses measured-balanced shapes.
+1. Query-unaware boundary-risk scoring is useful.
+2. Fixed-policy default-neighborhood selection is positive on GIST and CIFAR
+   budget ladders.
+3. The policy correctly rejects DEEP risky speed-only changes.
+4. The policy abstains on audio/word2vec single-uniform defaults.
+5. The method has a clearer applicability boundary than before.
 
 What we should not claim:
 
 ```text
-We have a final better SAQ planner.
+We have a universal replacement for SAQ's planner.
 ```
 
 Better claim:
 
 ```text
-We have identified a concrete limitation and a more precise next target.
+We have a query-unaware policy with positive, negative, and abstention evidence.
 ```
 
 ---
 
-## 16. Main Remaining Gap
+## 18. Remaining Gap 1: Formal Method Definition
 
-Current gap:
+The fixed policy still needs to be made crisp.
 
-```text
-The planner can expose endpoints, but does not generate filtered_new-like
-balanced plans.
-```
-
-This is useful because it points to a method contribution:
+Questions:
 
 ```text
-balanced candidate generation / middle-shape prior
+How exactly do we classify default-plan shape?
+Which candidate families are allowed?
+When is conservative vs frontier_like promotion valid?
+What thresholds define abstention?
 ```
 
-Not just:
-
-```text
-more sweeps
-more scalar re-ranking
-```
+This is the most meeting-ready next step.
 
 ---
 
-## 17. Proposed Next Step
+## 19. Remaining Gap 2: Middle Plans
 
-Design a middle-plan generator.
-
-Possible directions:
-
-1. Add a target-speed penalty during DP, not only after DP.
-2. Add a shape prior for balanced plans:
+Full GIST B=4 has a measured balanced point:
 
 ```text
-compact head
-broad mid segments
-nonzero tail cutoff near 768 or 832/896
-avoid unnecessary head fragmentation
+filtered_new = 64:10,320:6,384:3,192:0
 ```
 
-3. Seed balanced shape families and rank them with the data-only pair-risk
-proxy.
-
-Validation target:
+Measured:
 
 ```text
-Can we recover filtered_new or a nearby measured-balanced candidate?
+R@100 np800 = 0.98948
+QPS ratio   = 1.078x
 ```
+
+Existing v3 candidate generation did not directly rediscover this plan.
+
+So candidate generation still matters.
 
 ---
 
-## 18. Discussion Questions
+## 20. Proposed Next Step
 
-1. Is the current problem framing strong enough?
+Recommended before the next meeting:
 
 ```text
-SAQ global variance planning misses balanced segment shapes under data-only
-boundary-risk diagnostics.
+Formalize the fixed policy and produce one clean validation table.
 ```
 
-2. Should the next contribution target:
+Method skeleton:
+
+1. Classify default-plan shape.
+2. Generate allowed default-neighborhood candidates.
+3. Score with data-only boundary pairs.
+4. Promote conservative/frontier candidates.
+5. Abstain otherwise.
+
+Then decide whether to extend toward:
 
 ```text
-balanced candidate generation
-cluster-local plan families
+middle-plan generation
+cluster-local plans
 non-contiguous / reordered segmentation
 ```
 
-3. For the next experiment, is it acceptable to use `filtered_new` as a
-measured target shape, while still keeping the method query-unaware?
+---
+
+## 21. Discussion Questions
+
+1. Is this fixed-policy framing strong enough for a contribution?
+
+```text
+SAQ default planning can be improved by data-only boundary-risk diagnostics,
+but only under a clear default-plan shape boundary.
+```
+
+2. Is `frontier_like` acceptable as a calibrated promotion role, or should the
+   method use only strict conservative promotion?
+
+3. Should the next contribution target:
+
+```text
+formal fixed policy
+balanced middle-plan generation
+cluster-local plan families
+```
 
 ---
 
@@ -455,7 +500,11 @@ Reports:
 
 ```text
 docs/saq_stage_synthesis_v3_conservative_2026_07_06.md
-docs/saq_gist_sample100k_B5_v3_conservative_guard_2026_07_06.md
+docs/saq_cross_dataset_default_neighborhood_validation_2026_07_06.md
+docs/saq_default_neighborhood_applicability_scan_2026_07_06.md
+docs/saq_cifar_budget_holdout_2026_07_06.md
+docs/saq_gist_budget_holdout_2026_07_06.md
+docs/saq_gist_full_k4096_B3_after_1bit_fix_2026_07_07.md
 docs/saq_gist_full_k4096_B4_v3_conservative_audit_2026_07_06.md
 docs/saq_gist_full_k4096_B4_middle_role_analysis_2026_07_06.md
 ```
@@ -463,6 +512,9 @@ docs/saq_gist_full_k4096_B4_middle_role_analysis_2026_07_06.md
 Implementation:
 
 ```text
+script/generate_default_neighborhood_plans.py
+script/score_default_neighborhood_plans.py
+script/run_default_neighborhood_cross_dataset.py
 script/sweep_data_boundary_pairs.py
 ```
 
@@ -488,9 +540,12 @@ non-finite lanes before SIMD min.
 
 1. SAQ uses global PCA variance to allocate bits across contiguous segments.
 2. We kept the follow-up query-unaware.
-3. We built a base-only boundary-risk planner.
-4. v3 exposes recall/speed endpoints instead of one winner.
-5. B=5 showed raw recall-risk can be a false positive.
-6. Conservative guard fixes promotion, not candidate generation.
-7. Full GIST K4096 confirms endpoint story.
-8. The missing piece is generating measured-balanced plans like `filtered_new`.
+3. We generate local neighborhoods around SAQ's own default plan.
+4. We score with base-only boundary-risk and speed proxies.
+5. Raw v3 endpoints are useful but can false-positive.
+6. Conservative/frontier promotion plus abstention gives a clearer policy.
+7. GIST and CIFAR budget ladders are positive.
+8. DEEP is rejected; audio/word2vec abstain.
+9. The 1-bit fix only unblocks fair GIST B=3 validation.
+10. The next decision is whether to formalize this fixed policy or push toward
+    middle-plan generation.
