@@ -93,12 +93,58 @@ A minimal fix was needed because the encoder did not export `base_code.code` for
 
 ## Recommended Next Stable Results To Seek
 
-1. Complete a novelty/overhead audit for the current fixed-policy method.
-2. Reproduce the checked-in clean validation table from scripts.
-3. Make the fixed-policy matrix reproducible or document missing artifacts precisely.
-4. Add a concise meeting/paper-facing summary of the fixed-policy method.
-5. Add a more explicit applicability classifier/table.
-6. Preserve DEEP reject and audio/word2vec abstention behavior under any future generator/scorer change.
+1. Add reproducible overhead measurements for the current fixed-policy method:
+   candidate counts, scorer runtime, pair counts, index build time, index size,
+   and QPS curves.
+2. Make the fixed-policy matrix reproducible on a clean machine or document the
+   exact dataset/artifact preparation gap.
+3. Preserve DEEP reject and audio/word2vec abstention behavior under any future
+   generator/scorer change.
+4. If expanding the generator, first state the SAQ failure mode and added
+   overhead, then validate against GIST/CIFAR positives, DEEP rejects, and
+   audio/word2vec abstentions.
+
+## Result 2026-07-07: Novelty and overhead audit narrows the claim
+
+### Claim
+
+The current default-neighborhood fixed policy is best treated as a
+query-unaware local correction layer around SAQ's default segment plan, not as
+an independent quantizer or strict replacement for SAQ.
+
+### Evidence
+
+- Audit doc:
+  `docs/saq_fixed_policy_novelty_overhead_audit_2026_07_07.md`
+- Method spec:
+  `docs/saq_fixed_policy_method_spec_2026_07_07.md`
+- Clean validation table:
+  `docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv`
+- Relevant code paths:
+  - `script/generate_default_neighborhood_plans.py`
+  - `script/sweep_data_boundary_pairs.py`
+  - `script/run_default_neighborhood_cross_dataset.py`
+
+### Interpretation
+
+The defensible SAQ limitation is narrow: SAQ's global variance-based default
+planner does not directly model IVF-local ranking-boundary risk or the search
+cost induced by segment shape. The fixed policy is potentially useful only if
+its extra offline candidate generation and boundary-pair scoring remain small,
+it builds one final selected SAQ-compatible index, and it continues to
+promote/reject/abstain without using held-out query labels.
+
+### Limitations
+
+The current evidence is meeting-level, not a strong superiority claim. Positive
+recall deltas are small, QPS is currently reported at headline nprobe values,
+and exact scorer runtime, index-build time, and index-size overhead still need
+to be measured.
+
+### Follow-up
+
+Before new expensive sweeps or candidate-family expansion, add reproducible
+overhead reporting for the existing validation cases.
 
 ## Result 2026-07-07: Fixed-policy report and matrix reproduce the checked-in table
 

@@ -14,7 +14,7 @@ Status labels:
 
 ### A0. Novelty and overhead gate
 
-- Status: `todo`
+- Status: `done`
 - Priority: highest
 - Hypothesis: the current fixed-policy story may be too close to SAQ and may
   buy small metric gains with nontrivial offline complexity.
@@ -33,6 +33,8 @@ Status labels:
   - What experiments should not be run because they only add tuning complexity?
 - Constraint: do not start new expensive build/eval sweeps before this audit is
   completed or explicitly deferred by the user.
+- Result: documented in
+  `docs/saq_fixed_policy_novelty_overhead_audit_2026_07_07.md`.
 
 ### A1. Verify clean fixed-policy report regeneration
 
@@ -228,7 +230,7 @@ python script/scan_default_neighborhood_applicability.py \
 
 ### D4. Avoid overhead cherry-picking
 
-- Status: `todo`
+- Status: `done`
 - Priority: high
 - Work:
   - report the method overhead separately from experimental overhead;
@@ -239,6 +241,8 @@ python script/scan_default_neighborhood_applicability.py \
   - record whether any metadata or search-time branches are added beyond SAQ.
 - Success: future slides/docs cannot imply strict superiority unless overhead
   is included or explicitly scoped out.
+- Result: covered by
+  `docs/saq_fixed_policy_novelty_overhead_audit_2026_07_07.md`.
 
 ## E. Documentation / Meeting Narrative
 

@@ -1150,3 +1150,101 @@ None.
 
 Validate the diff, commit, and push. The next substantive task should be A0:
 write the novelty/overhead audit before starting new experiments.
+
+## Session 2026-07-07 21:00 HKT
+
+### Goal
+
+Complete A0: write a novelty/overhead audit for the current query-unaware
+default-neighborhood fixed-policy method before starting more expensive
+experiments.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- `git status --short`: clean
+- A0 in `EXPERIMENTS.md` was `todo`.
+- `TASK.md` required novelty and overhead accounting before new expensive
+  build/eval sweeps.
+
+### Hypothesis / plan
+
+The current method is not an independent quantizer. The useful contribution,
+if any, must be framed as a low-overhead query-unaware correction for a
+specific SAQ limitation: the default global variance-based planner does not
+directly model IVF-local ranking-boundary risk or segment-shape search cost.
+
+Write a durable audit that separates deployable method overhead from research
+sweep overhead, states stop/pivot criteria, and identifies the next required
+overhead measurements.
+
+### Commands run
+
+```bash
+sed -n '1,80p' docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
+sed -n '1,220p' TASK.md
+sed -n '1,260p' EXPERIMENTS.md
+sed -n '1,220p' RESULTS.md
+git status --short
+sed -n '1,240p' AGENTS.md
+sed -n '1,260p' docs/saq_fixed_policy_method_spec_2026_07_07.md
+python -m py_compile script/sweep_data_boundary_pairs.py script/generate_default_neighborhood_plans.py script/score_default_neighborhood_plans.py script/run_default_neighborhood_cross_dataset.py script/run_fixed_policy_matrix.py script/report_fixed_policy_validation.py
+sed -n '260,520p' docs/saq_fixed_policy_method_spec_2026_07_07.md
+rg -n "max_anchors|max_pairs|max_candidates_per_anchor|boundary_rank|neighbor_window|pairs_per_anchor|pair_seed|allow_risky|frontier|conservative" script/run_default_neighborhood_cross_dataset.py
+sed -n '1,260p' script/sweep_data_boundary_pairs.py
+rg -n "def gen_|generators =|def generate_candidates|filter_infeasible|max_segments|min_positive_bits|families" script/generate_default_neighborhood_plans.py
+sed -n '260,420p' script/sweep_data_boundary_pairs.py
+sed -n '40,70p' script/run_default_neighborhood_cross_dataset.py
+sed -n '325,390p' script/generate_default_neighborhood_plans.py
+sed -n '395,455p' script/run_default_neighborhood_cross_dataset.py
+ls -lh /tmp/saq-run/reports | tail -40
+rg -n "candidate_count|generated|sampled_pair_count|used_anchor_count|scorer|boundary" /tmp/saq-run/reports/fixed_policy_matrix_2026_07_07.manifest.json /tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07.json
+find /tmp/saq-run/reports -maxdepth 1 -type f -name '*default_neighborhood*2026_07_06*json' -o -name '*default_neighborhood*2026_07_07*json' | head -40
+python -c 'import json; from pathlib import Path; data=json.loads(Path("/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07.json").read_text()); print(data.keys());\nfor k,v in data.items(): print(k, type(v).__name__, (len(v) if hasattr(v,"__len__") else ""))'
+python -c 'import json; from pathlib import Path; data=json.loads(Path("/tmp/saq-run/reports/fixed_policy_matrix_2026_07_07.manifest.json").read_text()); print(data.keys());\nfor k,v in data.items(): print(k, type(v).__name__, (len(v) if hasattr(v,"__len__") else ""))'
+python -c 'import json; from pathlib import Path; data=json.loads(Path("/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07.json").read_text()); r=data["results"][0]; print(r.keys());\nfor k,v in r.items(): print("KEY",k,"TYPE",type(v).__name__); print(str(v)[:500])'
+python -c 'import csv,json; from pathlib import Path; data=json.loads(Path("/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07.json").read_text());\nfor r in data["results"]:\n    name=r["spec"]["name"];\n    cand_csv=Path(r.get("candidate_csv","")); uniq=Path(r.get("unique_csv",""));\n    cand_rows=sum(1 for _ in csv.DictReader(cand_csv.open())) if cand_csv.exists() else None;\n    uniq_rows=sum(1 for _ in csv.DictReader(uniq.open())) if uniq.exists() else None;\n    summary=Path(str(uniq).replace(".unique.csv",".summary.json"));\n    s=json.loads(summary.read_text()) if summary.exists() else {};\n    sample=s.get("pair_summary") or s.get("sampling") or s.get("boundary_pair_summary") or {};\n    top=(r.get("top_unique") or [{}])[0];\n    print(name, "candidate_rows", cand_rows, "unique_rows", uniq_rows, "top_config_count", top.get("config_count"), "pairs", sample.get("sampled_pair_count"), "anchors", sample.get("used_anchor_count"), "summary", summary.name if summary.exists() else "missing")'
+tail -120 PROGRESS.md
+date '+%Y-%m-%d %H:%M %Z'
+```
+
+### Files changed
+
+- Added
+  `docs/saq_fixed_policy_novelty_overhead_audit_2026_07_07.md`.
+- Updated `EXPERIMENTS.md`: marked A0 and D4 done with the audit doc as
+  result.
+- Updated `RESULTS.md`: added a stable claim that the current method is a local
+  correction layer and made overhead measurement the next stable result.
+- Updated `PROGRESS.md`: added this session log.
+
+### Artifacts produced
+
+```text
+docs/saq_fixed_policy_novelty_overhead_audit_2026_07_07.md
+```
+
+### Result
+
+The audit concludes that the current work is only defensible as an incremental,
+shape-dependent, query-unaware SAQ correction. It should not be presented as a
+strictly better quantizer. The main deployable overhead is data-only
+boundary-pair sampling/scoring; research validation overhead from many
+candidate builds/evaluations must be reported separately.
+
+### Interpretation
+
+This satisfies A0 as a documentation and decision gate. It does not authorize
+unbounded new sweeps. The next stable technical result should measure overhead
+for the existing fixed-policy cases: candidate count, scorer runtime, pair
+count, final index build time, index size, and QPS curves.
+
+### Problems / blockers
+
+No blocker. Exact wall-clock scorer runtime and index-size/build-time overhead
+are not yet measured; the audit marks them as required next measurements rather
+than guessing.
+
+### Next action
+
+Validate the markdown diff, commit, and push.
