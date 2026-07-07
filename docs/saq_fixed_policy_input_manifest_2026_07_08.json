@@ -1,0 +1,712 @@
+{
+  "artifact_date": "2026_07_08_runner_cost_reduced_eval",
+  "date": "2026_07_08_runner_cost_reduced_eval",
+  "expected_csv": "/rwproject/kdd-db/kluaq/saq/docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv",
+  "files": [
+    {
+      "exists": true,
+      "format": {
+        "dim": 192,
+        "error": null,
+        "kind": "fvecs",
+        "row_size_bytes": 772,
+        "rows": 1,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "float32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "1d98cd6df677e1c094efb2dc0150b37c74f93b52dafd593fde9e3aca522525d2",
+        "status": "ok"
+      },
+      "input_entries": 1,
+      "is_file": true,
+      "mtime_utc": "2026-06-26T04:30:31+00:00",
+      "notes": [
+        "fixed-policy runner cannot regenerate dataset artifacts"
+      ],
+      "path": "/tmp/saq-run/data/audio/audio_base_pca.vars.fvecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/audio/audio_base_pca.vars.fvecs",
+      "roles": [
+        "audio:PCA variance for scan"
+      ],
+      "size_bytes": 772,
+      "size_mib": 0.000736
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 512,
+        "error": null,
+        "kind": "fvecs",
+        "row_size_bytes": 2052,
+        "rows": 60000,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "float32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "2019cfa391c5d10742a9963b6dc3d28d633097632b7bb1acde737caa6d314845",
+        "status": "ok"
+      },
+      "input_entries": 1,
+      "is_file": true,
+      "mtime_utc": "2026-07-06T11:48:17+00:00",
+      "notes": [
+        "required before scorer, indexing, compare, and QPS"
+      ],
+      "path": "/tmp/saq-run/data/cifar60k/cifar60k_base_pca.fvecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/cifar60k/cifar60k_base_pca.fvecs",
+      "roles": [
+        "cifar60k K512:base PCA vectors"
+      ],
+      "size_bytes": 123120000,
+      "size_mib": 117.416382
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 512,
+        "error": null,
+        "kind": "fvecs",
+        "row_size_bytes": 2052,
+        "rows": 1,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "float32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "8ec4a1399e012c8d227e368968a1de588fa095b2d3516466152bf29335e0ba15",
+        "status": "ok"
+      },
+      "input_entries": 2,
+      "is_file": true,
+      "mtime_utc": "2026-07-06T11:48:17+00:00",
+      "notes": [
+        "fixed-policy runner cannot regenerate dataset artifacts",
+        "required before applicability scan, generator, and scorer"
+      ],
+      "path": "/tmp/saq-run/data/cifar60k/cifar60k_base_pca.vars.fvecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/cifar60k/cifar60k_base_pca.vars.fvecs",
+      "roles": [
+        "cifar60k:PCA variance for scan",
+        "cifar60k K512:PCA variance"
+      ],
+      "size_bytes": 2052,
+      "size_mib": 0.001957
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 512,
+        "error": null,
+        "kind": "fvecs",
+        "row_size_bytes": 2052,
+        "rows": 512,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "float32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "ad4498c3b67a1ab598eb47bee560133a3d6ca46a7867db29ffb55ce53b3c9827",
+        "status": "ok"
+      },
+      "input_entries": 1,
+      "is_file": true,
+      "mtime_utc": "2026-07-06T11:48:17+00:00",
+      "notes": [
+        "required before scorer and index build"
+      ],
+      "path": "/tmp/saq-run/data/cifar60k/cifar60k_centroid_512_pca.fvecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/cifar60k/cifar60k_centroid_512_pca.fvecs",
+      "roles": [
+        "cifar60k K512:IVF centroids"
+      ],
+      "size_bytes": 1050624,
+      "size_mib": 1.001953
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 1,
+        "error": null,
+        "kind": "ivecs",
+        "row_size_bytes": 8,
+        "rows": 60000,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "int32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "3168f05171f74afb175c50a0ec9e584b0f666b157fbedba6d3841cc2e43107e9",
+        "status": "ok"
+      },
+      "input_entries": 1,
+      "is_file": true,
+      "mtime_utc": "2026-07-06T11:48:17+00:00",
+      "notes": [
+        "required before scorer and index build"
+      ],
+      "path": "/tmp/saq-run/data/cifar60k/cifar60k_cluster_id_512.ivecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/cifar60k/cifar60k_cluster_id_512.ivecs",
+      "roles": [
+        "cifar60k K512:IVF cluster ids"
+      ],
+      "size_bytes": 480000,
+      "size_mib": 0.457764
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 10,
+        "error": null,
+        "kind": "ivecs",
+        "row_size_bytes": 44,
+        "rows": 1000,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "int32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "28900a95d593c7d70bb9cfafb78be395d5ebade7bfffbbd8327e8ffa23ab336d",
+        "status": "ok"
+      },
+      "input_entries": 1,
+      "is_file": true,
+      "mtime_utc": "2026-07-06T11:48:17+00:00",
+      "notes": [
+        "required before compare and QPS evaluation"
+      ],
+      "path": "/tmp/saq-run/data/cifar60k/cifar60k_groundtruth.ivecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/cifar60k/cifar60k_groundtruth.ivecs",
+      "roles": [
+        "cifar60k K512:groundtruth"
+      ],
+      "size_bytes": 44000,
+      "size_mib": 0.041962
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 512,
+        "error": null,
+        "kind": "fvecs",
+        "row_size_bytes": 2052,
+        "rows": 1000,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "float32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "42a9a3b5461af5eca9a434520ffb780a5a4f887a873c032b1993100f0d708683",
+        "status": "ok"
+      },
+      "input_entries": 1,
+      "is_file": true,
+      "mtime_utc": "2026-07-06T11:48:17+00:00",
+      "notes": [
+        "required before compare and QPS evaluation"
+      ],
+      "path": "/tmp/saq-run/data/cifar60k/cifar60k_query_pca.fvecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/cifar60k/cifar60k_query_pca.fvecs",
+      "roles": [
+        "cifar60k K512:query PCA vectors"
+      ],
+      "size_bytes": 2052000,
+      "size_mib": 1.95694
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 256,
+        "error": null,
+        "kind": "fvecs",
+        "row_size_bytes": 1028,
+        "rows": 100000,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "float32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "e0aedad8e11b2f65c6fefabbc94985d60959e446992f537cf5e62c93d37a3c8f",
+        "status": "ok"
+      },
+      "input_entries": 1,
+      "is_file": true,
+      "mtime_utc": "2026-07-06T11:43:03+00:00",
+      "notes": [
+        "required before scorer, indexing, compare, and QPS"
+      ],
+      "path": "/tmp/saq-run/data/deep1M_sample100k/deep1M_sample100k_base_pca.fvecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/deep1M_sample100k/deep1M_sample100k_base_pca.fvecs",
+      "roles": [
+        "deep1M_sample100k K512:base PCA vectors"
+      ],
+      "size_bytes": 102800000,
+      "size_mib": 98.03772
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 256,
+        "error": null,
+        "kind": "fvecs",
+        "row_size_bytes": 1028,
+        "rows": 1,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "float32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "f301c030f4cef1592d57449b9cee59313293f625e096ea021acd3d525f688f0f",
+        "status": "ok"
+      },
+      "input_entries": 2,
+      "is_file": true,
+      "mtime_utc": "2026-07-06T11:43:03+00:00",
+      "notes": [
+        "fixed-policy runner cannot regenerate dataset artifacts",
+        "required before applicability scan, generator, and scorer"
+      ],
+      "path": "/tmp/saq-run/data/deep1M_sample100k/deep1M_sample100k_base_pca.vars.fvecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/deep1M_sample100k/deep1M_sample100k_base_pca.vars.fvecs",
+      "roles": [
+        "deep1M_sample100k:PCA variance for scan",
+        "deep1M_sample100k K512:PCA variance"
+      ],
+      "size_bytes": 1028,
+      "size_mib": 0.00098
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 256,
+        "error": null,
+        "kind": "fvecs",
+        "row_size_bytes": 1028,
+        "rows": 512,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "float32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "9c46c49c28d358bb019c9f032f0ae18ee4e440257f9b97a1c92dad22c8c11423",
+        "status": "ok"
+      },
+      "input_entries": 1,
+      "is_file": true,
+      "mtime_utc": "2026-07-06T11:43:03+00:00",
+      "notes": [
+        "required before scorer and index build"
+      ],
+      "path": "/tmp/saq-run/data/deep1M_sample100k/deep1M_sample100k_centroid_512_pca.fvecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/deep1M_sample100k/deep1M_sample100k_centroid_512_pca.fvecs",
+      "roles": [
+        "deep1M_sample100k K512:IVF centroids"
+      ],
+      "size_bytes": 526336,
+      "size_mib": 0.501953
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 1,
+        "error": null,
+        "kind": "ivecs",
+        "row_size_bytes": 8,
+        "rows": 100000,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "int32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "e8e29d06a6df29d17696673e5dd138caf83d98f36e14a03ff72fb16bcb0fd0bd",
+        "status": "ok"
+      },
+      "input_entries": 1,
+      "is_file": true,
+      "mtime_utc": "2026-07-06T11:43:03+00:00",
+      "notes": [
+        "required before scorer and index build"
+      ],
+      "path": "/tmp/saq-run/data/deep1M_sample100k/deep1M_sample100k_cluster_id_512.ivecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/deep1M_sample100k/deep1M_sample100k_cluster_id_512.ivecs",
+      "roles": [
+        "deep1M_sample100k K512:IVF cluster ids"
+      ],
+      "size_bytes": 800000,
+      "size_mib": 0.762939
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 100,
+        "error": null,
+        "kind": "ivecs",
+        "row_size_bytes": 404,
+        "rows": 1000,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "int32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "a0223712006e6e59ef7637461eee2fdb762fc202a4ed687f424816c539e94d81",
+        "status": "ok"
+      },
+      "input_entries": 1,
+      "is_file": true,
+      "mtime_utc": "2026-07-06T11:43:28+00:00",
+      "notes": [
+        "required before compare and QPS evaluation"
+      ],
+      "path": "/tmp/saq-run/data/deep1M_sample100k/deep1M_sample100k_groundtruth.ivecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/deep1M_sample100k/deep1M_sample100k_groundtruth.ivecs",
+      "roles": [
+        "deep1M_sample100k K512:groundtruth"
+      ],
+      "size_bytes": 404000,
+      "size_mib": 0.385284
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 256,
+        "error": null,
+        "kind": "fvecs",
+        "row_size_bytes": 1028,
+        "rows": 1000,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "float32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "efcb5ef8a536f426cd5888a88e9ac3a9595c15e2d3295686417ce58fbe497109",
+        "status": "ok"
+      },
+      "input_entries": 1,
+      "is_file": true,
+      "mtime_utc": "2026-07-06T11:43:03+00:00",
+      "notes": [
+        "required before compare and QPS evaluation"
+      ],
+      "path": "/tmp/saq-run/data/deep1M_sample100k/deep1M_sample100k_query_pca.fvecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/deep1M_sample100k/deep1M_sample100k_query_pca.fvecs",
+      "roles": [
+        "deep1M_sample100k K512:query PCA vectors"
+      ],
+      "size_bytes": 1028000,
+      "size_mib": 0.980377
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 960,
+        "error": null,
+        "kind": "fvecs",
+        "row_size_bytes": 3844,
+        "rows": 1000000,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "float32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "b632e8f0bea1b726cae0b787ab62986313d3f6919605b38d2006e11ade880aaa",
+        "status": "ok"
+      },
+      "input_entries": 1,
+      "is_file": true,
+      "mtime_utc": "2026-07-04T06:20:55+00:00",
+      "notes": [
+        "required before scorer, indexing, compare, and QPS"
+      ],
+      "path": "/tmp/saq-run/data/gist_full/gist_full_base_pca.fvecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/gist_full/gist_full_base_pca.fvecs",
+      "roles": [
+        "gist_full K4096:base PCA vectors"
+      ],
+      "size_bytes": 3844000000,
+      "size_mib": 3665.924072
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 960,
+        "error": null,
+        "kind": "fvecs",
+        "row_size_bytes": 3844,
+        "rows": 1,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "float32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "b2088ae0b58147669ba2dbc2a890b8fff0dec876e5f3eea960466a491cf1d044",
+        "status": "ok"
+      },
+      "input_entries": 2,
+      "is_file": true,
+      "mtime_utc": "2026-07-04T06:20:55+00:00",
+      "notes": [
+        "fixed-policy runner cannot regenerate dataset artifacts",
+        "required before applicability scan, generator, and scorer"
+      ],
+      "path": "/tmp/saq-run/data/gist_full/gist_full_base_pca.vars.fvecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/gist_full/gist_full_base_pca.vars.fvecs",
+      "roles": [
+        "gist_full:PCA variance for scan",
+        "gist_full K4096:PCA variance"
+      ],
+      "size_bytes": 3844,
+      "size_mib": 0.003666
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 960,
+        "error": null,
+        "kind": "fvecs",
+        "row_size_bytes": 3844,
+        "rows": 4096,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "float32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "0c5cce61a854169b56b02b3de90878e7c1a46da8004a28fe2d3bebaaee53ca63",
+        "status": "ok"
+      },
+      "input_entries": 1,
+      "is_file": true,
+      "mtime_utc": "2026-07-04T09:16:34+00:00",
+      "notes": [
+        "required before scorer and index build"
+      ],
+      "path": "/tmp/saq-run/data/gist_full/gist_full_centroid_4096_pca.fvecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/gist_full/gist_full_centroid_4096_pca.fvecs",
+      "roles": [
+        "gist_full K4096:IVF centroids"
+      ],
+      "size_bytes": 15745024,
+      "size_mib": 15.015625
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 1,
+        "error": null,
+        "kind": "ivecs",
+        "row_size_bytes": 8,
+        "rows": 1000000,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "int32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "2e2a4d629b0d220ae2e5ba80755fbab83903797b23fad34e7e5112d0eb575a5f",
+        "status": "ok"
+      },
+      "input_entries": 1,
+      "is_file": true,
+      "mtime_utc": "2026-07-04T09:16:34+00:00",
+      "notes": [
+        "required before scorer and index build"
+      ],
+      "path": "/tmp/saq-run/data/gist_full/gist_full_cluster_id_4096.ivecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/gist_full/gist_full_cluster_id_4096.ivecs",
+      "roles": [
+        "gist_full K4096:IVF cluster ids"
+      ],
+      "size_bytes": 8000000,
+      "size_mib": 7.629395
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 100,
+        "error": null,
+        "kind": "ivecs",
+        "row_size_bytes": 404,
+        "rows": 1000,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "int32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "66b6c051102c69f3d0626a39ed8e40c53bb78dfb3ca84bc91f839468cff56505",
+        "status": "ok"
+      },
+      "input_entries": 1,
+      "is_file": true,
+      "mtime_utc": "2026-07-04T08:16:07+00:00",
+      "notes": [
+        "required before compare and QPS evaluation"
+      ],
+      "path": "/tmp/saq-run/data/gist_full/gist_full_groundtruth.ivecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/gist_full/gist_full_groundtruth.ivecs",
+      "roles": [
+        "gist_full K4096:groundtruth"
+      ],
+      "size_bytes": 404000,
+      "size_mib": 0.385284
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 960,
+        "error": null,
+        "kind": "fvecs",
+        "row_size_bytes": 3844,
+        "rows": 1000,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "float32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "12c4bc47996de957b21a6563ddca1d27b0be4f468d2b2c820f943444dd4d6335",
+        "status": "ok"
+      },
+      "input_entries": 1,
+      "is_file": true,
+      "mtime_utc": "2026-07-04T06:20:55+00:00",
+      "notes": [
+        "required before compare and QPS evaluation"
+      ],
+      "path": "/tmp/saq-run/data/gist_full/gist_full_query_pca.fvecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/gist_full/gist_full_query_pca.fvecs",
+      "roles": [
+        "gist_full K4096:query PCA vectors"
+      ],
+      "size_bytes": 3844000,
+      "size_mib": 3.665924
+    },
+    {
+      "exists": true,
+      "format": {
+        "dim": 300,
+        "error": null,
+        "kind": "fvecs",
+        "row_size_bytes": 1204,
+        "rows": 1,
+        "size_divisible_by_row_size": true,
+        "status": "ok",
+        "value_dtype": "float32"
+      },
+      "hash": {
+        "mode": "full",
+        "sha256": "4e505e8f5f542bdabd6e10ca016d8feee9fbb75836a9a44126fa5d0ee4b47e6e",
+        "status": "ok"
+      },
+      "input_entries": 1,
+      "is_file": true,
+      "mtime_utc": "2026-07-06T14:48:56+00:00",
+      "notes": [
+        "fixed-policy runner cannot regenerate dataset artifacts"
+      ],
+      "path": "/tmp/saq-run/data/word2vec_sample100k/word2vec_sample100k_base_pca.vars.fvecs",
+      "producers": [
+        "external dataset/PCA/IVF preparation"
+      ],
+      "relative_to_root": "data/word2vec_sample100k/word2vec_sample100k_base_pca.vars.fvecs",
+      "roles": [
+        "word2vec_sample100k:PCA variance for scan"
+      ],
+      "size_bytes": 1204,
+      "size_mib": 0.001148
+    }
+  ],
+  "generated_at_utc": "2026-07-07T16:52:03+00:00",
+  "hash_mode": "full",
+  "root": "/tmp/saq-run",
+  "sample_bytes": null,
+  "schema_version": 1,
+  "source": {
+    "artifact_checker": "script/check_fixed_policy_artifacts.py",
+    "script": "script/write_fixed_policy_input_manifest.py"
+  },
+  "summary": {
+    "input_artifact_entries": 23,
+    "missing_unique_input_files": 0,
+    "present_unique_input_files": 20,
+    "total_size_bytes": 4104306884,
+    "total_size_gib": 3.822434,
+    "unique_input_files": 20,
+    "xvecs_shape_errors": 0
+  },
+  "use_cost_reduced_scorer": true
+}

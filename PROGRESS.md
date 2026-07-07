@@ -1982,3 +1982,119 @@ groundtruth depth, PCA provenance, or artifact commit provenance.
 Commit and push this reproducibility review. The next useful step is to
 document exact dataset preparation/source paths or add hashes for the required
 input artifacts.
+
+## Session 2026-07-08 00:52 HKT
+
+### Goal
+
+Add an input-artifact provenance manifest and hash layer for the current
+fixed-policy validation matrix.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- Previous checkpoint: `2c41baa Document fixed-policy artifact dependencies`
+- `git status --short --branch`: clean and aligned with
+  `origin/saq-boundary-audit`
+- Files read:
+  - `AGENTS.md`
+  - `TASK.md`
+  - `PROGRESS.md`
+  - `EXPERIMENTS.md`
+  - `RESULTS.md`
+  - `script/check_fixed_policy_artifacts.py`
+  - `script/segment_diagnostics.py`
+  - `docs/saq_fixed_policy_reproducibility_review_2026_07_08.md`
+
+### Hypothesis / plan
+
+The fixed-policy runner already has a dependency checker that enumerates input
+artifacts. Reuse that checker as the source of truth, deduplicate the input
+paths, and write a durable manifest that records role, producer hint, file
+size, xvecs shape, mtime, and full-file SHA256.
+
+### Commands run
+
+```bash
+git status --short --branch
+sed -n '1,220p' AGENTS.md
+sed -n '1,260p' script/check_fixed_policy_artifacts.py
+sed -n '1,140p' script/segment_diagnostics.py
+sed -n '260,560p' script/check_fixed_policy_artifacts.py
+sed -n '1,220p' TASK.md
+sed -n '1,240p' PROGRESS.md
+sed -n '1,240p' EXPERIMENTS.md
+sed -n '1,240p' RESULTS.md
+sed -n '240,420p' EXPERIMENTS.md
+sed -n '240,520p' PROGRESS.md
+sed -n '1,260p' docs/saq_fixed_policy_reproducibility_review_2026_07_08.md
+rg -n "input manifest|provenance|hash|A9|A10|artifact" docs script *.md
+python -m py_compile script/write_fixed_policy_input_manifest.py script/check_fixed_policy_artifacts.py
+python script/write_fixed_policy_input_manifest.py \
+  --use-cost-reduced-scorer \
+  --date 2026_07_08_runner_cost_reduced_eval \
+  --artifact-date 2026_07_08_runner_cost_reduced_eval \
+  --hash-mode full \
+  --output-json docs/saq_fixed_policy_input_manifest_2026_07_08.json \
+  --output-md docs/saq_fixed_policy_input_manifest_2026_07_08.md
+python -c "import json; d=json.load(open('docs/saq_fixed_policy_input_manifest_2026_07_08.json')); print(d['summary']); print(d['files'][0]['path']); print(d['files'][0]['hash']['sha256'][:16])"
+python -c "import json; d=json.load(open('docs/saq_fixed_policy_input_manifest_2026_07_08.json')); assert d['summary']['unique_input_files']==20; assert d['summary']['missing_unique_input_files']==0; assert d['summary']['xvecs_shape_errors']==0; assert all(f['hash']['status']=='ok' for f in d['files']); print(d['summary'])"
+git diff --check
+git status --short --branch
+```
+
+### Files changed
+
+- Added `script/write_fixed_policy_input_manifest.py`.
+- Added `docs/saq_fixed_policy_input_manifest_2026_07_08.md`.
+- Added `docs/saq_fixed_policy_input_manifest_2026_07_08.json`.
+- Updated `docs/saq_fixed_policy_reproducibility_review_2026_07_08.md`.
+- Updated `EXPERIMENTS.md` with A10.
+- Updated `RESULTS.md` with the stable input-manifest result.
+- Updated `PROGRESS.md` with this session log.
+
+### Artifacts produced
+
+```text
+docs/saq_fixed_policy_input_manifest_2026_07_08.md
+docs/saq_fixed_policy_input_manifest_2026_07_08.json
+```
+
+### Result
+
+The manifest writer generated a full-SHA256 input manifest for the current
+fixed-policy matrix:
+
+```text
+input artifact entries:       23
+unique input files:           20
+present unique input files:   20
+missing unique input files:    0
+total input size:        3.822 GiB
+xvecs shape errors:            0
+```
+
+Validation passed:
+
+- `python -m py_compile script/write_fixed_policy_input_manifest.py script/check_fixed_policy_artifacts.py`
+- JSON manifest summary/assertion check
+- `git diff --check`
+
+### Interpretation
+
+The current prepared input substrate is now explicitly identifiable by
+full-file SHA256. A future reproduction can first check these files, then let
+the fixed-policy runner regenerate candidate, scorer, index, compare, QPS, and
+report artifacts.
+
+### Problems / blockers
+
+The manifest records file identity, not raw preparation provenance. It still
+does not explain the original dataset source paths, PCA training command, IVF
+training command, or groundtruth generation command.
+
+### Next action
+
+Commit and push this provenance layer. The next reproducibility task is to
+document exact source/preparation commands for the input files if that level of
+clean-machine reconstruction is needed.

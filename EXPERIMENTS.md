@@ -254,6 +254,28 @@ python script/run_fixed_policy_matrix.py \
   present. The remaining clean-machine gap is dataset/PCA/IVF input
   provenance, not fixed-policy runner logic.
 
+### A10. Input-artifact provenance manifest and hash layer
+
+- Status: `done`
+- Priority: highest after A9
+- Goal: make the required dataset/PCA/IVF input artifacts checkable by file
+  identity rather than only by path existence.
+- Work completed:
+  - added `script/write_fixed_policy_input_manifest.py`;
+  - reused `script/check_fixed_policy_artifacts.py` to collect the fixed-policy
+    input dependency set;
+  - deduplicated the 23 input dependency entries into 20 unique files;
+  - recorded path, role, producer hint, file size, inferred xvecs shape, mtime,
+    and full-file SHA256 for each unique input file.
+- Result:
+  - `docs/saq_fixed_policy_input_manifest_2026_07_08.md`
+  - `docs/saq_fixed_policy_input_manifest_2026_07_08.json`
+  - updated `docs/saq_fixed_policy_reproducibility_review_2026_07_08.md`
+- Interpretation: the current prepared inputs are now explicitly identifiable
+  by full SHA256. The remaining clean-machine gap is no longer file identity;
+  it is source/preparation provenance for recreating those files from raw
+  datasets.
+
 ## B. Policy Robustness
 
 ### B1. Audit promotion decisions against the clean validation table

@@ -67,6 +67,43 @@ Current local result:
 
 No missing artifacts were found in the current `/tmp/saq-run` root.
 
+## Input Provenance Manifest
+
+This review now includes a full-SHA256 manifest for the input substrate:
+
+```text
+docs/saq_fixed_policy_input_manifest_2026_07_08.md
+docs/saq_fixed_policy_input_manifest_2026_07_08.json
+```
+
+Generation command:
+
+```bash
+python script/write_fixed_policy_input_manifest.py \
+  --root /tmp/saq-run \
+  --date 2026_07_08_runner_cost_reduced_eval \
+  --artifact-date 2026_07_08_runner_cost_reduced_eval \
+  --use-cost-reduced-scorer \
+  --hash-mode full \
+  --output-json docs/saq_fixed_policy_input_manifest_2026_07_08.json \
+  --output-md docs/saq_fixed_policy_input_manifest_2026_07_08.md
+```
+
+Current local readout:
+
+| field | value |
+|---|---:|
+| input artifact entries | 23 |
+| unique input files | 20 |
+| present unique input files | 20 |
+| missing unique input files | 0 |
+| total input size | 3.822 GiB |
+| xvecs shape errors | 0 |
+
+The manifest records path, role, producer hint, file size, xvecs shape, mtime,
+and full-file SHA256 for each unique input file. Matching manifest hashes are
+therefore a file-content identity check for the current dataset/PCA/IVF inputs.
+
 ## Artifact Classes
 
 ### 1. Build Artifacts
@@ -233,31 +270,30 @@ claim is needed.
    inputs.
 2. The fixed-policy runner does not yet contain a one-command dataset
    preparation pipeline for full GIST, CIFAR, DEEP, audio, and word2vec.
-3. The checker verifies existence, not semantic freshness. It does not inspect
-   groundtruth depth, PCA provenance, or whether a file was produced by exactly
-   the current commit.
-4. Existing QPS CSVs may be reused unless `--force-eval` is supplied. Therefore
+3. The input manifest verifies file identity for the current prepared inputs,
+   but it still does not explain the raw dataset source, PCA training command,
+   IVF training command, or groundtruth generation command.
+4. The checker verifies existence for all artifact classes; hash/shape
+   provenance is currently limited to the input artifacts enumerated by the
+   manifest.
+5. Existing QPS CSVs may be reused unless `--force-eval` is supplied. Therefore
    a standard runner reproduction validates the official pipeline and report
    consistency, but not necessarily fresh QPS measurement.
-5. `/tmp/saq-run` remains a local artifact root. Durable conclusions must stay
+6. `/tmp/saq-run` remains a local artifact root. Durable conclusions must stay
    in checked-in docs and summary tables.
 
 ## Practical Conclusion
 
 The current evidence is reproducible at the runner/report level once the build
-artifacts and dataset/PCA/IVF inputs are present. The remaining clean-machine
-gap is data preparation provenance, not fixed-policy runner logic.
+artifacts and dataset/PCA/IVF inputs are present. The input manifest now makes
+the current prepared inputs checkable by full-file SHA256. The remaining
+clean-machine gap is source/preparation provenance: how to recreate those input
+files from raw datasets.
 
 The next reproducibility improvement should therefore be either:
 
 ```text
 document exact dataset preparation commands and source paths
-```
-
-or:
-
-```text
-add a manifest/hash layer for the required input artifacts
 ```
 
 Further plan tuning should wait until this provenance gap is acceptable for the

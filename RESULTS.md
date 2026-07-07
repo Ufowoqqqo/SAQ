@@ -93,8 +93,8 @@ A minimal fix was needed because the encoder did not export `base_code.code` for
 
 ## Recommended Next Stable Results To Seek
 
-1. Document exact dataset preparation commands/source paths or add hashes for
-   the required input artifacts.
+1. Document exact dataset preparation commands/source paths for the required
+   input artifacts.
 2. Preserve DEEP reject and audio/word2vec abstention behavior under any future
    generator/scorer change.
 3. If expanding the generator, first state the SAQ failure mode and added
@@ -147,9 +147,57 @@ dataset-preparation pipeline.
 
 ### Limitations
 
-The checker verifies file existence and producer hints. It does not yet verify
-file hashes, groundtruth depth, PCA provenance, or whether artifacts were
-created by the current commit.
+The checker itself verifies file existence and producer hints. Input file
+identity is handled by the separate manifest below; the remaining gap is
+groundtruth/PCA/IVF preparation provenance and whether generated non-input
+artifacts were produced by exactly the current commit.
+
+## Result 2026-07-08: Fixed-policy input artifacts have a full-SHA256 manifest
+
+### Claim
+
+The required dataset/PCA/IVF input layer for the current fixed-policy matrix is
+now recorded as a durable provenance manifest with full-file SHA256 hashes.
+
+### Evidence
+
+- Manifest writer:
+  `script/write_fixed_policy_input_manifest.py`
+- Manifest documents:
+  `docs/saq_fixed_policy_input_manifest_2026_07_08.md`
+  `docs/saq_fixed_policy_input_manifest_2026_07_08.json`
+- Updated reproducibility review:
+  `docs/saq_fixed_policy_reproducibility_review_2026_07_08.md`
+
+Generation command:
+
+```bash
+python script/write_fixed_policy_input_manifest.py \
+  --use-cost-reduced-scorer \
+  --date 2026_07_08_runner_cost_reduced_eval \
+  --artifact-date 2026_07_08_runner_cost_reduced_eval \
+  --hash-mode full \
+  --output-json docs/saq_fixed_policy_input_manifest_2026_07_08.json \
+  --output-md docs/saq_fixed_policy_input_manifest_2026_07_08.md
+```
+
+Current local readout:
+
+```text
+input artifact entries:       23
+unique input files:           20
+present unique input files:   20
+missing unique input files:    0
+total input size:        3.822 GiB
+xvecs shape errors:            0
+```
+
+### Interpretation
+
+The previous reproducibility gap was split into two parts. File identity for
+the prepared input substrate is now covered by the manifest. The remaining
+gap is source/preparation provenance: exact raw dataset sources, PCA
+preparation, IVF preparation, and groundtruth generation commands.
 
 ## Result 2026-07-08: Cost-reduced official runner reproduces the full matrix under safe evaluation
 
