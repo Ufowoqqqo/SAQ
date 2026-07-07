@@ -1648,3 +1648,127 @@ Validate scripts and reports, then commit and push. The next research step
 should decide whether cached-feature scoring should become the default runner
 path, or whether the remaining work should shift back to meeting/paper
 narrative and clean reproducibility instructions.
+
+## Session 2026-07-07 23:52 HKT
+
+### Goal
+
+Integrate the feature-cache and endpoint-grid scorer path into the official
+fixed-policy runners.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- `git status --short --branch`: clean and aligned with
+  `origin/saq-boundary-audit`
+- Files read:
+  - `script/run_default_neighborhood_cross_dataset.py`
+  - `script/run_fixed_policy_matrix.py`
+  - `script/score_default_neighborhood_plans.py`
+  - `docs/saq_fixed_policy_method_spec_2026_07_07.md`
+  - `docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv`
+
+### Hypothesis / plan
+
+The cost-reduced scorer should be exposed through the same fixed-policy runner
+used for the rest of the evidence. The integration should preserve old default
+behavior unless explicitly enabled, use distinct scorer artifact prefixes, and
+verify exact scorer/selection equivalence against the checked-in clean table.
+
+### Commands run
+
+```bash
+python -m py_compile \
+  script/run_default_neighborhood_cross_dataset.py \
+  script/run_fixed_policy_matrix.py \
+  script/score_default_neighborhood_plans.py
+python script/run_fixed_policy_matrix.py \
+  --skip-scan \
+  --skip-report \
+  --no-evaluate \
+  --use-cost-reduced-scorer \
+  --date 2026_07_07_runner_cost_reduced_dry \
+  --artifact-date 2026_07_07_runner_cost_reduced_dry \
+  --dry-run
+python script/run_fixed_policy_matrix.py \
+  --skip-scan \
+  --skip-report \
+  --no-evaluate \
+  --force \
+  --use-cost-reduced-scorer \
+  --date 2026_07_07_runner_cost_reduced \
+  --artifact-date 2026_07_07_runner_cost_reduced
+python - <<'PY'
+import csv
+base=list(csv.DictReader(open('docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv')))
+base_by_run={r['run']:r for r in base}
+rows=list(csv.DictReader(open('/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07_runner_cost_reduced.csv')))
+ok=0
+for r in rows:
+    b=base_by_run[r['run']]
+    decision='abstain' if not r['candidate_plan'] else ('reject' if r['selection_reason']=='risky_fallback_best_score' else 'promote')
+    ok += decision==b['policy_decision'] and r['candidate_plan']==b['selected_or_tested_plan']
+assert ok==len(rows)
+PY
+```
+
+### Files changed
+
+- `script/run_default_neighborhood_cross_dataset.py`
+  - added `--use-cost-reduced-scorer`, `--scorer-grid-preset`, and
+    `--feature-cache-dir`;
+  - added endpoint-grid scorer arguments;
+  - added distinct scorer artifact suffixes for endpoint/cache runs;
+  - recorded scorer mode/cache path in summary CSV/JSON.
+- `script/run_fixed_policy_matrix.py`
+  - added forwarding options for the cost-reduced scorer;
+  - normalized `--use-cost-reduced-scorer` to endpoint grid plus a default
+    feature-cache directory.
+- `docs/saq_fixed_policy_method_spec_2026_07_07.md`
+  - documented official runner options and the selection-only verification.
+- Added `docs/saq_fixed_policy_runner_cost_reduced_integration_2026_07_07.md`.
+- Updated `EXPERIMENTS.md`, `RESULTS.md`, and `PROGRESS.md`.
+
+### Artifacts produced
+
+```text
+docs/saq_fixed_policy_runner_cost_reduced_integration_2026_07_07.md
+/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07_runner_cost_reduced.csv
+/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07_runner_cost_reduced.json
+/tmp/saq-run/reports/fixed_policy_matrix_2026_07_07_runner_cost_reduced.manifest.json
+/tmp/saq-run/reports/fixed_policy_scorer_feature_cache_2026_07_07_runner_cost_reduced/
+```
+
+### Result
+
+The official matrix runner with `--use-cost-reduced-scorer` reproduced the
+checked-in clean table's scorer decisions and selected/tested plans:
+
+```text
+decision match: 10/10
+plan match:     10/10
+```
+
+The verification was scorer/selection-only and used `--no-evaluate`.
+
+### Interpretation
+
+The feature-cache and endpoint-grid scorer path is now part of the formal
+fixed-policy runner interface. It remains an implementation-level overhead
+reduction, not a new SAQ quantizer or independent algorithmic contribution.
+
+The official integration keeps each run's sampling parameters unchanged. The
+separate `a1024_p2` sampling calibration remains documented but is not promoted
+to default behavior in the formal runner.
+
+### Problems / limitations
+
+The run did not rerun safe-search recall/QPS. If we need a fully refreshed
+paper-style result table, rerun the same matrix with evaluation enabled and
+corrected safe search.
+
+### Next action
+
+Validate full diff, commit, and push. Then decide whether to run a full
+cost-reduced scorer + safe-search evaluation matrix or move to meeting/paper
+narrative cleanup.

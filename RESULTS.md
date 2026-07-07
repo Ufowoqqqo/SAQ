@@ -93,8 +93,9 @@ A minimal fix was needed because the encoder did not export `base_code.code` for
 
 ## Recommended Next Stable Results To Seek
 
-1. Decide whether the feature-cache implementation should become part of the
-   fixed-policy runner by default, and document its disk/cache-key behavior.
+1. Decide whether to run the full fixed-policy matrix with cost-reduced scorer
+   and safe-search evaluation enabled, or keep the current integration result
+   as scorer/selection-only evidence.
 2. Make the fixed-policy matrix reproducible on a clean machine or document the
    exact dataset/artifact preparation gap.
 3. Preserve DEEP reject and audio/word2vec abstention behavior under any future
@@ -102,6 +103,68 @@ A minimal fix was needed because the encoder did not export `base_code.code` for
 4. If expanding the generator, first state the SAQ failure mode and added
    overhead, then validate against GIST/CIFAR positives, DEEP rejects, and
    audio/word2vec abstentions.
+
+## Result 2026-07-07: Cost-reduced scorer is integrated into the official runners
+
+### Claim
+
+The query-unaware feature-cache and endpoint-grid scorer path is now available
+from the official fixed-policy runners, not only from the calibration driver.
+The official matrix runner reproduces the current fixed-policy decisions and
+selected/tested plans under this scorer path.
+
+### Evidence
+
+- Integration note:
+  `docs/saq_fixed_policy_runner_cost_reduced_integration_2026_07_07.md`
+- Updated method spec:
+  `docs/saq_fixed_policy_method_spec_2026_07_07.md`
+- Updated runners:
+  - `script/run_default_neighborhood_cross_dataset.py`
+  - `script/run_fixed_policy_matrix.py`
+
+Verification command:
+
+```bash
+python script/run_fixed_policy_matrix.py \
+  --skip-scan \
+  --skip-report \
+  --no-evaluate \
+  --force \
+  --use-cost-reduced-scorer \
+  --date 2026_07_07_runner_cost_reduced \
+  --artifact-date 2026_07_07_runner_cost_reduced
+```
+
+Output summary:
+
+```text
+/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07_runner_cost_reduced.csv
+/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07_runner_cost_reduced.json
+/tmp/saq-run/reports/fixed_policy_matrix_2026_07_07_runner_cost_reduced.manifest.json
+```
+
+Selection equivalence against the checked-in clean table:
+
+```text
+decision match: 10/10
+plan match:     10/10
+```
+
+### Interpretation
+
+This closes the gap between the scorer calibration experiment and the formal
+fixed-policy pipeline. Future runs can use `--use-cost-reduced-scorer` to get
+endpoint-grid scorer evaluation and query-unaware feature caching through the
+same matrix runner used for the rest of the evidence.
+
+### Limitations
+
+The verification above is scorer/selection-only because it used `--no-evaluate`.
+It does not rerun safe-search recall/QPS. The official integration also keeps
+the per-run sampling parameters unchanged; the previously calibrated `a1024_p2`
+sampling setting remains a separate calibration result rather than a formal
+runner default.
 
 ## Result 2026-07-07: Feature caching reduces scorer overhead without changing decisions
 

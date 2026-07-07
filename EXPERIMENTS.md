@@ -186,6 +186,30 @@ python -m py_compile \
   SAQ quantization contribution. The feature cache is query-unaware and keyed
   only by dataset/IVF/sampling/risk-statistic parameters.
 
+### A7. Official runner integration for cost-reduced scorer
+
+- Status: `done`
+- Priority: highest after A6
+- Goal: make the feature-cache and endpoint-grid scorer path available from
+  the official fixed-policy runners instead of only from calibration scripts.
+- Work completed:
+  - added `--use-cost-reduced-scorer`, `--scorer-grid-preset`, and
+    `--feature-cache-dir` to `script/run_default_neighborhood_cross_dataset.py`;
+  - added the same forwarding options to `script/run_fixed_policy_matrix.py`;
+  - made cost-reduced scorer artifacts use distinct scorer output prefixes;
+  - recorded scorer mode and cache path in summary CSV/JSON outputs;
+  - verified the official matrix runner against the clean table.
+- Result:
+  - `docs/saq_fixed_policy_runner_cost_reduced_integration_2026_07_07.md`
+  - updated `docs/saq_fixed_policy_method_spec_2026_07_07.md`
+- Interpretation: the official runner now exposes feature-cache and endpoint
+  grid execution as a reproducible scorer path. The integration verification
+  matched 10/10 fixed-policy decisions and 10/10 selected/tested plans without
+  rerunning safe-search evaluation.
+- Constraint: this is a scorer execution/reproducibility improvement. The
+  official integration keeps per-run sampling parameters unchanged; the
+  separate `a1024_p2` sampling calibration is not promoted to default behavior.
+
 ## B. Policy Robustness
 
 ### B1. Audit promotion decisions against the clean validation table

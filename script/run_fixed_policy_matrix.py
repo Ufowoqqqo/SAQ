@@ -110,6 +110,12 @@ def build_validation_cmd(
         cmd.append("--evaluate")
     if args.include_reject_diagnostics:
         cmd.append("--allow-risky-fallback")
+    if args.use_cost_reduced_scorer:
+        cmd.append("--use-cost-reduced-scorer")
+    if args.scorer_grid_preset:
+        cmd.extend(["--scorer-grid-preset", args.scorer_grid_preset])
+    if args.feature_cache_dir:
+        cmd.extend(["--feature-cache-dir", str(args.feature_cache_dir)])
     if args.force:
         cmd.append("--force")
     if args.force_build:
@@ -178,6 +184,24 @@ def parse_args() -> argparse.Namespace:
         help="Evaluate risky fallback only as reject diagnostics, never as promotion.",
     )
     parser.add_argument("--max-eval-per-run", type=int, default=1)
+    parser.add_argument(
+        "--use-cost-reduced-scorer",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Use the validated endpoint-grid scorer with query-unaware feature caching in the validation stage.",
+    )
+    parser.add_argument(
+        "--scorer-grid-preset",
+        choices=("full", "endpoints"),
+        default="full",
+        help="Scorer grid preset passed to run_default_neighborhood_cross_dataset.py.",
+    )
+    parser.add_argument(
+        "--feature-cache-dir",
+        type=Path,
+        default=None,
+        help="Optional feature-cache directory passed to run_default_neighborhood_cross_dataset.py.",
+    )
     parser.add_argument("--force", action="store_true", help="Rerun candidate generation and scoring.")
     parser.add_argument("--force-build", action="store_true", help="Rebuild custom indexes.")
     parser.add_argument("--force-eval", action="store_true", help="Rerun compare/QPS measurements.")
@@ -194,6 +218,13 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     artifact_date = args.artifact_date or args.date
+    if args.use_cost_reduced_scorer:
+        if args.scorer_grid_preset == "full":
+            args.scorer_grid_preset = "endpoints"
+        if args.feature_cache_dir is None:
+            args.feature_cache_dir = (
+                args.root / "reports" / f"fixed_policy_scorer_feature_cache_{artifact_date}"
+            )
     paths = default_paths(args.root, args.date)
     applicability_csv = args.applicability_csv or paths["applicability_prefix"].with_suffix(".csv")
     summary_csv = args.summary_csv or paths["validation_prefix"].with_suffix(".csv")
@@ -222,6 +253,9 @@ def main() -> int:
         "evaluate": bool(args.evaluate),
         "include_reject_diagnostics": bool(args.include_reject_diagnostics),
         "max_eval_per_run": int(args.max_eval_per_run),
+        "use_cost_reduced_scorer": bool(args.use_cost_reduced_scorer),
+        "scorer_grid_preset": args.scorer_grid_preset,
+        "feature_cache_dir": str(args.feature_cache_dir) if args.feature_cache_dir else "",
         "outputs": {
             "applicability_csv": str(applicability_csv),
             "summary_csv": str(summary_csv),

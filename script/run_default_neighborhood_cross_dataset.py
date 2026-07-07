@@ -31,6 +31,16 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ROOT = Path("/tmp/saq-run")
 DEFAULT_DATE = "2026_07_06"
 SAFE_BLOCK_MIN_MODE = 2
+ENDPOINT_SCORER_GRID_ARGS = {
+    "boundary-global-blends": "0,0.4",
+    "boundary-tail-alphas": "0,0.25",
+    "boundary-pair-alphas": "0,2",
+    "segment-penalty-scales": "0,0.04",
+    "intra-segment-penalty-scales": "0",
+    "inversion-penalty-scales": "0,0.05",
+    "runtime-penalty-scales": "0",
+    "speed-proxy-scales": "0",
+}
 
 
 @dataclass(frozen=True)
@@ -233,6 +243,25 @@ def report_prefix(root: Path, spec: DatasetSpec, date: str, suffix: str) -> Path
     return root / "reports" / f"{spec.name}_{suffix}_{date}"
 
 
+def scorer_artifact_suffix(args: argparse.Namespace) -> str:
+    parts = ["default_neighborhood_scored_auto"]
+    if args.scorer_grid_preset == "endpoints":
+        parts.append("grid_endpoints")
+    if args.feature_cache_dir is not None:
+        parts.append("cached_features")
+    return "_".join(parts)
+
+
+def scorer_extra_args(args: argparse.Namespace) -> list[str]:
+    out: list[str] = []
+    if args.scorer_grid_preset == "endpoints":
+        for key, value in sorted(ENDPOINT_SCORER_GRID_ARGS.items()):
+            out.extend([f"--{key}", value])
+    if args.feature_cache_dir is not None:
+        out.extend(["--feature-cache-dir", str(args.feature_cache_dir)])
+    return out
+
+
 def run_command(
     cmd: list[str],
     cwd: Path,
@@ -333,10 +362,11 @@ def maybe_run_scorer(
     candidate_csv: Path,
     default_plan: str,
     env: dict[str, str],
+    args: argparse.Namespace,
     force: bool,
     dry_run: bool,
 ) -> Path:
-    prefix = report_prefix(root, spec, date, "default_neighborhood_scored_auto")
+    prefix = report_prefix(root, spec, date, scorer_artifact_suffix(args))
     unique_csv = prefix.with_suffix(".unique.csv")
     if unique_csv.exists() and not force:
         print(f"REUSE {unique_csv}", flush=True)
@@ -385,6 +415,7 @@ def maybe_run_scorer(
     ]
     if spec.exclude_nonfinal_1bit:
         cmd.insert(-2, "--exclude-nonfinal-1bit")
+    cmd.extend(scorer_extra_args(args))
     run_command(cmd, REPO_ROOT, env, dry_run)
     return unique_csv
 
@@ -697,6 +728,9 @@ def run_spec(
             "selection_policy": {
                 "max_eval_per_run": args.max_eval_per_run,
                 "allow_risky_fallback": bool(args.allow_risky_fallback),
+                "scorer_grid_preset": args.scorer_grid_preset,
+                "feature_cache_dir": str(args.feature_cache_dir) if args.feature_cache_dir else "",
+                "use_cost_reduced_scorer": bool(args.use_cost_reduced_scorer),
             },
             "evaluations": [],
             "top_unique": [],
@@ -710,6 +744,7 @@ def run_spec(
         candidate_csv,
         default_plan,
         env,
+        args,
         args.force,
         args.dry_run,
     )
@@ -749,6 +784,9 @@ def run_spec(
         "selection_policy": {
             "max_eval_per_run": args.max_eval_per_run,
             "allow_risky_fallback": bool(args.allow_risky_fallback),
+            "scorer_grid_preset": args.scorer_grid_preset,
+            "feature_cache_dir": str(args.feature_cache_dir) if args.feature_cache_dir else "",
+            "use_cost_reduced_scorer": bool(args.use_cost_reduced_scorer),
         },
         "evaluations": evaluations,
         "top_unique": unique_rows[: min(10, len(unique_rows))],
@@ -772,6 +810,10 @@ def flatten_summary_rows(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     "candidate_plan": "",
                     "selection_reason": "no_candidate_selected",
                     "scorer_skipped_reason": result.get("scorer_skipped_reason", ""),
+                    "unique_csv": result.get("unique_csv", ""),
+                    "scorer_grid_preset": result.get("selection_policy", {}).get("scorer_grid_preset", ""),
+                    "feature_cache_dir": result.get("selection_policy", {}).get("feature_cache_dir", ""),
+                    "use_cost_reduced_scorer": result.get("selection_policy", {}).get("use_cost_reduced_scorer", ""),
                     "conservative_eligible": "",
                     "best_ranking_score": "",
                     "best_recall_risk_score": "",
@@ -802,6 +844,10 @@ def flatten_summary_rows(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "candidate_family": candidate.get("candidate_families", ""),
                 "selection_reason": candidate.get("selection_reason", ""),
                 "scorer_skipped_reason": result.get("scorer_skipped_reason", ""),
+                "unique_csv": result.get("unique_csv", ""),
+                "scorer_grid_preset": result.get("selection_policy", {}).get("scorer_grid_preset", ""),
+                "feature_cache_dir": result.get("selection_policy", {}).get("feature_cache_dir", ""),
+                "use_cost_reduced_scorer": result.get("selection_policy", {}).get("use_cost_reduced_scorer", ""),
                 "conservative_eligible": candidate.get("conservative_role_is_eligible", ""),
                 "conservative_reasons": candidate.get("conservative_role_reasons", ""),
                 "best_ranking_score": candidate.get("best_ranking_score", ""),
@@ -837,6 +883,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--evaluate", action="store_true", help="Build/evaluate selected candidates.")
     parser.add_argument("--allow-risky-fallback", action="store_true", help="If no conservative/frontier candidate is selected, evaluate the best non-default scorer candidate.")
     parser.add_argument("--max-eval-per-run", type=int, default=1, help="Maximum selected candidates to evaluate per run.")
+    parser.add_argument(
+        "--scorer-grid-preset",
+        choices=("full", "endpoints"),
+        default="full",
+        help="Scorer grid to use. 'full' preserves the historical grid; 'endpoints' uses the compact validated endpoint grid.",
+    )
+    parser.add_argument(
+        "--feature-cache-dir",
+        type=Path,
+        default=None,
+        help="Optional query-unaware scorer feature cache directory for residual/tail/pair features.",
+    )
+    parser.add_argument(
+        "--use-cost-reduced-scorer",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Use the validated endpoint grid and a default feature cache under <root>/reports unless explicitly overridden.",
+    )
     parser.add_argument("--force", action="store_true", help="Rerun generator and scorer even if output files exist.")
     parser.add_argument("--force-build", action="store_true", help="Rebuild custom indexes even if index files exist.")
     parser.add_argument("--force-eval", action="store_true", help="Rerun compare/QPS even if output files exist.")
@@ -847,6 +911,13 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if args.use_cost_reduced_scorer:
+        if args.scorer_grid_preset == "full":
+            args.scorer_grid_preset = "endpoints"
+        if args.feature_cache_dir is None:
+            args.feature_cache_dir = (
+                args.root / "reports" / f"fixed_policy_scorer_feature_cache_{args.date}"
+            )
     run_names = args.runs or [
         "deep1M_sample100k_B4",
         "deep1M_sample100k_B5",
@@ -885,6 +956,10 @@ def main() -> int:
         "candidate_family",
         "selection_reason",
         "scorer_skipped_reason",
+        "unique_csv",
+        "scorer_grid_preset",
+        "feature_cache_dir",
+        "use_cost_reduced_scorer",
         "conservative_eligible",
         "conservative_reasons",
         "best_ranking_score",
@@ -908,6 +983,9 @@ def main() -> int:
             "evaluate": bool(args.evaluate),
             "allow_risky_fallback": bool(args.allow_risky_fallback),
             "max_eval_per_run": int(args.max_eval_per_run),
+            "scorer_grid_preset": args.scorer_grid_preset,
+            "feature_cache_dir": str(args.feature_cache_dir) if args.feature_cache_dir else "",
+            "use_cost_reduced_scorer": bool(args.use_cost_reduced_scorer),
             "summary_csv": str(summary_csv),
             "results": results,
         },

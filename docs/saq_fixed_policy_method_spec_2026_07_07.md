@@ -220,6 +220,31 @@ script/score_default_neighborhood_plans.py
 script/sweep_data_boundary_pairs.py
 ```
 
+### Cost-Reduced Scorer Execution
+
+The official runners now expose a query-unaware cost-reduced scorer path:
+
+```text
+--use-cost-reduced-scorer
+--scorer-grid-preset endpoints
+--feature-cache-dir PATH
+```
+
+This path does not change candidate generation or the promotion rule. It only
+changes how the scorer is executed:
+
+```text
+endpoint grid: evaluate a compact validated scorer grid
+feature cache: reuse residual/tail/boundary-pair features across B values
+```
+
+The feature cache is keyed by dataset path, IVF K, padded dimension, sampling
+parameters, residual-risk statistic, tail-risk quantile, and padding size. It
+does not use held-out query labels.
+
+This should be described as an implementation-level scorer overhead reduction,
+not as a new quantization contribution.
+
 ## 6. Promotion Rule
 
 The policy considers only non-default candidates.
@@ -396,6 +421,28 @@ python script/run_fixed_policy_matrix.py \
 and compare-search artifacts while writing a fresh matrix summary and report.
 The runner passes risky fallback only as reject diagnostics; those rows remain
 `reject` in the generated fixed-policy report and are not promotion decisions.
+
+The matrix scorer/selection stage can also be run with the cost-reduced scorer
+path:
+
+```text
+python script/run_fixed_policy_matrix.py \
+  --skip-scan \
+  --skip-report \
+  --no-evaluate \
+  --force \
+  --use-cost-reduced-scorer \
+  --date 2026_07_07_runner_cost_reduced \
+  --artifact-date 2026_07_07_runner_cost_reduced
+```
+
+This command verifies selection equivalence without rerunning safe-search
+recall/QPS. The documented integration check matched the clean table on 10/10
+decisions and 10/10 selected/tested plans:
+
+```text
+docs/saq_fixed_policy_runner_cost_reduced_integration_2026_07_07.md
+```
 
 ## 12. Evidence Boundary
 
