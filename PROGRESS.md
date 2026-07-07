@@ -931,3 +931,72 @@ None.
 Validate the documentation diff, commit and push. The next useful task is E2
 paper-style method spec cleanup, incorporating the classifier, artifact audit,
 and metric audit.
+
+## Session 2026-07-07 16:54 HKT
+
+### Goal
+
+Complete E2: make the fixed-policy method spec more paper-style while preserving
+the empirical thresholds and evidence limitations.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- Previous checkpoint: `2662976 Audit fixed-policy metric reporting`
+- `git status --short --branch`: clean and aligned with `origin/saq-boundary-audit`
+- Files read:
+  - `docs/saq_fixed_policy_method_spec_2026_07_07.md`
+  - `docs/saq_fixed_policy_applicability_classifier_2026_07_07.md`
+  - `docs/saq_fixed_policy_metric_audit_2026_07_07.md`
+
+### Hypothesis / plan
+
+The existing method spec is accurate but still reads like an experiment report.
+Add a paper-style method definition at the top and an evidence-boundary section
+at the end, incorporating the classifier, artifact audit, and metric audit
+without changing any experimental values.
+
+### Commands run
+
+```bash
+git status --short --branch
+sed -n '1,360p' docs/saq_fixed_policy_method_spec_2026_07_07.md
+sed -n '1,220p' docs/saq_fixed_policy_applicability_classifier_2026_07_07.md
+sed -n '1,220p' docs/saq_fixed_policy_metric_audit_2026_07_07.md
+date '+%Y-%m-%d %H:%M %Z'
+```
+
+### Files changed
+
+- Updated `docs/saq_fixed_policy_method_spec_2026_07_07.md`.
+- Marked E2 done in `EXPERIMENTS.md`.
+- Added this session log in `PROGRESS.md`.
+
+### Artifacts produced
+
+No generated artifacts. Durable documentation update:
+
+```text
+docs/saq_fixed_policy_method_spec_2026_07_07.md
+```
+
+### Result
+
+The method spec now starts with a formal input/output decision policy and ends
+with an explicit evidence boundary covering applicability, metric/QPS limits,
+and artifact durability.
+
+### Interpretation
+
+E2 is satisfied. The current documentation set is meeting-ready and closer to a
+paper method section, while still avoiding theoretical or universal claims.
+
+### Problems / blockers
+
+None.
+
+### Next action
+
+Validate the documentation diff, commit and push. After this checkpoint, pause
+unless starting new code/experiment work; the current autonomy documentation
+tasks are largely complete.

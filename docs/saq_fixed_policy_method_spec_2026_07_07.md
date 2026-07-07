@@ -11,6 +11,50 @@ The accompanying clean validation table is:
 docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
 ```
 
+Supporting audits:
+
+```text
+docs/saq_fixed_policy_applicability_classifier_2026_07_07.md
+docs/saq_fixed_policy_artifact_staleness_audit_2026_07_07.md
+docs/saq_fixed_policy_metric_audit_2026_07_07.md
+```
+
+## Paper-Style Method Definition
+
+Given a dataset, SAQ's default segment plan `P0`, and the fixed average bit
+budget `B`, the method defines a small candidate neighborhood `N(P0)` rather
+than searching the full segment-plan space. Each candidate is produced by local
+shape-preserving edits to `P0`, such as widening the head, merging middle
+segments, or expanding the zero tail.
+
+The method then computes a data-only score for each candidate using base vectors
+as pseudo-queries inside IVF cells. The score estimates two quantities:
+
+```text
+recall-risk proxy: likelihood that the candidate disrupts close boundary pairs
+speed proxy:       relative scan/segment work compared with the SAQ default
+```
+
+The final policy is a deterministic decision function:
+
+```text
+Input:  SAQ default plan P0, generated candidates N(P0), data-only scores
+Output: promote(candidate), reject/control(candidate), or abstain
+
+1. If P0 is single-uniform, abstain.
+2. Generate feasible non-default candidates in N(P0).
+3. If no feasible non-default candidate exists, abstain.
+4. Promote the best conservative candidate if one exists.
+5. Otherwise promote the best frontier-like candidate if one exists.
+6. Otherwise abstain.
+7. If risky fallback is explicitly enabled, treat its selected candidate as a
+   reject/control diagnostic, never as promotion.
+```
+
+The policy is therefore a query-unaware local correction layer around SAQ's
+default plan. It is not a learned query-workload policy and not a theoretical
+dominance claim over SAQ's planner.
+
 ## 1. Scope
 
 The policy stays inside the SAQ setting:
@@ -315,9 +359,9 @@ a positive 1-bit segment:
 The 1-bit fix makes SAQ's own legal default plan buildable. It is not the
 planner contribution.
 
-The current fixed policy is still empirical. The report driver below makes the
-current evidence reproducible from summary outputs; a broader clean end-to-end
-validation matrix remains the next validation step.
+The current fixed policy is still empirical. The report and matrix drivers
+make the current evidence reproducible from local summary artifacts; a
+clean-machine regeneration path remains the next reproducibility gap.
 
 ## 11. Reproducible Report Generation
 
@@ -352,3 +396,43 @@ python script/run_fixed_policy_matrix.py \
 and compare-search artifacts while writing a fresh matrix summary and report.
 The runner passes risky fallback only as reject diagnostics; those rows remain
 `reject` in the generated fixed-policy report and are not promotion decisions.
+
+## 12. Evidence Boundary
+
+The current evidence should be read with three boundaries.
+
+First, applicability is shape-dependent. The strongest cases have
+multi-segment default plans with zero tails and enough middle/tail positive
+dimensions to redistribute. Single-uniform defaults such as current audio and
+word2vec are abstention cases under the current generator.
+
+Second, metric reporting is headline-operating-point QPS plus multi-nprobe
+recall. GIST B=3/B=4/B=5 are recall-positive across all measured nprobes.
+CIFAR B=3/B=5 are also positive across all measured nprobes, while CIFAR B=4
+is negative at np50 and positive at np100/np200/np400. DEEP B=4/B=5 are
+recall-negative across all measured nprobes and remain reject/control cases.
+QPS is currently measured at one headline nprobe per run, so paper-style speed
+claims should either add QPS curves or explicitly state the headline operating
+point.
+
+Third, artifact durability is layered. The checked-in clean table and docs are
+durable summaries. The report and matrix runners reproduced the table from
+local `/tmp/saq-run` artifacts, but a clean-machine regeneration path still
+requires dataset preparation, PCA/IVF artifacts, index builds, compare outputs,
+and QPS outputs.
+
+Safe wording:
+
+```text
+The fixed policy finds repeated query-unaware local improvements on GIST and
+CIFAR, rejects DEEP speed-only candidates that hurt recall, and abstains on
+single-uniform defaults. The claim is empirical, shape-dependent, and validated
+at the documented operating points with corrected safe search.
+```
+
+Unsafe wording:
+
+```text
+The policy universally improves SAQ across datasets, nprobes, and search
+operating points.
+```

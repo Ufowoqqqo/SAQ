@@ -222,10 +222,11 @@ python script/scan_default_neighborhood_applicability.py \
 
 ### E2. Paper-style method spec cleanup
 
-- Status: `todo`
+- Status: `done`
 - Priority: medium
 - Goal: turn `docs/saq_fixed_policy_method_spec_2026_07_07.md` into a more formal method section.
 - Caution: do not hide empirical threshold choices or overclaim theoretical guarantees.
+- Result: updated `docs/saq_fixed_policy_method_spec_2026_07_07.md` with a paper-style method definition and evidence boundary.
 
 ### E3. Handoff update
 
