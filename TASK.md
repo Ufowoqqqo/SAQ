@@ -2,7 +2,7 @@
 
 ## Active Goal
 
-Harden the current **query-unaware default-neighborhood fixed-policy method** into a reproducible, meeting/paper-ready SAQ follow-up story.
+Develop and evaluate the current **query-unaware default-neighborhood fixed-policy method** into a reproducible, meeting/paper-ready SAQ follow-up story.
 
 The goal is not to maximize one benchmark number. The goal is to make the current method boundary precise, reproducible, and defensible:
 
@@ -13,6 +13,13 @@ by **novelty and overhead**, not only by recall/QPS deltas. The current method
 is a policy layer on top of SAQ, not an independent quantizer. Future progress
 must explain what concrete SAQ limitation is being addressed and whether the
 extra planning/scoring/indexing/search complexity is justified.
+
+Terminology constraint: use research-paper terminology rather than
+software-maintenance terminology in new research notes, summaries, slides, and
+task descriptions. Prefer "review", "analyze", "evaluate", "survey",
+"evidence", and "limitations" over "audit", "harden", "triage", and "patch"
+unless discussing code correctness or repository maintenance. Existing artifact
+paths and historical task names do not need to be renamed only for wording.
 
 ## Current Status Summary
 
@@ -46,7 +53,7 @@ Read these files before deciding what to do:
 
 A successful autonomous run should complete at least one of the following without violating query-unaware constraints:
 
-0. **Novelty and overhead audit**
+0. **Novelty and overhead review**
    - Before launching new expensive experiments, write down the expected
      contribution beyond local tuning of SAQ's default plan.
    - Account for extra offline scorer time, candidate generation, index-build
@@ -55,18 +62,18 @@ A successful autonomous run should complete at least one of the following withou
    - If the expected gain is only a tiny recall/QPS improvement with large
      overhead, stop or pivot instead of continuing the sweep.
 
-1. **Reproducibility hardening**
+1. **Reproducibility evaluation**
    - Run `script/report_fixed_policy_validation.py` against the checked-in expected CSV.
    - If it fails, diagnose whether the failure is a script bug, stale artifact mismatch, missing local artifact, or expected-table issue.
    - Update `PROGRESS.md` and, if needed, a small durable doc under `docs/`.
 
-2. **Matrix validation hardening**
+2. **Matrix validation evaluation**
    - Run or dry-run `script/run_fixed_policy_matrix.py` using the existing artifact date.
    - Confirm whether the checked-in clean table is reproducible from existing artifacts.
    - If not reproducible due to missing `/tmp/saq-run` artifacts, document exactly which artifacts are missing and what command would regenerate them.
 
-3. **Policy robustness audit**
-   - Audit candidate generation, scoring, and promotion logic for cases where the policy might promote false positives or reject valid frontier-like positives.
+3. **Policy robustness review**
+   - Review candidate generation, scoring, and promotion logic for cases where the policy might promote false positives or reject valid frontier-like positives.
    - Any proposed guard change must be validated against the known positive, reject, and abstain cases.
    - Do not tune thresholds using held-out query labels as training data.
 

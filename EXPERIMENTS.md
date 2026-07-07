@@ -2,6 +2,13 @@
 
 This file tracks hypotheses, candidate experiments, and documentation tasks. Codex should pick from this list using expected value, validation cost, and risk.
 
+Terminology rule for new work: use research-paper terminology rather than
+software-maintenance terminology. Prefer "review", "analyze", "evaluate",
+"survey", "evidence", and "limitations" over "audit", "harden", "triage",
+and "patch" unless discussing code correctness or repository maintenance.
+Existing artifact paths and historical task labels do not need to be renamed
+solely for terminology cleanup.
+
 Status labels:
 
 - `todo`: not started
@@ -31,7 +38,7 @@ Status labels:
   - What extra overhead does our method add?
   - Are the observed recall/QPS gains large enough to justify that overhead?
   - What experiments should not be run because they only add tuning complexity?
-- Constraint: do not start new expensive build/eval sweeps before this audit is
+- Constraint: do not start new expensive build/eval sweeps before this review is
   completed or explicitly deferred by the user.
 - Result: documented in
   `docs/saq_fixed_policy_novelty_overhead_audit_2026_07_07.md`.
@@ -54,7 +61,7 @@ python script/report_fixed_policy_validation.py \
   - If values differ, determine whether the expected CSV is stale or the report script changed.
   - Do not silently update expected values without explaining the source of truth.
 
-### A2. Verify or harden fixed-policy matrix runner
+### A2. Verify or evaluate fixed-policy matrix runner
 
 - Status: `done`
 - Priority: high
@@ -115,7 +122,7 @@ python -m py_compile \
 - Result: verified from `/tmp/saq-run/reports/gist_sample100k_K512_B5_boundary_v3_conservative_sweep_2026_07_06.roles.csv` and documented in `docs/saq_gist_sample100k_B5_v3_conservative_guard_2026_07_06.md`.
 - Output: small note in `PROGRESS.md` unless a durable doc is missing.
 
-### B3. Frontier-like fallback audit
+### B3. Frontier-like fallback review
 
 - Status: `done`
 - Priority: medium
@@ -128,7 +135,7 @@ python -m py_compile \
 - Success: document the boundary of frontier-like fallback.
 - Result: documented in `docs/saq_fixed_policy_decision_audit_2026_07_07.md` and rechecked from `/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07.csv`.
 
-### B4. Abstention audit
+### B4. Abstention review
 
 - Status: `done`
 - Priority: medium
@@ -206,7 +213,7 @@ python script/scan_default_neighborhood_applicability.py \
 - Goal: make sure future policy changes do not accidentally promote these cases.
 - Success: any policy/generator change preserves reject decision unless a new measured candidate avoids the recall loss.
 
-### D2. Artifact-staleness audit
+### D2. Artifact-staleness review
 
 - Status: `done`
 - Priority: medium

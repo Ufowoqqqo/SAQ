@@ -20,6 +20,14 @@ complexity for tiny recall/QPS deltas. Any next method change should clarify
 what SAQ limitation it exposes and why the added policy/scoring overhead is
 worthwhile.
 
+Use research-paper terminology for research direction, documentation, and
+meeting materials. Prefer words such as "review", "analyze", "evaluate",
+"survey", "evidence", and "limitations". Avoid software-maintenance framing
+such as "audit", "harden", "triage", and "patch" unless the topic is literally
+code correctness, debugging, or repository maintenance. Do not rename existing
+artifact paths only for terminology cleanup, but use this style for new docs,
+slides, task descriptions, and summaries.
+
 ## 2. Repository Layout
 
 - `saqlib/`: header-heavy C++ SAQ/CAQ implementation, quantizers, estimators, IVF helpers, utilities, and fast scan/search code.
@@ -28,7 +36,7 @@ worthwhile.
 - `script/`: Python and shell experiment drivers, diagnostics, planner sweeps, fixed-policy validation, and report generation.
 - `python/`: dataset download/preprocess, PCA, IVF, and groundtruth helpers.
 - `data/`: dataset directories. Generated dataset subdirectories are ignored by git.
-- `docs/`: durable experiment notes, audits, synthesis reports, method specs, and meeting-facing documentation.
+- `docs/`: durable experiment notes, reviews, synthesis reports, method specs, and meeting-facing documentation.
 - `results/`: figures/notebooks and generated result directories. Generated SAQ/LLM result subdirectories are ignored by git.
 - `bin/`: CMake runtime output directory for built binaries. Ignored by git.
 
@@ -205,6 +213,9 @@ Stop early when:
 - Keep C++ changes compatible with AVX512 compile flags in `CMakeLists.txt`.
 - Keep Python experiment scripts deterministic where practical; expose parameters as flags instead of hard-coding one-off values.
 - Put durable experiment writeups in `docs/`.
+- Use research-paper terminology in non-code writeups: prefer "review",
+  "analyze", "evaluate", "survey", and "limitations" over "audit", "harden",
+  "triage", and "patch" unless discussing code.
 - Do not commit generated datasets, built binaries, `build/`, `bin/`, or generated result directories ignored by `.gitignore`.
 - Do not rewrite unrelated docs or revert user changes.
 - Do not rewrite git history.

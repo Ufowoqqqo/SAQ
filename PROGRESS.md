@@ -1248,3 +1248,64 @@ than guessing.
 ### Next action
 
 Validate the markdown diff, commit, and push.
+
+## Session 2026-07-07 21:07 HKT
+
+### Goal
+
+Add a durable terminology constraint before the next research step: use
+research-paper terminology in new non-code project materials.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- `git status --short --branch`: clean and aligned with
+  `origin/saq-boundary-audit`
+- User requested a constraint preferring "review", "analyze", "evaluate",
+  "survey", and "limitations" over software-maintenance terms unless discussing
+  code.
+
+### Work completed
+
+Added the terminology constraint to the current iteration control files:
+
+- `AGENTS.md`
+- `TASK.md`
+- `EXPERIMENTS.md`
+
+Also updated a few forward-looking headings in `TASK.md` and `EXPERIMENTS.md`
+from maintenance-style wording to research-paper wording. Existing artifact
+paths and historical result references were intentionally left unchanged to
+avoid breaking references.
+
+### Commands run
+
+```bash
+git status --short --branch
+sed -n '1,220p' AGENTS.md
+sed -n '1,180p' TASK.md
+sed -n '1,120p' EXPERIMENTS.md
+rg -n "audit|harden|triage|patch|hardening|audits" AGENTS.md TASK.md EXPERIMENTS.md
+date '+%Y-%m-%d %H:%M %Z'
+tail -80 PROGRESS.md
+```
+
+### Files changed
+
+- `AGENTS.md`: added durable research-paper terminology guidance.
+- `TASK.md`: added the same constraint and changed active/future-facing
+  wording to "develop and evaluate", "evaluation", and "review".
+- `EXPERIMENTS.md`: added the terminology rule and changed several
+  future-facing labels to "evaluate" or "review".
+- `PROGRESS.md`: added this session log.
+
+### Result
+
+Future docs, slides, summaries, and task descriptions should use research-paper
+language by default. Maintenance-style terms remain acceptable for code
+correctness, debugging, repository maintenance, and existing artifact paths.
+
+### Next action
+
+Validate diff, commit, and push this constraint update before continuing with
+the next research step.
