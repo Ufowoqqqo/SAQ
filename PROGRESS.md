@@ -1000,3 +1000,83 @@ None.
 Validate the documentation diff, commit and push. After this checkpoint, pause
 unless starting new code/experiment work; the current autonomy documentation
 tasks are largely complete.
+
+## Session 2026-07-07 17:17 HKT
+
+### Goal
+
+Create an updated English meeting slide deck from the latest fixed-policy
+meeting summary, assuming the audience has almost no context about this project.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- `git status --short --branch`: clean and aligned with `origin/saq-boundary-audit`
+- Files read:
+  - `AGENTS.md`
+  - `TASK.md`
+  - `docs/saq_fixed_policy_meeting_summary_2026_07_07.md`
+  - `docs/saq_fixed_policy_method_spec_2026_07_07.md`
+  - `docs/saq_meeting_slides_v3_conservative_2026_07_06.md`
+  - `docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv`
+  - `docs/saq_fixed_policy_metric_audit_2026_07_07.md`
+  - `docs/saq_fixed_policy_applicability_classifier_2026_07_07.md`
+  - `docs/saq_fixed_policy_artifact_staleness_audit_2026_07_07.md`
+
+### Hypothesis / plan
+
+The old slide deck focuses on the intermediate v3/conservative story. Create a
+new fixed-policy slide deck that starts from ANNS/vector quantization basics,
+introduces SAQ and segment-plan notation, then explains the fixed-policy method
+with a GIST B=4 running example, current evidence, caveats, and meeting
+questions.
+
+### Commands run
+
+```bash
+git status --short --branch
+sed -n '1,240p' AGENTS.md
+sed -n '1,260p' TASK.md
+find docs -maxdepth 1 -iname '*slide*' -o -iname '*meeting*summary*' -o -iname '*method*spec*' | sort
+sed -n '1,260p' docs/saq_fixed_policy_meeting_summary_2026_07_07.md
+sed -n '1,260p' docs/saq_fixed_policy_method_spec_2026_07_07.md
+sed -n '1,260p' docs/saq_meeting_slides_v3_conservative_2026_07_06.md
+sed -n '1,140p' docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
+sed -n '260,520p' docs/saq_fixed_policy_method_spec_2026_07_07.md
+sed -n '1,240p' docs/saq_fixed_policy_metric_audit_2026_07_07.md
+sed -n '1,220p' docs/saq_fixed_policy_applicability_classifier_2026_07_07.md
+sed -n '1,220p' docs/saq_fixed_policy_artifact_staleness_audit_2026_07_07.md
+date '+%Y-%m-%d %H:%M %Z'
+```
+
+### Files changed
+
+- Added `docs/saq_fixed_policy_meeting_slides_2026_07_07.md`.
+- Added this session log in `PROGRESS.md`.
+
+### Artifacts produced
+
+```text
+docs/saq_fixed_policy_meeting_slides_2026_07_07.md
+```
+
+### Result
+
+The new English deck contains 32 markdown slides. It explains the project from
+vector quantization basics through SAQ, default segment plans, the
+query-unaware fixed-policy workflow, boundary-pair scoring, promotion/reject/
+abstain decisions, evidence, metric caveats, reproducibility status, and next
+meeting questions. GIST full K4096 B=4 is used as the running example.
+
+### Interpretation
+
+This deck is intentionally verbose and self-contained for an advisor who knows
+vector search but not this specific SAQ follow-up branch.
+
+### Problems / blockers
+
+None.
+
+### Next action
+
+Validate markdown/doc diff, commit, and push.
