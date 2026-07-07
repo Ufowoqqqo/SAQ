@@ -12,6 +12,28 @@ Status labels:
 
 ## A. Reproducibility And Hygiene
 
+### A0. Novelty and overhead gate
+
+- Status: `todo`
+- Priority: highest
+- Hypothesis: the current fixed-policy story may be too close to SAQ and may
+  buy small metric gains with nontrivial offline complexity.
+- Work:
+  1. Compare SAQ baseline pipeline against the fixed-policy pipeline.
+  2. Separate one-time experiment overhead from deployable method overhead.
+  3. Estimate or bound candidate generation, boundary-pair scoring, extra index
+     build, metadata, and search-time costs.
+  4. State what the contribution is if the method remains a local policy layer
+     around SAQ.
+  5. Define stop/pivot criteria for future sweeps when gains are too small.
+- Success: a short durable doc or method-spec section that answers:
+  - What is the concrete SAQ limitation?
+  - What extra overhead does our method add?
+  - Are the observed recall/QPS gains large enough to justify that overhead?
+  - What experiments should not be run because they only add tuning complexity?
+- Constraint: do not start new expensive build/eval sweeps before this audit is
+  completed or explicitly deferred by the user.
+
 ### A1. Verify clean fixed-policy report regeneration
 
 - Status: `done`
@@ -126,7 +148,7 @@ python script/scan_default_neighborhood_applicability.py \
 ### C1. Expand generator only within query-unaware default-neighborhood logic
 
 - Status: `todo`
-- Priority: medium-low
+- Priority: low until A0 is completed
 - Hypothesis: new local candidate families may improve coverage without turning into arbitrary full-plan search.
 - Allowed signals:
   - base vectors;
@@ -141,6 +163,9 @@ python script/scan_default_neighborhood_applicability.py \
   - avoid nonfinal 1-bit promoted candidates unless explicitly validated;
   - keep candidate set small and explainable.
 - Required validation: any new family must be tested against GIST/CIFAR positives, DEEP rejects, and audio/word2vec abstentions.
+- Novelty/overhead gate: before implementing a new family, explain why it is
+  not just more hand-tuning around SAQ and how much extra candidate/scorer/index
+  cost it adds.
 
 ### C2. Better applicability classifier
 
@@ -200,6 +225,20 @@ python script/scan_default_neighborhood_applicability.py \
   - avoid promoting a plan that only wins at one cherry-picked nprobe if broader behavior is negative;
   - state whether small recall deltas are practically meaningful.
 - Result: `docs/saq_fixed_policy_metric_audit_2026_07_07.md`.
+
+### D4. Avoid overhead cherry-picking
+
+- Status: `todo`
+- Priority: high
+- Work:
+  - report the method overhead separately from experimental overhead;
+  - avoid comparing only final selected-index QPS while hiding candidate
+    scoring/build costs;
+  - distinguish "deployable one-index pipeline" from "research sweep that built
+    many indexes";
+  - record whether any metadata or search-time branches are added beyond SAQ.
+- Success: future slides/docs cannot imply strict superiority unless overhead
+  is included or explicitly scoped out.
 
 ## E. Documentation / Meeting Narrative
 

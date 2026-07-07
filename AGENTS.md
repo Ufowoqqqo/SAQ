@@ -14,6 +14,12 @@ The current best framing is not â€œfind one custom segment plan that beats SAQ.â
 
 The method must stay query-unaware unless the user explicitly changes the research direction. Held-out benchmark queries may be used only for final evaluation, not for learning or selecting candidate plans.
 
+The current strategic concern is **novelty and overhead**. The project must not
+drift into spending large offline time, index-build time, memory, or search
+complexity for tiny recall/QPS deltas. Any next method change should clarify
+what SAQ limitation it exposes and why the added policy/scoring overhead is
+worthwhile.
+
 ## 2. Repository Layout
 
 - `saqlib/`: header-heavy C++ SAQ/CAQ implementation, quantizers, estimators, IVF helpers, utilities, and fast scan/search code.
@@ -57,6 +63,16 @@ Do not rely on memory from an earlier Codex session if these files disagree with
 6. **Respect abstention.** For single-uniform default plans such as current audio/word2vec cases, report abstention unless the generator itself is explicitly and defensibly expanded.
 7. **Keep reports reproducible.** Every claimed result must include dataset, K, B, PCA setting, top-k/recall metric, nprobe, searcher mode, plan, command, and artifact path.
 8. **Do not rely only on `/tmp`.** Local `/tmp/saq-run` artifacts are useful but not durable. Durable conclusions belong in `docs/` or checked-in summary files.
+9. **Novelty gate before new sweeps.** Do not start a new expensive sweep,
+   dataset run, or candidate-family expansion unless the expected contribution
+   is more than local tuning around SAQ. State the SAQ failure mode, why the
+   existing default planner cannot already capture it, and what would count as
+   a meaningful result.
+10. **Overhead gate before promotion.** Do not promote a method variant unless
+    its offline scoring cost, index-build cost, memory/metadata overhead, and
+    search-time overhead are accounted for against SAQ baseline. Small recall
+    or QPS deltas are not enough if they require substantial extra time, space,
+    or implementation complexity.
 
 ## 5. Build, Test, And Sanity Commands
 
@@ -158,7 +174,10 @@ For each Codex run:
 7. If a path fails twice for the same reason, stop repeating it and pivot.
 8. If a result is important, add or update a durable report in `docs/`.
 9. Update `RESULTS.md` only for stable conclusions, not speculative observations.
-10. End with a short handoff: changed files, commands run, evidence, risks, and next recommended action.
+10. Before starting expensive work, check the novelty/overhead gate: is this
+    likely to become a defensible contribution, or is it just buying a tiny
+    metric gain with more machinery?
+11. End with a short handoff: changed files, commands run, evidence, risks, and next recommended action.
 
 ## 8. Iteration Budget
 
@@ -176,6 +195,8 @@ Stop early when:
 - the machine lacks AVX512 or required local artifacts;
 - further work would be destructive or would rewrite unrelated experiment history;
 - the evidence contradicts the hypothesis and no clean pivot is available.
+- the next idea mainly increases offline/index/search complexity for marginal
+  metric movement and does not reveal a clear SAQ limitation or contribution.
 
 ## 9. Coding And Documentation Rules
 
@@ -197,3 +218,10 @@ Stop early when:
 - Audio and word2vec currently have single-uniform default plans under B=3/4/5 and are stable abstention cases under the current generator.
 - DEEP B=4/B=5 are useful negative controls: speed can improve while recall drops too much.
 - Local `/tmp/saq-run` artifacts may disappear; keep enough metadata in checked-in docs to reproduce or diagnose.
+- The current fixed policy is not an independent quantizer; it is a policy
+  layer around SAQ's default plan. Future work must be honest about this and
+  avoid presenting local plan tuning as a strong contribution without a clear
+  failure-mode analysis and overhead accounting.
+- Tiny recall/QPS gains can be misleading if they require many candidate
+  builds, extra scorer passes, large local artifacts, or complex implementation
+  branches that would not be acceptable in a practical indexing pipeline.

@@ -8,6 +8,12 @@ The goal is not to maximize one benchmark number. The goal is to make the curren
 
 > Generate local segment-plan candidates around SAQ's default plan, score them with data-only boundary-risk and speed proxies, promote only conservative/frontier-like candidates, reject bad speed-only candidates, and abstain when the default plan shape has no meaningful neighborhood.
 
+New strategic constraint after the latest discussion: the work must be judged
+by **novelty and overhead**, not only by recall/QPS deltas. The current method
+is a policy layer on top of SAQ, not an independent quantizer. Future progress
+must explain what concrete SAQ limitation is being addressed and whether the
+extra planning/scoring/indexing/search complexity is justified.
+
 ## Current Status Summary
 
 The branch already contains evidence that:
@@ -40,6 +46,15 @@ Read these files before deciding what to do:
 
 A successful autonomous run should complete at least one of the following without violating query-unaware constraints:
 
+0. **Novelty and overhead audit**
+   - Before launching new expensive experiments, write down the expected
+     contribution beyond local tuning of SAQ's default plan.
+   - Account for extra offline scorer time, candidate generation, index-build
+     cost, memory/metadata overhead, search-time overhead, and implementation
+     complexity.
+   - If the expected gain is only a tiny recall/QPS improvement with large
+     overhead, stop or pivot instead of continuing the sweep.
+
 1. **Reproducibility hardening**
    - Run `script/report_fixed_policy_validation.py` against the checked-in expected CSV.
    - If it fails, diagnose whether the failure is a script bug, stale artifact mismatch, missing local artifact, or expected-table issue.
@@ -63,6 +78,8 @@ A successful autonomous run should complete at least one of the following withou
 
 After satisfying a primary criterion, optionally attempt one low-cost improvement:
 
+- Add or update a novelty/overhead table for the current method.
+- Add explicit complexity accounting to the fixed-policy method docs.
 - Improve command reproducibility in the report scripts.
 - Add clearer error messages for missing artifacts.
 - Add a small consistency checker for the clean validation table.
@@ -79,6 +96,12 @@ Do not spend the session on these unless the user explicitly asks:
 - Forcing audio/word2vec into a non-abstain result under the current generator.
 - Treating DEEP speed-only improvements as positive method evidence.
 - Re-running large end-to-end experiments before verifying existing report reproducibility.
+- Pursuing tiny recall/QPS deltas by adding large offline search, many custom
+  index builds, heavy metadata, or complex policy branches without a clear
+  novelty story.
+- Presenting a local post-planning tweak as a strong standalone method unless
+  the SAQ baseline limitation and added-overhead tradeoff are explicitly
+  documented.
 
 ## Required Validation Commands
 
@@ -130,6 +153,9 @@ ctest --test-dir build --output-on-failure || true
 - Each result must include dataset, K, B, PCA setting, plan, metric, nprobe, top-k, command, and artifact path.
 - If a claim comes only from an offline proxy, label it as proxy-only.
 - If a script relies on local `/tmp/saq-run` artifacts, say so explicitly.
+- Each claimed method improvement must state whether it requires extra
+  candidate scoring, extra index builds, extra metadata, or extra search-time
+  computation relative to SAQ baseline.
 - Update `RESULTS.md` only for stable conclusions.
 
 ## Expected Final Handoff

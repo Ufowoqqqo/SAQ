@@ -1080,3 +1080,73 @@ None.
 ### Next action
 
 Validate markdown/doc diff, commit, and push.
+
+## Session 2026-07-07 20:35 HKT
+
+### Goal
+
+Update the autonomy/control files to make novelty and overhead first-class
+constraints, preventing future iterations from spending large time/space or
+implementation complexity for tiny recall/QPS gains.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- `git status --short --branch`: clean and aligned with `origin/saq-boundary-audit`
+- Files read:
+  - `AGENTS.md`
+  - `TASK.md`
+  - `EXPERIMENTS.md`
+
+### Hypothesis / plan
+
+The current fixed-policy work is a local policy layer around SAQ, not an
+independent quantizer. Future autonomous runs should therefore pass a
+novelty/overhead gate before new expensive sweeps or candidate-family
+expansion. Update root control files so this concern steers task selection and
+stop criteria.
+
+### Commands run
+
+```bash
+git status --short --branch
+sed -n '1,260p' AGENTS.md
+sed -n '1,240p' TASK.md
+sed -n '1,320p' EXPERIMENTS.md
+date '+%Y-%m-%d %H:%M %Z'
+```
+
+### Files changed
+
+- `AGENTS.md`: added novelty/overhead gates, stop criteria, and known pitfalls.
+- `TASK.md`: added novelty/overhead as a strategic constraint, primary success
+  criterion, non-goal, and evidence rule.
+- `EXPERIMENTS.md`: added A0 novelty/overhead gate, downgraded C1 until A0 is
+  complete, and added D4 overhead cherry-picking audit.
+- `RESULTS.md`: added overhead caveat and promoted novelty/overhead audit as
+  the next stable result to seek.
+- `PROGRESS.md`: added this session log.
+
+### Artifacts produced
+
+No generated experiment artifacts.
+
+### Result
+
+Future iterations must now account for SAQ failure mode, deployable overhead,
+and contribution strength before launching new expensive plan searches or
+presenting small recall/QPS deltas as progress.
+
+### Interpretation
+
+This directly addresses the current concern that the project may otherwise
+optimize local metric gains without enough novelty or practical benefit.
+
+### Problems / blockers
+
+None.
+
+### Next action
+
+Validate the diff, commit, and push. The next substantive task should be A0:
+write the novelty/overhead audit before starting new experiments.

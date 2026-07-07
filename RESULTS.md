@@ -86,14 +86,19 @@ A minimal fix was needed because the encoder did not export `base_code.code` for
 - The policy thresholds are empirically motivated, not theoretically guaranteed.
 - Frontier-like fallback is useful for CIFAR but must remain narrow to avoid reintroducing false positives.
 - Do not claim the method applies to single-uniform default-plan datasets under the current generator.
+- Do not claim strict superiority over SAQ until added offline scoring,
+  candidate generation, index-build, metadata, and search-time overhead are
+  accounted for. The current method is a local policy layer around SAQ's
+  default plan, not an independent quantizer.
 
 ## Recommended Next Stable Results To Seek
 
-1. Reproduce the checked-in clean validation table from scripts.
-2. Make the fixed-policy matrix reproducible or document missing artifacts precisely.
-3. Add a concise meeting/paper-facing summary of the fixed-policy method.
-4. Add a more explicit applicability classifier/table.
-5. Preserve DEEP reject and audio/word2vec abstention behavior under any future generator/scorer change.
+1. Complete a novelty/overhead audit for the current fixed-policy method.
+2. Reproduce the checked-in clean validation table from scripts.
+3. Make the fixed-policy matrix reproducible or document missing artifacts precisely.
+4. Add a concise meeting/paper-facing summary of the fixed-policy method.
+5. Add a more explicit applicability classifier/table.
+6. Preserve DEEP reject and audio/word2vec abstention behavior under any future generator/scorer change.
 
 ## Result 2026-07-07: Fixed-policy report and matrix reproduce the checked-in table
 
