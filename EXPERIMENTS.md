@@ -124,6 +124,36 @@ python -m py_compile \
   scorer-cost reduction or sampling calibration a more important next question
   than additional candidate-family expansion.
 
+### A5. Fixed-policy scorer calibration evaluation
+
+- Status: `done`
+- Priority: highest after A4
+- Goal: evaluate whether the data-only scorer can use fewer boundary pairs
+  without changing the fixed-policy promote/reject/abstain decision or the
+  selected plan.
+- Work completed:
+  - added `script/run_scorer_calibration.py`;
+  - evaluated representative settings on GIST B=4, CIFAR B=4, DEEP B=4, and
+    audio B=4;
+  - evaluated the stable `a1024_p2` setting across the full fixed-policy
+    matrix;
+  - compared calibration pair counts and runtime against the overhead summary.
+- Result:
+  - `docs/saq_fixed_policy_scorer_calibration_2026_07_07.md`
+  - `docs/saq_fixed_policy_scorer_calibration_2026_07_07.csv`
+  - `docs/saq_fixed_policy_scorer_calibration_2026_07_07.json`
+  - `docs/saq_fixed_policy_scorer_calibration_full_a1024p2_2026_07_07.md`
+  - `docs/saq_fixed_policy_scorer_calibration_full_a1024p2_2026_07_07.csv`
+  - `docs/saq_fixed_policy_scorer_calibration_full_a1024p2_2026_07_07.json`
+- Interpretation: `a1024_p2` preserves all decisions and selected plans in
+  the current fixed-policy matrix, while smaller representative settings can
+  preserve decisions but change the GIST B=4 selected plan. Pair-count
+  reduction alone is not enough to remove GIST scorer overhead: reducing GIST
+  sampling from 14,740 to 2,048 pairs still leaves scorer runtime around
+  94-95% of the full-scorer runtime.
+- Next cost-reduction direction: evaluate cached residual/tail features or a
+  smaller scoring grid before adding new candidate families.
+
 ## B. Policy Robustness
 
 ### B1. Audit promotion decisions against the clean validation table

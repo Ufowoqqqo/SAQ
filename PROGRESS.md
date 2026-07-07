@@ -1400,3 +1400,113 @@ evaluation.
 Validate generated docs and script, then commit and push. The next research
 step should evaluate whether fewer anchors/pairs or a smaller scorer grid can
 preserve the same fixed-policy decisions.
+
+## Session 2026-07-07 22:46 HKT
+
+### Goal
+
+Evaluate scorer-cost reduction and sampling calibration for the current
+fixed-policy matrix.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- `git status --short --branch`: clean except new scorer-calibration work from
+  the active session
+- Files read:
+  - `EXPERIMENTS.md`
+  - `RESULTS.md`
+  - `PROGRESS.md`
+  - `AGENTS.md`
+  - `docs/saq_fixed_policy_overhead_evaluation_2026_07_07.md`
+  - `docs/saq_fixed_policy_overhead_evaluation_2026_07_07.summary.csv`
+
+### Hypothesis / plan
+
+The data-only scorer may be calibrated to use fewer sampled boundary pairs
+while preserving the current fixed-policy decisions. If pair-count reduction
+does not materially reduce wall-clock runtime, the next overhead-reduction
+target should shift to cached residual/tail features or scorer-grid reduction.
+
+### Commands run
+
+```bash
+python -m py_compile script/run_scorer_calibration.py
+python script/run_scorer_calibration.py \
+  --run cifar60k_B4 \
+  --preset a256_p1 \
+  --output-prefix /tmp/saq-run/reports/scorer_calibration_smoke_2026_07_07
+python script/run_scorer_calibration.py \
+  --run gist_full_K4096_B4 \
+  --run cifar60k_B4 \
+  --run deep1M_sample100k_B4 \
+  --run audio_K4096_B4 \
+  --preset a256_p1 \
+  --preset a512_p1 \
+  --preset a1024_p2 \
+  --force \
+  --output-prefix docs/saq_fixed_policy_scorer_calibration_2026_07_07
+python script/run_scorer_calibration.py \
+  --preset a1024_p2 \
+  --force \
+  --output-prefix docs/saq_fixed_policy_scorer_calibration_full_a1024p2_2026_07_07
+python script/run_scorer_calibration.py \
+  --run gist_full_K4096_B4 \
+  --run cifar60k_B4 \
+  --run deep1M_sample100k_B4 \
+  --run audio_K4096_B4 \
+  --preset a256_p1 \
+  --preset a512_p1 \
+  --preset a1024_p2 \
+  --output-prefix docs/saq_fixed_policy_scorer_calibration_2026_07_07
+python script/run_scorer_calibration.py \
+  --preset a1024_p2 \
+  --output-prefix docs/saq_fixed_policy_scorer_calibration_full_a1024p2_2026_07_07
+```
+
+### Files changed
+
+- Added `script/run_scorer_calibration.py`.
+- Added calibration reports under `docs/`.
+- Updated `EXPERIMENTS.md` with A5.
+- Updated `RESULTS.md` with the stable scorer-calibration conclusion.
+- Updated `PROGRESS.md` with this session log.
+
+### Artifacts produced
+
+```text
+docs/saq_fixed_policy_scorer_calibration_2026_07_07.md
+docs/saq_fixed_policy_scorer_calibration_2026_07_07.csv
+docs/saq_fixed_policy_scorer_calibration_2026_07_07.json
+docs/saq_fixed_policy_scorer_calibration_full_a1024p2_2026_07_07.md
+docs/saq_fixed_policy_scorer_calibration_full_a1024p2_2026_07_07.csv
+docs/saq_fixed_policy_scorer_calibration_full_a1024p2_2026_07_07.json
+```
+
+### Result
+
+The `a1024_p2` scorer setting preserves all current fixed-policy decisions and
+selected plans in the full matrix: 10/10 decision matches and 10/10 plan
+matches. Total measured scorer runtime is 456.967 seconds.
+
+Representative smaller settings preserve the decision but not always the exact
+selected plan: `a256_p1` and `a512_p1` both select a different GIST B=4 plan.
+
+### Interpretation
+
+Pair-count reduction alone is not enough. On GIST, `a1024_p2` reduces sampled
+pairs from 14,740 to 2,048, but runtime remains around 94-95% of the previous
+full-scorer runtime. The next cost-reduction study should evaluate cached
+residual/tail features or a smaller scoring grid before adding new candidate
+families.
+
+### Problems / limitations
+
+No blocker. This run evaluates scorer calibration only; it does not rerun
+recall/QPS because selected plans intentionally remain the same as the current
+fixed-policy matrix.
+
+### Next action
+
+Run validation, commit, and push. Then evaluate cached residual/tail feature
+reuse or scoring-grid reduction as the next overhead-reduction step.

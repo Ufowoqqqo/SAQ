@@ -93,8 +93,9 @@ A minimal fix was needed because the encoder did not export `base_code.code` for
 
 ## Recommended Next Stable Results To Seek
 
-1. Reduce or calibrate the data-only scorer cost, especially on full GIST where
-   planning overhead is now measured at roughly 145-151 seconds per budget.
+1. Evaluate cached residual/tail features or a smaller scoring grid, because
+   pair-count reduction alone did not materially reduce full-GIST scorer
+   runtime.
 2. Make the fixed-policy matrix reproducible on a clean machine or document the
    exact dataset/artifact preparation gap.
 3. Preserve DEEP reject and audio/word2vec abstention behavior under any future
@@ -102,6 +103,66 @@ A minimal fix was needed because the encoder did not export `base_code.code` for
 4. If expanding the generator, first state the SAQ failure mode and added
    overhead, then validate against GIST/CIFAR positives, DEEP rejects, and
    audio/word2vec abstentions.
+
+## Result 2026-07-07: Scorer calibration preserves decisions but does not solve full-GIST cost
+
+### Claim
+
+A smaller boundary-pair scorer setting can reproduce the current fixed-policy
+decisions, but reducing sampled pair count alone is not enough to make the
+full-GIST scorer cheap.
+
+### Evidence
+
+- Representative calibration report:
+  `docs/saq_fixed_policy_scorer_calibration_2026_07_07.md`
+- Full `a1024_p2` calibration report:
+  `docs/saq_fixed_policy_scorer_calibration_full_a1024p2_2026_07_07.md`
+- Driver:
+  `script/run_scorer_calibration.py`
+
+Full fixed-policy matrix with preset `a1024_p2`:
+
+```text
+decision match: 10/10
+plan match:     10/10
+total runtime:  456.967 seconds
+```
+
+Cost readout against the previous full-scorer overhead summary:
+
+```text
+GIST B=3/B=4/B=5: 14,740 -> 2,048 pairs, runtime ratio about 0.94-0.95
+CIFAR B=3/B=4/B=5: 1,068 -> 534 pairs, runtime ratio about 0.97-0.98
+DEEP B=4/B=5: 1,904 -> 952 pairs, runtime ratio about 0.98
+```
+
+The smaller representative presets `a256_p1` and `a512_p1` preserve the
+promote/reject/abstain decision on the four checked representative runs, but
+they select a different GIST B=4 plan. They are therefore too aggressive if the
+goal is exact selected-plan stability.
+
+### Interpretation
+
+The current stable scorer calibration point is `a1024_p2`. It is useful as a
+calibrated lower-pair-count setting for reproducibility, but it does not remove
+the main overhead concern. The full-GIST runtime remains close to the original
+scorer even after pair count falls to about 13.9% of the previous setting,
+which suggests that residual/tail feature computation, file I/O, or scorer-grid
+evaluation dominates the current implementation.
+
+### Limitations
+
+This is a calibration evaluation against the current fixed-policy matrix, not
+an end-to-end recall/QPS rerun. It intentionally does not use held-out query
+labels for selection. Runtime is wall-clock timing from the Python scorer
+driver and should be treated as an implementation-level overhead measurement.
+
+### Follow-up
+
+The next useful cost-reduction step is to evaluate cached residual/tail
+features and a smaller scoring grid. Additional pair subsampling is unlikely to
+be the highest-value direction unless it is combined with one of those changes.
 
 ## Result 2026-07-07: Overhead evaluation identifies scorer cost as the main added cost
 
