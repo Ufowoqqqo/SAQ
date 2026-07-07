@@ -202,7 +202,7 @@ python script/scan_default_neighborhood_applicability.py \
 
 ### E1. Produce concise method summary
 
-- Status: `todo`
+- Status: `done`
 - Priority: high if preparing for advisor/meeting
 - Output candidate:
   - `docs/saq_fixed_policy_meeting_summary_YYYY_MM_DD.md`
@@ -215,6 +215,7 @@ python script/scan_default_neighborhood_applicability.py \
   6. abstention cases;
   7. implementation fix separated from method;
   8. limitations and next steps.
+- Result: `docs/saq_fixed_policy_meeting_summary_2026_07_07.md`.
 
 ### E2. Paper-style method spec cleanup
 
