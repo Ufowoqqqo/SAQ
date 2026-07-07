@@ -476,3 +476,75 @@ None.
 Commit and push the B2/B3 status update. The next highest-value task is either
 B4 abstention audit or E1 meeting/paper narrative cleanup, depending on whether
 the next session should emphasize robustness or presentation.
+
+## Session 2026-07-07 16:27 HKT
+
+### Goal
+
+Complete B4: verify that current audio and word2vec abstentions remain stable
+under the fresh fixed-policy applicability scan.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- Previous checkpoint: `5f949e9 Record policy boundary audits`
+- Artifact read:
+  - `/tmp/saq-run/reports/fixed_policy_applicability_scan_2026_07_07.csv`
+
+### Hypothesis / plan
+
+The abstentions should follow from generator/applicability state, not failed
+measurement: audio and word2vec should have single-uniform default plans and no
+non-default candidates at B=3/B=4/B=5.
+
+### Commands run
+
+```bash
+git status --short --branch
+python - <<'PY'
+import csv
+from pathlib import Path
+p=Path('/tmp/saq-run/reports/fixed_policy_applicability_scan_2026_07_07.csv')
+for r in csv.DictReader(p.open()):
+    if r['dataset'] in {'audio','word2vec_sample100k'}:
+        print('\t'.join([r['dataset'], r['avg_bits'], r['default_plan'], r['default_shape'], r['candidate_count'], r['non_default_candidate_count'], r['feasible_non_default_candidate_count'], r['applicability']]))
+PY
+sed -n '1,120p' /tmp/saq-run/reports/fixed_policy_applicability_scan_2026_07_07.csv
+date '+%Y-%m-%d %H:%M %Z'
+```
+
+### Files changed
+
+- `EXPERIMENTS.md`: marked B4 as `done`.
+- `PROGRESS.md`: added this session log.
+
+### Artifacts produced
+
+No new artifacts. Reused:
+
+```text
+/tmp/saq-run/reports/fixed_policy_applicability_scan_2026_07_07.csv
+```
+
+### Result
+
+Fresh scan confirms:
+
+```text
+audio B=3/4/5: default 192:3/4/5, single_uniform, 0 non-default candidates
+word2vec_sample100k B=3/4/5: default 320:3/4/5, single_uniform, 0 non-default candidates
+```
+
+### Interpretation
+
+B4 is satisfied. Audio and word2vec are stable abstention cases under the
+current default-neighborhood generator, not negative measured candidates.
+
+### Problems / blockers
+
+None.
+
+### Next action
+
+Commit and push the B4 status update. Then move to E1 meeting/paper narrative
+cleanup, since the main reproducibility and robustness audits are now complete.

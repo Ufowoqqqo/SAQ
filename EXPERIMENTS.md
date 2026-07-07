@@ -106,7 +106,7 @@ python -m py_compile \
 
 ### B4. Abstention audit
 
-- Status: `todo`
+- Status: `done`
 - Priority: medium
 - Known abstentions: audio and word2vec under B=3/B=4/B=5.
 - Hypothesis: abstention follows from single-uniform default plans and no feasible non-default candidates under the current default-neighborhood generator.
@@ -118,6 +118,7 @@ python script/scan_default_neighborhood_applicability.py \
 ```
 
 - Success: scan confirms stable abstention, or reports an actual generator change.
+- Result: fresh scan `/tmp/saq-run/reports/fixed_policy_applicability_scan_2026_07_07.csv` confirms audio and word2vec B=3/B=4/B=5 are single-uniform with zero non-default candidates.
 - Do not force an arbitrary non-default plan for these datasets unless the generator is intentionally expanded.
 
 ## C. Method Extension Ideas
