@@ -76,6 +76,12 @@ docs/saq_fixed_policy_input_manifest_2026_07_08.md
 docs/saq_fixed_policy_input_manifest_2026_07_08.json
 ```
 
+The source/preparation chain for those inputs is recorded in:
+
+```text
+docs/saq_fixed_policy_input_preparation_provenance_2026_07_08.md
+```
+
 Generation command:
 
 ```bash
@@ -270,9 +276,9 @@ claim is needed.
    inputs.
 2. The fixed-policy runner does not yet contain a one-command dataset
    preparation pipeline for full GIST, CIFAR, DEEP, audio, and word2vec.
-3. The input manifest verifies file identity for the current prepared inputs,
-   but it still does not explain the raw dataset source, PCA training command,
-   IVF training command, or groundtruth generation command.
+3. The source/preparation provenance note now covers GIST, CIFAR, and DEEP at
+   command level. Audio and word2vec remain partially reconstructed because the
+   current matrix only uses their variance artifacts for abstention.
 4. The checker verifies existence for all artifact classes; hash/shape
    provenance is currently limited to the input artifacts enumerated by the
    manifest.
@@ -285,15 +291,18 @@ claim is needed.
 ## Practical Conclusion
 
 The current evidence is reproducible at the runner/report level once the build
-artifacts and dataset/PCA/IVF inputs are present. The input manifest now makes
-the current prepared inputs checkable by full-file SHA256. The remaining
-clean-machine gap is source/preparation provenance: how to recreate those input
-files from raw datasets.
+artifacts and dataset/PCA/IVF inputs are present. The input manifest makes the
+current prepared inputs checkable by full-file SHA256, and the provenance note
+documents the command-level preparation chain for the evaluated GIST, CIFAR,
+and DEEP rows. The remaining clean-machine gap is turning these notes into a
+single preparation script or archived input bundle, especially for exact audio
+preprocessing if audio ever becomes an evaluated row.
 
 The next reproducibility improvement should therefore be either:
 
 ```text
-document exact dataset preparation commands and source paths
+turn documented preparation steps into a one-command preparation script or
+archived input bundle
 ```
 
 Further plan tuning should wait until this provenance gap is acceptable for the

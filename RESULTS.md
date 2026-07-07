@@ -93,8 +93,8 @@ A minimal fix was needed because the encoder did not export `base_code.code` for
 
 ## Recommended Next Stable Results To Seek
 
-1. Document exact dataset preparation commands/source paths for the required
-   input artifacts.
+1. Turn the documented input-preparation steps into a one-command preparation
+   driver or archive the input bundle with the manifest hashes.
 2. Preserve DEEP reject and audio/word2vec abstention behavior under any future
    generator/scorer change.
 3. If expanding the generator, first state the SAQ failure mode and added
@@ -148,9 +148,10 @@ dataset-preparation pipeline.
 ### Limitations
 
 The checker itself verifies file existence and producer hints. Input file
-identity is handled by the separate manifest below; the remaining gap is
-groundtruth/PCA/IVF preparation provenance and whether generated non-input
-artifacts were produced by exactly the current commit.
+identity is handled by the separate manifest below, and input source/preparation
+provenance is handled by the preparation note below. The remaining gap is an
+operational one-command preparation path or archived input bundle, plus whether
+generated non-input artifacts were produced by exactly the current commit.
 
 ## Result 2026-07-08: Fixed-policy input artifacts have a full-SHA256 manifest
 
@@ -195,9 +196,46 @@ xvecs shape errors:            0
 ### Interpretation
 
 The previous reproducibility gap was split into two parts. File identity for
-the prepared input substrate is now covered by the manifest. The remaining
-gap is source/preparation provenance: exact raw dataset sources, PCA
-preparation, IVF preparation, and groundtruth generation commands.
+the prepared input substrate is covered by the manifest. Source/preparation
+provenance is addressed by the preparation note below; the remaining work is
+operational packaging rather than identifying the current input files.
+
+## Result 2026-07-08: Evaluated input preparation chain is documented
+
+### Claim
+
+The evaluated fixed-policy rows now have command-level input preparation
+provenance. The current source/preparation gap is no longer undocumented input
+origin; it is packaging those steps into a one-command preparation path or
+archived input bundle.
+
+### Evidence
+
+- Preparation provenance note:
+  `docs/saq_fixed_policy_input_preparation_provenance_2026_07_08.md`
+- Input manifest:
+  `docs/saq_fixed_policy_input_manifest_2026_07_08.md`
+- Updated reproducibility review:
+  `docs/saq_fixed_policy_reproducibility_review_2026_07_08.md`
+
+The note records:
+
+```text
+GIST full K4096:       PCA + K4096 IVF + original-space top100 GT commands
+CIFAR60K K512:         PCA + K512 IVF + copied L2 top10 GT command
+DEEP1M sample100K:     sampled PCA + K512 IVF + top100 GT commands
+audio:                 variance artifact identity for abstention; historical PCA command unresolved
+word2vec sample100K:   sampled PCA/K512 IVF command; historical GT command unresolved but not needed for current abstention
+```
+
+### Interpretation
+
+For the current matrix, all evaluated promote/reject rows have documented
+source paths and preparation commands. The two partial cases are abstention-only
+rows, where the policy uses only PCA variance artifacts and never enters
+scoring or evaluation. This is sufficient for meeting-level reproducibility
+discussion, but a paper artifact should still provide either a preparation
+driver or a fixed input bundle.
 
 ## Result 2026-07-08: Cost-reduced official runner reproduces the full matrix under safe evaluation
 

@@ -2098,3 +2098,202 @@ training command, or groundtruth generation command.
 Commit and push this provenance layer. The next reproducibility task is to
 document exact source/preparation commands for the input files if that level of
 clean-machine reconstruction is needed.
+
+## Session 2026-07-08 01:23 HKT
+
+### Goal
+
+Document input source and preparation provenance for the fixed-policy matrix.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- Previous checkpoint: `bee3e38 Add fixed-policy input provenance manifest`
+- `git status --short --branch`: clean and aligned with
+  `origin/saq-boundary-audit`
+- Files read:
+  - `AGENTS.md`
+  - `TASK.md`
+  - `docs/saq_fixed_policy_input_manifest_2026_07_08.md`
+  - `script/prepare_sampled_pca_ivf.py`
+  - `script/prepare_ivf_from_pca.py`
+  - `python/pca.py`
+  - `python/ivf.py`
+  - `src/compute_gt.cpp`
+  - existing GIST/CIFAR/DEEP/audio/word2vec notes under `docs/`
+  - local summaries under `/tmp/saq-run/data/*/*summary.json`
+
+### Hypothesis / plan
+
+The manifest identifies the prepared inputs by hash, but meeting/paper
+reproducibility also needs a source/preparation chain. Recover exact commands
+where historical summaries and notes exist, and explicitly mark partial cases
+instead of inventing missing commands.
+
+### Commands run
+
+```bash
+git status --short --branch
+sed -n '1,260p' AGENTS.md
+sed -n '1,220p' TASK.md
+sed -n '1,220p' docs/saq_fixed_policy_input_manifest_2026_07_08.md
+rg -n "gist_full|cifar60k|deep1M_sample100k|audio|word2vec_sample100k|prepare|groundtruth|base_pca|query_pca|centroid|cluster_id" docs script python README.md EXPERIMENTS.md RESULTS.md PROGRESS.md
+rg --files script python src | sort
+find /tmp/saq-run/data -maxdepth 2 -type f | sort
+find /rwproject/kdd-db/kluaq/dataset -maxdepth 3 -type f | sort
+sed -n '1,260p' python/pca.py
+sed -n '1,260p' python/compute_gt.py
+sed -n '1,360p' script/prepare_sampled_pca_ivf.py
+sed -n '1,240p' script/prepare_ivf_from_pca.py
+sed -n '1,240p' python/ivf.py
+cat /tmp/saq-run/data/cifar60k/cifar60k_sampled_pca_ivf_summary.json
+cat /tmp/saq-run/data/deep1M_sample100k/deep1M_sample100k_sampled_pca_ivf_summary.json
+cat /tmp/saq-run/data/gist_full/gist_full_sampled_pca_ivf_summary.json
+cat /tmp/saq-run/data/gist_full/gist_full_k4096_pca_ivf_summary.json
+cat /tmp/saq-run/data/word2vec_sample100k/word2vec_sample100k_sampled_pca_ivf_summary.json
+cat /tmp/saq-run/data/gist_full/gist_full_query_pca_summary.json
+cat /tmp/saq-run/data/cifar60k/cifar60k_query_pca_summary.json
+cat /tmp/saq-run/data/deep1M_sample100k/deep1M_sample100k_query_pca_summary.json
+cat /tmp/saq-run/data/word2vec_sample100k/word2vec_sample100k_query_pca_summary.json
+sed -n '1,180p' docs/saq_cross_dataset_default_neighborhood_validation_2026_07_06.md
+sed -n '1,90p' docs/saq_gist_full_k4096_official_style_validation_2026_07_04.md
+sed -n '80,170p' docs/saq_gist_full_k512_safe_validation_2026_07_04.md
+rg -n "groundtruth|top100|top10|official|original-space|original_l2|compute_groundtruth|compute_gt|groundtruth_l2|groundtruth_ip" docs script python PROGRESS.md RESULTS.md
+sed -n '1,220p' src/compute_gt.cpp
+sed -n '1,80p' docs/saq_cross_dataset_pilot_deep_cifar_2026_07_06.md
+sed -n '300,360p' docs/saq_cross_dataset_default_neighborhood_validation_2026_07_06.md
+find /tmp/saq-run/data -maxdepth 2 -type l -ls | sort -k11
+find /tmp/saq-run/data/gist_raw -maxdepth 1 -type f,l -printf '%p -> %l\n'
+rg -n "audio.*PCA|audio_base_pca|audio.*groundtruth|audio.*centroid|audio.*ivf|python.*pca.*audio|compute_gt.*audio|audio_K4096" docs PROGRESS.md RESULTS.md EXPERIMENTS.md script python
+find /tmp/saq-run/data/audio -maxdepth 1 -type f,l -printf '%TY-%Tm-%Td %TH:%TM %s %p -> %l\n' | sort
+python - <<'PY'
+from pathlib import Path
+import hashlib
+
+def xshape(path):
+    p = Path(path)
+    with p.open("rb") as f:
+        dim = int.from_bytes(f.read(4), "little", signed=True)
+    row = 4 + 4 * dim
+    return p.stat().st_size // row, dim, p.stat().st_size
+
+def h(path):
+    d = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(8 * 1024 * 1024), b""):
+            d.update(chunk)
+    return d.hexdigest()[:16]
+
+for p in [
+    "/rwproject/kdd-db/kluaq/dataset/gist/gist_base.fvecs",
+    "/rwproject/kdd-db/kluaq/dataset/gist/gist_query.fvecs",
+    "/rwproject/kdd-db/kluaq/dataset/gist/gist_groundtruth_l2.ivecs",
+    "/tmp/saq-run/data/gist_full/gist_full_groundtruth.ivecs",
+    "/tmp/saq-run/data/gist_full/gist_full_groundtruth_top100_original_l2.ivecs",
+    "/rwproject/kdd-db/kluaq/dataset/cifar60k/cifar60k_groundtruth_l2.ivecs",
+    "/tmp/saq-run/data/cifar60k/cifar60k_groundtruth.ivecs",
+    "/rwproject/kdd-db/kluaq/dataset/deep1M/deep1M_base.fvecs",
+    "/tmp/saq-run/data/deep1M_sample100k/deep1M_sample100k_groundtruth.ivecs",
+    "/rwproject/kdd-db/kluaq/dataset/audio/audio_base.fvecs",
+    "/tmp/saq-run/data/audio/audio_base_pca.vars.fvecs",
+    "/rwproject/kdd-db/kluaq/dataset/word2vec/word2vec_base.fvecs",
+    "/tmp/saq-run/data/word2vec_sample100k/word2vec_sample100k_groundtruth.ivecs",
+]:
+    print("\t".join([p, str(xshape(p)), h(p)]))
+PY
+python - <<'PY'
+import hashlib
+
+def digest(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(8 * 1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+for a, b in [
+    ("/rwproject/kdd-db/kluaq/dataset/cifar60k/cifar60k_groundtruth_l2.ivecs", "/tmp/saq-run/data/cifar60k/cifar60k_groundtruth.ivecs"),
+    ("/tmp/saq-run/data/gist_full/gist_full_groundtruth.ivecs", "/tmp/saq-run/data/gist_full/gist_full_groundtruth_top100_original_l2.ivecs"),
+    ("/tmp/saq-run/data/gist_full/gist_full_groundtruth_before_original_top100_switch.ivecs", "/tmp/saq-run/data/gist_full/gist_full_groundtruth_top100.ivecs"),
+]:
+    print(a, b, digest(a) == digest(b), digest(a)[:16], digest(b)[:16])
+PY
+python - <<'PY'
+from pathlib import Path
+import hashlib
+
+def xshape(path):
+    p = Path(path)
+    with p.open("rb") as f:
+        dim = int.from_bytes(f.read(4), "little", signed=True)
+    row = 4 + 4 * dim
+    return p.stat().st_size // row, dim, p.stat().st_size
+
+def h(path):
+    d = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(8 * 1024 * 1024), b""):
+            d.update(chunk)
+    return d.hexdigest()[:16]
+
+for p in [
+    "/rwproject/kdd-db/kluaq/dataset/cifar60k/cifar60k_base.fvecs",
+    "/rwproject/kdd-db/kluaq/dataset/cifar60k/cifar60k_query.fvecs",
+    "/rwproject/kdd-db/kluaq/dataset/cifar60k/cifar60k_groundtruth_l2.ivecs",
+    "/rwproject/kdd-db/kluaq/dataset/deep1M/deep1M_query.fvecs",
+    "/rwproject/kdd-db/kluaq/dataset/audio/audio_query.fvecs",
+    "/rwproject/kdd-db/kluaq/dataset/word2vec/word2vec_query.fvecs",
+]:
+    print("\t".join([p, str(xshape(p)), h(p)]))
+PY
+```
+
+### Files changed
+
+- Added
+  `docs/saq_fixed_policy_input_preparation_provenance_2026_07_08.md`.
+- Updated `docs/saq_fixed_policy_reproducibility_review_2026_07_08.md`.
+- Updated `EXPERIMENTS.md` with A11.
+- Updated `RESULTS.md` with the stable preparation-provenance result.
+- Updated `PROGRESS.md` with this session log.
+
+### Artifacts produced
+
+```text
+docs/saq_fixed_policy_input_preparation_provenance_2026_07_08.md
+```
+
+### Result
+
+The evaluated rows now have documented preparation provenance:
+
+```text
+GIST full K4096:   PCA + K4096 IVF + original-space top100 GT commands
+CIFAR60K K512:     PCA + K512 IVF + copied L2 top10 GT command
+DEEP100K K512:     sampled PCA + K512 IVF + sample-specific top100 GT command
+```
+
+Audio and word2vec are documented as partial provenance cases. This is
+acceptable for the current matrix because they are abstention-only rows and the
+policy only uses their PCA-variance artifacts.
+
+### Interpretation
+
+The previous source/preparation gap is narrowed from "unknown input origin" to
+"not yet packaged as one command." For meeting discussion, the current evidence
+can be described as reproducible from documented source paths and commands for
+the evaluated rows, with clearly stated partial provenance for abstention-only
+rows.
+
+### Problems / blockers
+
+The exact historical audio preprocessing command was not found. The exact
+historical word2vec GT command was also not found, but that GT is not part of
+the current manifest because the word2vec row abstains before evaluation.
+
+### Next action
+
+Commit and push this provenance documentation. If clean-machine reproduction
+becomes a target, the next step is to convert the documented commands into a
+single preparation driver or archive the prepared input bundle with manifest
+hashes.

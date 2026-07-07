@@ -272,9 +272,32 @@ python script/run_fixed_policy_matrix.py \
   - `docs/saq_fixed_policy_input_manifest_2026_07_08.json`
   - updated `docs/saq_fixed_policy_reproducibility_review_2026_07_08.md`
 - Interpretation: the current prepared inputs are now explicitly identifiable
-  by full SHA256. The remaining clean-machine gap is no longer file identity;
-  it is source/preparation provenance for recreating those files from raw
-  datasets.
+  by full SHA256. At this step the remaining clean-machine gap was
+  source/preparation provenance for recreating those files from raw datasets;
+  A11 addresses that gap for the evaluated rows.
+
+### A11. Input source and preparation provenance
+
+- Status: `done`
+- Priority: highest after A10
+- Goal: explain how the current dataset/PCA/IVF/groundtruth input substrate was
+  prepared from local source datasets.
+- Work completed:
+  - traced source files under `/rwproject/kdd-db/kluaq/dataset`;
+  - read local preparation summaries under `/tmp/saq-run/data/*/*summary.json`;
+  - recovered command-level preparation chains for GIST full K4096, CIFAR60K
+    K512, and DEEP1M sample100K K512;
+  - recorded source shapes and SHA256 prefixes for the relevant base/query/GT
+    files;
+  - marked audio and word2vec as partial provenance cases because the current
+    fixed-policy matrix uses only their variance artifacts for abstention.
+- Result:
+  - `docs/saq_fixed_policy_input_preparation_provenance_2026_07_08.md`
+  - updated `docs/saq_fixed_policy_reproducibility_review_2026_07_08.md`
+- Interpretation: evaluated positive/reject rows now have a documented
+  preparation chain. The remaining clean-machine gap is operational packaging:
+  turn these notes into a one-command preparation script or archive the input
+  bundle with manifest hashes.
 
 ## B. Policy Robustness
 
