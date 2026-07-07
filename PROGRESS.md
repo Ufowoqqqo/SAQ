@@ -190,3 +190,96 @@ None.
 
 Run the required lightweight validation commands from `TASK.md`, then commit
 the installed control files if the diff is clean.
+
+## Session 2026-07-07 16:14 HKT
+
+### Goal
+
+Start autonomous iteration under the repository control files and complete the
+highest-priority reproducibility checks A1/A2/A3.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- `git status --short --branch`: clean and aligned with `origin/saq-boundary-audit`
+- Files read:
+  - `TASK.md`
+  - `PROGRESS.md`
+  - `EXPERIMENTS.md`
+  - `RESULTS.md`
+  - `docs/saq_fixed_policy_method_spec_2026_07_07.md`
+  - `docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv`
+  - `docs/saq_default_neighborhood_applicability_scan_2026_07_06.md`
+
+### Hypothesis / plan
+
+The current scripts should already reproduce the fixed-policy table from local
+`/tmp/saq-run` artifacts. Verify the cheap syntax checks first, then verify the
+report driver and full matrix runner before attempting any policy changes.
+
+### Commands run
+
+```bash
+git status --short --branch
+sed -n '1,260p' TASK.md
+sed -n '1,260p' PROGRESS.md
+sed -n '1,260p' EXPERIMENTS.md
+sed -n '1,240p' RESULTS.md
+sed -n '1,220p' docs/saq_fixed_policy_method_spec_2026_07_07.md
+sed -n '1,40p' docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
+sed -n '1,220p' docs/saq_default_neighborhood_applicability_scan_2026_07_06.md
+python -m py_compile script/sweep_data_boundary_pairs.py script/generate_default_neighborhood_plans.py script/score_default_neighborhood_plans.py script/run_default_neighborhood_cross_dataset.py script/run_fixed_policy_matrix.py script/report_fixed_policy_validation.py
+python script/report_fixed_policy_validation.py --expected-csv docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
+python script/run_fixed_policy_matrix.py --artifact-date 2026_07_06 --expected-csv docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
+date '+%Y-%m-%d %H:%M %Z'
+```
+
+### Files changed
+
+- `EXPERIMENTS.md`: marked A1, A2, and A3 as `done`.
+- `RESULTS.md`: added a stable reproducibility result for the report and matrix runner.
+- `PROGRESS.md`: added this session log.
+
+### Artifacts produced
+
+```text
+/tmp/saq-run/reports/fixed_policy_validation_2026_07_07.csv
+/tmp/saq-run/reports/fixed_policy_validation_2026_07_07.md
+/tmp/saq-run/reports/fixed_policy_validation_2026_07_07.json
+/tmp/saq-run/reports/fixed_policy_applicability_scan_2026_07_07.csv
+/tmp/saq-run/reports/fixed_policy_applicability_scan_2026_07_07.json
+/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07.csv
+/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07.json
+/tmp/saq-run/reports/fixed_policy_validation_matrix_2026_07_07.csv
+/tmp/saq-run/reports/fixed_policy_validation_matrix_2026_07_07.md
+/tmp/saq-run/reports/fixed_policy_validation_matrix_2026_07_07.json
+/tmp/saq-run/reports/fixed_policy_matrix_2026_07_07.manifest.json
+```
+
+### Result
+
+- Python syntax checks passed for the required planner/report scripts.
+- `script/report_fixed_policy_validation.py` regenerated the report and matched
+  `docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv` exactly.
+- `script/run_fixed_policy_matrix.py --artifact-date 2026_07_06` reused existing
+  candidate/scorer/compare/QPS artifacts and reproduced the same clean table,
+  ignoring only the expected `source_report` field difference.
+- Matrix decision counts were `promote=6`, `reject=2`, `abstain=2`.
+
+### Interpretation
+
+Primary success criteria 1 and 2 are satisfied on this machine: the current
+fixed-policy evidence table is reproducible from local artifacts. This does not
+remove the `/tmp/saq-run` durability caveat, but it verifies that the checked-in
+scripts and current local artifacts are internally consistent.
+
+### Problems / blockers
+
+None for A1/A2/A3. The main residual risk is artifact portability: the matrix
+depends on local `/tmp/saq-run` data, indexes, compare CSVs, and QPS outputs.
+
+### Next action
+
+Commit and push this reproducibility checkpoint. Then continue with B1: a
+row-by-row policy robustness audit mapping clean-table decisions to
+conservative/frontier/reject/abstain signals.

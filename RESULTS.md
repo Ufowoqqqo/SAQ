@@ -95,6 +95,66 @@ A minimal fix was needed because the encoder did not export `base_code.code` for
 4. Add a more explicit applicability classifier/table.
 5. Preserve DEEP reject and audio/word2vec abstention behavior under any future generator/scorer change.
 
+## Result 2026-07-07: Fixed-policy report and matrix reproduce the checked-in table
+
+### Claim
+
+The checked-in clean fixed-policy validation table is reproducible from the
+current report scripts and the available local `/tmp/saq-run` artifacts.
+
+### Evidence
+
+- Dataset / K / B: fixed-policy matrix covering GIST full K4096 B=3/4/5,
+  CIFAR60K K512 B=3/4/5, DEEP100K K512 B=4/5, audio K4096 B=4, and
+  word2vec100K K512 B=4.
+- Plan: the promoted/rejected/abstained plans listed in
+  `docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv`.
+- Metric: R@100 for GIST/DEEP/audio/word2vec and R@10 for CIFAR.
+- nprobe / top-k: run-specific nprobe from the clean table; GIST uses np800,
+  CIFAR/DEEP use np200 for the headline row.
+- Searcher mode: generated evaluation artifacts use corrected safe search,
+  `-searcher_safe_block_min_mode=2`.
+- Commands:
+
+  ```bash
+  python -m py_compile script/sweep_data_boundary_pairs.py script/generate_default_neighborhood_plans.py script/score_default_neighborhood_plans.py script/run_default_neighborhood_cross_dataset.py script/run_fixed_policy_matrix.py script/report_fixed_policy_validation.py
+  python script/report_fixed_policy_validation.py --expected-csv docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
+  python script/run_fixed_policy_matrix.py --artifact-date 2026_07_06 --expected-csv docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
+  ```
+
+- Artifact path:
+
+  ```text
+  /tmp/saq-run/reports/fixed_policy_validation_2026_07_07.csv
+  /tmp/saq-run/reports/fixed_policy_validation_2026_07_07.md
+  /tmp/saq-run/reports/fixed_policy_validation_2026_07_07.json
+  /tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07.csv
+  /tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07.json
+  /tmp/saq-run/reports/fixed_policy_validation_matrix_2026_07_07.csv
+  /tmp/saq-run/reports/fixed_policy_validation_matrix_2026_07_07.md
+  /tmp/saq-run/reports/fixed_policy_validation_matrix_2026_07_07.json
+  /tmp/saq-run/reports/fixed_policy_matrix_2026_07_07.manifest.json
+  ```
+
+### Interpretation
+
+The fixed-policy table is no longer only a manually curated summary. The report
+driver exactly matches the checked-in CSV, and the matrix runner reproduces the
+same decisions from existing artifacts, ignoring only the expected
+`source_report` filename difference.
+
+### Limitations
+
+This confirms reproducibility against local `/tmp/saq-run` artifacts. It does
+not prove the artifacts can be regenerated on a clean machine without dataset
+preparation and compute time.
+
+### Follow-up
+
+The next stable result should audit the promotion/reject/abstain decisions row
+by row and document why each policy decision follows from scorer/applicability
+signals rather than held-out query tuning.
+
 ## Update Template
 
 When adding a stable result, use this format:

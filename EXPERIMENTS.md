@@ -14,7 +14,7 @@ Status labels:
 
 ### A1. Verify clean fixed-policy report regeneration
 
-- Status: `todo`
+- Status: `done`
 - Priority: highest
 - Hypothesis: the checked-in clean validation table can be regenerated from existing summary artifacts.
 - Command:
@@ -32,7 +32,7 @@ python script/report_fixed_policy_validation.py \
 
 ### A2. Verify or harden fixed-policy matrix runner
 
-- Status: `todo`
+- Status: `done`
 - Priority: high
 - Hypothesis: `script/run_fixed_policy_matrix.py` can reproduce the fixed-policy table when local artifacts exist.
 - Command:
@@ -49,7 +49,7 @@ python script/run_fixed_policy_matrix.py \
 
 ### A3. Python syntax and command smoke checks
 
-- Status: `todo`
+- Status: `done`
 - Priority: high before edits
 - Command:
 
