@@ -181,7 +181,7 @@ python script/scan_default_neighborhood_applicability.py \
 
 ### D2. Artifact-staleness audit
 
-- Status: `todo`
+- Status: `done`
 - Priority: medium
 - Problem: many outputs live under `/tmp/saq-run`, which is not durable.
 - Work:
@@ -189,6 +189,7 @@ python script/scan_default_neighborhood_applicability.py \
   - record exact commands to regenerate them;
   - add clearer “artifact required” notes in docs or scripts.
 - Success: a future Codex session can understand missing artifacts without guessing.
+- Result: `docs/saq_fixed_policy_artifact_staleness_audit_2026_07_07.md`.
 
 ### D3. Avoid metric cherry-picking
 

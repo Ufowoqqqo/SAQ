@@ -771,3 +771,89 @@ None.
 
 Validate the handoff diff, commit and push. After this checkpoint, the next
 best task is E2 paper-style method spec cleanup or D2 artifact-staleness audit.
+
+## Session 2026-07-07 16:48 HKT
+
+### Goal
+
+Complete D2: audit the artifact-staleness risk for the current fixed-policy
+claim and document how to regenerate or diagnose missing artifacts.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- Previous checkpoint: `baec55b Update fixed-policy handoff`
+- `git status --short --branch`: clean and aligned with `origin/saq-boundary-audit`
+- Files/artifacts read:
+  - `TASK.md`
+  - `PROGRESS.md`
+  - `RESULTS.md`
+  - `EXPERIMENTS.md`
+  - `docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv`
+  - `/tmp/saq-run/reports/fixed_policy_matrix_2026_07_07.manifest.json`
+  - `/tmp/saq-run/reports/fixed_policy_validation_matrix_2026_07_07.md`
+  - local `/tmp/saq-run/reports/*default_neighborhood*` artifact listing
+  - `script/run_fixed_policy_matrix.py`
+
+### Hypothesis / plan
+
+The useful audit scope is not every historical `/tmp` reference in `docs/`.
+Instead, document the minimum artifact chain for the current fixed-policy
+claim: durable checked-in table/docs, local matrix/report artifacts, source
+reports, and the difference between report-only, matrix-from-cache, and
+clean-machine regeneration.
+
+### Commands run
+
+```bash
+git status --short --branch
+rg -n "/tmp/saq-run|source_report|artifact|artifacts" TASK.md PROGRESS.md RESULTS.md EXPERIMENTS.md docs script/report_fixed_policy_validation.py script/run_fixed_policy_matrix.py
+find /tmp/saq-run/reports -maxdepth 1 -type f -name '*fixed_policy*2026_07_07*' -printf '%f\n'
+sed -n '1,260p' script/run_fixed_policy_matrix.py
+sed -n '1,240p' /tmp/saq-run/reports/fixed_policy_matrix_2026_07_07.manifest.json
+sed -n '1,220p' /tmp/saq-run/reports/fixed_policy_validation_matrix_2026_07_07.md
+python - <<'PY'
+import csv
+from pathlib import Path
+p=Path('docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv')
+with p.open(newline='') as f:
+    for row in csv.DictReader(f):
+        print(row['run'], row['source_report'])
+PY
+find /tmp/saq-run/reports -maxdepth 1 -type f \( -name 'default_neighborhood_*2026_07_06.csv' -o -name 'default_neighborhood_*2026_07_07.csv' -o -name '*default_neighborhood*_2026_07_06.*' \) -printf '%f\n' | sort
+date '+%Y-%m-%d %H:%M %Z'
+```
+
+### Files changed
+
+- Added `docs/saq_fixed_policy_artifact_staleness_audit_2026_07_07.md`.
+- Marked D2 done in `EXPERIMENTS.md`.
+- Added this session log in `PROGRESS.md`.
+
+### Artifacts produced
+
+```text
+docs/saq_fixed_policy_artifact_staleness_audit_2026_07_07.md
+```
+
+### Result
+
+The audit separates durable checked-in sources from local `/tmp/saq-run`
+artifacts, records the current source report mapping, and defines three
+reproduction levels: report-only, matrix-from-existing-artifacts, and
+clean-machine regeneration.
+
+### Interpretation
+
+D2 is satisfied. The current table is durable as a summary, but full
+clean-machine regeneration still needs more dataset/artifact preparation
+documentation.
+
+### Problems / blockers
+
+None.
+
+### Next action
+
+Validate the documentation diff, commit and push. The next useful task is D3
+metric cherry-picking audit or E2 paper-style method spec cleanup.
