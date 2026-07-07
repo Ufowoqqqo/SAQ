@@ -193,12 +193,13 @@ python script/scan_default_neighborhood_applicability.py \
 
 ### D3. Avoid metric cherry-picking
 
-- Status: `todo`
+- Status: `done`
 - Priority: medium
 - Work:
   - ensure each result states nprobe, top-k, and QPS setting;
   - avoid promoting a plan that only wins at one cherry-picked nprobe if broader behavior is negative;
   - state whether small recall deltas are practically meaningful.
+- Result: `docs/saq_fixed_policy_metric_audit_2026_07_07.md`.
 
 ## E. Documentation / Meeting Narrative
 

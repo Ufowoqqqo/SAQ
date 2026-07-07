@@ -857,3 +857,77 @@ None.
 
 Validate the documentation diff, commit and push. The next useful task is D3
 metric cherry-picking audit or E2 paper-style method spec cleanup.
+
+## Session 2026-07-07 16:51 HKT
+
+### Goal
+
+Complete D3: audit metric/top-k/nprobe/QPS reporting to avoid cherry-picking or
+overstated headline claims.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- Previous checkpoint: `4342dd2 Audit fixed-policy artifact staleness`
+- `git status --short --branch`: clean and aligned with `origin/saq-boundary-audit`
+- Files/artifacts read:
+  - `/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07.csv`
+  - `docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv`
+  - `docs/saq_fixed_policy_method_spec_2026_07_07.md`
+  - `docs/saq_fixed_policy_meeting_summary_2026_07_07.md`
+  - `docs/saq_gist_full_k4096_B3_after_1bit_fix_2026_07_07.md`
+  - `docs/saq_gist_budget_holdout_2026_07_06.md`
+  - `docs/saq_cifar_budget_holdout_2026_07_06.md`
+  - `docs/saq_cross_dataset_default_neighborhood_validation_2026_07_06.md`
+
+### Hypothesis / plan
+
+The clean table is useful but only shows headline nprobe. Audit the underlying
+matrix summary to determine whether recall gains hold across measured nprobe
+values and where QPS remains headline-only.
+
+### Commands run
+
+```bash
+git status --short --branch
+sed -n '1,80p' /tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07.csv
+sed -n '1,220p' docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
+rg -n "nprobe|R@|top-k|top100|top10|QPS|qps|np800|np200" docs/saq_fixed_policy_method_spec_2026_07_07.md docs/saq_fixed_policy_meeting_summary_2026_07_07.md docs/saq_fixed_policy_artifact_staleness_audit_2026_07_07.md docs/saq_gist_full_k4096_B3_after_1bit_fix_2026_07_07.md docs/saq_gist_budget_holdout_2026_07_06.md docs/saq_cifar_budget_holdout_2026_07_06.md docs/saq_cross_dataset_default_neighborhood_validation_2026_07_06.md
+date '+%Y-%m-%d %H:%M %Z'
+```
+
+### Files changed
+
+- Added `docs/saq_fixed_policy_metric_audit_2026_07_07.md`.
+- Marked D3 done in `EXPERIMENTS.md`.
+- Added this session log in `PROGRESS.md`.
+
+### Artifacts produced
+
+```text
+docs/saq_fixed_policy_metric_audit_2026_07_07.md
+```
+
+### Result
+
+The audit records that GIST B=3/4/5, CIFAR B=3/B=5, and DEEP reject cases have
+consistent multi-nprobe recall behavior. CIFAR B=4 is positive at np100/200/400
+but negative at np50, so it should be described as a small frontier-like
+headline positive rather than uniformly positive. QPS is currently measured at
+one headline nprobe per run.
+
+### Interpretation
+
+D3 is satisfied. The current evidence is meeting-ready if worded carefully, but
+paper-ready speed claims need either QPS curves or explicit headline-operating
+point framing.
+
+### Problems / blockers
+
+None.
+
+### Next action
+
+Validate the documentation diff, commit and push. The next useful task is E2
+paper-style method spec cleanup, incorporating the classifier, artifact audit,
+and metric audit.
