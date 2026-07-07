@@ -697,3 +697,77 @@ None.
 Validate the documentation diff, commit and push this C2 checkpoint. The next
 useful autonomous task is E2: fold the classifier into a more formal
 paper-style method spec, or E3: update the handoff state for future compaction.
+
+## Session 2026-07-07 16:40 HKT
+
+### Goal
+
+Complete E3: update the recovery handoff so future context compaction starts
+from the fixed-policy method state instead of the older v3 endpoint recovery
+state.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- Previous checkpoint: `5401b3f Document fixed-policy applicability classifier`
+- `git status --short --branch`: clean and aligned with `origin/saq-boundary-audit`
+- Files read:
+  - `codex_handoff.md`
+  - `TASK.md`
+  - `RESULTS.md`
+  - `EXPERIMENTS.md`
+  - `docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv`
+  - `docs/saq_fixed_policy_applicability_classifier_2026_07_07.md`
+
+### Hypothesis / plan
+
+The existing handoff is stale because it centers on the July 6 planner-v3 B=5
+false-positive recovery. Replace it with a July 7 handoff centered on the
+query-unaware default-neighborhood fixed-policy baseline, current evidence,
+constraints, uncertainties, and next commands.
+
+### Commands run
+
+```bash
+git status --short --branch
+sed -n '1,260p' codex_handoff.md
+sed -n '180,260p' EXPERIMENTS.md
+sed -n '1,220p' docs/saq_fixed_policy_applicability_classifier_2026_07_07.md
+git log --oneline -8
+sed -n '1,220p' TASK.md
+sed -n '1,180p' RESULTS.md
+sed -n '1,120p' docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
+date '+%Y-%m-%d %H:%M %Z'
+```
+
+### Files changed
+
+- Rewrote `codex_handoff.md`.
+- Marked E3 done in `EXPERIMENTS.md`.
+- Added this session log in `PROGRESS.md`.
+
+### Artifacts produced
+
+```text
+codex_handoff.md
+```
+
+### Result
+
+The handoff now records the fixed-policy method, current evidence table,
+important constraints, uncertainties, remaining TODOs, already-run validation
+commands, and next commands.
+
+### Interpretation
+
+E3 is satisfied. Future sessions should no longer recover into the outdated
+B=5 endpoint state unless explicitly asked to inspect that history.
+
+### Problems / blockers
+
+None.
+
+### Next action
+
+Validate the handoff diff, commit and push. After this checkpoint, the next
+best task is E2 paper-style method spec cleanup or D2 artifact-staleness audit.

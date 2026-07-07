@@ -227,7 +227,8 @@ python script/scan_default_neighborhood_applicability.py \
 
 ### E3. Handoff update
 
-- Status: `todo`
+- Status: `done`
 - Priority: medium
 - Goal: update `codex_handoff.md` or create a new handoff after the latest fixed-policy progress, because the old handoff emphasizes the B=5 false-positive recovery state.
 - Success: future context compaction starts from the fixed-policy method state, not the older v3-guard-only state.
+- Result: updated `codex_handoff.md` on 2026-07-07.
