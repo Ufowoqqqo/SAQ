@@ -1,143 +1,199 @@
 # AGENTS.md
 
-Durable guidance for future Codex sessions working in this repository.
+Durable instructions for Codex sessions working on the `saq-boundary-audit` branch of the SAQ repository.
 
-## Repo Layout
+This file is intended to replace or extend the current root `AGENTS.md`. Keep it concise enough that future Codex sessions actually follow it, but strict enough to prevent false progress.
 
-- `saqlib/`: header-heavy SAQ/CAQ implementation, quantizers, estimators, IVF index helpers, utilities, and fast scan code.
-- `src/`: C++ command-line binaries such as `create_index`, `test_qps`, `test_relative_error`, `compare_search_results`, attribution tools, and diagnostics.
-- `unit_test/`: GoogleTest unit tests built as `bin/unit_tests`.
-- `script/`: Python and shell experiment drivers, diagnostics, planner sweeps, and report-generation helpers.
-- `python/`: dataset download/preprocess, PCA, IVF, and groundtruth utility scripts.
+## 1. Current Research Direction
+
+The active follow-up direction is **query-unaware SAQ segment-plan improvement**.
+
+The current best framing is not “find one custom segment plan that beats SAQ.” The current method story is:
+
+> Use data-only boundary-risk diagnostics to generate and score local default-neighborhood segment plans, promote only conservative/frontier candidates, reject bad speed-only changes, and abstain when the SAQ default plan has no meaningful local multi-segment neighborhood.
+
+The method must stay query-unaware unless the user explicitly changes the research direction. Held-out benchmark queries may be used only for final evaluation, not for learning or selecting candidate plans.
+
+## 2. Repository Layout
+
+- `saqlib/`: header-heavy C++ SAQ/CAQ implementation, quantizers, estimators, IVF helpers, utilities, and fast scan/search code.
+- `src/`: C++ binaries such as `create_index`, `test_qps`, `test_relative_error`, `compare_search_results`, attribution tools, and diagnostics.
+- `unit_test/`: GoogleTest unit tests built as `bin/unit_tests` when enabled.
+- `script/`: Python and shell experiment drivers, diagnostics, planner sweeps, fixed-policy validation, and report generation.
+- `python/`: dataset download/preprocess, PCA, IVF, and groundtruth helpers.
 - `data/`: dataset directories. Generated dataset subdirectories are ignored by git.
-- `docs/`: experiment notes, audits, synthesis reports, and meeting-facing project documentation.
+- `docs/`: durable experiment notes, audits, synthesis reports, method specs, and meeting-facing documentation.
 - `results/`: figures/notebooks and generated result directories. Generated SAQ/LLM result subdirectories are ignored by git.
 - `bin/`: CMake runtime output directory for built binaries. Ignored by git.
 
-## Setup, Build, Test, Lint
+## 3. Current Important Files To Read First
 
-Prerequisites:
+Before making decisions, read these files if present:
+
+1. `TASK.md`
+2. `PROGRESS.md`
+3. `EXPERIMENTS.md`
+4. `RESULTS.md`
+5. `codex_handoff.md`
+6. `docs/saq_fixed_policy_method_spec_2026_07_07.md`
+7. `docs/saq_stage_synthesis_v3_conservative_2026_07_06.md`
+8. `docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv`
+9. Any doc named in `TASK.md` or `EXPERIMENTS.md`
+
+Do not rely on memory from an earlier Codex session if these files disagree with it. Prefer checked-in docs and exact generated artifacts.
+
+## 4. Non-Negotiable Research Constraints
+
+1. **Remain query-unaware.** Do not use representative query workloads, held-out query labels, or query-specific fitting to generate or score plans.
+2. **Use corrected safe search for measured claims.** Any recall/QPS claim involving multi-segment search must use:
+
+   ```bash
+   -searcher_safe_block_min_mode=2
+   ```
+
+3. **Do not promote raw offline planner winners without measured validation.** Planner v3 recall-risk endpoints are diagnostic. They are not method claims unless validated end to end.
+4. **Do not treat `--allow-risky-fallback` as a promotion policy.** Risky fallback is only for negative/control diagnostics.
+5. **Do not overclaim universal applicability.** The current evidence supports a shape-dependent method: strongest when the SAQ default plan has a multi-stage bit ladder, preferably with a zero tail and enough middle/tail positive dimensions to redistribute.
+6. **Respect abstention.** For single-uniform default plans such as current audio/word2vec cases, report abstention unless the generator itself is explicitly and defensibly expanded.
+7. **Keep reports reproducible.** Every claimed result must include dataset, K, B, PCA setting, top-k/recall metric, nprobe, searcher mode, plan, command, and artifact path.
+8. **Do not rely only on `/tmp`.** Local `/tmp/saq-run` artifacts are useful but not durable. Durable conclusions belong in `docs/` or checked-in summary files.
+
+## 5. Build, Test, And Sanity Commands
+
+Prerequisites noted by the project:
 
 ```bash
 apt install libfmt-dev libgoogle-glog-dev libgflags-dev libgtest-dev
 ```
 
-AVX512 is required. CMake fails intentionally if AVX512 support is unavailable.
+AVX512 is mandatory. Builds on machines without AVX512 support are expected to fail.
 
-Build:
+Default build:
 
 ```bash
 mkdir -p build bin
-cd build
-cmake ..
-make -j
-```
-
-Equivalent out-of-tree form from repo root:
-
-```bash
 cmake -S . -B build
 cmake --build build -j
 ```
 
-Build without unit tests:
+Build without unit tests when local GoogleTest/CMake setup is unavailable:
 
 ```bash
 cmake -S . -B build -DBUILD_UNIT_TESTS=OFF
 cmake --build build -j
 ```
 
-Run unit tests:
+Python syntax checks before planner/driver edits:
 
 ```bash
-cd build
-ctest --output-on-failure
+python -m py_compile \
+  script/sweep_data_boundary_pairs.py \
+  script/generate_default_neighborhood_plans.py \
+  script/score_default_neighborhood_plans.py \
+  script/run_default_neighborhood_cross_dataset.py \
+  script/run_fixed_policy_matrix.py \
+  script/report_fixed_policy_validation.py \
+  script/propose_residual_plan.py \
+  script/sweep_boundary_plan.py \
+  script/segment_diagnostics.py
 ```
 
-or:
+Before committing code changes, run at least:
 
 ```bash
+cmake --build build -j || true
+python -m py_compile script/*.py python/*.py python/utils/*.py
+git diff --check
+git status --short
+```
+
+If unit tests are available:
+
+```bash
+ctest --test-dir build --output-on-failure
+# or
 ./bin/unit_tests
 ```
 
-Python syntax check for experiment drivers:
+## 6. Fixed-Policy Validation Commands
+
+Regenerate and check the clean fixed-policy summary:
 
 ```bash
-python -m py_compile script/*.py python/*.py python/utils/*.py
+python script/report_fixed_policy_validation.py \
+  --expected-csv docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
 ```
 
-Main binaries:
+Regenerate the fixed-policy matrix if local artifacts are available:
 
 ```bash
-./bin/create_index -dataset gist -K 4096 -B 4
-./bin/test_relative_error -dataset gist -K 4096 -B 4
-./bin/test_qps -dataset gist -K 4096 -B 4
-./bin/test_ivf -dataset gist -K 4096 -B 4
+python script/run_fixed_policy_matrix.py \
+  --artifact-date 2026_07_06 \
+  --expected-csv docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
 ```
 
-Dataset preparation:
+Run default-neighborhood applicability scan:
 
 ```bash
-python ./python/ivf.py <dataset> <K>
-python ./python/pca.py <dataset>
+python script/scan_default_neighborhood_applicability.py \
+  --output-prefix /tmp/saq-run/reports/default_neighborhood_applicability_scan_$(date +%Y_%m_%d)
 ```
 
-For datasets without bundled groundtruth, use the Python or C++ groundtruth
-tools:
+When building/evaluating selected candidates, make sure the evaluation path uses the safe-searcher mode:
 
 ```bash
-python ./python/compute_gt.py <dataset>
-./bin/compute_gt -dataset <dataset>
-```
-
-## Coding Conventions
-
-- C++ standard is C++20.
-- Runtime binaries are written to `bin/`.
-- Follow `.clang-format`: LLVM base style, 4-space indentation, no column limit.
-- `.clang-tidy` enables modernize, bugprone, clang-analyzer, and concurrency checks, with selected modernize exceptions.
-- Keep C++ changes compatible with AVX512 compile flags in the top-level `CMakeLists.txt`.
-- Keep experiment scripts deterministic where practical; expose parameters as flags instead of hard-coding one-off values.
-- Put durable experiment writeups in `docs/`; do not rely on local `/tmp` artifacts as the only record.
-
-## Verification Checklist
-
-Before committing code changes:
-
-```bash
-cmake --build build -j
-ctest --test-dir build --output-on-failure
-python -m py_compile script/*.py python/*.py python/utils/*.py
-git diff --check
-```
-
-For measured recall/QPS claims involving multi-segment search, use the corrected
-safe searcher:
-
-```text
 -searcher_safe_block_min_mode=2
 ```
 
-For planner or custom segment-plan changes, verify at least:
+## 7. Autonomous Iteration Protocol
 
-- index builds successfully with `create_index`;
-- recall is measured with `compare_search_results` or the relevant evaluation driver;
-- QPS is measured with `test_qps` when making speed claims;
-- generated reports include exact dataset, `K`, `B`, PCA setting, top-k/recall metric, nprobe values, searcher mode, and artifact paths.
+For each Codex run:
 
-## Recurring Constraints And Do-Not Rules
+1. Read `TASK.md`, `PROGRESS.md`, `EXPERIMENTS.md`, `RESULTS.md`, and the relevant docs.
+2. Inspect `git status --short` before editing.
+3. State the current hypothesis in `PROGRESS.md` before making nontrivial changes.
+4. Make the smallest useful change or experiment.
+5. Run the cheapest relevant validation first.
+6. Record exact commands, outputs/artifact paths, and interpretation in `PROGRESS.md`.
+7. If a path fails twice for the same reason, stop repeating it and pivot.
+8. If a result is important, add or update a durable report in `docs/`.
+9. Update `RESULTS.md` only for stable conclusions, not speculative observations.
+10. End with a short handoff: changed files, commands run, evidence, risks, and next recommended action.
 
-- Keep this follow-up direction query-unaware unless the user explicitly changes the research direction.
-- Do not promote an offline planner result as a real improvement until it has been validated with measured safe-searcher recall and, when relevant, QPS.
-- Do not use native multi-segment search measurements for final claims when the safe-searcher mode is available.
+## 8. Iteration Budget
+
+Default autonomous budget per session:
+
+- Maximum 8 iterations.
+- Maximum 3 major approaches.
+- Maximum 1 new end-to-end dataset/budget evaluation unless `TASK.md` explicitly asks for more.
+- Prefer reproducing/reporting existing evidence before starting expensive new runs.
+
+Stop early when:
+
+- the success criteria in `TASK.md` are met;
+- the next step needs unavailable datasets/artifacts/credentials;
+- the machine lacks AVX512 or required local artifacts;
+- further work would be destructive or would rewrite unrelated experiment history;
+- the evidence contradicts the hypothesis and no clean pivot is available.
+
+## 9. Coding And Documentation Rules
+
+- C++ standard is C++20.
+- Follow `.clang-format`: LLVM base style, 4-space indentation, no column limit.
+- Keep C++ changes compatible with AVX512 compile flags in `CMakeLists.txt`.
+- Keep Python experiment scripts deterministic where practical; expose parameters as flags instead of hard-coding one-off values.
+- Put durable experiment writeups in `docs/`.
 - Do not commit generated datasets, built binaries, `build/`, `bin/`, or generated result directories ignored by `.gitignore`.
-- Do not rewrite unrelated experiment history or revert user changes while working in this branch.
-- Do not assume bundled groundtruth exists for every dataset; check `data/<dataset>/` and generate groundtruth when needed.
+- Do not rewrite unrelated docs or revert user changes.
+- Do not rewrite git history.
+- Do not delete large directories or generated artifacts unless explicitly asked.
 
-## Known Pitfalls
+## 10. Known Pitfalls
 
-- AVX512 is mandatory; builds on machines without AVX512 support are expected to fail.
-- Dataset directories must contain the raw vectors, query vectors, groundtruth, IVF centroids/cluster ids, and PCA artifacts expected by the binaries.
-- SAQ index building assumes PCA/IVF preprocessing has already been run for the dataset and `K`.
-- Generated local artifacts under `/tmp` or ignored `data/*/` and `results/saq/` paths are useful for experiments but are not durable repository state.
-- Planner rankings are proxies. Prior work in this repository found that low offline recall-risk can still be a measured false positive, so always validate candidate plans end to end.
+- Planner rankings are proxies. Prior work found that low offline recall-risk can still be a measured false positive.
+- A previous B=5 raw v3 recall-risk endpoint was a false positive and should not be promoted without the conservative guard.
+- GIST B=3 required a positive 1-bit segment implementation fix; this fix is an upstream correctness repair, not the planner contribution.
+- Audio and word2vec currently have single-uniform default plans under B=3/4/5 and are stable abstention cases under the current generator.
+- DEEP B=4/B=5 are useful negative controls: speed can improve while recall drops too much.
+- Local `/tmp/saq-run` artifacts may disappear; keep enough metadata in checked-in docs to reproduce or diagnose.
