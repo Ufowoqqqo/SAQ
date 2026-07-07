@@ -70,7 +70,7 @@ python -m py_compile \
 
 ### B1. Audit promotion decisions against the clean validation table
 
-- Status: `todo`
+- Status: `done`
 - Priority: high
 - Hypothesis: current conservative/frontier/abstain policy decisions align with measured positives, rejects, and abstentions.
 - Work:
@@ -78,6 +78,7 @@ python -m py_compile \
   2. Trace each row back to generator/scorer summary artifacts if available.
   3. Check whether decision type is explainable from policy thresholds.
 - Success: produce a short doc or `PROGRESS.md` section mapping each row to policy reason.
+- Result: documented in `docs/saq_fixed_policy_decision_audit_2026_07_07.md`.
 - Caution: do not tune policy thresholds on held-out query results as if they were training labels.
 
 ### B2. Check false-positive resistance

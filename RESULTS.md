@@ -155,6 +155,57 @@ The next stable result should audit the promotion/reject/abstain decisions row
 by row and document why each policy decision follows from scorer/applicability
 signals rather than held-out query tuning.
 
+## Result 2026-07-07: Clean-table decisions match the implemented fixed policy
+
+### Claim
+
+The 10 rows in the checked-in clean validation table are consistent with the
+implemented fixed-policy decision path.
+
+### Evidence
+
+- Source table: `docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv`
+- Audit doc: `docs/saq_fixed_policy_decision_audit_2026_07_07.md`
+- Source artifacts:
+
+  ```text
+  /tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07.csv
+  /tmp/saq-run/reports/fixed_policy_applicability_scan_2026_07_07.csv
+  ```
+
+- Code paths:
+  - `script/run_default_neighborhood_cross_dataset.py` for conservative,
+    frontier-like, risky fallback, and no-candidate selection roles.
+  - `script/score_default_neighborhood_plans.py` and
+    `script/sweep_data_boundary_pairs.py` for conservative guard thresholds.
+  - `script/report_fixed_policy_validation.py` for promote/reject/abstain
+    mapping.
+
+### Interpretation
+
+The table decomposes cleanly into four policy cases:
+
+```text
+GIST positives: conservative promotion
+CIFAR positives: narrow frontier-like promotion
+DEEP controls: risky fallback diagnostic mapped to reject
+audio/word2vec: no-candidate abstention
+```
+
+No row requires held-out query labels for candidate selection. Held-out queries
+enter only in final safe-searcher recall/QPS evaluation.
+
+### Limitations
+
+The report driver trusts stored `selection_reason` fields rather than
+recomputing policy eligibility, and the frontier-like fallback remains empirical
+with CIFAR as the current positive evidence.
+
+### Follow-up
+
+The next useful robustness check is B2/B3: explicitly document the GIST B=5
+false-positive resistance and the frontier-like fallback boundary.
+
 ## Update Template
 
 When adding a stable result, use this format:

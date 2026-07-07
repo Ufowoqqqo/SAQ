@@ -283,3 +283,109 @@ depends on local `/tmp/saq-run` data, indexes, compare CSVs, and QPS outputs.
 Commit and push this reproducibility checkpoint. Then continue with B1: a
 row-by-row policy robustness audit mapping clean-table decisions to
 conservative/frontier/reject/abstain signals.
+
+## Session 2026-07-07 16:32 HKT
+
+### Goal
+
+Complete B1: audit whether each row in the clean fixed-policy validation table
+is explainable from the implemented query-unaware policy roles.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- Previous checkpoint: `f7be443 Record fixed-policy reproducibility checkpoint`
+- Files/artifacts read:
+  - `script/run_default_neighborhood_cross_dataset.py`
+  - `script/report_fixed_policy_validation.py`
+  - `script/score_default_neighborhood_plans.py`
+  - `script/sweep_data_boundary_pairs.py`
+  - `/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07.csv`
+  - `/tmp/saq-run/reports/fixed_policy_applicability_scan_2026_07_07.csv`
+  - per-run scored unique CSVs under `/tmp/saq-run/reports/*_default_neighborhood_scored_auto_2026_07_06.unique.csv`
+
+### Hypothesis / plan
+
+The clean table should decompose into four implemented policy cases:
+GIST conservative promotions, CIFAR frontier-like promotions, DEEP risky
+fallback diagnostics mapped to reject, and audio/word2vec no-candidate
+abstentions.
+
+### Commands run
+
+```bash
+python - <<'PY'
+import csv
+from pathlib import Path
+p=Path('/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07.csv')
+for r in csv.DictReader(p.open()):
+    print('\t'.join([r.get('run',''), r.get('selection_reason',''), r.get('candidate_family',''), r.get('best_recall_risk_score',''), r.get('best_speed_proxy_ratio_vs_default',''), r.get('conservative_eligible',''), r.get('conservative_reasons',''), r.get('candidate_plan',''), r.get('scorer_skipped_reason','')]))
+PY
+python - <<'PY'
+import csv
+from pathlib import Path
+p=Path('/tmp/saq-run/reports/fixed_policy_applicability_scan_2026_07_07.csv')
+for r in csv.DictReader(p.open()):
+    if (r['dataset'], r['avg_bits']) in {('audio','4.0'),('word2vec_sample100k','4.0'),('gist_full','3.0'),('gist_full','4.0'),('gist_full','5.0'),('cifar60k','3.0'),('cifar60k','4.0'),('cifar60k','5.0'),('deep1M_sample100k','4.0'),('deep1M_sample100k','5.0')}:
+        print('\t'.join([r['dataset'], r['avg_bits'], r['default_shape'], r['default_plan'], r['feasible_non_default_candidate_count'], r['applicability'], r['default_zero_tail_dim'], r['default_positive_bitwidths']]))
+PY
+sed -n '380,455p' script/run_default_neighborhood_cross_dataset.py
+sed -n '145,210p' script/report_fixed_policy_validation.py
+rg -n "conservative_role|soft_inversion|weighted_ratio|speed_proxy_ratio|frontier_like|risky_fallback" script/score_default_neighborhood_plans.py script/sweep_data_boundary_pairs.py script/run_default_neighborhood_cross_dataset.py script/report_fixed_policy_validation.py
+python - <<'PY'
+import csv
+from pathlib import Path
+runs=['gist_full_K4096_B3','gist_full_K4096_B4','gist_full_K4096_B5','cifar60k_B3','cifar60k_B4','cifar60k_B5','deep1M_sample100k_B4','deep1M_sample100k_B5']
+for run in runs:
+    p=Path(f'/tmp/saq-run/reports/{run}_default_neighborhood_scored_auto_2026_07_06.unique.csv')
+    rows=list(csv.DictReader(p.open()))
+    print('\n',run)
+    for r in [x for x in rows if x.get('candidate_is_default','').lower()!='true']:
+        print('\t'.join([r['seg_plan'], r.get('candidate_families',''), r.get('conservative_role_is_eligible',''), r.get('conservative_role_reasons',''), r.get('best_recall_risk_score',''), r.get('best_speed_proxy_ratio_vs_default',''), r.get('pair_proxy_weighted_soft_inversion_penalty_ratio_vs_default',''), r.get('pair_proxy_weighted_ratio_mean_ratio_vs_default','')]))
+PY
+```
+
+### Files changed
+
+- Added `docs/saq_fixed_policy_decision_audit_2026_07_07.md`.
+- Marked B1 done in `EXPERIMENTS.md`.
+- Added a stable B1 result in `RESULTS.md`.
+- Added this session log in `PROGRESS.md`.
+
+### Artifacts produced
+
+No new experiment artifacts. The durable output is:
+
+```text
+docs/saq_fixed_policy_decision_audit_2026_07_07.md
+```
+
+### Result
+
+The clean table is consistent with the implemented policy roles:
+
+```text
+GIST positives: conservative_eligible
+CIFAR positives: frontier_like
+DEEP controls: risky_fallback_best_score -> reject
+audio/word2vec: generator_produced_no_non_default_candidates -> abstain
+```
+
+The audit also records report-generation caveats: the report trusts stored
+`selection_reason`, keeps the first source row per run, and uses
+`scorer_skipped_reason` for abstention only after promote/reject role checks.
+
+### Interpretation
+
+B1 is satisfied. The current clean table is not an arbitrary post-hoc mix of
+measured wins; it follows a small implemented policy. The main caution remains
+the empirical frontier-like fallback, not a mismatch between code and table.
+
+### Problems / blockers
+
+None.
+
+### Next action
+
+Commit and push the B1 audit checkpoint. Then continue with B2/B3: document the
+known GIST B=5 false-positive resistance and CIFAR frontier-like boundary.
