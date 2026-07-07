@@ -5,6 +5,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "glog/logging.h"
+
 #include "defines.hpp"
 #include "quantization/cluster_data.hpp"
 #include "quantization/fastscan/fastscan.hpp"
@@ -62,7 +64,7 @@ class ClusterPacker {
         if (num_bits_ == 0) {
             return; // No packing needed for 0 bits
         }
-        assert(num_dim_pad_ == static_cast<size_t>(base_code.code.size()));
+        CHECK_EQ(num_dim_pad_, static_cast<size_t>(base_code.code.size()));
 
         // Store short data
         fac_ip_cent_oa_[i] = base_code.ip_cent_oa; // Optional
@@ -72,6 +74,9 @@ class ClusterPacker {
         auto &ex_fac = clus_.long_factor(i);
         ex_fac.rescale = base_code.fac_rescale;
         ex_fac.error = base_code.fac_error;
+        if (num_bits_ <= 1) {
+            return;
+        }
         for (size_t j = 0; j < num_dim_pad_; ++j) {
             long_code_[j] = base_code.code[j] & (short_bit_ - 1);
         }
