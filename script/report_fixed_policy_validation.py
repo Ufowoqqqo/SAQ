@@ -341,16 +341,33 @@ def write_json(path: Path, rows: list[dict[str, str]], metadata: dict[str, Any])
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def compare_expected(actual_rows: list[dict[str, str]], expected_csv: Path) -> None:
+def drop_ignored_fields(
+    rows: list[dict[str, str]], ignored_fields: set[str]
+) -> list[dict[str, str]]:
+    if not ignored_fields:
+        return rows
+    return [
+        {key: value for key, value in row.items() if key not in ignored_fields}
+        for row in rows
+    ]
+
+
+def compare_expected(
+    actual_rows: list[dict[str, str]], expected_csv: Path, ignored_fields: set[str]
+) -> None:
     expected_rows = read_csv(expected_csv)
-    if actual_rows == expected_rows:
+    actual_compare = drop_ignored_fields(actual_rows, ignored_fields)
+    expected_compare = drop_ignored_fields(expected_rows, ignored_fields)
+    if actual_compare == expected_compare:
         print(f"Expected table matches: {expected_csv}")
+        if ignored_fields:
+            print(f"Ignored fields: {', '.join(sorted(ignored_fields))}")
         return
     print(f"Expected table mismatch: {expected_csv}")
-    max_len = max(len(actual_rows), len(expected_rows))
+    max_len = max(len(actual_compare), len(expected_compare))
     for index in range(max_len):
-        actual = actual_rows[index] if index < len(actual_rows) else None
-        expected = expected_rows[index] if index < len(expected_rows) else None
+        actual = actual_compare[index] if index < len(actual_compare) else None
+        expected = expected_compare[index] if index < len(expected_compare) else None
         if actual == expected:
             continue
         print(f"First differing row index: {index}")
@@ -393,6 +410,12 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Optional CSV to compare against after generation.",
     )
+    parser.add_argument(
+        "--compare-ignore-field",
+        action="append",
+        default=[],
+        help="Field to ignore when comparing --expected-csv. Repeatable.",
+    )
     return parser.parse_args()
 
 
@@ -417,7 +440,7 @@ def main() -> None:
     print(f"Decision counts: {metadata['decision_counts']}")
 
     if args.expected_csv:
-        compare_expected(rows, args.expected_csv)
+        compare_expected(rows, args.expected_csv, set(args.compare_ignore_field))
 
 
 if __name__ == "__main__":

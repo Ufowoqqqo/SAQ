@@ -64,6 +64,12 @@ Reproducible report driver:
 script/report_fixed_policy_validation.py
 ```
 
+End-to-end matrix runner:
+
+```text
+script/run_fixed_policy_matrix.py
+```
+
 ## 3. Default-Plan Shape Classification
 
 Classify the SAQ default plan before generating candidates.
@@ -333,3 +339,16 @@ Default outputs:
 
 The `--expected-csv` option compares the regenerated rows against the checked-in
 clean table and exits nonzero on mismatch.
+
+The full fixed-policy matrix can be regenerated with:
+
+```text
+python script/run_fixed_policy_matrix.py \
+  --artifact-date 2026_07_06 \
+  --expected-csv docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
+```
+
+`--artifact-date` lets the runner reuse previously generated candidate/scorer
+and compare-search artifacts while writing a fresh matrix summary and report.
+The runner passes risky fallback only as reject diagnostics; those rows remain
+`reject` in the generated fixed-policy report and are not promotion decisions.
