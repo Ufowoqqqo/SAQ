@@ -210,6 +210,30 @@ python -m py_compile \
   official integration keeps per-run sampling parameters unchanged; the
   separate `a1024_p2` sampling calibration is not promoted to default behavior.
 
+### A8. Formal cost-reduced runner matrix evaluation
+
+- Status: `done`
+- Priority: highest after A7
+- Goal: run the official fixed-policy matrix with the integrated
+  cost-reduced scorer and safe-search evaluation enabled.
+- Command:
+
+```bash
+python script/run_fixed_policy_matrix.py \
+  --use-cost-reduced-scorer \
+  --date 2026_07_08_runner_cost_reduced_eval \
+  --artifact-date 2026_07_08_runner_cost_reduced_eval \
+  --expected-csv docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
+```
+
+- Result:
+  - `docs/saq_fixed_policy_runner_cost_reduced_full_eval_2026_07_08.md`
+  - `/tmp/saq-run/reports/fixed_policy_validation_matrix_2026_07_08_runner_cost_reduced_eval.md`
+  - `/tmp/saq-run/reports/fixed_policy_matrix_2026_07_08_runner_cost_reduced_eval.manifest.json`
+- Interpretation: the official cost-reduced runner path matched the checked-in
+  clean validation table with safe-search evaluation enabled: 6 promote,
+  2 reject, and 2 abstain decisions.
+
 ## B. Policy Robustness
 
 ### B1. Audit promotion decisions against the clean validation table

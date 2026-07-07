@@ -93,16 +93,67 @@ A minimal fix was needed because the encoder did not export `base_code.code` for
 
 ## Recommended Next Stable Results To Seek
 
-1. Decide whether to run the full fixed-policy matrix with cost-reduced scorer
-   and safe-search evaluation enabled, or keep the current integration result
-   as scorer/selection-only evidence.
-2. Make the fixed-policy matrix reproducible on a clean machine or document the
+1. Make the fixed-policy matrix reproducible on a clean machine or document the
    exact dataset/artifact preparation gap.
-3. Preserve DEEP reject and audio/word2vec abstention behavior under any future
+2. Preserve DEEP reject and audio/word2vec abstention behavior under any future
    generator/scorer change.
-4. If expanding the generator, first state the SAQ failure mode and added
+3. If expanding the generator, first state the SAQ failure mode and added
    overhead, then validate against GIST/CIFAR positives, DEEP rejects, and
    audio/word2vec abstentions.
+
+## Result 2026-07-08: Cost-reduced official runner reproduces the full matrix under safe evaluation
+
+### Claim
+
+The integrated query-unaware feature-cache and endpoint-grid scorer path now
+reproduces the full checked-in fixed-policy validation matrix through the
+official runner with safe-search evaluation enabled.
+
+### Evidence
+
+- Evaluation note:
+  `docs/saq_fixed_policy_runner_cost_reduced_full_eval_2026_07_08.md`
+- Previous integration note:
+  `docs/saq_fixed_policy_runner_cost_reduced_integration_2026_07_07.md`
+
+Command:
+
+```bash
+python script/run_fixed_policy_matrix.py \
+  --use-cost-reduced-scorer \
+  --date 2026_07_08_runner_cost_reduced_eval \
+  --artifact-date 2026_07_08_runner_cost_reduced_eval \
+  --expected-csv docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
+```
+
+Generated outputs:
+
+```text
+/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_08_runner_cost_reduced_eval.csv
+/tmp/saq-run/reports/fixed_policy_validation_matrix_2026_07_08_runner_cost_reduced_eval.md
+/tmp/saq-run/reports/fixed_policy_matrix_2026_07_08_runner_cost_reduced_eval.manifest.json
+```
+
+Report result:
+
+```text
+Expected table matches: docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
+Decision counts: {'promote': 6, 'reject': 2, 'abstain': 2}
+```
+
+### Interpretation
+
+This closes the earlier gap where cost-reduced runner evidence was
+selection-only. The official runner now supports the same fixed-policy evidence
+table with cost-reduced scorer execution and safe-search evaluation. The
+result should still be described as a scorer execution/reproducibility
+improvement around the fixed-policy method, not as a new SAQ quantizer.
+
+### Limitations
+
+The artifacts are local under `/tmp/saq-run`. Matching safe QPS artifacts were
+reused where present, so the run validates the official evaluation path but
+does not prove that every QPS CSV was recomputed from scratch.
 
 ## Result 2026-07-07: Cost-reduced scorer is integrated into the official runners
 

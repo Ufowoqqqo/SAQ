@@ -1772,3 +1772,101 @@ corrected safe search.
 Validate full diff, commit, and push. Then decide whether to run a full
 cost-reduced scorer + safe-search evaluation matrix or move to meeting/paper
 narrative cleanup.
+
+## Session 2026-07-08 00:16 HKT
+
+### Goal
+
+Run the formal fixed-policy matrix evaluation using the integrated
+cost-reduced scorer and safe-search recall/QPS evaluation.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- `git status --short --branch`: clean and aligned with
+  `origin/saq-boundary-audit`
+- Files read:
+  - `TASK.md`
+  - `RESULTS.md`
+  - `PROGRESS.md`
+  - `EXPERIMENTS.md`
+  - `docs/saq_fixed_policy_runner_cost_reduced_integration_2026_07_07.md`
+
+### Hypothesis / plan
+
+The official runner should reproduce the checked-in clean validation table
+when using `--use-cost-reduced-scorer` with evaluation enabled. This checks the
+formal runner path rather than only the scorer calibration or selection-only
+path.
+
+### Commands run
+
+```bash
+git status --short --branch
+python -m py_compile script/sweep_data_boundary_pairs.py script/generate_default_neighborhood_plans.py script/score_default_neighborhood_plans.py script/run_default_neighborhood_cross_dataset.py script/run_fixed_policy_matrix.py script/report_fixed_policy_validation.py
+python script/run_fixed_policy_matrix.py \
+  --use-cost-reduced-scorer \
+  --date 2026_07_08_runner_cost_reduced_eval \
+  --artifact-date 2026_07_08_runner_cost_reduced_eval \
+  --expected-csv docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
+sed -n '1,220p' /tmp/saq-run/reports/fixed_policy_validation_matrix_2026_07_08_runner_cost_reduced_eval.md
+sed -n '1,220p' /tmp/saq-run/reports/fixed_policy_matrix_2026_07_08_runner_cost_reduced_eval.manifest.json
+```
+
+### Files changed
+
+- Added
+  `docs/saq_fixed_policy_runner_cost_reduced_full_eval_2026_07_08.md`.
+- Updated `EXPERIMENTS.md` with A8.
+- Updated `RESULTS.md` with the stable full-evaluation result.
+- Updated `PROGRESS.md` with this session log.
+
+### Artifacts produced
+
+```text
+/tmp/saq-run/reports/fixed_policy_applicability_scan_2026_07_08_runner_cost_reduced_eval.csv
+/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_08_runner_cost_reduced_eval.csv
+/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_08_runner_cost_reduced_eval.json
+/tmp/saq-run/reports/fixed_policy_validation_matrix_2026_07_08_runner_cost_reduced_eval.csv
+/tmp/saq-run/reports/fixed_policy_validation_matrix_2026_07_08_runner_cost_reduced_eval.md
+/tmp/saq-run/reports/fixed_policy_validation_matrix_2026_07_08_runner_cost_reduced_eval.json
+/tmp/saq-run/reports/fixed_policy_matrix_2026_07_08_runner_cost_reduced_eval.manifest.json
+/tmp/saq-run/reports/fixed_policy_scorer_feature_cache_2026_07_08_runner_cost_reduced_eval/
+```
+
+### Result
+
+The formal runner matched the checked-in clean validation table:
+
+```text
+Expected table matches: docs/saq_fixed_policy_clean_validation_table_2026_07_07.csv
+Decision counts: {'promote': 6, 'reject': 2, 'abstain': 2}
+```
+
+The generated clean table preserves the current evidence:
+
+- GIST full K4096 B=3/B=4/B=5 promote with the existing selected plans and
+  positive R@100/QPS ratios.
+- CIFAR60K B=3/B=4/B=5 promote with the existing selected plans and small
+  positive R@10/QPS ratios.
+- DEEP100K B=4/B=5 remain reject cases because measured recall drops despite
+  QPS gains.
+- audio and word2vec remain abstention cases.
+
+### Interpretation
+
+This upgrades the cost-reduced scorer runner evidence from selection-only to
+full fixed-policy matrix evaluation evidence. The result is still a
+reproducibility and scorer-execution result, not a new quantization method.
+
+### Problems / blockers
+
+The run reused matching safe QPS artifacts where present. The local artifacts
+remain under `/tmp/saq-run` and are not durable unless summarized in checked-in
+docs.
+
+### Next action
+
+Commit and push the durable documentation updates, then focus on clean-machine
+reproducibility or a concise meeting update rather than additional tuning
+sweeps.
