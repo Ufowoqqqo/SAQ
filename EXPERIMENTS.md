@@ -83,16 +83,17 @@ python -m py_compile \
 
 ### B2. Check false-positive resistance
 
-- Status: `todo`
+- Status: `done`
 - Priority: high
 - Known false positive: GIST sample100k B=5 raw v3 endpoint `64:9,64:8,128:7,320:5,320:3,64:0`.
 - Hypothesis: conservative role guard prevents promotion because soft-inversion ratio, weighted ratio, and speed-proxy ratio are all worse than default.
 - Success: demonstrate from current CSV/roles output that the guard promotes `b5_rank0 = 64:10,192:8,256:5,384:3,64:0` instead.
+- Result: verified from `/tmp/saq-run/reports/gist_sample100k_K512_B5_boundary_v3_conservative_sweep_2026_07_06.roles.csv` and documented in `docs/saq_gist_sample100k_B5_v3_conservative_guard_2026_07_06.md`.
 - Output: small note in `PROGRESS.md` unless a durable doc is missing.
 
 ### B3. Frontier-like fallback audit
 
-- Status: `todo`
+- Status: `done`
 - Priority: medium
 - Known reason: CIFAR B=4 is a small positive selected as `frontier_like`; strict conservative guard alone would be too strict.
 - Hypothesis: frontier-like fallback is necessary but should remain narrow.
@@ -101,6 +102,7 @@ python -m py_compile \
   - check whether `best_recall_risk_score <= 1.0` and `best_speed_proxy_ratio_vs_default <= 1.0` explain the promotion;
   - check that DEEP risky candidates do not pass the fallback.
 - Success: document the boundary of frontier-like fallback.
+- Result: documented in `docs/saq_fixed_policy_decision_audit_2026_07_07.md` and rechecked from `/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07.csv`.
 
 ### B4. Abstention audit
 

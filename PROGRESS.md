@@ -389,3 +389,90 @@ None.
 
 Commit and push the B1 audit checkpoint. Then continue with B2/B3: document the
 known GIST B=5 false-positive resistance and CIFAR frontier-like boundary.
+
+## Session 2026-07-07 16:25 HKT
+
+### Goal
+
+Complete B2/B3 by rechecking the known GIST sample100k B=5 false-positive guard
+and the CIFAR frontier-like fallback boundary without running new expensive
+experiments.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- Previous checkpoint: `a4e18eb Add fixed-policy decision audit`
+- Files/artifacts read:
+  - `docs/saq_gist_sample100k_B5_v3_conservative_guard_2026_07_06.md`
+  - `docs/saq_fixed_policy_decision_audit_2026_07_07.md`
+  - `/tmp/saq-run/reports/gist_sample100k_K512_B5_boundary_v3_conservative_sweep_2026_07_06.roles.csv`
+  - `/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07.csv`
+
+### Hypothesis / plan
+
+B2 should already be satisfied by the existing conservative-guard note: the raw
+GIST sample100k B=5 recall-risk endpoint is rejected on soft inversion,
+weighted ratio, and speed proxy, while the conservative role selects
+`b5_rank0`. B3 should already be covered by the clean-table audit: CIFAR passes
+frontier-like because recall-risk and speed proxy are both <= 1, while DEEP does
+not pass because recall-risk is 1.6434.
+
+### Commands run
+
+```bash
+find docs /tmp/saq-run/reports -name '*B5*v3*conservative*' -o -name '*B5*guard*' -o -name '*sample100k*B5*' | sort
+sed -n '1,260p' docs/saq_gist_sample100k_B5_v3_conservative_guard_2026_07_06.md
+python - <<'PY'
+import csv
+from pathlib import Path
+p=Path('/tmp/saq-run/reports/gist_sample100k_K512_B5_boundary_v3_conservative_sweep_2026_07_06.roles.csv')
+for r in csv.DictReader(p.open()):
+    print('\t'.join([r.get('role',''), r.get('seg_plan',''), r.get('conservative_role_is_eligible',''), r.get('conservative_role_reasons',''), r.get('best_recall_risk_score',''), r.get('best_speed_proxy_ratio_vs_default',''), r.get('pair_proxy_weighted_soft_inversion_penalty_ratio_vs_default',''), r.get('pair_proxy_weighted_ratio_mean_ratio_vs_default','')]))
+PY
+python - <<'PY'
+import csv
+from pathlib import Path
+for run in ['cifar60k_B3','cifar60k_B4','cifar60k_B5','deep1M_sample100k_B4','deep1M_sample100k_B5']:
+    p=Path('/tmp/saq-run/reports/fixed_policy_matrix_validation_2026_07_07.csv')
+    rows=[r for r in csv.DictReader(p.open()) if r['run']==run]
+    for r in rows:
+        print('\t'.join([r['run'], r['selection_reason'], r.get('best_recall_risk_score',''), r.get('best_speed_proxy_ratio_vs_default',''), r.get('conservative_eligible',''), r.get('conservative_reasons',''), r.get('candidate_plan','')]))
+PY
+sed -n '70,140p' docs/saq_gist_sample100k_B5_v3_conservative_guard_2026_07_06.md
+date '+%Y-%m-%d %H:%M %Z'
+```
+
+### Files changed
+
+- `EXPERIMENTS.md`: marked B2 and B3 as `done` with artifact/doc references.
+- `PROGRESS.md`: added this session log.
+
+### Artifacts produced
+
+No new artifacts. This was a read-only audit of existing docs and `/tmp` CSVs.
+
+### Result
+
+- B2: the raw GIST sample100k B=5 endpoint
+  `64:9,64:8,128:7,320:5,320:3,64:0` is rejected with
+  `soft_inversion_ratio>1;weighted_ratio>1;speed_proxy_ratio>1`. The
+  conservative roles select `64:10,192:8,256:5,384:3,64:0`.
+- B3: CIFAR B=3/B=4/B=5 are frontier-like with recall-risk <= 1 and
+  speed-proxy <= 1, while DEEP B=4/B=5 remain risky fallback diagnostics because
+  recall-risk is `1.6434`.
+
+### Interpretation
+
+B2 and B3 are complete with existing evidence. The current policy blocks the
+known false-positive shape and keeps the frontier-like fallback narrow enough
+that DEEP speed-only changes are not promoted.
+
+### Problems / blockers
+
+None.
+
+### Next action
+
+Commit and push the B2/B3 status update. The next highest-value task is either
+B4 abstention audit or E1 meeting/paper narrative cleanup, depending on whether
+the next session should emphasize robustness or presentation.
