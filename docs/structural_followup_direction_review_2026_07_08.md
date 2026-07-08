@@ -8,6 +8,16 @@ This note compares three query-unaware SAQ follow-up directions before writing
 new method code. The goal is to avoid another local metric-tuning path and pick
 a direction that can plausibly support a database top-conference contribution.
 
+Status update: this recommendation has been superseded by the mixed shared-plan
+end-to-end, static-cost, and runtime-decomposition results. Mixed local
+shared-plan materialization is now treated as negative evidence rather than the
+main direction. The active direction is single-global-plan segment-cost-aware
+DP. See:
+
+```text
+docs/shared_plan_negative_evidence_and_dp_pivot_2026_07_08.md
+```
+
 All directions must use only normal index-build information:
 
 ```text
@@ -183,19 +193,27 @@ A reviewer may ask whether the method abandons SAQ's main system advantage:
 simple contiguous segments with efficient SIMD-friendly access. Any positive
 story must include explicit layout and search-cost accounting.
 
-## Recommendation
+## Historical Recommendation
 
-Start with Direction 1.
+The original recommendation was to start with Direction 1. That recommendation
+is no longer active after the shared-plan end-to-end and runtime-decomposition
+results.
 
-The first concrete task should be an offline cluster residual profile and
-shared-plan feasibility study. It does not require changing the index format,
-but it directly tests the central structural hypothesis:
+The original first concrete task was an offline cluster residual profile and
+shared-plan feasibility study. It did not require changing the index format,
+but it directly tested the central structural hypothesis:
 
 ```text
 one global SAQ plan may be mismatched to IVF-local residual distributions
 ```
 
-Proceed to real index implementation only if the offline study shows that:
+The branch did proceed to a real prototype after the offline study showed a
+visible residual-cost signal. The prototype then showed that mixed-plan search
+overhead dominates the small residual-local gain. Therefore the current
+direction is no longer mixed local plan sharing; it is single-global-plan
+segment-cost-aware DP.
+
+The historical proceed condition was:
 
 ```text
 local-oracle residual plans improve weighted residual DP cost noticeably
@@ -204,6 +222,6 @@ the resulting plan shapes are interpretable
 metadata overhead is plausibly small
 ```
 
-Keep Direction 2 as the fallback if residual-local variation is weak. Keep
-Direction 3 as a later, higher-risk direction after the residual and cost-aware
-questions are better understood.
+Direction 2 is now the active direction. Direction 3 remains a later,
+higher-risk direction after the global segment-cost question is better
+understood.

@@ -24,39 +24,36 @@ to local SAQ tuning.
 
 ## Research Priorities
 
-1. **Cluster-aware / local residual-aware SAQ plan sharing**
-   - Question: does one global PCA-variance plan mismatch IVF cluster residual
-     distributions?
-   - Candidate method: learn a small shared family of segment/bit plans from
-     cluster residual statistics and store one plan id per IVF cell.
-   - Required accounting: recall, QPS, index build time, index size, plan-id
-     metadata, and number of shared plans.
-
-2. **Segment-cost-aware DP**
+1. **Single-global-plan segment-cost-aware DP**
    - Question: can SAQ's planner account for search-time segment cost without
-     relying on post-hoc candidate filtering?
-   - Candidate method: extend the DP objective or report a Pareto frontier over
-     quantization-risk and segment-cost proxies.
+     relying on post-hoc candidate filtering or mixed per-cluster plans?
+   - Candidate method: extend the global DP objective or report a Pareto
+     frontier over quantization-risk and implementation-derived segment-cost
+     terms while keeping one global plan.
+   - Required accounting: recall, QPS, index build time, index size, plan shape,
+     static cost terms, and runtime decomposition with safe search.
 
-3. **Flexible segmentation / learned grouping**
+2. **Flexible segmentation / learned grouping**
    - Question: do contiguous PCA blocks and 64-dimensional granularity limit
      query-unaware plan quality?
    - Candidate method: compare default contiguous plans against data-only
      segment boundaries or grouped dimensions, with explicit SIMD/cache cost.
 
+3. **Cluster-aware / local residual-aware SAQ plan sharing as limitation
+   evidence only**
+   - Finding: GIST full K4096 B4 shows residual-local shared plans can slightly
+     improve recall, but mixed-plan search overhead dominates.
+   - Role: use this as evidence that SAQ's global residual assumption can be
+     imperfect, not as the main method.
+   - Do not continue mixed shared local plans unless explicitly studying a new
+     search architecture.
+
 ## Immediate Next Step
 
-Write a short direction-review note under `docs/` comparing the three priority
-directions by:
-
-- exact SAQ assumption targeted;
-- proposed method beyond local filtering;
-- expected novelty;
-- metadata/training/indexing/search overhead;
-- smallest experiment that could falsify the direction.
-
-Then start with cluster-aware / local residual-aware plan sharing unless the
-review finds a stronger reason to choose another direction.
+Write a concise negative-evidence and pivot note under `docs/` that records why
+mixed shared local plans are no longer the main direction. Then start the
+single-global-plan segment-cost-aware DP direction with an offline DP/Pareto
+frontier study before building any new index.
 
 ## Constraints
 
@@ -70,6 +67,9 @@ review finds a stronger reason to choose another direction.
 - Before starting a new direction or broad experiment, state the research
   question, expected contribution, overhead model, likely strict-reviewer
   objection, and stop condition.
+- Do not continue mixed shared local SAQ plans as the main method. Treat the
+  existing results as SAQ limitation evidence unless a new architecture removes
+  per-query multi-plan estimator overhead.
 - Do not rely on unjustified hyperparameters. Each hyperparameter must have a
   mechanism-level rationale, clear unit or scale, fixed selection rule before
   held-out evaluation, and either sensitivity evidence or an ablation plan.

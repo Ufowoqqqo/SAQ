@@ -29,18 +29,18 @@ terminology cleanup.
 
 ## Priority Directions
 
-1. **Cluster-aware / local residual-aware SAQ plan sharing.** Test whether SAQ's
-   one global PCA-variance plan is mismatched to IVF cluster residual structure.
-   A plausible method should learn a small family of shared segment/bit plans
-   from cluster residual statistics and assign each IVF cell to a plan id under
-   explicit metadata overhead.
-2. **Segment-cost-aware DP.** If local plan sharing is not promising, study a
-   planner objective or Pareto frontier that jointly accounts for quantization
-   risk and search-time segment cost. Avoid post-hoc metric filtering as the
-   main method.
-3. **Flexible segmentation / learned grouping.** Study whether contiguous PCA
+1. **Single-global-plan segment-cost-aware DP.** Study a planner objective or
+   Pareto frontier that jointly accounts for quantization risk and search-time
+   segment cost while preserving SAQ's one global plan and avoiding mixed-plan
+   query/search overhead. Avoid post-hoc metric filtering as the main method.
+2. **Flexible segmentation / learned grouping.** Study whether contiguous PCA
    blocks and fixed 64-dimensional granularity are limiting assumptions under
    query-unaware data-only signals.
+3. **Cluster-aware / local residual-aware SAQ plan sharing as limitation
+   evidence only.** Existing GIST full K4096 B4 evidence shows residual-local
+   shared plans can slightly improve recall, but mixed-plan search overhead
+   dominates. Do not continue mixed shared local plans as the main method unless
+   the user explicitly asks for architecture-level follow-up.
 
 Treat `saq-boundary-audit` as a historical archive. Do not migrate its
 fixed-policy scorer, default-neighborhood generator, matrix runner, provenance
@@ -88,6 +88,10 @@ multi-segment recall/QPS claims, prefer:
 ## Do-Not Rules
 
 - Do not continue the old empirical fixed-policy scorer as the main method.
+- Do not continue mixed shared local SAQ plans as the main method. Treat them
+  as negative evidence for SAQ limitation analysis unless a new architecture
+  removes per-query multi-plan estimator overhead with a clear paper-level
+  contribution.
 - Do not add wider scorer grids, extra local candidate families, or complex
   post-hoc filters unless they are used only as baselines or ablations.
 - Do not use query-aware plan learning under the current direction.
