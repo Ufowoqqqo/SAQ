@@ -6,6 +6,10 @@ Develop a clean query-unaware structural SAQ follow-up from original SAQ code
 plus confirmed correctness fixes. The previous `saq-boundary-audit` branch is a
 historical archive, not the implementation base for the new method.
 
+The target is a database top-conference-level contribution suitable for SIGMOD,
+VLDB, or ICDE. Future work should be judged by research novelty, evidence,
+overhead, and reviewer defensibility rather than by implementation volume.
+
 ## Starting Point
 
 This branch starts from upstream SAQ and keeps only correctness fixes needed for
@@ -59,6 +63,15 @@ review finds a stronger reason to choose another direction.
 - Stay query-unaware: use base vectors, PCA artifacts, IVF centroids/cluster
   ids, residual statistics, and index metadata only for plan learning.
 - Use held-out queries only for final evaluation.
+- Use research-paper terminology in new docs and task descriptions: prefer
+  "review", "analyze", "evaluate", "survey", "evidence", and "limitations" over
+  "audit", "harden", "triage", and "patch" unless discussing code correctness
+  or referring to existing names.
+- Before starting a new direction or broad experiment, state the research
+  question, expected contribution, overhead model, likely strict-reviewer
+  objection, and stop condition.
+- Do not overclaim a universal improvement over SAQ before end-to-end
+  validation across datasets and operating points.
 - Avoid broad sweeps before stating the research hypothesis and stop condition.
 - Prefer small, falsifiable experiments over more tooling.
 - Keep documentation concise and paper-facing.

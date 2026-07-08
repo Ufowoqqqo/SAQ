@@ -10,9 +10,22 @@ supporting tools. Every task should first answer: what SAQ limitation is being
 tested, what evidence it adds, what overhead it introduces, and how a strict
 SIGMOD/VLDB/ICDE reviewer would evaluate it.
 
+The ultimate objective is a database top-conference-level research work
+suitable for SIGMOD, VLDB, or ICDE. Treat small recall/QPS gains as insufficient
+unless the method exposes a clear SAQ limitation, has controlled overhead, and
+can be explained as more than parameter tuning.
+
 The active direction is query-unaware structural follow-up work for SAQ. Do not
 use representative query workloads or held-out query labels to learn plans.
 Held-out benchmark queries are allowed only for final evaluation.
+
+Use research-paper terminology in new research notes, summaries, slides, and
+task descriptions. Prefer words such as "review", "analyze", "evaluate",
+"survey", "evidence", and "limitations". Avoid software-maintenance framing
+such as "audit", "harden", "triage", and "patch" unless the topic is literally
+code correctness, debugging, or repository maintenance. Existing branch names,
+file names, and historical artifact names do not need to be renamed only for
+terminology cleanup.
 
 ## Priority Directions
 
@@ -79,5 +92,9 @@ multi-segment recall/QPS claims, prefer:
   post-hoc filters unless they are used only as baselines or ablations.
 - Do not use query-aware plan learning under the current direction.
 - Do not present bug fixes as research contributions.
+- Do not start broad experiments before writing the research question, expected
+  contribution, overhead model, strict-reviewer objection, and stop condition.
+- Do not overclaim universal improvement over SAQ before end-to-end validation
+  across datasets and operating points.
 - Do not spend time on artifact-management completeness unless it directly
   supports a research claim or necessary reproducibility.
