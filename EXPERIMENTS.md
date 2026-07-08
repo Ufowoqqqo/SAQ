@@ -9,6 +9,12 @@ and "patch" unless discussing code correctness or repository maintenance.
 Existing artifact paths and historical task labels do not need to be renamed
 solely for terminology cleanup.
 
+Decision rule for new work: use a researcher-first frame. Choose experiments
+and documentation tasks by the research question, SAQ limitation, evidence
+value, reviewer risk, and paper contribution they address. Engineering tasks
+are secondary and should not be treated as progress unless they directly
+support a claim, an essential validation, or meeting/paper communication.
+
 Status labels:
 
 - `todo`: not started

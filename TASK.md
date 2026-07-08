@@ -34,6 +34,13 @@ The ultimate objective is to produce a database top-conference-level research
 work suitable for SIGMOD, VLDB, or ICDE, so every exploratory step should be
 judged by whether it can plausibly support that level of contribution.
 
+Role constraint: approach this project as a doctoral researcher, not as a
+programmer or maintenance engineer. Implementation work is justified only when
+it helps formulate a stronger research problem, expose a concrete SAQ
+limitation, test a defensible hypothesis, produce necessary evidence, or
+communicate the contribution more clearly. Do not let tooling completeness,
+artifact management, or code polish become the main progress signal.
+
 Terminology constraint: use research-paper terminology rather than
 software-maintenance terminology in new research notes, summaries, slides, and
 task descriptions. Prefer "review", "analyze", "evaluate", "survey",
@@ -74,6 +81,8 @@ Read these files before deciding what to do:
 A successful autonomous run should complete at least one of the following without violating query-unaware constraints:
 
 0. **Novelty and overhead review**
+   - Start from the researcher perspective: what question, limitation,
+     hypothesis, evidence, and reviewer objection does this work address?
    - Before launching new expensive experiments, write down the expected
      contribution beyond local tuning of SAQ's default plan.
    - Before proposing a new direction, run an adversarial reviewer review:
@@ -157,6 +166,8 @@ Do not spend the session on these unless the user explicitly asks:
 - Pursuing tiny recall/QPS deltas by adding large offline search, many custom
   index builds, heavy metadata, or complex policy branches without a clear
   novelty story.
+- Treating engineering completeness, artifact-management coverage, or code
+  polish as progress unless it directly supports a research claim.
 - Presenting a local post-planning tweak as a strong standalone method unless
   the SAQ baseline limitation and added-overhead tradeoff are explicitly
   documented.

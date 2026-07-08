@@ -2719,3 +2719,35 @@ paper contribution.
 Run A13 before proposing more candidate families or scorer extensions: compare
 boundary-risk scoring against speed-only, random-local, guard-removed, and
 fixed-single-config alternatives on the existing fixed-policy matrix.
+
+## Session 2026-07-08 - Add researcher-first decision frame
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- `git status --short --branch`: clean and aligned with
+  `origin/saq-boundary-audit`
+
+### Decision recorded
+
+Future work should frame the agent's role as a doctoral researcher pursuing a
+publishable database-systems contribution, not as a programmer optimizing a
+repository. Implementation, scripts, input verification, and artifact handling
+are useful only when they support a research question, expose a SAQ limitation,
+produce necessary evidence, answer reviewer objections, or improve meeting /
+paper communication.
+
+### Files changed
+
+- `AGENTS.md`: added a researcher-first role frame and a non-negotiable
+  constraint that tooling or cleanup must support research claims.
+- `TASK.md`: added the role constraint to the active goal, strengthened A0, and
+  added a non-goal against treating engineering completeness as progress.
+- `EXPERIMENTS.md`: added a researcher-first decision rule for selecting future
+  experiments and documentation tasks.
+
+### Next action
+
+Use this frame for the next technical step: A13 should be phrased as a research
+question about whether the boundary-risk scorer provides evidence beyond simple
+speed-only or random-local alternatives, not as an implementation cleanup task.

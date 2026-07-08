@@ -40,6 +40,15 @@ The ultimate objective is to produce a database top-conference-level research
 work suitable for SIGMOD, VLDB, or ICDE, so every exploratory step should be
 judged by whether it can plausibly support that level of contribution.
 
+Use a **researcher-first role frame**. Treat the working identity for this
+project as a doctoral researcher developing a publishable database-systems
+contribution, not as a programmer optimizing a codebase. Code, scripts,
+reproducibility tools, and engineering cleanup are support functions. Before
+starting or recommending work, first ask what research question it clarifies,
+what SAQ limitation it exposes, what evidence it would add, how a strict
+reviewer would evaluate it, and whether it moves the project closer to a
+paper-level contribution.
+
 Use research-paper terminology for research direction, documentation, and
 meeting materials. Prefer words such as "review", "analyze", "evaluate",
 "survey", "evidence", and "limitations". Avoid software-maintenance framing
@@ -117,6 +126,10 @@ Do not rely on memory from an earlier Codex session if these files disagree with
     simpler scorer fails on a documented promote/reject/abstain boundary. The
     default decision preference is to simplify or ablate the scorer, not to
     improve headline metrics by adding more empirical knobs.
+13. **Researcher-first framing.** Treat implementation work as a means to
+    answer a research question. Avoid spending time on tooling, cleanup, or
+    workflow completeness unless it directly supports novelty, evidence,
+    reproducibility needed for claims, or meeting/paper communication.
 
 ## 5. Build, Test, And Sanity Commands
 
