@@ -14,6 +14,32 @@ The current best framing is not â€œfind one custom segment plan that beats SAQ.â
 
 The method must stay query-unaware unless the user explicitly changes the research direction. Held-out benchmark queries may be used only for final evaluation, not for learning or selecting candidate plans.
 
+Current priority shift: do not treat the fixed-policy metric-scorer approach as
+the main path for future novelty. It remains useful evidence and a diagnostic
+baseline, but its empirical metrics and hyperparameters make it too close to
+local SAQ tuning unless ablation proves otherwise. Future method exploration
+should prioritize more structural SAQ limitations in this order:
+
+1. **Cluster-aware / local residual-aware SAQ plan sharing.** SAQ learns one
+   global PCA-variance segment plan, then applies it to all IVF residual
+   clusters. A stronger query-unaware contribution is to learn a small family of
+   shared segment/bit plans from cluster residual statistics, assign each IVF
+   cell to a plan id, and evaluate the recall/QPS/metadata tradeoff against the
+   default one-global-plan SAQ baseline.
+2. **Segment-cost-aware DP.** Instead of post-hoc candidate filtering, revise
+   the planner objective or Pareto frontier to account for quantization risk and
+   search-time segment cost under SAQ's budget and overhead constraints. This is
+   valuable only if it exposes a systematic limitation of SAQ's variance-only
+   DP, not if it becomes another tuned scorer.
+3. **Flexible segmentation / learned grouping.** Study whether contiguous PCA
+   blocks and fixed 64-dimensional granularity leave value on the table under
+   query-unaware data-only signals. This is potentially more novel but should
+   be attempted after the local residual and segment-cost directions are scoped.
+
+Do not add more default-neighborhood candidate families or scorer terms as the
+next research step unless a severe-reviewer check explains why they answer a
+paper-level question better than the three directions above.
+
 The current strategic concern is **novelty and overhead**. The project must not
 drift into spending large offline time, index-build time, memory, or search
 complexity for tiny recall/QPS deltas. Any next method change should clarify
@@ -130,6 +156,11 @@ Do not rely on memory from an earlier Codex session if these files disagree with
     answer a research question. Avoid spending time on tooling, cleanup, or
     workflow completeness unless it directly supports novelty, evidence,
     reproducibility needed for claims, or meeting/paper communication.
+14. **Priority research directions.** When the user asks what to do next, prefer
+    the structural directions in this order: cluster-aware/local residual-aware
+    SAQ plan sharing; segment-cost-aware DP; flexible segmentation or learned
+    grouping. Treat the current metric-scorer fixed policy as background
+    evidence unless the task is explicitly to ablate or document it.
 
 ## 5. Build, Test, And Sanity Commands
 

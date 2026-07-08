@@ -2751,3 +2751,39 @@ paper communication.
 Use this frame for the next technical step: A13 should be phrased as a research
 question about whether the boundary-risk scorer provides evidence beyond simple
 speed-only or random-local alternatives, not as an implementation cleanup task.
+
+## Session 2026-07-08 - Record stronger structural follow-up priorities
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- `git status --short --branch`: clean and aligned with
+  `origin/saq-boundary-audit`
+
+### Decision recorded
+
+The empirical fixed-policy scorer should no longer be treated as the primary
+novelty path. It remains useful as evidence and a diagnostic baseline, but its
+multi-metric, hyperparameter-heavy form is too easy to criticize as local SAQ
+tuning. Future method work should prioritize structural SAQ limitations:
+
+1. cluster-aware / local residual-aware SAQ plan sharing;
+2. segment-cost-aware DP or risk/cost Pareto planning;
+3. flexible segmentation / learned grouping beyond contiguous PCA blocks.
+
+### Files changed
+
+- `AGENTS.md`: added the priority shift and a non-negotiable rule for next-step
+  recommendations.
+- `TASK.md`: reframed the active goal so the fixed-policy method is background
+  evidence, and added structural SAQ limitation exploration as a primary
+  success criterion.
+- `EXPERIMENTS.md`: added a structural follow-up direction review task before
+  extending the fixed-policy scorer.
+
+### Next action
+
+Write a short direction-review note comparing cluster-aware plan sharing,
+segment-cost-aware DP, and flexible segmentation under novelty, overhead,
+implementation scope, and early falsification criteria. The likely first
+technical direction is cluster-aware / local residual-aware SAQ plan sharing.

@@ -15,6 +15,20 @@ value, reviewer risk, and paper contribution they address. Engineering tasks
 are secondary and should not be treated as progress unless they directly
 support a claim, an essential validation, or meeting/paper communication.
 
+Current research-priority rule: stop treating the empirical fixed-policy scorer
+as the main novelty path. Prefer structural SAQ limitations in this order:
+
+1. cluster-aware / local residual-aware SAQ plan sharing under explicit metadata
+   overhead;
+2. segment-cost-aware DP or Pareto planning that jointly considers
+   quantization-risk and search-time segment cost;
+3. flexible segmentation / learned grouping beyond contiguous PCA blocks and
+   fixed 64-dimensional granularity.
+
+New scorer metrics, wider scorer grids, or extra local candidate families are
+low priority unless they are required for an ablation or for comparing against a
+stronger structural method.
+
 Status labels:
 
 - `todo`: not started
@@ -24,6 +38,24 @@ Status labels:
 - `rejected`: tried and not worth pursuing further
 
 ## A. Reproducibility And Hygiene
+
+### A-1. Structural SAQ follow-up direction review
+
+- Status: `todo`
+- Priority: highest before extending the fixed-policy scorer
+- Goal: convert the current novelty concern into a stronger research direction.
+- Candidate directions, in priority order:
+  1. cluster-aware / local residual-aware SAQ plan sharing;
+  2. segment-cost-aware DP;
+  3. flexible segmentation / learned grouping.
+- Required review questions:
+  - What exact SAQ assumption or limitation is targeted?
+  - What method would be proposed beyond local candidate filtering?
+  - What metadata, training, indexing, and search-time overhead is introduced?
+  - What small experiment would falsify the direction early?
+  - How would a strict database reviewer distinguish it from SAQ tuning?
+- Success: a short durable note under `docs/` recommending whether to start
+  cluster-aware plan sharing, segment-cost-aware DP, or flexible segmentation.
 
 ### A0. Novelty and overhead gate
 

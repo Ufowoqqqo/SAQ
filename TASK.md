@@ -2,11 +2,31 @@
 
 ## Active Goal
 
-Develop and evaluate the current **query-unaware default-neighborhood fixed-policy method** into a reproducible, meeting/paper-ready SAQ follow-up story.
+Develop a **query-unaware SAQ follow-up** into a reproducible,
+meeting/paper-ready story, using the current default-neighborhood fixed-policy
+method as evidence and diagnostic background rather than the only path forward.
 
 The goal is not to maximize one benchmark number. The goal is to make the current method boundary precise, reproducible, and defensible:
 
 > Generate local segment-plan candidates around SAQ's default plan, score them with data-only boundary-risk and speed proxies, promote only conservative/frontier-like candidates, reject bad speed-only candidates, and abstain when the default plan shape has no meaningful neighborhood.
+
+Updated research priority: the metric-scorer fixed-policy path is no longer the
+preferred next novelty route. It is too empirical and hyperparameter-heavy to
+carry the contribution by itself. Keep it as a documented diagnostic baseline,
+but prioritize structural SAQ limitations:
+
+1. **Cluster-aware / local residual-aware SAQ plan sharing:** learn a small
+   family of shared segment/bit plans from IVF cluster residual statistics and
+   assign clusters to plan ids under explicit metadata overhead.
+2. **Segment-cost-aware DP:** incorporate search-time segment cost or produce a
+   quantization-risk/search-cost Pareto planner instead of selecting plans with
+   a post-hoc scorer.
+3. **Flexible segmentation / learned grouping:** evaluate whether contiguous
+   PCA blocks and 64-dimensional granularity are the real limiting assumptions.
+
+Future work should not add more scorer terms, larger grids, or
+default-neighborhood candidate families unless a severe-reviewer assessment
+shows why that is more publishable than these structural directions.
 
 New strategic constraint after the latest discussion: the work must be judged
 by **novelty and overhead**, not only by recall/QPS deltas. The current method
@@ -96,6 +116,19 @@ A successful autonomous run should complete at least one of the following withou
    - If the expected gain is only a tiny recall/QPS improvement with large
      overhead, stop or pivot instead of continuing the sweep.
 
+0a. **Structural SAQ limitation exploration**
+   - Highest-priority question: does SAQ's one-global-plan design mismatch IVF
+     cluster residual distributions enough to justify a small shared family of
+     local plans?
+   - Next-priority question: can SAQ's DP objective be extended to account for
+     search-time segment cost in a principled way, avoiding post-hoc metric
+     filtering?
+   - Third-priority question: do contiguous PCA segments or 64-dimensional
+     block granularity limit query-unaware plan quality enough to justify more
+     flexible segmentation?
+   - For each question, state the expected paper contribution, overhead model,
+     and stop condition before implementing.
+
 1. **Reproducibility evaluation**
    - Run `script/report_fixed_policy_validation.py` against the checked-in expected CSV.
    - If it fails, diagnose whether the failure is a script bug, stale artifact mismatch, missing local artifact, or expected-table issue.
@@ -163,6 +196,9 @@ Do not spend the session on these unless the user explicitly asks:
 - Adding new scorer metrics, larger hyperparameter grids, or special-case
   decision branches before the current scorer's necessity is established by
   ablation.
+- Treating the current metric-scorer fixed policy as the only future method
+  path. It should remain background evidence unless explicitly ablated or used
+  as a baseline for a stronger structural method.
 - Pursuing tiny recall/QPS deltas by adding large offline search, many custom
   index builds, heavy metadata, or complex policy branches without a clear
   novelty story.
