@@ -29,6 +29,11 @@ SAQ's default global plan was not dominated on deterministic risk-cost
 frontiers, and GIST near-frontier lower-cost plans did not improve safe-search
 QPS end to end. Treat this as limitation evidence, not as the main method.
 
+The first planner-objective measurement is recorded in
+`docs/planner_proxy_measurement_2026_07_09.md`. It found that SAQ's variance
+proxy strongly predicts energy-weighted residual CAQ error, especially raw and
+scale-aligned SSE, but is weaker for pure direction-loss ranking.
+
 ## Research Priority
 
 **Data-only SAQ planner-objective analysis**
@@ -62,20 +67,20 @@ Required accounting:
 
 ## Immediate Next Step
 
-Start offline. Build a small measurement driver that compares SAQ's variance
-proxy against measured data-only segment error for existing datasets and bit
-budgets before proposing any new planner.
+Continue offline. Measure query-unaware distance-estimation error on data-only
+vector or residual pairs, then test whether the observed direction-loss
+mismatch explains estimator error beyond SAQ's variance proxy.
 
 The first study should answer:
 
-1. Does the SAQ proxy preserve the ranking of segment/bit choices under
-   measured CAQ/SAQ error?
-2. Are mismatches systematic across GIST, CIFAR, DEEP, audio, and word2vec, or
+1. Does direction loss explain data-only distance-estimation error after
+   accounting for SAQ proxy risk?
+2. Is this effect systematic across GIST, CIFAR, DEEP, audio, and word2vec, or
    isolated to one dataset?
 3. Can any correction be derived from measurable data-only quantities rather
    than post-hoc rules or fitted query labels?
-4. Is the offline measurement overhead small enough to be credible relative to
-   index construction?
+4. If direction loss does not add predictive power, should planner-objective
+   modification stop as a main direction?
 
 ## Constraints
 
