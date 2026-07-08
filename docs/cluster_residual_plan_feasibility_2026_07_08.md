@@ -235,3 +235,6 @@ the current profile-assigned ratio is weaker (`0.951516`). Thus the next
 research question is not only whether multiple plans exist, but whether a
 query-unaware assignment rule can choose the right shared plan per cluster
 without using query labels or adding excessive metadata.
+
+A follow-up cross-bit and cross-dataset eligibility matrix is recorded in
+`docs/cluster_residual_eligibility_matrix_2026_07_08.md`.
