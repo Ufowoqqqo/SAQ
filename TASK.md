@@ -70,6 +70,9 @@ review finds a stronger reason to choose another direction.
 - Before starting a new direction or broad experiment, state the research
   question, expected contribution, overhead model, likely strict-reviewer
   objection, and stop condition.
+- Do not rely on unjustified hyperparameters. Each hyperparameter must have a
+  mechanism-level rationale, clear unit or scale, fixed selection rule before
+  held-out evaluation, and either sensitivity evidence or an ablation plan.
 - Do not overclaim a universal improvement over SAQ before end-to-end
   validation across datasets and operating points.
 - Avoid broad sweeps before stating the research hypothesis and stop condition.

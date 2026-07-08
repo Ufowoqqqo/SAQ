@@ -94,6 +94,10 @@ multi-segment recall/QPS claims, prefer:
 - Do not present bug fixes as research contributions.
 - Do not start broad experiments before writing the research question, expected
   contribution, overhead model, strict-reviewer objection, and stop condition.
+- Do not introduce unjustified hyperparameters. Any hyperparameter used in a
+  proposed method must have a mechanism-level rationale, a clear unit or scale,
+  a fixed selection rule before held-out evaluation, and either sensitivity
+  evidence or an ablation plan.
 - Do not overclaim universal improvement over SAQ before end-to-end validation
   across datasets and operating points.
 - Do not spend time on artifact-management completeness unless it directly
