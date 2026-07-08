@@ -120,9 +120,13 @@ are not committed because they are generated experiment artifacts.
 
 ## Next Step
 
-Do not broaden this into a large sweep yet. The next defensible step is to pick
-one or two near-frontier GIST plans from the offline output and run a minimal
-end-to-end recall/QPS check under safe search. The stop condition is strict: if
-the small static cost reduction does not produce a measurable QPS benefit while
-preserving recall, this direction should remain limitation evidence rather than
+Do not broaden this into a large sweep yet. The follow-up end-to-end check is
+recorded in `docs/gist_near_frontier_end_to_end_2026_07_08.md`. It tested two
+GIST full/K4096/B=4 near-frontier plans under safe search. Both candidates had
+slightly higher recall, but both were slower than the SAQ default across
+`nprobe = 100, 200, 400`.
+
+This satisfies the stop condition for the simple static-cost hypothesis. Unless
+a stronger search-time execution model is introduced, single-global
+segment-cost-aware DP should be treated as SAQ limitation evidence rather than
 the main method.

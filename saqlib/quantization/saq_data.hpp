@@ -2,9 +2,11 @@
 
 #include <cassert>
 #include <cstddef>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "glog/logging.h"
@@ -120,7 +122,10 @@ class SaqDataMaker {
         DCHECK_EQ(num_dim_padded_ % kDimPaddingSize, 0);
 
         if (data_->cfg.enable_segmentation) {
-            if (data_->cfg.seg_eqseg > 0) {
+            auto custom_plan = custom_plan_from_env();
+            if (!custom_plan.empty()) {
+                data_->quant_plan = std::move(custom_plan);
+            } else if (data_->cfg.seg_eqseg > 0) {
                 data_->quant_plan = equal_segmentation(data_->cfg.seg_eqseg);
             } else {
                 data_->quant_plan = dynamic_programming(data_->data_variance, data_->cfg.avg_bits);
@@ -128,6 +133,50 @@ class SaqDataMaker {
         } else {
             data_->quant_plan = equal_segmentation(1);
         }
+    }
+
+    QuantPlanT custom_plan_from_env() const {
+        const char *raw_plan = std::getenv("SAQ_CUSTOM_QUANT_PLAN");
+        if (raw_plan == nullptr || raw_plan[0] == '\0') {
+            return {};
+        }
+
+        const std::string spec(raw_plan);
+        QuantPlanT quant_plan;
+        size_t consumed_dim = 0;
+        bool saw_zero_tail = false;
+
+        size_t start = 0;
+        while (start < spec.size()) {
+            size_t comma = spec.find(',', start);
+            const size_t end = comma == std::string::npos ? spec.size() : comma;
+            const std::string token = spec.substr(start, end - start);
+            const size_t sep = token.find(':');
+            CHECK(sep != std::string::npos) << "custom plan token must be dim:bits: " << token;
+            CHECK_EQ(token.find(':', sep + 1), std::string::npos) << "bad custom plan token: " << token;
+
+            size_t dim = std::stoull(token.substr(0, sep));
+            size_t bits = std::stoull(token.substr(sep + 1));
+            CHECK_GT(dim, 0) << "custom plan segment dimension must be positive: " << spec;
+            CHECK_EQ(dim % kDimPaddingSize, 0) << "custom plan dimension must be 64-aligned: " << spec;
+            CHECK_LE(bits, kMaxQuantBit) << "custom plan bits exceed SAQ maximum: " << spec;
+            if (bits == 0) {
+                saw_zero_tail = true;
+            } else {
+                CHECK(!saw_zero_tail) << "custom plan only supports a final zero-bit tail: " << spec;
+            }
+            consumed_dim += dim;
+            quant_plan.emplace_back(dim, bits);
+
+            if (comma == std::string::npos) {
+                break;
+            }
+            start = comma + 1;
+        }
+
+        CHECK_EQ(consumed_dim, num_dim_padded_) << "custom plan dimension sum does not match padded dimension: " << spec;
+        LOG(INFO) << "Using custom SAQ quantization plan: " << spec;
+        return quant_plan;
     }
 
     QuantPlanT equal_segmentation(int num_segs) {

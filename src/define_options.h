@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdlib>
 #include <cstring>
 
 #include <fmt/core.h>
@@ -28,6 +29,7 @@ DEFINE_bool(enable_segmentation, true, "enable segmentation");
 DEFINE_int32(seg_eqseg, 0, "segmentation equalization");
 DEFINE_bool(use_compact_layout, false, "use compact memory layout");
 DEFINE_double(q_firstdim, 0, "only quantization first dimension");
+DEFINE_string(custom_quant_plan, "", "custom SAQ plan as dim:bits,... for controlled experiments");
 
 // Searcher config
 DEFINE_double(searcher_vars_bound_m, 4, "");
@@ -62,6 +64,21 @@ inline std::string parseArgs(saqlib::QuantizeConfig *config = nullptr) {
     }
 
     args_str += cfg.toString();
+
+    if (!FLAGS_custom_quant_plan.empty()) {
+        std::string plan_suffix = FLAGS_custom_quant_plan;
+        for (char &ch : plan_suffix) {
+            if (ch == ':') {
+                ch = 'x';
+            } else if (ch == ',') {
+                ch = '_';
+            }
+        }
+        args_str += fmt::format("_plan{}", plan_suffix);
+        setenv("SAQ_CUSTOM_QUANT_PLAN", FLAGS_custom_quant_plan.c_str(), 1);
+    } else {
+        unsetenv("SAQ_CUSTOM_QUANT_PLAN");
+    }
 
     if (config)
         *config = cfg;
