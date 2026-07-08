@@ -2688,3 +2688,34 @@ draft is based on the existing root-cause diagnostics and branch instrumentation
 Commit and push the issue draft. If opening the upstream issue, mention that
 the diagnostic binary was from an instrumented branch and the native reduction
 pattern is the suspected upstream code path.
+
+## Session 2026-07-08 - Record scorer practicality concern in future decisions
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- `git status --short --branch`: clean and aligned with
+  `origin/saq-boundary-audit`
+
+### Decision recorded
+
+The current boundary-risk scorer should be treated as an empirical proxy with
+many metrics and hyperparameters, not as a theoretically guaranteed planner.
+This is a central novelty/practicality concern: adding more scorer terms,
+larger grids, or candidate-family rules to chase tiny recall/QPS gains would
+make the work look more like SAQ tuning, not more like a defensible database
+paper contribution.
+
+### Files changed
+
+- `AGENTS.md`: added a scorer simplicity gate and a known-pitfall warning that
+  the scorer's empirical complexity must be justified by ablation.
+- `TASK.md`: added the latest decision constraint and strengthened A13 / non-goal
+  wording against adding scorer complexity before proving necessity.
+- `EXPERIMENTS.md`: strengthened A13 with the motivation and simplicity rule.
+
+### Next action
+
+Run A13 before proposing more candidate families or scorer extensions: compare
+boundary-risk scoring against speed-only, random-local, guard-removed, and
+fixed-single-config alternatives on the existing fixed-policy matrix.

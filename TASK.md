@@ -21,6 +21,15 @@ framing is a query-unaware local correction policy for SAQ's default segment
 planner, not a new quantizer, not a planner with theoretical guarantees, and
 not a method that universally improves SAQ.
 
+Latest decision constraint: the current scorer is an empirical proxy with many
+metrics and hyperparameters. That makes practicality and novelty weaker, not
+stronger. Future work should not add more scorer complexity or candidate-family
+rules to chase small deltas unless ablation first shows that the existing
+boundary-risk signal is meaningfully safer than speed-only, random-local,
+guard-removed, or fixed-single-config alternatives. If the scorer cannot pass
+that test, pivot toward a clearer SAQ limitation or a simpler explainable
+policy.
+
 The ultimate objective is to produce a database top-conference-level research
 work suitable for SIGMOD, VLDB, or ICDE, so every exploratory step should be
 judged by whether it can plausibly support that level of contribution.
@@ -112,6 +121,9 @@ A successful autonomous run should complete at least one of the following withou
      headroom.
    - Report whether proxy scores correlate with measured recall delta and QPS
      ratio across the existing validation cases.
+   - Prefer the simplest scorer that preserves the known promote/reject/abstain
+     boundary. If the multi-metric scorer is not clearly better than simple
+     baselines, do not continue using its complexity as the method story.
 
 ## Secondary Success Criteria
 
@@ -139,6 +151,9 @@ Do not spend the session on these unless the user explicitly asks:
 - Re-running large end-to-end experiments before verifying existing report reproducibility.
 - Adding new candidate families before the current boundary-risk scorer is
   compared against speed-only, random-local, and guard-removed baselines.
+- Adding new scorer metrics, larger hyperparameter grids, or special-case
+  decision branches before the current scorer's necessity is established by
+  ablation.
 - Pursuing tiny recall/QPS deltas by adding large offline search, many custom
   index builds, heavy metadata, or complex policy branches without a clear
   novelty story.

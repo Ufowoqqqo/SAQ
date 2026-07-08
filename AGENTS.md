@@ -20,6 +20,15 @@ complexity for tiny recall/QPS deltas. Any next method change should clarify
 what SAQ limitation it exposes and why the added policy/scoring overhead is
 worthwhile.
 
+Treat the current boundary-risk scorer as an empirical proxy, not as a
+theoretically guaranteed planner. Its multiple metrics and hyperparameters are
+currently a liability for novelty and practicality unless ablation shows that
+they are necessary. Before making the scorer more complex, compare it against
+simple baselines such as speed-only selection, random local selection,
+guard-removed selection, and a fixed single-configuration scorer. If the
+complex scorer is not meaningfully safer than those alternatives, stop adding
+scorer terms or candidate families and pivot to a clearer SAQ limitation.
+
 Current paper-readiness assessment: the novelty is low-to-medium to medium.
 The work is a good meeting report / technical note, but it is not yet a
 SIGMOD/VLDB/ICDE full-paper contribution. The current method is best described
@@ -103,6 +112,11 @@ Do not rely on memory from an earlier Codex session if these files disagree with
     SAQ, what ablation would distinguish the new signal from a speed-only or
     random-local baseline, what overhead it adds, and what stop-loss condition
     would justify pivoting.
+12. **Scorer simplicity gate.** Do not add new boundary-risk terms, wider
+    hyperparameter grids, or candidate-family-specific scorer branches unless a
+    simpler scorer fails on a documented promote/reject/abstain boundary. The
+    default decision preference is to simplify or ablate the scorer, not to
+    improve headline metrics by adding more empirical knobs.
 
 ## 5. Build, Test, And Sanity Commands
 
@@ -268,3 +282,8 @@ Stop early when:
   Future work should prove why the boundary-risk scorer is safer than
   speed-only, random-local, or handcrafted heuristics before adding more
   candidate families.
+- The scorer has no current theoretical guarantee and contains many empirical
+  choices. Future decisions should treat that as a central weakness, not a
+  detail to hide: either simplify the policy until it is easy to explain, or
+  provide ablation evidence that the extra metrics and hyperparameters prevent
+  real false positives at acceptable overhead.

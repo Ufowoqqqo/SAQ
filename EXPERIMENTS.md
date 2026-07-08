@@ -334,6 +334,10 @@ python script/run_fixed_policy_matrix.py \
   data-only boundary-risk scorer is shown to be safer or more selective than
   simple local alternatives. Without this evidence, a strict reviewer may read
   the method as handcrafted tuning around SAQ's default planner.
+- Motivation: the scorer is currently empirical, multi-metric, and
+  hyperparameter-heavy. This is a practical and novelty weakness unless the
+  added terms demonstrably prevent unsafe decisions that simple baselines would
+  make.
 - Required comparisons:
   1. boundary-risk scorer vs speed-only scorer;
   2. boundary-risk scorer vs random local candidate selection;
@@ -351,6 +355,9 @@ python script/run_fixed_policy_matrix.py \
   baselines, stop adding local candidate families and pivot to a clearer SAQ
   limitation such as planner-objective redesign, segment-cost-aware DP, or a
   more explainable search-aware query-unaware proxy.
+- Simplicity rule: if a fixed single-configuration scorer or a much smaller
+  metric set preserves the same known promote/reject/abstain boundary, prefer
+  the simpler version in future method narratives.
 
 ## B. Policy Robustness
 
