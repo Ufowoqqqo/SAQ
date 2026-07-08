@@ -2599,3 +2599,92 @@ No blocker. No ablation was run in this session.
 
 Validate the documentation diff, then commit and push. After that, the next
 technical task should be A13: boundary-risk scorer ablation package.
+
+## Session 2026-07-08 12:14 HKT
+
+### Goal
+
+Create a copy-ready GitHub issue draft for the newly discussed search-time
+block-min bug and clarify whether other confirmed implementation bugs have
+been found.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- `git status --short --branch`: clean and aligned with
+  `origin/saq-boundary-audit`
+- Files read:
+  - `docs/saq_upstream_1bit_segment_crash_issue_draft_2026_07_06.md`
+  - `docs/saq_gist_sample100k_B5_block_min_root_cause_and_simd_safe_2026_07_04.md`
+  - `docs/saq_gist_sample100k_B5_safe_block_min_ablation_2026_07_03.md`
+  - `docs/saq_gist_sample100k_B5_pruning_trace_2026_07_03.md`
+  - `RESULTS.md`
+  - `TASK.md`
+  - `AGENTS.md`
+  - `codex_handoff.md`
+
+### Hypothesis / plan
+
+The safe block-min issue is independent from the already reported positive
+1-bit segment build crash. Generate a separate issue body that states the
+affected search path, reproduction/diagnostic case, observed NaN block-min
+behavior, recall impact, expected behavior, and possible fix direction.
+
+### Commands run
+
+```bash
+git status --short --branch
+sed -n '1,220p' docs/saq_upstream_1bit_segment_crash_issue_draft_2026_07_06.md
+sed -n '1,190p' docs/saq_gist_sample100k_B5_block_min_root_cause_and_simd_safe_2026_07_04.md
+rg -n "segfault|crash|NaN|nan|bug|root cause|correctness|out-of-bounds|OOB|undefined|invalid lane|padded lane|issue" docs RESULTS.md TASK.md AGENTS.md codex_handoff.md
+find docs -maxdepth 1 -type f | sort | rg "issue|1bit|block_min|safe|B3|segfault"
+date '+%Y-%m-%d %H:%M %Z'
+```
+
+### Files changed
+
+- Added `docs/saq_upstream_safe_block_min_issue_draft_2026_07_08.md`.
+- Updated `PROGRESS.md` with this session log.
+
+### Artifacts produced
+
+```text
+docs/saq_upstream_safe_block_min_issue_draft_2026_07_08.md
+```
+
+### Result
+
+The new issue draft is copy-ready and describes the search-time bug:
+
+```text
+native AVX512 block-min includes padded/invalid lanes in partial search blocks;
+NaN from padded lanes can make mi = NaN;
+mi <= distk is then false;
+the whole block is skipped before accurate refinement.
+```
+
+Confirmed implementation bugs found so far:
+
+1. positive 1-bit segment build crash in `create_index`;
+2. native multi-segment block-min padded-lane/NaN search bug.
+
+Other observed issues are currently better classified as method limitations,
+experiment artifacts, or unconfirmed numerical/order effects rather than
+upstream bugs.
+
+### Interpretation
+
+The new draft should be posted as a separate upstream issue from the 1-bit
+segment crash. It is about search/evaluation correctness, not index
+construction.
+
+### Problems / blockers
+
+This session did not rerun the diagnostic on a clean upstream checkout. The
+draft is based on the existing root-cause diagnostics and branch instrumentation.
+
+### Next action
+
+Commit and push the issue draft. If opening the upstream issue, mention that
+the diagnostic binary was from an instrumented branch and the native reduction
+pattern is the suspected upstream code path.
