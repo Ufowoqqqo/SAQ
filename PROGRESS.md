@@ -2297,3 +2297,117 @@ Commit and push this provenance documentation. If clean-machine reproduction
 becomes a target, the next step is to convert the documented commands into a
 single preparation driver or archive the prepared input bundle with manifest
 hashes.
+
+## Session 2026-07-08 10:08 HKT
+
+### Goal
+
+Implement a one-command input preparation and verification driver so the input
+provenance layer is executable rather than only documented.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- Previous checkpoint: `79b3886 Document fixed-policy input preparation provenance`
+- `git status --short --branch`: clean and aligned with
+  `origin/saq-boundary-audit`
+- Files read:
+  - `AGENTS.md`
+  - `TASK.md`
+  - `docs/saq_fixed_policy_input_preparation_provenance_2026_07_08.md`
+  - `script/write_fixed_policy_input_manifest.py`
+  - `EXPERIMENTS.md`
+  - `RESULTS.md`
+  - `docs/saq_fixed_policy_reproducibility_review_2026_07_08.md`
+
+### Hypothesis / plan
+
+The preparation provenance note should become a structured driver with three
+safe modes:
+
+1. `--verify-only`: check the current root against the full-SHA256 manifest.
+2. `--dry-run`: print source/preparation commands without running them.
+3. `--prepare --dataset ...`: execute only selected supported dataset
+   preparation, with guards for large GIST/all-supported rebuilds.
+
+Audio should remain manifest-verifiable but clean-preparation-unsupported
+because the exact historical PCA/IVF command was not recovered.
+
+### Commands run
+
+```bash
+git status --short --branch
+sed -n '1,220p' AGENTS.md
+sed -n '1,220p' TASK.md
+sed -n '1,220p' docs/saq_fixed_policy_input_preparation_provenance_2026_07_08.md
+sed -n '1,260p' script/write_fixed_policy_input_manifest.py
+python -m py_compile script/prepare_fixed_policy_inputs.py script/write_fixed_policy_input_manifest.py
+python script/prepare_fixed_policy_inputs.py --dry-run --dataset cifar60k
+python script/prepare_fixed_policy_inputs.py --dry-run --dataset audio
+python script/prepare_fixed_policy_inputs.py \
+  --verify-only \
+  --output-json /tmp/saq-run/reports/fixed_policy_input_verify_2026_07_08.json
+python script/prepare_fixed_policy_inputs.py --dry-run
+sed -n '230,330p' EXPERIMENTS.md
+sed -n '90,240p' RESULTS.md
+tail -n 120 PROGRESS.md
+sed -n '250,320p' docs/saq_fixed_policy_reproducibility_review_2026_07_08.md
+```
+
+### Files changed
+
+- Added `script/prepare_fixed_policy_inputs.py`.
+- Added `docs/saq_fixed_policy_input_preparation_driver_2026_07_08.md`.
+- Updated `docs/saq_fixed_policy_reproducibility_review_2026_07_08.md`.
+- Updated `EXPERIMENTS.md` with A12.
+- Updated `RESULTS.md` with the stable executable-driver result.
+- Updated `PROGRESS.md` with this session log.
+
+### Artifacts produced
+
+```text
+/tmp/saq-run/reports/fixed_policy_input_verify_2026_07_08.json
+docs/saq_fixed_policy_input_preparation_driver_2026_07_08.md
+```
+
+### Result
+
+The new driver supports:
+
+```bash
+python script/prepare_fixed_policy_inputs.py --verify-only
+python script/prepare_fixed_policy_inputs.py --dry-run
+python script/prepare_fixed_policy_inputs.py --prepare --dataset cifar60k
+python script/prepare_fixed_policy_inputs.py --prepare --dataset deep1M_sample100k
+python script/prepare_fixed_policy_inputs.py --prepare --dataset word2vec_sample100k
+python script/prepare_fixed_policy_inputs.py --prepare --dataset gist_full --allow-large
+```
+
+Current full verification result:
+
+```text
+matched=20
+missing=0
+mismatch=0
+total=20
+```
+
+### Interpretation
+
+The input layer now has an executable verification/preparation interface. The
+remaining clean-machine gap is to run the driver on a fresh experiment root or
+archive the manifest-matching input bundle. Audio remains a partial case:
+current abstention reproduction is covered by manifest verification, but clean
+audio preprocessing still needs the exact historical command or an archived
+artifact.
+
+### Problems / blockers
+
+No blocker for the driver. Full preparation was not executed in this session to
+avoid overwriting or rerunning expensive input generation on the current root.
+
+### Next action
+
+Commit and push this driver. The next useful reproducibility step is a fresh
+root dry-run/verification exercise, or an archived input-bundle plan if a paper
+artifact is the target.

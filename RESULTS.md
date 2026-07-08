@@ -93,8 +93,8 @@ A minimal fix was needed because the encoder did not export `base_code.code` for
 
 ## Recommended Next Stable Results To Seek
 
-1. Turn the documented input-preparation steps into a one-command preparation
-   driver or archive the input bundle with the manifest hashes.
+1. Test the input preparation driver on a fresh experiment root or archive the
+   manifest-matching input bundle.
 2. Preserve DEEP reject and audio/word2vec abstention behavior under any future
    generator/scorer change.
 3. If expanding the generator, first state the SAQ failure mode and added
@@ -236,6 +236,56 @@ rows, where the policy uses only PCA variance artifacts and never enters
 scoring or evaluation. This is sufficient for meeting-level reproducibility
 discussion, but a paper artifact should still provide either a preparation
 driver or a fixed input bundle.
+
+## Result 2026-07-08: Input preparation and verification are executable
+
+### Claim
+
+The fixed-policy input provenance layer is now executable: existing inputs can
+be verified by one command against the manifest, and supported dataset
+preparation commands can be printed or executed from a single driver.
+
+### Evidence
+
+- Driver:
+  `script/prepare_fixed_policy_inputs.py`
+- Driver note:
+  `docs/saq_fixed_policy_input_preparation_driver_2026_07_08.md`
+- Updated reproducibility review:
+  `docs/saq_fixed_policy_reproducibility_review_2026_07_08.md`
+
+Verification command:
+
+```bash
+python script/prepare_fixed_policy_inputs.py \
+  --verify-only \
+  --output-json /tmp/saq-run/reports/fixed_policy_input_verify_2026_07_08.json
+```
+
+Current local readout:
+
+```text
+matched=20
+missing=0
+mismatch=0
+total=20
+```
+
+Dry-run examples:
+
+```bash
+python script/prepare_fixed_policy_inputs.py --dry-run
+python script/prepare_fixed_policy_inputs.py --dry-run --dataset cifar60k
+python script/prepare_fixed_policy_inputs.py --dry-run --dataset audio
+```
+
+### Interpretation
+
+The remaining clean-machine issue is now operational validation, not missing
+provenance structure. The driver still does not cleanly rebuild audio because
+the exact historical PCA/IVF command was not recovered; this is acceptable for
+the current matrix because audio is abstention-only and uses only a
+manifest-matching variance artifact.
 
 ## Result 2026-07-08: Cost-reduced official runner reproduces the full matrix under safe evaluation
 

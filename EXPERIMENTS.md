@@ -299,6 +299,33 @@ python script/run_fixed_policy_matrix.py \
   turn these notes into a one-command preparation script or archive the input
   bundle with manifest hashes.
 
+### A12. One-command input preparation and verification driver
+
+- Status: `done`
+- Priority: highest after A11
+- Goal: make the input provenance layer executable instead of only documented.
+- Work completed:
+  - added `script/prepare_fixed_policy_inputs.py`;
+  - implemented `--verify-only` against the checked-in full-SHA256 manifest;
+  - implemented `--dry-run` command rendering for all current matrix datasets;
+  - implemented explicit `--prepare --dataset ...` execution for GIST, CIFAR,
+    DEEP, and word2vec, with large-run guards for GIST/all-supported rebuilds;
+  - preserved audio as a manifest-verifiable but clean-preparation-unsupported
+    case because the exact historical PCA/IVF command was not recovered.
+- Result:
+  - `docs/saq_fixed_policy_input_preparation_driver_2026_07_08.md`
+  - updated `docs/saq_fixed_policy_reproducibility_review_2026_07_08.md`
+- Validation:
+  - `python -m py_compile script/prepare_fixed_policy_inputs.py script/write_fixed_policy_input_manifest.py`
+  - `python script/prepare_fixed_policy_inputs.py --dry-run`
+  - `python script/prepare_fixed_policy_inputs.py --dry-run --dataset cifar60k`
+  - `python script/prepare_fixed_policy_inputs.py --dry-run --dataset audio`
+  - `python script/prepare_fixed_policy_inputs.py --verify-only --output-json /tmp/saq-run/reports/fixed_policy_input_verify_2026_07_08.json`
+- Interpretation: existing prepared inputs are now checkable by one command,
+  and supported dataset preparation steps are executable from the same driver.
+  The remaining clean-machine gap is to test the driver on a fresh root or
+  archive a manifest-matching input bundle.
+
 ## B. Policy Robustness
 
 ### B1. Audit promotion decisions against the clean validation table

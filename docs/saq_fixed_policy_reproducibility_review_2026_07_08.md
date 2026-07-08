@@ -82,6 +82,13 @@ The source/preparation chain for those inputs is recorded in:
 docs/saq_fixed_policy_input_preparation_provenance_2026_07_08.md
 ```
 
+The executable preparation/verification driver is recorded in:
+
+```text
+script/prepare_fixed_policy_inputs.py
+docs/saq_fixed_policy_input_preparation_driver_2026_07_08.md
+```
+
 Generation command:
 
 ```bash
@@ -274,8 +281,10 @@ claim is needed.
 1. This review proves that the current local root has all enumerated artifacts;
    it does not prove that a new machine already has the required dataset/PCA/IVF
    inputs.
-2. The fixed-policy runner does not yet contain a one-command dataset
-   preparation pipeline for full GIST, CIFAR, DEEP, audio, and word2vec.
+2. The input preparation/verification driver now covers manifest verification
+   and command-level preparation for GIST, CIFAR, DEEP, and word2vec. It does
+   not cleanly rebuild audio because the exact historical PCA/IVF command was
+   not recovered.
 3. The source/preparation provenance note now covers GIST, CIFAR, and DEEP at
    command level. Audio and word2vec remain partially reconstructed because the
    current matrix only uses their variance artifacts for abstention.
@@ -292,17 +301,18 @@ claim is needed.
 
 The current evidence is reproducible at the runner/report level once the build
 artifacts and dataset/PCA/IVF inputs are present. The input manifest makes the
-current prepared inputs checkable by full-file SHA256, and the provenance note
+current prepared inputs checkable by full-file SHA256, the provenance note
 documents the command-level preparation chain for the evaluated GIST, CIFAR,
-and DEEP rows. The remaining clean-machine gap is turning these notes into a
-single preparation script or archived input bundle, especially for exact audio
+and DEEP rows, and `script/prepare_fixed_policy_inputs.py` turns that chain into
+an executable verification/preparation interface. The remaining clean-machine
+gap is testing the driver on a fresh root and resolving or archiving exact audio
 preprocessing if audio ever becomes an evaluated row.
 
 The next reproducibility improvement should therefore be either:
 
 ```text
-turn documented preparation steps into a one-command preparation script or
-archived input bundle
+test the preparation driver on a fresh experiment root, or archive the input
+bundle with manifest hashes
 ```
 
 Further plan tuning should wait until this provenance gap is acceptable for the
