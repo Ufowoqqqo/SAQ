@@ -20,6 +20,10 @@ complexity for tiny recall/QPS deltas. Any next method change should clarify
 what SAQ limitation it exposes and why the added policy/scoring overhead is
 worthwhile.
 
+The ultimate objective is to produce a database top-conference-level research
+work suitable for SIGMOD, VLDB, or ICDE, so every exploratory step should be
+judged by whether it can plausibly support that level of contribution.
+
 Use research-paper terminology for research direction, documentation, and
 meeting materials. Prefer words such as "review", "analyze", "evaluate",
 "survey", "evidence", and "limitations". Avoid software-maintenance framing

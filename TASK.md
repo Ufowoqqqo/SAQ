@@ -14,6 +14,10 @@ is a policy layer on top of SAQ, not an independent quantizer. Future progress
 must explain what concrete SAQ limitation is being addressed and whether the
 extra planning/scoring/indexing/search complexity is justified.
 
+The ultimate objective is to produce a database top-conference-level research
+work suitable for SIGMOD, VLDB, or ICDE, so every exploratory step should be
+judged by whether it can plausibly support that level of contribution.
+
 Terminology constraint: use research-paper terminology rather than
 software-maintenance terminology in new research notes, summaries, slides, and
 task descriptions. Prefer "review", "analyze", "evaluate", "survey",
