@@ -2411,3 +2411,94 @@ avoid overwriting or rerunning expensive input generation on the current root.
 Commit and push this driver. The next useful reproducibility step is a fresh
 root dry-run/verification exercise, or an archived input-bundle plan if a paper
 artifact is the target.
+
+## Session 2026-07-08 10:27 HKT
+
+### Goal
+
+Evaluate whether the fixed-policy meeting summary and slides need an update
+after the latest reproducibility/provenance progress, and update them while
+preserving the existing narrative style.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- `git status --short --branch`: clean and aligned with
+  `origin/saq-boundary-audit`
+- Files read:
+  - `AGENTS.md`
+  - `TASK.md`
+  - `RESULTS.md`
+  - `docs/saq_fixed_policy_meeting_summary_2026_07_07.md`
+  - `docs/saq_fixed_policy_meeting_slides_2026_07_07.md`
+  - `docs/saq_fixed_policy_reproducibility_review_2026_07_08.md`
+  - `docs/saq_fixed_policy_input_preparation_driver_2026_07_08.md`
+
+### Hypothesis / plan
+
+The experimental evidence table does not need to change, but the meeting
+materials should be updated because the previous draft still described the
+artifact story as under-packaged. The updated version should keep the 2026-07-07
+method narrative and add the 2026-07-08 reproducibility/provenance state,
+top-conference contribution target, and novelty/overhead caution.
+
+### Commands run
+
+```bash
+git status --short --branch
+find docs -maxdepth 1 -type f \( -name '*meeting*summary*' -o -name '*meeting*slides*' -o -name '*slides*' -o -name '*summary*' \) | sort
+rg -n "^(#|##|###|Slide|## Slide|# Slide)|Headline:|headline|reproduc|provenance|driver|artifact|SIGMOD|VLDB|ICDE|novelty|overhead|limitation|Next" docs/saq_fixed_policy_meeting_summary_2026_07_07.md docs/saq_fixed_policy_meeting_slides_2026_07_07.md docs/saq_fixed_policy_reproducibility_review_2026_07_08.md docs/saq_fixed_policy_input_preparation_driver_2026_07_08.md
+sed -n '1,220p' docs/saq_fixed_policy_meeting_summary_2026_07_07.md
+sed -n '1,120p' docs/saq_fixed_policy_meeting_slides_2026_07_07.md
+sed -n '720,900p' docs/saq_fixed_policy_meeting_slides_2026_07_07.md
+sed -n '1,220p' AGENTS.md
+sed -n '1,220p' TASK.md
+sed -n '1,520p' RESULTS.md
+cp docs/saq_fixed_policy_meeting_summary_2026_07_07.md docs/saq_fixed_policy_meeting_summary_2026_07_08.md
+cp docs/saq_fixed_policy_meeting_slides_2026_07_07.md docs/saq_fixed_policy_meeting_slides_2026_07_08.md
+rg -n "clean-machine|auditable|audit|harden|triage|patch|2026-07-07|Date: 2026-07-07|docs/saq_fixed_policy_meeting_summary_2026_07_07" docs/saq_fixed_policy_meeting_summary_2026_07_08.md docs/saq_fixed_policy_meeting_slides_2026_07_08.md
+date '+%Y-%m-%d %H:%M %Z'
+```
+
+### Files changed
+
+- Added `docs/saq_fixed_policy_meeting_summary_2026_07_08.md`.
+- Added `docs/saq_fixed_policy_meeting_slides_2026_07_08.md`.
+- Updated `PROGRESS.md` with this session log.
+
+### Artifacts produced
+
+```text
+docs/saq_fixed_policy_meeting_summary_2026_07_08.md
+docs/saq_fixed_policy_meeting_slides_2026_07_08.md
+```
+
+### Result
+
+The meeting materials do need an update. The 2026-07-08 versions keep the
+existing method/evidence narrative, but add:
+
+- the explicit SIGMOD/VLDB/ICDE-level contribution target;
+- the novelty/overhead caution that the method is still a policy layer around
+  SAQ rather than an independent quantizer;
+- the full-SHA256 input manifest, preparation provenance, and executable
+  preparation/verification driver;
+- the current verification readout `matched=20 missing=0 mismatch=0 total=20`;
+- updated limitations and meeting questions centered on fresh-root
+  verification, artifact packaging, and the remaining contribution gap.
+
+### Interpretation
+
+The new meeting version should be used instead of the 2026-07-07 draft. The
+evidence table remains unchanged, so the update should be presented as a
+clearer and more reproducible meeting narrative rather than as a new empirical
+result.
+
+### Problems / blockers
+
+No blocker. A fresh-root preparation/verification run has still not been
+executed.
+
+### Next action
+
+Validate the markdown diff, then commit and push the updated meeting materials.
