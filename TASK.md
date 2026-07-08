@@ -3,8 +3,9 @@
 ## Active Goal
 
 Develop a clean query-unaware structural SAQ follow-up from original SAQ code
-plus confirmed correctness fixes. The current main direction is
-single-global-plan segment-cost-aware DP.
+plus confirmed correctness fixes. The current main direction is data-only
+planner-objective analysis for SAQ: evaluate whether SAQ's global variance-risk
+model is the right objective for CAQ/SAQ quantization and search.
 
 The target is a database top-conference-level contribution suitable for SIGMOD,
 VLDB, or ICDE. Future work should be judged by research novelty, evidence,
@@ -23,47 +24,58 @@ residual plans can slightly improve recall, but per-query multi-plan estimator
 overhead can dominate the benefit. Treat that as motivation, not as the new
 method.
 
+The single-global static segment-cost direction also produced negative evidence:
+SAQ's default global plan was not dominated on deterministic risk-cost
+frontiers, and GIST near-frontier lower-cost plans did not improve safe-search
+QPS end to end. Treat this as limitation evidence, not as the main method.
+
 ## Research Priority
 
-**Single-global-plan segment-cost-aware DP**
+**Data-only SAQ planner-objective analysis**
 
 Question:
 
 ```text
-Can SAQ's global planner account for search-time segment cost without relying
-on post-hoc candidate filtering or mixed per-cluster plans?
+Does SAQ's variance-risk objective, sum(segment_variance) / 2^bits, accurately
+predict the actual query-unaware quantization and distance-estimation error of
+CAQ/SAQ segments?
 ```
 
 Candidate method:
 
 ```text
-Extend the global DP objective or report a Pareto frontier over quantization
-risk and implementation-derived segment-cost terms while keeping one global
-plan.
+If the SAQ proxy has a systematic, cross-dataset mismatch with measured
+data-only CAQ/SAQ error, derive a replacement global DP objective that keeps one
+global plan and does not use representative queries.
 ```
 
 Required accounting:
 
-- recall and QPS under safe search;
-- index build time and index size;
-- plan shape and total bit budget;
-- static cost terms such as positive dimensional volume, accurate bit volume,
-  segment count, zero-tail mass, and per-segment metadata/factor overhead;
-- runtime decomposition if an end-to-end index is built.
+- exact SAQ proxy risk for each evaluated segment and bit width;
+- measured data-only quantization or estimator error for the same segment and
+  bit width;
+- cross-dataset agreement or disagreement between proxy risk and measured
+  error;
+- offline measurement cost and how it compares with SAQ index construction;
+- if a replacement objective is proposed, recall/QPS under safe search, index
+  build time, index size, plan shape, and total bit budget.
 
 ## Immediate Next Step
 
-Start offline. Reproduce SAQ's global DP and generate a deterministic
-risk-vs-cost frontier for existing datasets and bit budgets before building any
-new index.
+Start offline. Build a small measurement driver that compares SAQ's variance
+proxy against measured data-only segment error for existing datasets and bit
+budgets before proposing any new planner.
 
 The first study should answer:
 
-1. Is SAQ's default global plan far from a risk-cost Pareto frontier?
-2. Are there global plans with nearly identical risk but meaningfully lower
-   implementation-derived cost?
-3. Does the signal hold beyond one dataset?
-4. Can the objective avoid unjustified free hyperparameters?
+1. Does the SAQ proxy preserve the ranking of segment/bit choices under
+   measured CAQ/SAQ error?
+2. Are mismatches systematic across GIST, CIFAR, DEEP, audio, and word2vec, or
+   isolated to one dataset?
+3. Can any correction be derived from measurable data-only quantities rather
+   than post-hoc rules or fitted query labels?
+4. Is the offline measurement overhead small enough to be credible relative to
+   index construction?
 
 ## Constraints
 
@@ -72,6 +84,10 @@ The first study should answer:
 - Use held-out queries only for final evaluation.
 - Keep one global plan. Do not introduce per-cluster plan ids or mixed-plan
   search dispatch.
+- Do not continue simple static global segment-cost DP as the main method. Its
+  current role is limitation evidence.
+- Treat `-custom_quant_plan` as an experimental evaluation hook, not as a
+  research contribution by itself.
 - Use research-paper terminology in new docs and task descriptions: prefer
   "review", "analyze", "evaluate", "survey", "evidence", and "limitations" over
   "audit", "harden", "triage", and "patch" unless discussing code correctness

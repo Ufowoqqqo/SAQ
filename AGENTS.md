@@ -27,11 +27,12 @@ code correctness, debugging, or repository maintenance.
 
 ## Active Direction
 
-**Single-global-plan segment-cost-aware DP.** Study whether SAQ's global
-variance-driven planner can account for search-time segment cost while keeping
-one dataset-level segment/bit plan.
+**Data-only SAQ planner-objective analysis.** Study whether SAQ's global
+variance-risk model, `sum(segment_variance) / 2^bits`, is a faithful
+query-unaware objective for CAQ/SAQ quantization and distance estimation.
 
-The method must preserve SAQ's one-plan search architecture:
+Any proposed method should preserve SAQ's one-plan search architecture unless a
+later note explicitly motivates a different architecture:
 
 ```text
 one dataset-level segment/bit plan
@@ -40,8 +41,17 @@ no per-cluster plan ids
 no mixed-plan search dispatch
 ```
 
-The first implementation should be offline only: reproduce SAQ's global DP and
-produce a deterministic risk-vs-cost frontier before building any new index.
+The first implementation should be offline only: compare SAQ's variance proxy
+against measured data-only segment error across existing datasets and bit
+budgets before proposing a replacement planner or building new indexes.
+
+Retired main directions on this branch:
+
+- mixed shared local SAQ plans: useful negative evidence, but multi-plan
+  estimator overhead can dominate the recall benefit;
+- simple single-global static segment-cost DP: useful limitation evidence, but
+  deterministic risk-cost frontiers did not dominate SAQ default and GIST
+  near-frontier plans did not improve safe-search QPS.
 
 ## Branch Hygiene
 
@@ -98,11 +108,14 @@ multi-segment recall/QPS claims, prefer:
 ## Do-Not Rules
 
 - Do not continue mixed shared local SAQ plans as the main method.
+- Do not continue simple static global segment-cost DP as the main method.
 - Do not continue the old empirical fixed-policy scorer as the main method.
 - Do not add wider scorer grids, local candidate families, or complex post-hoc
   filters unless they are used only as baselines or ablations.
 - Do not use query-aware plan learning under the current direction.
 - Do not present bug fixes as research contributions.
+- Treat `-custom_quant_plan` as an experimental evaluation hook, not as a
+  research contribution by itself.
 - Do not start broad experiments before writing the research question, expected
   contribution, overhead model, strict-reviewer objection, and stop condition.
 - Do not introduce unjustified hyperparameters. Any hyperparameter used in a
