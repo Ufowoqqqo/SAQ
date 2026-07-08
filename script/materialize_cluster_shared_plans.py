@@ -30,6 +30,15 @@ def compact_plan(plan: crp.Plan) -> str:
     return crp.compact_plan(plan)
 
 
+def plan_search_cost(plan: crp.Plan, bit_weight: float) -> float:
+    positive_segments = sum(1 for _, bits in plan if bits > 0)
+    total_segments = len(plan)
+    used_bits = crp.plan_used_bits(plan)
+    if total_segments == 0:
+        return math.inf
+    return float(positive_segments + total_segments + bit_weight * used_bits)
+
+
 def materialize(args: argparse.Namespace) -> dict[str, Any]:
     case = matrix.MatrixCase(
         name=args.name,
@@ -94,24 +103,37 @@ def materialize(args: argparse.Namespace) -> dict[str, Any]:
 
     unique_plan_ids: dict[str, int] = {}
     unique_plans: list[str] = []
+    unique_plan_search_costs: list[float] = []
     group_to_unique: list[int] = []
     for plan in group_plans:
         plan_str = compact_plan(plan)
         if plan_str not in unique_plan_ids:
             unique_plan_ids[plan_str] = len(unique_plans)
             unique_plans.append(plan_str)
+            unique_plan_search_costs.append(plan_search_cost(plan, args.search_cost_bit_weight))
         group_to_unique.append(unique_plan_ids[plan_str])
 
-    cost_assigned_group = np.argmin(group_costs, axis=1)
+    global_search_cost = plan_search_cost(global_plan, args.search_cost_bit_weight)
+    group_search_costs = np.array(
+        [plan_search_cost(plan, args.search_cost_bit_weight) for plan in group_plans], dtype=np.float64
+    )
+    normalized_residual_costs = group_costs / np.maximum(global_costs[active], args.eps)[:, None]
+    normalized_search_costs = group_search_costs / max(global_search_cost, args.eps)
+    assignment_scores = normalized_residual_costs + args.search_cost_lambda * normalized_search_costs[None, :]
+
+    cost_assigned_group = np.argmin(assignment_scores, axis=1)
     cost_assigned_costs = np.min(group_costs, axis=1)
+    cost_aware_assigned_costs = group_costs[np.arange(active.size), cost_assigned_group]
     cost_assigned_weighted_cost = float(np.sum(cost_assigned_costs * active_weights))
+    cost_aware_assigned_weighted_cost = float(np.sum(cost_aware_assigned_costs * active_weights))
+    assigned_score = float(np.sum(assignment_scores[np.arange(active.size), cost_assigned_group] * active_weights))
 
     cluster_plan_ids = np.zeros(prepared.num_clusters, dtype=np.int64)
     cluster_assignment_source = np.full(prepared.num_clusters, "inactive", dtype=object)
     for pos, cid in enumerate(active):
         group_id = int(cost_assigned_group[pos])
         cluster_plan_ids[cid] = group_to_unique[group_id]
-        cluster_assignment_source[cid] = "cost"
+        cluster_assignment_source[cid] = "cost_aware" if args.search_cost_lambda > 0 else "cost"
 
     output_prefix = Path(args.output_prefix)
     output_prefix.parent.mkdir(parents=True, exist_ok=True)
@@ -130,8 +152,9 @@ def materialize(args: argparse.Namespace) -> dict[str, Any]:
         for cid, plan_id in enumerate(cluster_plan_ids):
             f.write(f"{cid} {int(plan_id)}\n")
 
-    assignment_rows: list[dict[str, Any]] = []
     active_set = set(active.tolist())
+    active_pos = {int(cid): pos for pos, cid in enumerate(active)}
+    assignment_rows: list[dict[str, Any]] = []
     for cid in range(prepared.num_clusters):
         assignment_rows.append(
             {
@@ -142,6 +165,9 @@ def materialize(args: argparse.Namespace) -> dict[str, Any]:
                 "source": str(cluster_assignment_source[cid]),
                 "global_cost": float(global_costs[cid]),
                 "local_oracle_cost": "" if not np.isfinite(local_costs[cid]) else float(local_costs[cid]),
+                "assigned_cost": ""
+                if cid not in active_set
+                else float(cost_aware_assigned_costs[active_pos[cid]]),
             }
         )
     with assignment_csv.open("w", newline="") as f:
@@ -151,7 +177,9 @@ def materialize(args: argparse.Namespace) -> dict[str, Any]:
 
     local_gain = 1.0 - local_ratio
     cost_assigned_ratio = cost_assigned_weighted_cost / max(global_weighted_cost, args.eps)
+    cost_aware_assigned_ratio = cost_aware_assigned_weighted_cost / max(global_weighted_cost, args.eps)
     retention = (1.0 - cost_assigned_ratio) / local_gain if local_gain > args.eps else 0.0
+    cost_aware_retention = (1.0 - cost_aware_assigned_ratio) / local_gain if local_gain > args.eps else 0.0
     metadata_bits = prepared.num_clusters * max(1, math.ceil(math.log2(max(len(unique_plans), 2))))
 
     summary = {
@@ -170,7 +198,14 @@ def materialize(args: argparse.Namespace) -> dict[str, Any]:
         "local_oracle_ratio": local_ratio,
         "profile_assigned_ratio": profile_assigned_cost / max(global_weighted_cost, args.eps),
         "cost_assigned_ratio": cost_assigned_ratio,
+        "cost_aware_assigned_ratio": cost_aware_assigned_ratio,
         "shared_retention": retention,
+        "cost_aware_shared_retention": cost_aware_retention,
+        "search_cost_lambda": args.search_cost_lambda,
+        "search_cost_bit_weight": args.search_cost_bit_weight,
+        "global_search_cost": global_search_cost,
+        "plan_search_costs": unique_plan_search_costs,
+        "assigned_score": assigned_score,
         "plan_id_metadata_bits": metadata_bits,
         "plans": unique_plans,
         "paths": {
@@ -196,7 +231,10 @@ def materialize(args: argparse.Namespace) -> dict[str, Any]:
         f"- global plan: `{compact_plan(global_plan)}`",
         f"- local-oracle ratio: {local_ratio:.6f}",
         f"- cost-assigned ratio: {cost_assigned_ratio:.6f}",
+        f"- cost-aware assigned ratio: {cost_aware_assigned_ratio:.6f}",
         f"- shared retention: {retention:.3f}",
+        f"- cost-aware shared retention: {cost_aware_retention:.3f}",
+        f"- search-cost lambda: {args.search_cost_lambda}",
         f"- plan-id metadata: {metadata_bits} bits",
         "",
         "## Plans",
@@ -204,7 +242,10 @@ def materialize(args: argparse.Namespace) -> dict[str, Any]:
     ]
     for plan_id, plan_str in enumerate(unique_plans):
         count = int(np.sum(cluster_plan_ids == plan_id))
-        lines.append(f"- plan {plan_id}: `{plan_str}` ({count} clusters)")
+        lines.append(
+            f"- plan {plan_id}: `{plan_str}` ({count} clusters, "
+            f"search cost {unique_plan_search_costs[plan_id]:.3f})"
+        )
     lines.extend(
         [
             "",
@@ -231,6 +272,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--chunk-size", type=int, default=8192, help="Residual accumulation chunk size.")
     parser.add_argument("--min-cluster-size", type=int, default=2, help="Minimum active cluster size.")
     parser.add_argument("--kmeans-iters", type=int, default=30, help="Weighted k-means iterations.")
+    parser.add_argument(
+        "--search-cost-lambda",
+        type=float,
+        default=0.0,
+        help="Weight for normalized plan search-cost proxy in cluster-plan assignment.",
+    )
+    parser.add_argument(
+        "--search-cost-bit-weight",
+        type=float,
+        default=0.0,
+        help="Optional weight for used bits in the plan search-cost proxy.",
+    )
     parser.add_argument(
         "--risk-stat",
         choices=["variance", "second_moment"],

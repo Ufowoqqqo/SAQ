@@ -382,13 +382,12 @@ inline void IVF::search(const Eigen::RowVectorXf &__restrict__ ori_query, size_t
 
     utils::ResultPool KNNs(topk, searcher_cfg.dist_type == DistType::IP);
 
-    SAQSearcher<kDistType> searcher(*saq_data_.get(), searcher_cfg, ori_query);
+    std::unique_ptr<SAQSearcher<kDistType>> searcher;
     std::vector<std::unique_ptr<SAQSearcher<kDistType>>> shared_searchers;
     if (use_shared_plans()) {
-        shared_searchers.reserve(shared_saq_datas_.size());
-        for (const auto &data : shared_saq_datas_) {
-            shared_searchers.emplace_back(std::make_unique<SAQSearcher<kDistType>>(*data, searcher_cfg, ori_query));
-        }
+        shared_searchers.resize(shared_saq_datas_.size());
+    } else {
+        searcher = std::make_unique<SAQSearcher<kDistType>>(*saq_data_.get(), searcher_cfg, ori_query);
     }
 
     // LOG(INFO) << "Searching clusters";
@@ -397,9 +396,13 @@ inline void IVF::search(const Eigen::RowVectorXf &__restrict__ ori_query, size_t
         if (use_shared_plans()) {
             const auto plan_id = cluster_plan_ids_[cid];
             CHECK_LT(plan_id, shared_searchers.size());
+            if (!shared_searchers[plan_id]) {
+                shared_searchers[plan_id] =
+                    std::make_unique<SAQSearcher<kDistType>>(*shared_saq_datas_[plan_id], searcher_cfg, ori_query);
+            }
             shared_searchers[plan_id]->searchCluster(&parallel_clusters_[cid], KNNs);
         } else {
-            searcher.searchCluster(&parallel_clusters_[cid], KNNs);
+            searcher->searchCluster(&parallel_clusters_[cid], KNNs);
         }
     }
 
@@ -408,6 +411,9 @@ inline void IVF::search(const Eigen::RowVectorXf &__restrict__ ori_query, size_t
         if (use_shared_plans()) {
             QueryRuntimeMetrics metrics;
             for (const auto &cur_searcher : shared_searchers) {
+                if (!cur_searcher) {
+                    continue;
+                }
                 auto cur_metrics = cur_searcher->getRuntimeMetrics();
                 metrics.acc_bitsum += cur_metrics.acc_bitsum;
                 metrics.fast_bitsum += cur_metrics.fast_bitsum;
@@ -415,7 +421,7 @@ inline void IVF::search(const Eigen::RowVectorXf &__restrict__ ori_query, size_t
             }
             *runtime_metrics = metrics;
         } else {
-            *runtime_metrics = searcher.getRuntimeMetrics();
+            *runtime_metrics = searcher->getRuntimeMetrics();
         }
     }
 

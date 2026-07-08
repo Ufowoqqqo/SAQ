@@ -105,7 +105,7 @@ mode 2:
   -searcher_safe_block_min_mode=2
 ```
 
-## Result
+## Initial Result
 
 | index | R@100 | QPS | avg ms/query | dist ratio | index size | build time |
 |---|---:|---:|---:|---:|---:|---:|
@@ -138,11 +138,11 @@ query-unaware policy, but naive mixed-plan search can lose enough QPS that the
 method is not yet a strict improvement over SAQ.
 ```
 
-## Next Decision
+## Follow-Up Test
 
 Do not broaden this prototype to more datasets yet. The next research question
-should be whether the QPS loss is intrinsic to mixed segment shapes or mostly a
-prototype implementation cost. A useful next test would compare:
+is whether the QPS loss is intrinsic to mixed segment shapes or mostly a
+prototype implementation cost. The follow-up test below compares:
 
 - default SAQ;
 - shared local M4 with current mixed search;
@@ -152,3 +152,56 @@ prototype implementation cost. A useful next test would compare:
 If the cost-aware variant cannot preserve the offline recall signal while
 recovering QPS, Direction 1 should become supporting limitation analysis rather
 than the main contribution.
+
+## Falsification: Lazy Searcher And Cost-Aware Assignment
+
+The next experiment tested two narrow alternatives:
+
+1. Reduce prototype overhead by constructing shared-plan searchers lazily. In
+   shared-plan mode, the search path now avoids constructing the unused default
+   searcher and only constructs shared searchers for plan ids reached by the
+   query's probed IVF cells.
+2. Add a minimal query-unaware cost-aware assignment objective to the
+   materializer:
+
+```text
+score(cluster, plan)
+  = residual_proxy(cluster, plan) / residual_proxy(cluster, default_plan)
+  + lambda * search_cost_proxy(plan) / search_cost_proxy(default_plan)
+```
+
+The prototype search-cost proxy is intentionally simple:
+
+```text
+search_cost_proxy(plan) = positive_segment_count + total_segment_count
+```
+
+For `lambda=1.0`, the materializer shifts many clusters to the lower segment
+count plan `192:6,512:4,256:2`. This reduces the file size but substantially
+worsens the residual proxy:
+
+```text
+cost-assigned residual ratio:       0.943474
+cost-aware assigned residual ratio: 1.024479
+```
+
+The same-machine safe-search result at `nprobe=200`, 24 threads is:
+
+| index | R@100 | QPS | avg ms/query | index size |
+|---|---:|---:|---:|---:|
+| SAQ default | 0.94469 | 2690.89 | 8.91988 | 570M |
+| shared local M4, lazy search | 0.94548 | 2439.68 | 9.83749 | 573M |
+| cost-aware M4, lambda=1.0 | 0.94485 | 2399.94 | 10.00063 | 567M |
+
+This falsifies the simple cost-aware proxy as a useful fix. Lazy searcher
+construction recovers some prototype overhead compared with the initial
+`2255.76` QPS measurement, but the shared-plan index is still slower than
+default SAQ. The `lambda=1.0` endpoint slightly preserves recall over default
+but is slower than the residual-only shared plan, despite its smaller index.
+
+The immediate interpretation is that segment count alone is not an adequate
+search-cost model for SAQ. A credible cost-aware planner would need to model
+at least quantized dimensional volume, zero-tail behavior, per-segment pruning
+effectiveness, and the cost of maintaining multiple plan-specific query
+estimators. Without that stronger model, Direction 1 remains useful as SAQ
+limitation evidence but is not yet a strict improvement over SAQ.
