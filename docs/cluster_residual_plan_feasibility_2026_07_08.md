@@ -172,6 +172,7 @@ ids, and global PCA variances.
 
 | dataset | K | sampled vectors | global plan | local-oracle ratio | M=2 assigned | M=4 assigned | M=8 assigned | interpretation |
 |---|---:|---:|---|---:|---:|---:|---:|---|
+| GIST full | 4096 | 1000000 | `64:11,192:6,320:4,256:2,128:0` | 0.941956 | 0.953941 | 0.951516 | 0.951317 | stronger positive signal |
 | GIST sample100k | 512 | 100000 | `64:11,192:6,320:4,256:2,128:0` | 0.951051 | 0.959536 | 0.957834 | 0.957697 | positive residual-structure signal |
 | CIFAR60k | 512 | 60000 | `64:9,192:5,128:3,128:0` | 0.979600 | 0.983263 | 0.983201 | 0.982633 | weak signal |
 | DEEP sample100k | 512 | 100000 | `64:6,192:3` | 0.998388 | 1.000000 | 1.000000 | 1.000000 | stop signal for this proxy |
@@ -189,3 +190,48 @@ method should probably start with a data-only eligibility test: continue only
 when local-oracle residual plans beat the global plan by a visible margin and a
 small shared family preserves most of that gain. Otherwise, abstain rather than
 adding plan-id metadata with little expected benefit.
+
+## Full GIST K4096 Check
+
+The more formal GIST run used all 1M base vectors and the prepared K4096 IVF
+assignment:
+
+```bash
+python script/cluster_residual_plan_feasibility.py \
+  --data-dir /tmp/saq-run/data/gist_full \
+  --dataset gist_full \
+  --k 4096 \
+  --avg-bits 4 \
+  --max-vectors 0 \
+  --shared-plan-counts 2,4,8 \
+  --output-prefix /tmp/saq-run/structural/gist_full_K4096_B4_cluster_residual
+```
+
+The run covered 1000000 vectors and 4088 active clusters. The global plan was
+unchanged from the sample run:
+
+```text
+64:11,192:6,320:4,256:2,128:0
+```
+
+The local-oracle residual plans reduced the weighted residual DP cost ratio to
+`0.941956`, which is stronger than the sample100k/K512 ratio of `0.951051`.
+Small shared plan families again retained a meaningful portion of the gain:
+
+| shared plans | profile-assigned ratio | best-of-family ratio | active groups |
+|---:|---:|---:|---:|
+| 2 | 0.953941 | 0.950746 | 2 |
+| 4 | 0.951516 | 0.943474 | 4 |
+| 8 | 0.951317 | 0.943305 | 8 |
+
+This supports the core Direction 1 hypothesis on a more formal GIST setting:
+SAQ's one global variance-driven plan leaves measurable IVF-local residual
+structure on GIST, and a small plan family can represent much of the local
+oracle under the same offline proxy.
+
+The result also exposes the next limitation to analyze. The best-of-family
+ratio for M=4 is close to the local oracle (`0.943474` versus `0.941956`), but
+the current profile-assigned ratio is weaker (`0.951516`). Thus the next
+research question is not only whether multiple plans exist, but whether a
+query-unaware assignment rule can choose the right shared plan per cluster
+without using query labels or adding excessive metadata.
