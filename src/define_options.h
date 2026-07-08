@@ -28,6 +28,8 @@ DEFINE_bool(enable_segmentation, true, "enable segmentation");
 DEFINE_int32(seg_eqseg, 0, "segmentation equalization");
 DEFINE_bool(use_compact_layout, false, "use compact memory layout");
 DEFINE_double(q_firstdim, 0, "only quantization first dimension");
+DEFINE_string(shared_plan_file, "", "prototype shared-plan materialization file for per-IVF-cluster plans");
+DEFINE_string(shared_plan_tag, "", "suffix tag for shared-plan prototype index and result files");
 
 // Searcher config
 DEFINE_double(searcher_vars_bound_m, 4, "");
@@ -62,6 +64,9 @@ inline std::string parseArgs(saqlib::QuantizeConfig *config = nullptr) {
     }
 
     args_str += cfg.toString();
+    if (!FLAGS_shared_plan_tag.empty()) {
+        args_str += fmt::format("_shared{}", FLAGS_shared_plan_tag);
+    }
 
     if (config)
         *config = cfg;
@@ -99,7 +104,8 @@ struct DataFilePaths {
         size_t K = FLAGS_K;
         auto args_str = parseArgs();
 
-        input_path = std::string("./data/") + dataset;
+        input_path = FLAGS_data_path.empty() ? std::string("./data/") + dataset
+                                             : fmt::format("{}/{}", FLAGS_data_path, dataset);
         result_path = std::string("./results/saq/");
 
         data_file = fmt::format("{}/{}_base{}.fvecs", input_path, dataset, use_pca ? "_pca" : "");

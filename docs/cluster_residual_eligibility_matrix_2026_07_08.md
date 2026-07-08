@@ -106,6 +106,10 @@ therefore be a minimal index-format prototype only for rows that pass the
 eligibility rule, with explicit comparison against SAQ default and with
 abstention rows left unchanged.
 
+The first such prototype for GIST full K4096 B4 is recorded in
+`docs/gist_shared_plan_end_to_end_2026_07_08.md`. It confirms a small recall
+gain but also shows a substantial QPS loss in the naive mixed-plan search path.
+
 ## Limitations
 
 - The Python prototype is slow on full GIST K4096 because it evaluates

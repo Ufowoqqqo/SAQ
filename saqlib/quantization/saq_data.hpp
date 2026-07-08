@@ -99,11 +99,27 @@ class SaqDataMaker {
         set_variance(std::move(data_variance));
     }
 
+    void set_quant_plan(QuantPlanT quant_plan) {
+        CHECK(is_variance_set()) << "set variance before setting an explicit quantization plan";
+        size_t dim_sum = 0;
+        for (auto [dim, bit] : quant_plan) {
+            CHECK_EQ(dim % kDimPaddingSize, 0);
+            CHECK_LE(bit, kMaxQuantBit);
+            dim_sum += dim;
+        }
+        CHECK_EQ(dim_sum, num_dim_padded_) << "explicit quantization plan must cover the padded dimension";
+        data_->quant_plan = std::move(quant_plan);
+        prepare_base_datas();
+    }
+
   protected:
     void prepare_quantizers() {
         CHECK_EQ(data_->data_variance.cols(), num_dim_padded_) << "please set_variance or compute_variance before prepare()";
         analyze_plan();
+        prepare_base_datas();
+    }
 
+    void prepare_base_datas() {
         data_->base_datas.clear();
         for (auto [dim, bit] : data_->quant_plan) {
             BaseQuantizerData bi;
