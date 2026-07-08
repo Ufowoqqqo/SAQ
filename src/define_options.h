@@ -31,6 +31,8 @@ DEFINE_double(q_firstdim, 0, "only quantization first dimension");
 
 // Searcher config
 DEFINE_double(searcher_vars_bound_m, 4, "");
+DEFINE_bool(searcher_safe_block_min, false, "compatibility alias for -searcher_safe_block_min_mode=1");
+DEFINE_int32(searcher_safe_block_min_mode, 0, "safe block-min mode. 0: native, 1: scalar finite min, 2: SIMD finite min");
 DEFINE_int32(searcher_dist_type, 0, "searcher distance type. 0: L2Sqr, 1: IP");
 
 inline std::string parseArgs(saqlib::QuantizeConfig *config = nullptr) {

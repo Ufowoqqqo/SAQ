@@ -74,7 +74,9 @@ struct QuantizeConfig {
 };
 
 struct SearcherConfig {
-    float searcher_vars_bound_m = 4;      // searcher variance prune bound m. Larger value means more accurate but slower.
-    DistType dist_type = DistType::L2Sqr; // distance type. L2Sqr or IP
+    float searcher_vars_bound_m = 4;          // searcher variance prune bound m. Larger value means more accurate but slower.
+    bool searcher_safe_block_min = false;     // compatibility alias for scalar safe block-min mode.
+    int searcher_safe_block_min_mode = 0;     // 0: native, 1: scalar finite min, 2: SIMD finite min.
+    DistType dist_type = DistType::L2Sqr;     // distance type. L2Sqr or IP
 };
 } // namespace saqlib

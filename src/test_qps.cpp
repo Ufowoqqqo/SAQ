@@ -255,6 +255,8 @@ int main(int argc, char *argv[]) {
     // Setup searcher config
     SearcherConfig searcher_cfg;
     searcher_cfg.searcher_vars_bound_m = FLAGS_searcher_vars_bound_m;
+    searcher_cfg.searcher_safe_block_min = FLAGS_searcher_safe_block_min;
+    searcher_cfg.searcher_safe_block_min_mode = FLAGS_searcher_safe_block_min_mode;
     if (FLAGS_searcher_dist_type == 0) {
         searcher_cfg.dist_type = DistType::L2Sqr;
     } else if (FLAGS_searcher_dist_type == 1) {
@@ -269,6 +271,14 @@ int main(int argc, char *argv[]) {
                                           dataset_str, args_str.c_str(), FLAGS_fix_thread, FLAGS_fix_nprobe);
 
     result_file += fmt::format("_sm{}", FLAGS_searcher_vars_bound_m);
+    const int safe_block_min_mode = FLAGS_searcher_safe_block_min && FLAGS_searcher_safe_block_min_mode == 0
+                                    ? 1
+                                    : FLAGS_searcher_safe_block_min_mode;
+    if (safe_block_min_mode == 1) {
+        result_file += "_safeblockmin";
+    } else if (safe_block_min_mode == 2) {
+        result_file += "_safeblockminsimd";
+    }
     if (FLAGS_searcher_dist_type == 1) {
         result_file += "_ip";
     }
