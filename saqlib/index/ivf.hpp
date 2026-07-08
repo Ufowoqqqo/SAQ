@@ -24,6 +24,28 @@
 
 namespace saqlib
 {
+inline void mergeQueryRuntimeMetrics(QueryRuntimeMetrics &dst, const QueryRuntimeMetrics &src)
+{
+    dst.fast_bitsum += src.fast_bitsum;
+    dst.acc_bitsum += src.acc_bitsum;
+    dst.total_comp_cnt += src.total_comp_cnt;
+    dst.clusters_visited += src.clusters_visited;
+    dst.blocks_visited += src.blocks_visited;
+    dst.vectors_visited += src.vectors_visited;
+    dst.segments_visited += src.segments_visited;
+    dst.variance_blocks_evaluated += src.variance_blocks_evaluated;
+    dst.variance_block_segment_evals += src.variance_block_segment_evals;
+    dst.variance_pruned_blocks += src.variance_pruned_blocks;
+    dst.fast_blocks_evaluated += src.fast_blocks_evaluated;
+    dst.fast_segment_evals += src.fast_segment_evals;
+    dst.fast_pruned_blocks += src.fast_pruned_blocks;
+    dst.accurate_blocks += src.accurate_blocks;
+    dst.accurate_candidates += src.accurate_candidates;
+    dst.accurate_segment_evals += src.accurate_segment_evals;
+    dst.distinct_plan_ids_visited += src.distinct_plan_ids_visited;
+    dst.shared_searchers_constructed += src.shared_searchers_constructed;
+}
+
 class IVF
 {
   public:
@@ -384,8 +406,12 @@ inline void IVF::search(const Eigen::RowVectorXf &__restrict__ ori_query, size_t
 
     std::unique_ptr<SAQSearcher<kDistType>> searcher;
     std::vector<std::unique_ptr<SAQSearcher<kDistType>>> shared_searchers;
+    std::vector<uint8_t> shared_plan_touched;
+    size_t distinct_plan_ids_visited = 0;
+    size_t shared_searchers_constructed = 0;
     if (use_shared_plans()) {
         shared_searchers.resize(shared_saq_datas_.size());
+        shared_plan_touched.assign(shared_saq_datas_.size(), 0);
     } else {
         searcher = std::make_unique<SAQSearcher<kDistType>>(*saq_data_.get(), searcher_cfg, ori_query);
     }
@@ -396,9 +422,14 @@ inline void IVF::search(const Eigen::RowVectorXf &__restrict__ ori_query, size_t
         if (use_shared_plans()) {
             const auto plan_id = cluster_plan_ids_[cid];
             CHECK_LT(plan_id, shared_searchers.size());
+            if (!shared_plan_touched[plan_id]) {
+                shared_plan_touched[plan_id] = 1;
+                distinct_plan_ids_visited += 1;
+            }
             if (!shared_searchers[plan_id]) {
                 shared_searchers[plan_id] =
                     std::make_unique<SAQSearcher<kDistType>>(*shared_saq_datas_[plan_id], searcher_cfg, ori_query);
+                shared_searchers_constructed += 1;
             }
             shared_searchers[plan_id]->searchCluster(&parallel_clusters_[cid], KNNs);
         } else {
@@ -415,13 +446,16 @@ inline void IVF::search(const Eigen::RowVectorXf &__restrict__ ori_query, size_t
                     continue;
                 }
                 auto cur_metrics = cur_searcher->getRuntimeMetrics();
-                metrics.acc_bitsum += cur_metrics.acc_bitsum;
-                metrics.fast_bitsum += cur_metrics.fast_bitsum;
-                metrics.total_comp_cnt += cur_metrics.total_comp_cnt;
+                mergeQueryRuntimeMetrics(metrics, cur_metrics);
             }
+            metrics.distinct_plan_ids_visited = distinct_plan_ids_visited;
+            metrics.shared_searchers_constructed = shared_searchers_constructed;
             *runtime_metrics = metrics;
         } else {
-            *runtime_metrics = searcher->getRuntimeMetrics();
+            auto metrics = searcher->getRuntimeMetrics();
+            metrics.distinct_plan_ids_visited = metrics.clusters_visited > 0 ? 1 : 0;
+            metrics.shared_searchers_constructed = 0;
+            *runtime_metrics = metrics;
         }
     }
 
@@ -496,9 +530,7 @@ inline void IVF::estimate(const Eigen::RowVectorXf &__restrict__ ori_query, size
             QueryRuntimeMetrics metrics;
             for (const auto &cur_estimator : shared_estimators) {
                 auto cur_metrics = cur_estimator->getRuntimeMetrics();
-                metrics.acc_bitsum += cur_metrics.acc_bitsum;
-                metrics.fast_bitsum += cur_metrics.fast_bitsum;
-                metrics.total_comp_cnt += cur_metrics.total_comp_cnt;
+                mergeQueryRuntimeMetrics(metrics, cur_metrics);
             }
             *runtime_metrics = metrics;
         } else {

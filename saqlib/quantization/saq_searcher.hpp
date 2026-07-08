@@ -73,6 +73,11 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
         auto clus_num = saq_clust->num_segments_;
         CHECK_EQ(clus_num, estimators_.size());
 
+        runtime_metrics_.clusters_visited += 1;
+        runtime_metrics_.blocks_visited += saq_clust->num_blocks_;
+        runtime_metrics_.vectors_visited += saq_clust->num_vec_;
+        runtime_metrics_.segments_visited += clus_num;
+
         if (clus_num == 1) {
             scanCluster(&saq_clust->get_segment(0), KNNs);
             return;
@@ -97,6 +102,8 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
 
             // 1. computes distance estimates using variance information for early pruning.
             if constexpr (enable_var) {
+                runtime_metrics_.variance_blocks_evaluated += 1;
+                runtime_metrics_.variance_block_segment_evals += clus_num;
                 for (size_t c_i = 0; c_i < clus_num; ++c_i) {
                     auto &estimator = estimators_[c_i];
                     auto cd = &clu_dist512_[c_i * FAST_ARRAY];
@@ -108,11 +115,14 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
 
                 mi = blockMin(curr_dist512, valid_lanes, curr_dist);
                 if (mi > distk) {
+                    runtime_metrics_.variance_pruned_blocks += 1;
                     continue;
                 }
             }
 
             // 2. use 1st bit to compute fast distance
+            runtime_metrics_.fast_blocks_evaluated += 1;
+            bool fast_pruned = false;
             for (size_t c_i = 0; c_i < clus_num; ++c_i) {
                 auto &cur_cluster = saq_clust->get_segment(c_i);
                 auto &estimator = estimators_[c_i];
@@ -120,6 +130,7 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
 
                 if (cur_cluster.num_bits_ == 0)
                     continue;
+                runtime_metrics_.fast_segment_evals += 1;
                 if constexpr (enable_var) {
                     curr_dist512[0] = _mm512_sub_ps(curr_dist512[0], cd[0]);
                     curr_dist512[1] = _mm512_sub_ps(curr_dist512[1], cd[1]);
@@ -131,12 +142,17 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
 
                 mi = blockMin(curr_dist512, valid_lanes, curr_dist);
                 if (mi > distk) {
+                    fast_pruned = true;
                     break;
                 }
+            }
+            if (fast_pruned) {
+                runtime_metrics_.fast_pruned_blocks += 1;
             }
 
             // 3. use full bits to compute accurate distance
             if (mi <= distk) {
+                runtime_metrics_.accurate_blocks += 1;
                 _mm512_store_ps(curr_dist, curr_dist512[0]);
                 _mm512_store_ps(curr_dist + 16, curr_dist512[1]);
 
@@ -150,9 +166,11 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
                         if (idx >= num_points) {
                             break;
                         }
+                        runtime_metrics_.accurate_candidates += 1;
                         float acc_dist = curr_dist[j];
                         for (size_t c_i = 0; c_i < clus_num; ++c_i) {
                             auto &estimator = estimators_[c_i];
+                            runtime_metrics_.accurate_segment_evals += 1;
                             acc_dist += estimator.compAccurateDist(idx) - clu_dist_[c_i * KFastScanSize + j];
                             if (acc_dist >= distk) {
                                 break;
@@ -266,6 +284,8 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
             auto curr_num_points = (blk_idx == num_blocks - 1) ? clusters->num_vec_ % KFastScanSize : KFastScanSize;
 
             estimator.compFastDist(blk_idx, est_dist);
+            runtime_metrics_.fast_blocks_evaluated += 1;
+            runtime_metrics_.fast_segment_evals += 1;
 
             __m512 simd_distk = _mm512_set1_ps(distk);
             uint32_t mask = ((uint32_t)_mm512_cmp_ps_mask(est_dist[0], simd_distk, 1)) |
@@ -275,12 +295,17 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
             mask = (mask & ((1ull << curr_num_points) - 1));
 
             // incremental distance computation - V2
+            if (mask) {
+                runtime_metrics_.accurate_blocks += 1;
+            }
             while (mask) {
                 uint32_t j = std::countr_zero(mask);
                 uint32_t lb = 1u << j;
                 auto idx = KFastScanSize * blk_idx + j;
                 mask -= lb;
                 PID id = clusters->ids()[idx];
+                runtime_metrics_.accurate_candidates += 1;
+                runtime_metrics_.accurate_segment_evals += 1;
                 auto ex_dist = estimator.compAccurateDist(idx);
                 KNNs.insert(id, ex_dist);
                 distk = KNNs.distk();

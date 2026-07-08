@@ -22,6 +22,21 @@ struct QueryRuntimeMetrics {
     size_t fast_bitsum = 0;
     size_t acc_bitsum = 0;
     size_t total_comp_cnt = 0;
+    size_t clusters_visited = 0;
+    size_t blocks_visited = 0;
+    size_t vectors_visited = 0;
+    size_t segments_visited = 0;
+    size_t variance_blocks_evaluated = 0;
+    size_t variance_block_segment_evals = 0;
+    size_t variance_pruned_blocks = 0;
+    size_t fast_blocks_evaluated = 0;
+    size_t fast_segment_evals = 0;
+    size_t fast_pruned_blocks = 0;
+    size_t accurate_blocks = 0;
+    size_t accurate_candidates = 0;
+    size_t accurate_segment_evals = 0;
+    size_t distinct_plan_ids_visited = 0;
+    size_t shared_searchers_constructed = 0;
 };
 
 template <DistType kDistType = DistType::Any>

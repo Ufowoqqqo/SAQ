@@ -19,6 +19,7 @@ using namespace saqlib;
 
 DEFINE_int32(fix_nprobe, 0, "Fixed nprobe value for QPS test. 0 means [5, 4000]");
 DEFINE_int32(fix_thread, 24, "Fixed thread value for QPS test. 0 means [1, 48]");
+DEFINE_bool(runtime_decomp, false, "Append runtime decomposition counters to the QPS CSV.");
 
 constexpr size_t TOPK = 100;
 constexpr size_t ROUND = 10;
@@ -31,10 +32,32 @@ struct Stats {
     float dist_ratio{0};
     float bw_mbps{0};
     float compute_kopps{0}; // computation pre seconds
+    double fast_bits_per_query{0};
+    double acc_bits_per_query{0};
+    double total_comp_per_query{0};
+    double clusters_per_query{0};
+    double blocks_per_query{0};
+    double vectors_per_query{0};
+    double segments_per_query{0};
+    double variance_blocks_per_query{0};
+    double variance_block_segment_evals_per_query{0};
+    double variance_pruned_block_ratio{0};
+    double fast_blocks_per_query{0};
+    double fast_segment_evals_per_query{0};
+    double fast_pruned_block_ratio{0};
+    double accurate_blocks_per_query{0};
+    double accurate_candidates_per_query{0};
+    double accurate_segment_evals_per_query{0};
+    double distinct_plans_per_query{0};
+    double shared_searchers_per_query{0};
 };
 
 float relative_error(float x, float base) {
     return std::abs(x - base) / base;
+}
+
+double safe_ratio(size_t num, size_t den) {
+    return den == 0 ? 0.0 : static_cast<double>(num) / static_cast<double>(den);
 }
 
 class QPSTester {
@@ -103,6 +126,7 @@ class QPSTester {
         utils::AvgMaxRecorder dist_ratio;
         size_t bandwith_sum_mb{0};
         size_t comput_sum_kop{0};
+        QueryRuntimeMetrics metric_sum;
         // utils::AvgMaxRecorder bandwith_mbps;
         // utils::AvgMaxRecorder comput_kops;
         Stats curr_stats;
@@ -114,6 +138,7 @@ class QPSTester {
             // comput_kops.insert(m.total_comp_cnt / 1000.0 / (tm_ms[i] / 1000));
             bandwith_sum_mb += (m.fast_bitsum + m.acc_bitsum) / 8.0 / 1024 / 1024;
             comput_sum_kop += m.total_comp_cnt / 1000.0;
+            mergeQueryRuntimeMetrics(metric_sum, m);
         }
 
         float recall = static_cast<float>(total_correct) / total_count;
@@ -124,12 +149,36 @@ class QPSTester {
         curr_stats.dist_ratio = dist_ratio.avg();
         curr_stats.bw_mbps = bandwith_sum_mb / tot_tm_ms * 1000;
         curr_stats.compute_kopps = comput_sum_kop / tot_tm_ms * 1000;
+        curr_stats.fast_bits_per_query = static_cast<double>(metric_sum.fast_bitsum) / NQ;
+        curr_stats.acc_bits_per_query = static_cast<double>(metric_sum.acc_bitsum) / NQ;
+        curr_stats.total_comp_per_query = static_cast<double>(metric_sum.total_comp_cnt) / NQ;
+        curr_stats.clusters_per_query = static_cast<double>(metric_sum.clusters_visited) / NQ;
+        curr_stats.blocks_per_query = static_cast<double>(metric_sum.blocks_visited) / NQ;
+        curr_stats.vectors_per_query = static_cast<double>(metric_sum.vectors_visited) / NQ;
+        curr_stats.segments_per_query = static_cast<double>(metric_sum.segments_visited) / NQ;
+        curr_stats.variance_blocks_per_query = static_cast<double>(metric_sum.variance_blocks_evaluated) / NQ;
+        curr_stats.variance_block_segment_evals_per_query = static_cast<double>(metric_sum.variance_block_segment_evals) / NQ;
+        curr_stats.variance_pruned_block_ratio = safe_ratio(metric_sum.variance_pruned_blocks, metric_sum.variance_blocks_evaluated);
+        curr_stats.fast_blocks_per_query = static_cast<double>(metric_sum.fast_blocks_evaluated) / NQ;
+        curr_stats.fast_segment_evals_per_query = static_cast<double>(metric_sum.fast_segment_evals) / NQ;
+        curr_stats.fast_pruned_block_ratio = safe_ratio(metric_sum.fast_pruned_blocks, metric_sum.fast_blocks_evaluated);
+        curr_stats.accurate_blocks_per_query = static_cast<double>(metric_sum.accurate_blocks) / NQ;
+        curr_stats.accurate_candidates_per_query = static_cast<double>(metric_sum.accurate_candidates) / NQ;
+        curr_stats.accurate_segment_evals_per_query = static_cast<double>(metric_sum.accurate_segment_evals) / NQ;
+        curr_stats.distinct_plans_per_query = static_cast<double>(metric_sum.distinct_plan_ids_visited) / NQ;
+        curr_stats.shared_searchers_per_query = static_cast<double>(metric_sum.shared_searchers_constructed) / NQ;
 
         std::cout << "num_threads: " << num_threads << "\trecall: " << recall << "\tdist_rate: " << curr_stats.dist_ratio
                   << " \tq_avg_tm: " << time_recorder_ms.avg() << "ms\tqps: " << curr_stats.qps << "\t";
 
         std::cout << "bw_mbps: " << curr_stats.bw_mbps << "MB/s\t";
         std::cout << "compute_kopps: " << curr_stats.compute_kopps << "KOP/s\t";
+        if (FLAGS_runtime_decomp) {
+            std::cout << "clusters/q: " << curr_stats.clusters_per_query << "\t";
+            std::cout << "blocks/q: " << curr_stats.blocks_per_query << "\t";
+            std::cout << "distinct_plans/q: " << curr_stats.distinct_plans_per_query << "\t";
+            std::cout << "accurate_candidates/q: " << curr_stats.accurate_candidates_per_query << "\t";
+        }
 
         std::cout << std::endl;
 
@@ -221,14 +270,47 @@ class QPSTester {
         }
 
         std::ofstream csv_data(result_file + ".csv", std::ios::out);
-        std::string final_result = "nprobe,num_threads,QPS,avg_tm_ms,recall,ratio,bw_mbps,compute_kopps\n";
+        std::string final_result = "nprobe,num_threads,QPS,avg_tm_ms,recall,ratio,bw_mbps,compute_kopps";
+        if (FLAGS_runtime_decomp) {
+            final_result +=
+                ",fast_bits_per_query,acc_bits_per_query,total_comp_per_query,clusters_per_query,"
+                "blocks_per_query,vectors_per_query,segments_per_query,variance_blocks_per_query,"
+                "variance_block_segment_evals_per_query,variance_pruned_block_ratio,fast_blocks_per_query,"
+                "fast_segment_evals_per_query,fast_pruned_block_ratio,accurate_blocks_per_query,"
+                "accurate_candidates_per_query,accurate_segment_evals_per_query,distinct_plans_per_query,"
+                "shared_searchers_per_query";
+        }
+        final_result += "\n";
         csv_data << final_result;
 
         for (auto num_threads : thread_nums_list) {
             for (auto nprob : nprob_list) {
                 auto stats = run_search_multi(nprob, searcher_cfg, num_threads, ROUND);
-                auto ts = fmt::format("{},{},{},{},{},{},{},{}\n", nprob, stats.num_threads, stats.qps, stats.avg_tm_ms, stats.recall,
+                auto ts = fmt::format("{},{},{},{},{},{},{},{}", nprob, stats.num_threads, stats.qps, stats.avg_tm_ms, stats.recall,
                                       stats.dist_ratio, stats.bw_mbps, stats.compute_kopps);
+                if (FLAGS_runtime_decomp) {
+                    ts += fmt::format(
+                        ",{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+                        stats.fast_bits_per_query,
+                        stats.acc_bits_per_query,
+                        stats.total_comp_per_query,
+                        stats.clusters_per_query,
+                        stats.blocks_per_query,
+                        stats.vectors_per_query,
+                        stats.segments_per_query,
+                        stats.variance_blocks_per_query,
+                        stats.variance_block_segment_evals_per_query,
+                        stats.variance_pruned_block_ratio,
+                        stats.fast_blocks_per_query,
+                        stats.fast_segment_evals_per_query,
+                        stats.fast_pruned_block_ratio,
+                        stats.accurate_blocks_per_query,
+                        stats.accurate_candidates_per_query,
+                        stats.accurate_segment_evals_per_query,
+                        stats.distinct_plans_per_query,
+                        stats.shared_searchers_per_query);
+                }
+                ts += "\n";
                 csv_data << ts;
                 final_result += ts;
             }
@@ -281,6 +363,9 @@ int main(int argc, char *argv[]) {
     }
     if (FLAGS_searcher_dist_type == 1) {
         result_file += "_ip";
+    }
+    if (FLAGS_runtime_decomp) {
+        result_file += "_decomp";
     }
 
     // Run QPS test with fixed nprobe
