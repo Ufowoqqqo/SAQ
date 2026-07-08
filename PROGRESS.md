@@ -2502,3 +2502,100 @@ executed.
 ### Next action
 
 Validate the markdown diff, then commit and push the updated meeting materials.
+
+## Session 2026-07-08 11:21 HKT
+
+### Goal
+
+Update the long-term project constraints and the latest meeting slides according
+to the new advisor-facing assessment: novelty is currently low-to-medium to
+medium, the work is a strong meeting report / technical note, and a full
+SIGMOD/VLDB/ICDE paper still needs a strengthened main contribution.
+
+### Starting state
+
+- Branch: `saq-boundary-audit`
+- `git status --short --branch`: clean and aligned with
+  `origin/saq-boundary-audit`
+- Files read:
+  - `AGENTS.md`
+  - `TASK.md`
+  - `EXPERIMENTS.md`
+  - `RESULTS.md`
+  - `docs/saq_fixed_policy_meeting_slides_2026_07_08.md`
+  - `docs/saq_fixed_policy_overhead_evaluation_2026_07_07.md`
+  - `docs/saq_fixed_policy_novelty_overhead_audit_2026_07_07.md`
+
+### Hypothesis / plan
+
+The project should continue one more round, but future work should be gated by
+an adversarial reviewer review before proposing new directions. The next
+method-facing evidence should be scorer ablations and overhead justification,
+not more candidate-family sweeps.
+
+### Commands run
+
+```bash
+git status --short --branch
+sed -n '1,260p' AGENTS.md
+sed -n '1,260p' TASK.md
+rg -n "novelty|overhead|adversarial|reviewer|SIGMOD|VLDB|ICDE|claim|QPS|curve|ablation|Recommended Next|What We Should Not|What We Can Claim|Open Research|Gap|contribution|unsafe|speed" docs/saq_fixed_policy_meeting_slides_2026_07_08.md docs/saq_fixed_policy_overhead_evaluation_2026_07_07.md docs/saq_fixed_policy_novelty_overhead_audit_2026_07_07.md RESULTS.md EXPERIMENTS.md
+sed -n '1,120p' docs/saq_fixed_policy_overhead_evaluation_2026_07_07.md
+sed -n '220,270p' docs/saq_fixed_policy_meeting_slides_2026_07_08.md
+sed -n '700,945p' docs/saq_fixed_policy_meeting_slides_2026_07_08.md
+sed -n '1,80p' EXPERIMENTS.md
+sed -n '430,520p' EXPERIMENTS.md
+rg -n "QPS is currently measured at one headline|add QPS curves|audit|harden|triage|patch|adversarial|strict reviewer|speed-only|random local|oracle|deployable overhead|experimental validation" AGENTS.md TASK.md docs/saq_fixed_policy_meeting_slides_2026_07_08.md
+date '+%Y-%m-%d %H:%M %Z'
+```
+
+### Files changed
+
+- `AGENTS.md`: added the current paper-readiness assessment, adversarial
+  reviewer review requirement, and deployable-vs-experimental overhead rule.
+- `TASK.md`: added the same assessment as an active constraint and made scorer
+  ablations a primary success criterion before more candidate-family sweeps.
+- `EXPERIMENTS.md`: added A13, the boundary-risk scorer ablation package.
+- `docs/saq_fixed_policy_meeting_slides_2026_07_08.md`: updated contribution
+  framing, QPS/overhead caveats, unsafe claims, open questions, and next steps.
+- `PROGRESS.md`: added this session log.
+
+### Artifacts produced
+
+No experiment artifacts were produced.
+
+### Result
+
+The durable guidance now requires a severe-reviewer-style review before new
+directions. The slides now frame the current contribution as:
+
+```text
+Diagnosis: SAQ's variance-driven planner can be locally mismatched with
+IVF-local ranking boundaries and segment-shape search cost.
+
+Policy: a frozen query-unaware default-neighborhood policy promotes, rejects,
+or abstains using only base/index artifacts.
+
+Evidence: GIST/CIFAR positives, DEEP reject controls, and audio/word2vec
+abstentions, under safe-search evaluation and overhead accounting.
+```
+
+The slides also reconcile the QPS-curve wording: the main evidence table uses
+headline nprobe values, while the overhead report contains validation-grid QPS
+curves; this does not justify claims over every production operating point.
+
+### Interpretation
+
+The next research step should be ablation evidence for the scorer and guards,
+not another plan sweep. The main open question is whether the boundary-risk
+scorer is safer than speed-only, random-local, guard-removed, or local-oracle
+baselines at an acceptable overhead.
+
+### Problems / blockers
+
+No blocker. No ablation was run in this session.
+
+### Next action
+
+Validate the documentation diff, then commit and push. After that, the next
+technical task should be A13: boundary-risk scorer ablation package.

@@ -326,6 +326,32 @@ python script/run_fixed_policy_matrix.py \
   The remaining clean-machine gap is to test the driver on a fresh root or
   archive a manifest-matching input bundle.
 
+### A13. Boundary-risk scorer ablation package
+
+- Status: `todo`
+- Priority: highest before new candidate-family sweeps
+- Hypothesis: the current fixed-policy story becomes paper-relevant only if the
+  data-only boundary-risk scorer is shown to be safer or more selective than
+  simple local alternatives. Without this evidence, a strict reviewer may read
+  the method as handcrafted tuning around SAQ's default planner.
+- Required comparisons:
+  1. boundary-risk scorer vs speed-only scorer;
+  2. boundary-risk scorer vs random local candidate selection;
+  3. conservative promotion vs frontier-like promotion;
+  4. policy with and without soft-inversion / pair-ratio guards;
+  5. selected candidate vs local oracle within the generated neighborhood;
+  6. proxy-score correlation with measured recall delta and QPS ratio.
+- Evaluation set: start from the existing fixed-policy matrix so the comparison
+  includes GIST/CIFAR positives, DEEP reject controls, and audio/word2vec
+  abstentions before adding any new datasets or candidate families.
+- Success: a durable report under `docs/` showing which components are needed,
+  where the scorer fails, and whether the policy has evidence beyond speed-only
+  or random-local tuning.
+- Stop condition: if boundary-risk is not meaningfully safer than these simple
+  baselines, stop adding local candidate families and pivot to a clearer SAQ
+  limitation such as planner-objective redesign, segment-cost-aware DP, or a
+  more explainable search-aware query-unaware proxy.
+
 ## B. Policy Robustness
 
 ### B1. Audit promotion decisions against the clean validation table

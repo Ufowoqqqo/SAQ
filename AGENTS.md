@@ -20,6 +20,13 @@ complexity for tiny recall/QPS deltas. Any next method change should clarify
 what SAQ limitation it exposes and why the added policy/scoring overhead is
 worthwhile.
 
+Current paper-readiness assessment: the novelty is low-to-medium to medium.
+The work is a good meeting report / technical note, but it is not yet a
+SIGMOD/VLDB/ICDE full-paper contribution. The current method is best described
+as a query-unaware local correction policy around SAQ's default segment
+planner, not as a new quantizer, not as a theoretically guaranteed planner,
+and not as a universal improvement over SAQ.
+
 The ultimate objective is to produce a database top-conference-level research
 work suitable for SIGMOD, VLDB, or ICDE, so every exploratory step should be
 judged by whether it can plausibly support that level of contribution.
@@ -85,6 +92,17 @@ Do not rely on memory from an earlier Codex session if these files disagree with
     search-time overhead are accounted for against SAQ baseline. Small recall
     or QPS deltas are not enough if they require substantial extra time, space,
     or implementation complexity.
+    Distinguish deployable overhead from experimental validation overhead:
+    deployable overhead is candidate generation, boundary-pair scoring, and
+    one selected index build; experimental overhead includes extra candidate
+    builds and recall/QPS evaluations used only to validate the policy.
+11. **Adversarial reviewer review before new directions.** Before proposing a
+    new direction, candidate family, or expensive evaluation, write a short
+    severe-reviewer assessment. It should ask whether the idea would be seen as
+    SAQ parameter tuning, whether the claimed limitation is already handled by
+    SAQ, what ablation would distinguish the new signal from a speed-only or
+    random-local baseline, what overhead it adds, and what stop-loss condition
+    would justify pivoting.
 
 ## 5. Build, Test, And Sanity Commands
 
@@ -189,7 +207,10 @@ For each Codex run:
 10. Before starting expensive work, check the novelty/overhead gate: is this
     likely to become a defensible contribution, or is it just buying a tiny
     metric gain with more machinery?
-11. End with a short handoff: changed files, commands run, evidence, risks, and next recommended action.
+11. Before proposing a new research direction, run the adversarial reviewer
+    review: state the likely harsh-review objections and the ablation/overhead
+    evidence needed to answer them.
+12. End with a short handoff: changed files, commands run, evidence, risks, and next recommended action.
 
 ## 8. Iteration Budget
 
@@ -209,6 +230,8 @@ Stop early when:
 - the evidence contradicts the hypothesis and no clean pivot is available.
 - the next idea mainly increases offline/index/search complexity for marginal
   metric movement and does not reveal a clear SAQ limitation or contribution.
+- the next idea cannot answer a basic severe-reviewer objection: why this is
+  more than local tuning around SAQ's already strong planner.
 
 ## 9. Coding And Documentation Rules
 
@@ -240,3 +263,8 @@ Stop early when:
 - Tiny recall/QPS gains can be misleading if they require many candidate
   builds, extra scorer passes, large local artifacts, or complex implementation
   branches that would not be acceptable in a practical indexing pipeline.
+- The strongest current evidence is the policy boundary, not raw recall gain:
+  GIST/CIFAR positives, DEEP reject controls, and audio/word2vec abstentions.
+  Future work should prove why the boundary-risk scorer is safer than
+  speed-only, random-local, or handcrafted heuristics before adding more
+  candidate families.

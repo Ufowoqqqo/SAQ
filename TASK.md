@@ -14,6 +14,13 @@ is a policy layer on top of SAQ, not an independent quantizer. Future progress
 must explain what concrete SAQ limitation is being addressed and whether the
 extra planning/scoring/indexing/search complexity is justified.
 
+Current assessment: novelty is low-to-medium to medium. The current state is a
+solid meeting report / technical note, but it does not yet have the strengthened
+main contribution needed for a SIGMOD/VLDB/ICDE full paper. The strongest
+framing is a query-unaware local correction policy for SAQ's default segment
+planner, not a new quantizer, not a planner with theoretical guarantees, and
+not a method that universally improves SAQ.
+
 The ultimate objective is to produce a database top-conference-level research
 work suitable for SIGMOD, VLDB, or ICDE, so every exploratory step should be
 judged by whether it can plausibly support that level of contribution.
@@ -60,6 +67,11 @@ A successful autonomous run should complete at least one of the following withou
 0. **Novelty and overhead review**
    - Before launching new expensive experiments, write down the expected
      contribution beyond local tuning of SAQ's default plan.
+   - Before proposing a new direction, run an adversarial reviewer review:
+     would a strict reviewer call this SAQ parameter tuning; what SAQ
+     limitation is being exposed; what ablation would prove the signal is not
+     speed-only, random-local, or a hindsight heuristic; what overhead is added;
+     and what stop-loss condition would force a pivot?
    - Account for extra offline scorer time, candidate generation, index-build
      cost, memory/metadata overhead, search-time overhead, and implementation
      complexity.
@@ -84,6 +96,22 @@ A successful autonomous run should complete at least one of the following withou
 4. **Meeting/paper narrative cleanup**
    - Produce or update a concise synthesis doc explaining the method, evidence, limitations, and next experiments.
    - The narrative must distinguish: method contribution, implementation fix, positive cases, reject cases, abstention cases, and unresolved threats to validity.
+   - The main claim should be framed as: SAQ's variance-driven DP plan can be
+     locally mismatched with IVF-local ranking boundaries and segment-shape
+     search cost; a frozen query-unaware base/index-only policy can promote,
+     reject, or abstain around the default plan.
+
+5. **Ablation evidence for the policy boundary**
+   - Prioritize ablations over more candidate-family sweeps.
+   - Compare boundary-risk scorer vs speed-only scorer.
+   - Compare boundary-risk scorer vs random local candidates.
+   - Separate conservative promotion from frontier-like promotion.
+   - Remove soft-inversion / pair-ratio guards to test whether DEEP reject
+     behavior depends on the policy rather than accident.
+   - Compare selected candidates against a local oracle to measure remaining
+     headroom.
+   - Report whether proxy scores correlate with measured recall delta and QPS
+     ratio across the existing validation cases.
 
 ## Secondary Success Criteria
 
@@ -96,6 +124,8 @@ After satisfying a primary criterion, optionally attempt one low-cost improvemen
 - Add a small consistency checker for the clean validation table.
 - Add explicit documentation for why `--allow-risky-fallback` is diagnostic only.
 - Add a compact README section or doc section that states the fixed-policy method in algorithmic steps.
+- Add a compact ablation table template for boundary-risk vs speed-only,
+  random-local, guard-removed, and local-oracle baselines.
 
 ## Non-Goals For This Run
 
@@ -107,12 +137,16 @@ Do not spend the session on these unless the user explicitly asks:
 - Forcing audio/word2vec into a non-abstain result under the current generator.
 - Treating DEEP speed-only improvements as positive method evidence.
 - Re-running large end-to-end experiments before verifying existing report reproducibility.
+- Adding new candidate families before the current boundary-risk scorer is
+  compared against speed-only, random-local, and guard-removed baselines.
 - Pursuing tiny recall/QPS deltas by adding large offline search, many custom
   index builds, heavy metadata, or complex policy branches without a clear
   novelty story.
 - Presenting a local post-planning tweak as a strong standalone method unless
   the SAQ baseline limitation and added-overhead tradeoff are explicitly
   documented.
+- Proposing a new research direction without first writing the severe-reviewer
+  objections and the evidence required to answer them.
 
 ## Required Validation Commands
 
@@ -167,6 +201,10 @@ ctest --test-dir build --output-on-failure || true
 - Each claimed method improvement must state whether it requires extra
   candidate scoring, extra index builds, extra metadata, or extra search-time
   computation relative to SAQ baseline.
+- Meeting/paper claims should separate deployable overhead from experimental
+  validation overhead: deployable overhead is candidate generation,
+  boundary-pair scoring, and one selected index build; experimental overhead
+  includes extra candidate builds/evaluations used only to validate the policy.
 - Update `RESULTS.md` only for stable conclusions.
 
 ## Expected Final Handoff

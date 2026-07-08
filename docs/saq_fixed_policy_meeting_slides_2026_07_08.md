@@ -251,6 +251,15 @@ Can this expose a real SAQ limitation with acceptable overhead,
 or is it only local tuning around a strong baseline?
 ```
 
+Current contribution sentence:
+
+```text
+SAQ's default global variance-based segment plan can be locally mismatched
+with IVF-local top-k boundary stability and segment-shape search cost; we use
+base/index-only boundary diagnostics to search a small default neighborhood,
+then promote, reject, or abstain without representative query workloads.
+```
+
 Speaker notes:
 
 - This is the central motivation.
@@ -258,6 +267,8 @@ Speaker notes:
   query-unaware correction, not from learning on queries.
 - The advisor concern about novelty should be handled directly rather than
   hidden behind small metric gains.
+- A strict reviewer may still call this SAQ strategy tuning unless we show why
+  the scorer is safer than simple speed-only or random local alternatives.
 
 ---
 
@@ -704,7 +715,7 @@ Speaker notes:
 
 ---
 
-## 23. Metric Caveats
+## 23. Metric And Overhead Caveats
 
 Recall was checked at multiple nprobe values.
 
@@ -717,11 +728,39 @@ CIFAR B=4:   negative at np50, positive at np100/np200/np400
 DEEP B=4/5:  negative recall delta at all measured nprobes
 ```
 
-QPS caveat:
+QPS status:
 
 ```text
-QPS is currently measured at one headline nprobe per setting.
-This supports headline-operating-point speed claims, not full QPS curves.
+The main evidence table reports one headline nprobe per setting.
+The overhead report also measured or reused QPS curve points across each
+validation nprobe grid.
+Promoted GIST/CIFAR rows remain speed-positive across that validation grid.
+This still does not justify claims over every production operating point.
+```
+
+Overhead status:
+
+```text
+deployable overhead:
+  candidate generation + boundary-pair scoring + one selected index build
+
+experimental validation overhead:
+  many candidate builds/evaluations used to validate the frozen policy
+
+current GIST K4096 planner/scorer runtime:
+  about 145-151 seconds per budget
+
+current GIST selected/default index metadata time:
+  about 2.3-3.0 seconds
+```
+
+Interpretation:
+
+```text
+The overhead story is not yet free.
+The scorer dominates the current GIST planning cost.
+This is acceptable only if the policy evidence is stronger than small tuning
+gains and the cost is defensible relative to realistic offline indexing.
 ```
 
 Speaker notes:
@@ -729,6 +768,11 @@ Speaker notes:
 - This slide is important for avoiding overclaiming.
 - CIFAR B=4 should be described as small and frontier-like, not uniformly
   positive at every operating point.
+- If asked, distinguish the headline table from the overhead QPS-curve table:
+  the curve exists, but it is still tied to the current validation grid and
+  reused artifacts.
+- If asked about overhead, separate deployable policy cost from experimental
+  validation cost; the current GIST scorer runtime is the main weak point.
 
 ---
 
@@ -814,9 +858,19 @@ Speaker notes:
 Safe claim:
 
 ```text
-We found a query-unaware, shape-dependent fixed policy that improves or
-preserves recall while improving QPS on GIST and CIFAR, rejects DEEP candidates
-that trade too much recall for speed, and abstains on single-uniform defaults.
+Diagnosis:
+SAQ's variance-driven DP plan optimizes a global quantization-error proxy, but
+can be locally mismatched with IVF-local ranking boundaries and segment-shape
+search cost.
+
+Policy:
+A frozen query-unaware default-neighborhood policy uses only base/index
+artifacts to promote, reject, or abstain around SAQ's default plan.
+
+Evidence:
+GIST/CIFAR show repeated positives, DEEP gives reject controls, and
+audio/word2vec give abstention cases under safe-search evaluation and overhead
+accounting.
 ```
 
 What this means:
@@ -826,14 +880,16 @@ The current method has a clear decision boundary.
 It is not just one hand-picked custom plan.
 It produces positive, reject, and abstain outcomes.
 The current experiment can be checked through a manifest and driver.
+The contribution is the safe decision policy, not raw metric improvement.
 ```
 
 Speaker notes:
 
-- This is the best current framing.
+- This is the best current framing: diagnosis, policy, evidence.
 - It is empirical and should be presented as such.
 - The reproducibility progress strengthens the evidence, but does not change
   the fact that this is a policy layer around SAQ.
+- Do not sell this as a new quantizer or as a universal SAQ replacement.
 
 ---
 
@@ -845,7 +901,7 @@ Unsafe claims:
 The method universally improves SAQ.
 The method is theoretically guaranteed.
 The method is query-aware or workload-optimized.
-QPS gains are characterized across all operating points.
+QPS gains are characterized across all production operating points.
 Single-uniform default datasets can already be improved by this generator.
 The current policy is an independent quantizer rather than a SAQ correction layer.
 ```
@@ -853,11 +909,14 @@ The current policy is an independent quantizer rather than a SAQ correction laye
 Current limitations:
 
 ```text
+novelty is currently low-to-medium to medium
+meeting-report / technical-note quality is stronger than full-paper quality
 positive recall deltas are small
 frontier-like promotion is weaker than conservative promotion
 fresh-root artifact validation or input-bundle packaging still needs work
 candidate families are handcrafted and local
 added scorer/build/search overhead must be justified against small gains
+scorer value over speed-only or random-local baselines is not yet proven
 ```
 
 Speaker notes:
@@ -865,6 +924,8 @@ Speaker notes:
 - This slide is intentionally conservative.
 - It should help the advisor evaluate whether the story is still worth
   developing.
+- A strict reviewer will likely ask whether the candidate families were
+  designed after seeing GIST/CIFAR behavior.
 
 ---
 
@@ -889,7 +950,7 @@ Question 3:
 
 ```text
 What level of evidence is needed before this becomes paper-worthy:
-more datasets, fresh-root verification, QPS curves, or a stronger theory?
+more datasets, fresh-root verification, stronger ablations, or a stronger theory?
 ```
 
 Question 4:
@@ -897,6 +958,13 @@ Question 4:
 ```text
 What concrete SAQ limitation should be the center of the contribution,
 and what overhead budget is acceptable for correcting it?
+```
+
+Question 5:
+
+```text
+Can the boundary-risk scorer be shown to select safer plans than speed-only,
+random-local, or guard-removed alternatives?
 ```
 
 Speaker notes:
@@ -920,9 +988,9 @@ keep safe-searcher mode mandatory for measured claims
 Near-term experimental validation:
 
 ```text
-add QPS curves for promoted GIST/CIFAR plans
+report existing validation-grid QPS curves consistently in the main narrative
 preserve DEEP reject behavior under any policy change
-run any new candidate family against positive, reject, and abstain cases
+run ablations before adding any new candidate family
 ```
 
 Near-term method work:
@@ -934,12 +1002,35 @@ consider new local families only if they expose a clearer SAQ limitation
 account for candidate, scorer, build, metadata, and search overhead explicitly
 ```
 
+Required ablations before more sweeps:
+
+```text
+boundary-risk scorer vs speed-only scorer
+boundary-risk scorer vs random local candidate
+conservative promotion vs frontier-like promotion
+remove soft-inversion / pair-ratio guards
+selected candidate vs local oracle
+proxy-score correlation with measured recall delta and QPS ratio
+```
+
+Stop-loss condition:
+
+```text
+If the story remains only "local rules find a few plans with nearly unchanged
+recall and modest QPS gains," then novelty is not enough for a full paper;
+pivot to a clearer SAQ limitation such as planner-objective redesign,
+segment-cost-aware DP, or a more explainable search-aware query-unaware proxy.
+```
+
 Speaker notes:
 
-- My suggested path is to first make the fixed-policy story clean, then decide
-  whether to invest in new generator families.
+- My suggested path is to first prove the fixed-policy story with ablations,
+  then decide whether to invest in new generator families.
 - Additional sweeps should be gated by novelty and overhead, not only by the
   possibility of a small recall/QPS improvement.
+- Before proposing a new direction, run the severe-reviewer argument against
+  it: what would make this look like tuning, and what evidence would answer
+  that objection?
 
 ---
 
