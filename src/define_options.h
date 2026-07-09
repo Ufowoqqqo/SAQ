@@ -1,6 +1,11 @@
 #pragma once
 
+#include <cctype>
 #include <cstring>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <fmt/core.h>
 #include <gflags/gflags.h>
@@ -28,12 +33,54 @@ DEFINE_bool(enable_segmentation, true, "enable segmentation");
 DEFINE_int32(seg_eqseg, 0, "segmentation equalization");
 DEFINE_bool(use_compact_layout, false, "use compact memory layout");
 DEFINE_double(q_firstdim, 0, "only quantization first dimension");
+DEFINE_string(custom_quant_plan, "", "optional global quantization plan such as 192x9_512x4_256x0");
 
 // Searcher config
 DEFINE_double(searcher_vars_bound_m, 4, "");
 DEFINE_bool(searcher_safe_block_min, false, "compatibility alias for -searcher_safe_block_min_mode=1");
 DEFINE_int32(searcher_safe_block_min_mode, 0, "safe block-min mode. 0: native, 1: scalar finite min, 2: SIMD finite min");
 DEFINE_int32(searcher_dist_type, 0, "searcher distance type. 0: L2Sqr, 1: IP");
+
+inline std::vector<std::pair<size_t, size_t>> parseCustomQuantPlan(const std::string &plan_str) {
+    std::vector<std::pair<size_t, size_t>> plan;
+    if (plan_str.empty()) {
+        return plan;
+    }
+
+    size_t pos = 0;
+    while (pos < plan_str.size()) {
+        size_t dim = 0;
+        while (pos < plan_str.size() && std::isdigit(static_cast<unsigned char>(plan_str[pos]))) {
+            dim = dim * 10 + static_cast<size_t>(plan_str[pos] - '0');
+            ++pos;
+        }
+        if (pos >= plan_str.size() || plan_str[pos] != 'x' || dim == 0) {
+            throw std::invalid_argument(fmt::format("invalid custom quantization plan segment: {}", plan_str));
+        }
+        ++pos;
+
+        size_t bits = 0;
+        bool has_bits = false;
+        while (pos < plan_str.size() && std::isdigit(static_cast<unsigned char>(plan_str[pos]))) {
+            has_bits = true;
+            bits = bits * 10 + static_cast<size_t>(plan_str[pos] - '0');
+            ++pos;
+        }
+        if (!has_bits) {
+            throw std::invalid_argument(fmt::format("invalid custom quantization plan segment: {}", plan_str));
+        }
+        plan.emplace_back(dim, bits);
+
+        if (pos == plan_str.size()) {
+            break;
+        }
+        if (plan_str[pos] != '_') {
+            throw std::invalid_argument(fmt::format("invalid custom quantization plan delimiter: {}", plan_str));
+        }
+        ++pos;
+    }
+    return plan;
+}
 
 inline std::string parseArgs(saqlib::QuantizeConfig *config = nullptr) {
     saqlib::QuantizeConfig cfg;
@@ -60,8 +107,14 @@ inline std::string parseArgs(saqlib::QuantizeConfig *config = nullptr) {
     if (FLAGS_use_compact_layout) {
         cfg.use_compact_layout = true;
     }
+    if (!FLAGS_custom_quant_plan.empty()) {
+        cfg.enable_segmentation = true;
+    }
 
     args_str += cfg.toString();
+    if (!FLAGS_custom_quant_plan.empty()) {
+        args_str += fmt::format("_plan{}", FLAGS_custom_quant_plan);
+    }
 
     if (config)
         *config = cfg;

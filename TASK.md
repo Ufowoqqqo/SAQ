@@ -45,6 +45,12 @@ The first fac-error DP falsification is recorded in
 selects different global plans on GIST sample100k and CIFAR60K, but reproduces
 SAQ's variance plan on audio, DEEP, and word2vec.
 
+The first end-to-end check is recorded in
+`docs/fac_error_gist_b4_safe_search_2026_07_09.md`. On GIST sample100k K512 B=4
+at nprobe=200 with safe search, the fac-error plan is 1.34x faster and 4.7%
+smaller, but R@100 drops from 0.99132 to 0.99059. This is a speed/space/recall
+tradeoff, not a strict improvement over SAQ.
+
 ## Research Priority
 
 **Data-only SAQ planner-objective analysis**
@@ -78,19 +84,18 @@ Required accounting:
 
 ## Immediate Next Step
 
-Run the smallest end-to-end falsification for the fac-error objective. Since the
-B=4 offline DP selected different plans only on GIST sample100k and CIFAR60K,
-do not broaden the sweep yet. First materialize one changed plan, preferably
-GIST sample100k B=4 because its plan-shape change is larger:
+Do not broaden the fac-error objective yet. First run a tiny recall-matched
+check for the GIST sample100k B=4 fac-error plan:
 
 ```text
 SAQ variance plan:   64x11_192x6_320x4_256x2_128x0
 fac-error plan:      192x9_512x4_256x0
 ```
 
-Then compare default vs fac-error plan under safe search. Report recall, QPS,
-index size, indexing time, and whether the custom-plan materialization path adds
-extra planner complexity.
+The same-nprobe result showed a large QPS gain but a small R@100 drop. The next
+test should increase custom-plan nprobe minimally, using safe search, to see
+whether it can recover the default R@100=0.99132 while staying faster than the
+default QPS=9215.208 at nprobe=200.
 
 The current research question is:
 
@@ -104,8 +109,8 @@ The strict-reviewer objection is that `fac_error` may be a tautological,
 offline-expensive remeasurement of CAQ's own estimator bound. Any follow-up must
 therefore report measurement cost, plan difference, and one end-to-end
 safe-search check before claiming a method. Stop if the changed GIST plan does
-not improve recall/QPS or if the custom-plan machinery becomes the dominant
-contribution.
+not remain faster under recall-matched evaluation or if the custom-plan
+machinery becomes the dominant contribution.
 
 ## Constraints
 

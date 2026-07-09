@@ -106,6 +106,11 @@ class IVF
         saq_data_maker_->set_variance(std::move(vars));
     }
 
+    void set_custom_quant_plan(SaqData::QuantPlanT quant_plan)
+    {
+        saq_data_maker_->set_custom_quant_plan(std::move(quant_plan));
+    }
+
     void printQPlan(const SaqData *data)
     {
         LOG(INFO) << "Dynamic bits allocation plan:";

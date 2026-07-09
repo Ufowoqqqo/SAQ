@@ -44,6 +44,9 @@ class IndexCreator {
 
         // Create IVF index using unique_ptr
         ivf_ = std::make_unique<IVF>(num_vecs, num_dim, K, cfg);
+        if (!FLAGS_custom_quant_plan.empty()) {
+            ivf_->set_custom_quant_plan(parseCustomQuantPlan(FLAGS_custom_quant_plan));
+        }
 
         // Set variance if available
         if (data_vars_.rows() != 0) {

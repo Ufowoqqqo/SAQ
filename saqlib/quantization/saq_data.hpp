@@ -65,6 +65,7 @@ class SaqDataMaker {
     const size_t num_dim_;
     const size_t num_dim_padded_; // padded dimension
     std::unique_ptr<SaqData> data_;
+    QuantPlanT custom_quant_plan_;
 
   public:
     explicit SaqDataMaker(QuantizeConfig cfg, size_t num_dim)
@@ -77,6 +78,21 @@ class SaqDataMaker {
     size_t getPaddedDim() const { return num_dim_padded_; }
     const SaqData *get_data() const { return data_.get(); }
     auto return_data() { return std::move(data_); }
+
+    void set_custom_quant_plan(QuantPlanT quant_plan) {
+        size_t dim_sum = 0;
+        bool seen_zero = false;
+        for (auto [dim_len, bits] : quant_plan) {
+            CHECK_GT(dim_len, 0U) << "custom quantization plan has an empty segment";
+            CHECK_EQ(dim_len % kDimPaddingSize, 0U) << "custom quantization plan segment is not 64D aligned";
+            CHECK_LE(bits, kMaxQuantBit) << "custom quantization plan bit width exceeds CAQ limit";
+            CHECK(!seen_zero) << "custom quantization plan can only use zero-bit as the final tail";
+            seen_zero = bits == 0;
+            dim_sum += dim_len;
+        }
+        CHECK_EQ(dim_sum, num_dim_padded_) << "custom quantization plan does not cover the padded dimension";
+        custom_quant_plan_ = std::move(quant_plan);
+    }
 
     bool is_variance_set() const {
         return data_->data_variance.cols() != 0;
@@ -119,7 +135,9 @@ class SaqDataMaker {
     void analyze_plan() {
         DCHECK_EQ(num_dim_padded_ % kDimPaddingSize, 0);
 
-        if (data_->cfg.enable_segmentation) {
+        if (!custom_quant_plan_.empty()) {
+            data_->quant_plan = custom_quant_plan_;
+        } else if (data_->cfg.enable_segmentation) {
             if (data_->cfg.seg_eqseg > 0) {
                 data_->quant_plan = equal_segmentation(data_->cfg.seg_eqseg);
             } else {
