@@ -157,6 +157,53 @@ class SaqCluEstimator : public SaqEstimatorBase<CaqCluEstimator<kDistType>> {
         }
     }
 
+    size_t numSegments() const {
+        return estimators_.size();
+    }
+
+    float varsEstDistSingle(size_t idx) {
+        float PORTABLE_ALIGN64 distances[KFastScanSize];
+        __m512 cd[2];
+        varsEstDist(idx / KFastScanSize, cd);
+        _mm512_store_ps(distances, cd[0]);
+        _mm512_store_ps(distances + 16, cd[1]);
+        return distances[idx % KFastScanSize];
+    }
+
+    float compFastDistSingle(size_t idx) {
+        float PORTABLE_ALIGN64 distances[KFastScanSize];
+        __m512 cd[2];
+        compFastDist(idx / KFastScanSize, cd);
+        _mm512_store_ps(distances, cd[0]);
+        _mm512_store_ps(distances + 16, cd[1]);
+        return distances[idx % KFastScanSize];
+    }
+
+    float varsEstDistSegmentSingle(size_t seg_idx, size_t idx) {
+        DCHECK_LT(seg_idx, estimators_.size());
+        float PORTABLE_ALIGN64 distances[KFastScanSize];
+        __m512 cd[2];
+        estimators_[seg_idx].varsEstDist(idx / KFastScanSize, cd);
+        _mm512_store_ps(distances, cd[0]);
+        _mm512_store_ps(distances + 16, cd[1]);
+        return distances[idx % KFastScanSize];
+    }
+
+    float compFastDistSegmentSingle(size_t seg_idx, size_t idx) {
+        DCHECK_LT(seg_idx, estimators_.size());
+        float PORTABLE_ALIGN64 distances[KFastScanSize];
+        __m512 cd[2];
+        estimators_[seg_idx].compFastDist(idx / KFastScanSize, cd);
+        _mm512_store_ps(distances, cd[0]);
+        _mm512_store_ps(distances + 16, cd[1]);
+        return distances[idx % KFastScanSize];
+    }
+
+    float compAccurateDistSegment(size_t seg_idx, size_t idx) {
+        DCHECK_LT(seg_idx, estimators_.size());
+        return estimators_[seg_idx].compAccurateDist(idx);
+    }
+
     /**
      * @brief Compute accurate distance for a specific vector
      *

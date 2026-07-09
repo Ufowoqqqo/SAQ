@@ -291,6 +291,20 @@ A plausible binary name is:
 bin/profile_graph_frontier
 ```
 
+Implemented prototype:
+
+```text
+src/profile_graph_frontier.cpp
+```
+
+The prototype builds a deterministic exact-kNN adjacency on the first
+`-graph_subset` base vectors, chooses query-near roots inside that fixed subset,
+and reports local expansion-order rank metrics. It compares exact float
+distance, a `rabitq_style_proxy` single-stage 1-bit centered-direction estimate,
+SAQ variance/fast/full estimates, and a SAQ prefix-accurate refinement curve.
+The proxy is included as a novelty gate against SymphonyQG/RaBitQ-style graph
+quantization; it is not a SymphonyQG implementation.
+
 Expected inputs:
 
 - dataset name and data path;

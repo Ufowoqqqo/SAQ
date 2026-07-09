@@ -17,3 +17,6 @@ target_link_libraries(compute_gt PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES}
 
 add_executable(test_ivf test_ivf.cpp)
 target_link_libraries(test_ivf PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
+
+add_executable(profile_graph_frontier profile_graph_frontier.cpp)
+target_link_libraries(profile_graph_frontier PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
