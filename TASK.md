@@ -40,6 +40,11 @@ distance-estimator error on same-cluster residual pairs. Direction loss alone is
 not a stable predictor of absolute estimator error, but CAQ `fac_error` almost
 perfectly ranks absolute segment estimator error across the first five datasets.
 
+The first fac-error DP falsification is recorded in
+`docs/fac_error_dp_falsification_2026_07_09.md`. At B=4, the fac-error objective
+selects different global plans on GIST sample100k and CIFAR60K, but reproduces
+SAQ's variance plan on audio, DEEP, and word2vec.
+
 ## Research Priority
 
 **Data-only SAQ planner-objective analysis**
@@ -73,30 +78,34 @@ Required accounting:
 
 ## Immediate Next Step
 
-Continue offline. Do not derive a broad new planner yet. First run a small
-falsification study for a global `fac_error`-based objective:
+Run the smallest end-to-end falsification for the fac-error objective. Since the
+B=4 offline DP selected different plans only on GIST sample100k and CIFAR60K,
+do not broaden the sweep yet. First materialize one changed plan, preferably
+GIST sample100k B=4 because its plan-shape change is larger:
 
-1. Define a data-only global objective from measured CAQ `fac_error` for each
-   candidate segment and bit width.
-2. Compare the selected global plan against SAQ's variance-DP plan under the
-   same bit budget.
-3. Evaluate whether the selected plan is meaningfully different before any
-   index build.
-4. Stop this planner-objective direction if the plan is identical,
-   near-identical, or only changes in ways unlikely to affect recall/QPS.
+```text
+SAQ variance plan:   64x11_192x6_320x4_256x2_128x0
+fac-error plan:      192x9_512x4_256x0
+```
 
-The research question is now narrower:
+Then compare default vs fac-error plan under safe search. Report recall, QPS,
+index size, indexing time, and whether the custom-plan materialization path adds
+extra planner complexity.
+
+The current research question is:
 
 ```text
 Does replacing SAQ's variance-risk DP cost with a directly measured CAQ
-fac-error cost produce a materially different one-global-plan allocation without
-using query workloads?
+fac-error cost produce a materially different and end-to-end useful
+one-global-plan allocation without using query workloads?
 ```
 
 The strict-reviewer objection is that `fac_error` may be a tautological,
 offline-expensive remeasurement of CAQ's own estimator bound. Any follow-up must
 therefore report measurement cost, plan difference, and one end-to-end
-safe-search check before claiming a method.
+safe-search check before claiming a method. Stop if the changed GIST plan does
+not improve recall/QPS or if the custom-plan machinery becomes the dominant
+contribution.
 
 ## Constraints
 
