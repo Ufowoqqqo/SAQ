@@ -76,6 +76,13 @@ fast-estimation, accurate-refinement, safe block-min, pruning, top-k result-pool
 maintenance, and runtime-metric code paths. It also defines the minimal
 query-time work decomposition needed before any new search policy is proposed.
 
+The first runtime-profile evidence is recorded in
+`docs/saq_runtime_profile_gist_sample100k_2026_07_09.md`. On GIST sample100k
+K512 B=4, variance pruning is almost inactive, fast-stage pruning removes about
+45-58% of post-variance blocks, only about 5-7% of scanned candidates enter
+accurate refinement, and accurate refinement already exits early for about 84%
+of refined candidates.
+
 ## Research Priority
 
 **Data-only SAQ planner-objective analysis**
@@ -130,16 +137,16 @@ and simple segment-cost objectives fail to produce a recall-matched improvement
 under a one-global-plan, query-unaware constraint?
 ```
 
-The immediate next step is to run the minimal runtime-profile diagnostic for
+The immediate next step is a focused segment-order counterfactual analysis for
 the existing SAQ search path. Do not implement a new search policy yet.
 
-The first profile should measure GIST sample100k K512 B=4 with the SAQ default
-plan, R@100, `-searcher_safe_block_min_mode=2`, `-print_runtime_profile=true`,
-and nprobe around the existing operating point. It should report cluster/block
-scan volume, variance pruning, fast-stage segment calls and pruning,
-accurate-refinement attempts and early exits, and top-k result-pool insertions.
-The result should decide whether a search-procedure method is plausible or
-whether this direction should stop.
+Use the default GIST sample100k K512 B=4 index and ask whether the current PCA
+segment order is already near-optimal for block-level fast pruning and
+accurate-refinement early exit. The analysis should not change returned
+results. It should estimate whether an alternative query-unaware segment order
+could reduce fast segment calls or accurate segment calls under the same safety
+condition. If no simple data-only order has a clear advantage, stop the
+search-procedure direction.
 
 ## Constraints
 
