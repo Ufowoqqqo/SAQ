@@ -89,6 +89,7 @@ struct CandidateScores {
     PID cluster_id = 0;
     float exact = 0.0f;
     float rabitq_style = 0.0f;
+    float symqg_vertex = 0.0f;
     float saq_var = 0.0f;
     float saq_fast = 0.0f;
     float saq_full = 0.0f;
@@ -282,6 +283,75 @@ class OneBitStyleProxy {
     }
 };
 
+class SymphonyQGVertexProxy {
+  private:
+    static constexpr int kQueryBits = 6;
+    size_t num_dim_ = 0;
+
+  public:
+    void build(const FloatRowMat &data) {
+        num_dim_ = data.cols();
+    }
+
+    float approx_bits_per_candidate() const {
+        return static_cast<float>(num_dim_);
+    }
+
+    float estimate_l2(const FloatRowMat &data, const FloatVec &query, PID root_id, PID neighbor_id) const {
+        CHECK_GT(num_dim_, 0);
+        const FloatVec center = data.row(root_id);
+        const FloatVec residual = data.row(neighbor_id) - center;
+        const float residual_norm = std::sqrt(residual.squaredNorm());
+        const float q_center_sqr = l2_sqr(query, center);
+        if (residual_norm == 0.0f) {
+            return q_center_sqr;
+        }
+
+        const float fac_norm = 1.0f / std::sqrt(static_cast<float>(num_dim_));
+        double residual_l1 = 0.0;
+        double center_sign_ip = 0.0;
+        double query_code_sign_ip = 0.0;
+        int sign_sum = 0;
+
+        float q_lo = query.minCoeff();
+        float q_hi = query.maxCoeff();
+        const float width = (q_hi - q_lo) / static_cast<float>((1 << kQueryBits) - 1);
+        const bool has_query_width = width > 0.0f;
+
+        for (size_t d = 0; d < num_dim_; ++d) {
+            const float sign = residual[d] > 0.0f ? 1.0f : -1.0f;
+            residual_l1 += std::abs(residual[d]);
+            center_sign_ip += center[d] * sign;
+            sign_sum += sign > 0.0f ? 1 : -1;
+
+            if (has_query_width) {
+                const float raw_code = ((query[d] - q_lo) / width) + 0.5f;
+                query_code_sign_ip += static_cast<double>(std::lround(raw_code)) * sign;
+            }
+        }
+
+        if (residual_l1 == 0.0) {
+            return q_center_sqr;
+        }
+
+        const double fac_x0 = (residual_l1 * static_cast<double>(fac_norm)) / residual_norm;
+        if (fac_x0 == 0.0) {
+            return q_center_sqr;
+        }
+
+        const double x_x0 = residual_norm / fac_x0;
+        const double fac_x1 = center_sign_ip * static_cast<double>(fac_norm);
+        const double triple_x = residual_norm * residual_norm + 2.0 * x_x0 * fac_x1;
+        const double factor_dq = -2.0 * x_x0 * static_cast<double>(fac_norm);
+        const double factor_vq = factor_dq * static_cast<double>(sign_sum);
+        const double query_term = has_query_width
+                                      ? factor_dq * static_cast<double>(width) * query_code_sign_ip +
+                                            factor_vq * static_cast<double>(q_lo)
+                                      : 0.0;
+        return std::max(0.0, static_cast<double>(q_center_sqr) + triple_x + query_term);
+    }
+};
+
 double saq_bits_for_prefix(const SaqData &saq_data, size_t accurate_prefix) {
     double bits = 0.0;
     for (size_t i = 0; i < saq_data.quant_plan.size(); ++i) {
@@ -336,6 +406,7 @@ class GraphFrontierProfiler {
     std::vector<ClusterLoc> id_to_loc_;
     std::vector<std::vector<PID>> adjacency_;
     OneBitStyleProxy one_bit_proxy_;
+    SymphonyQGVertexProxy symqg_vertex_proxy_;
     std::vector<size_t> top_l_values_;
 
     size_t subset_ = 0;
@@ -363,6 +434,7 @@ class GraphFrontierProfiler {
 
         add_stat("exact_float", static_cast<double>(ivf_.num_dim()) * 32.0);
         add_stat("rabitq_style_proxy", static_cast<double>(ivf_.num_dim()));
+        add_stat("symqg_vertex_proxy", symqg_vertex_proxy_.approx_bits_per_candidate());
         add_stat("saq_var", 0.0);
         add_stat("saq_fast", saq_fast_bits(*saq_data));
         add_stat("saq_full", saq_full_bits(*saq_data));
@@ -373,6 +445,7 @@ class GraphFrontierProfiler {
 
     std::vector<CandidateScores> score_event(
         const FloatVec &curr_query,
+        PID root_id,
         const std::vector<PID> &neighbors,
         SaqCluEstimator<DistType::L2Sqr> &saq_estimator) {
         std::vector<CandidateScores> scores;
@@ -395,6 +468,7 @@ class GraphFrontierProfiler {
             s.cluster_id = loc.cluster_id;
             s.exact = l2_sqr(curr_query, data_.row(id));
             s.rabitq_style = one_bit_proxy_.estimate_l2(data_, curr_query, id);
+            s.symqg_vertex = symqg_vertex_proxy_.estimate_l2(data_, curr_query, root_id, id);
             s.saq_var = saq_estimator.varsEstDistSingle(loc.local_idx);
             s.saq_fast = saq_estimator.compFastDistSingle(loc.local_idx);
             s.saq_full = saq_estimator.compAccurateDist(loc.local_idx);
@@ -447,7 +521,7 @@ class GraphFrontierProfiler {
         const auto &neighbors = adjacency_[root_id];
         CHECK(!neighbors.empty());
 
-        auto scores = score_event(curr_query, neighbors, saq_estimator);
+        auto scores = score_event(curr_query, root_id, neighbors, saq_estimator);
         size_t exact_best_pos = 0;
         size_t exact_second_pos = scores.size() > 1 ? 1 : 0;
         for (size_t i = 1; i < scores.size(); ++i) {
@@ -493,25 +567,30 @@ class GraphFrontierProfiler {
         add_estimator_event(1, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
 
         for (size_t i = 0; i < scores.size(); ++i) {
-            estimate[i] = scores[i].saq_var;
+            estimate[i] = scores[i].symqg_vertex;
         }
         add_estimator_event(2, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
 
         for (size_t i = 0; i < scores.size(); ++i) {
-            estimate[i] = scores[i].saq_fast;
+            estimate[i] = scores[i].saq_var;
         }
         add_estimator_event(3, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
 
         for (size_t i = 0; i < scores.size(); ++i) {
-            estimate[i] = scores[i].saq_full;
+            estimate[i] = scores[i].saq_fast;
         }
         add_estimator_event(4, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
+
+        for (size_t i = 0; i < scores.size(); ++i) {
+            estimate[i] = scores[i].saq_full;
+        }
+        add_estimator_event(5, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
 
         for (size_t prefix = 0; prefix <= num_segments_; ++prefix) {
             for (size_t i = 0; i < scores.size(); ++i) {
                 estimate[i] = scores[i].saq_prefix[prefix];
             }
-            add_estimator_event(5 + prefix, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
+            add_estimator_event(6 + prefix, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
         }
     }
 
@@ -555,10 +634,11 @@ class GraphFrontierProfiler {
         out << "# Graph Expansion-Order Profiler Summary\n\n";
         out << "## Scope\n\n";
         out << "This diagnostic compares exact local graph-expansion ordering with a\n";
-        out << "RaBitQ/SymphonyQG-style one-stage proxy and SAQ staged estimates on a\n";
-        out << "fixed exact-kNN adjacency replay. The proxy is not a SymphonyQG\n";
-        out << "implementation; it is a single-stage 1-bit centered-direction baseline\n";
-        out << "included to avoid an SAQ-only novelty test.\n\n";
+        out << "global 1-bit proxy, a SymphonyQG formula-level vertex proxy, and SAQ\n";
+        out << "staged estimates on a fixed exact-kNN adjacency replay. The vertex proxy\n";
+        out << "uses SymphonyQG's current-vertex residual centering and RaBitQ factor\n";
+        out << "formula in the profiler data space, but it is not a full SymphonyQG\n";
+        out << "implementation or FastScan layout reproduction.\n\n";
 
         out << "## Inputs\n\n";
         out << "- data_file: `" << paths_.data_file << "`\n";
@@ -600,7 +680,7 @@ class GraphFrontierProfiler {
 
         out << "\n## Interpretation Rule\n\n";
         out << "Continue the graph direction only if the SAQ prefix curve shows a stable\n";
-        out << "rank-recovery or work-reduction advantage over `rabitq_style_proxy`.\n";
+        out << "rank-recovery or work-reduction advantage over `symqg_vertex_proxy`.\n";
         out << "If the strongest result is merely that SAQ can score graph neighbors,\n";
         out << "this profiler should be treated as negative evidence rather than a\n";
         out << "method contribution.\n";
@@ -645,6 +725,7 @@ class GraphFrontierProfiler {
         std::cout << "Exact subset adjacency built in " << build_timer.getElapsedTimeMili() / 1000.0 << "s\n";
 
         one_bit_proxy_.build(data_);
+        symqg_vertex_proxy_.build(data_);
         initialize_stats();
 
         if (FLAGS_graph_write_event_csv) {
