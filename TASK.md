@@ -97,6 +97,13 @@ the default `pca` order remains tied for the lowest observed work among the
 tested simple query-unaware orders. The simple segment-order branch should stop
 as a main method direction.
 
+The search-procedure direction decision is recorded in
+`docs/saq_search_procedure_direction_decision_2026_07_09.md`. Generic
+search-procedure optimization should not continue as a main method. The only
+remaining allowed search-procedure question is a final bound-focused
+measurement explaining why the variance-pruning stage is almost inactive and
+whether any safe, non-empirical refinement exists.
+
 ## Research Priority
 
 **Data-only SAQ planner-objective analysis**
@@ -151,16 +158,15 @@ and simple segment-cost objectives fail to produce a recall-matched improvement
 under a one-global-plan, query-unaware constraint?
 ```
 
-The immediate next step is to decide whether any search-procedure direction
-still has a defensible mechanism after the segment-order branch failed. Do not
-implement a new search policy yet.
+The immediate next step is the final allowed search-procedure measurement. Do
+not implement a new search policy yet.
 
-The most concrete remaining observation is that SAQ's variance stage is almost
-inactive on GIST sample100k K512 B=4. Before doing more implementation, write a
-short decision note comparing two options: stop the search-procedure direction
-entirely, or run one final bound-focused measurement that explains why the
-variance stage prunes so little and whether a safe bound refinement exists
-without arbitrary calibration.
+Measure why the variance-pruning stage is almost inactive on GIST sample100k
+K512 B=4. The measurement should inspect how close variance-stage block minima
+are to the current top-k boundary at nprobe 160, 200, and 240, and estimate how
+much tighter the bound would need to be before it prunes meaningful work. Do
+not tune `searcher_vars_bound_m` as a method unless the tightening has a
+mechanism-level derivation and a safety or explicit approximation argument.
 
 ## Constraints
 
