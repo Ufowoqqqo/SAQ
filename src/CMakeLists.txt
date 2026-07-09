@@ -18,5 +18,8 @@ target_link_libraries(compute_gt PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES}
 add_executable(measure_planner_proxy measure_planner_proxy.cpp)
 target_link_libraries(measure_planner_proxy PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
 
+add_executable(measure_estimator_error measure_estimator_error.cpp)
+target_link_libraries(measure_estimator_error PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
+
 add_executable(test_ivf test_ivf.cpp)
 target_link_libraries(test_ivf PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})

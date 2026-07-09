@@ -34,6 +34,12 @@ The first planner-objective measurement is recorded in
 proxy strongly predicts energy-weighted residual CAQ error, especially raw and
 scale-aligned SSE, but is weaker for pure direction-loss ranking.
 
+The second measurement is recorded in
+`docs/estimator_error_measurement_2026_07_09.md`. It measures query-unaware
+distance-estimator error on same-cluster residual pairs. Direction loss alone is
+not a stable predictor of absolute estimator error, but CAQ `fac_error` almost
+perfectly ranks absolute segment estimator error across the first five datasets.
+
 ## Research Priority
 
 **Data-only SAQ planner-objective analysis**
@@ -67,20 +73,30 @@ Required accounting:
 
 ## Immediate Next Step
 
-Continue offline. Measure query-unaware distance-estimation error on data-only
-vector or residual pairs, then test whether the observed direction-loss
-mismatch explains estimator error beyond SAQ's variance proxy.
+Continue offline. Do not derive a broad new planner yet. First run a small
+falsification study for a global `fac_error`-based objective:
 
-The first study should answer:
+1. Define a data-only global objective from measured CAQ `fac_error` for each
+   candidate segment and bit width.
+2. Compare the selected global plan against SAQ's variance-DP plan under the
+   same bit budget.
+3. Evaluate whether the selected plan is meaningfully different before any
+   index build.
+4. Stop this planner-objective direction if the plan is identical,
+   near-identical, or only changes in ways unlikely to affect recall/QPS.
 
-1. Does direction loss explain data-only distance-estimation error after
-   accounting for SAQ proxy risk?
-2. Is this effect systematic across GIST, CIFAR, DEEP, audio, and word2vec, or
-   isolated to one dataset?
-3. Can any correction be derived from measurable data-only quantities rather
-   than post-hoc rules or fitted query labels?
-4. If direction loss does not add predictive power, should planner-objective
-   modification stop as a main direction?
+The research question is now narrower:
+
+```text
+Does replacing SAQ's variance-risk DP cost with a directly measured CAQ
+fac-error cost produce a materially different one-global-plan allocation without
+using query workloads?
+```
+
+The strict-reviewer objection is that `fac_error` may be a tautological,
+offline-expensive remeasurement of CAQ's own estimator bound. Any follow-up must
+therefore report measurement cost, plan difference, and one end-to-end
+safe-search check before claiming a method.
 
 ## Constraints
 
