@@ -64,6 +64,12 @@ current one-global-plan objective-modification line should stop as a main
 method. Static segment-cost, direct CAQ estimator-error, and earlier local-plan
 directions all fail to produce a defensible recall-matched improvement.
 
+The next-direction proposal is recorded in
+`docs/saq_next_direction_proposal_2026_07_09.md`. It recommends
+search-procedure / estimator-scheduling integration as the next candidate
+direction, but only after a code-level search-path review and work-decomposition
+plan. No new search policy is approved yet.
+
 ## Research Priority
 
 **Data-only SAQ planner-objective analysis**
@@ -118,16 +124,15 @@ and simple segment-cost objectives fail to produce a recall-matched improvement
 under a one-global-plan, query-unaware constraint?
 ```
 
-The immediate next step is not another sweep. Write a short proposal note that
-chooses one surviving direction from the synthesis:
+The immediate next step is a code-level review of SAQ's search path and a
+work-decomposition plan. Do not implement a new search policy yet.
 
-- query-unaware boundary-stability diagnosis;
-- search-procedure / estimator-scheduling integration;
-- graph-index compatibility gap.
+The review must locate where fast estimation, accurate refinement, safe
+block-min logic, pruning, heap updates, and runtime metrics are implemented.
+It must identify which counters already exist and which minimal counters would
+be needed to measure query-time work on GIST sample100k K512 B=4.
 
-Before implementation, the proposal must state the challenged SAQ assumption,
-why the idea is not parameter tuning, expected overhead, first falsifiable
-experiment, strict-reviewer objection, and stop condition.
+Only after that review should instrumentation code be added.
 
 ## Constraints
 
