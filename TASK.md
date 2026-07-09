@@ -83,6 +83,14 @@ K512 B=4, variance pruning is almost inactive, fast-stage pruning removes about
 accurate refinement, and accurate refinement already exits early for about 84%
 of refined candidates.
 
+The segment-order counterfactual design and first prototype result are recorded
+in `docs/saq_segment_order_counterfactual_design_2026_07_09.md`. A diagnostic
+binary, `bin/profile_segment_order`, replays the search loop under alternative
+segment orders without modifying the production search path. On GIST
+sample100k K512 B=4 at nprobe=200, simple hyperparameter-free alternatives do
+not reduce work relative to the default order; reverse and dimension-descending
+orders are substantially worse.
+
 ## Research Priority
 
 **Data-only SAQ planner-objective analysis**
@@ -137,16 +145,13 @@ and simple segment-cost objectives fail to produce a recall-matched improvement
 under a one-global-plan, query-unaware constraint?
 ```
 
-The immediate next step is a focused segment-order counterfactual analysis for
-the existing SAQ search path. Do not implement a new search policy yet.
+The immediate next step is a small robustness check for the segment-order
+counterfactual analysis. Do not implement a new search policy yet.
 
-Use the default GIST sample100k K512 B=4 index and ask whether the current PCA
-segment order is already near-optimal for block-level fast pruning and
-accurate-refinement early exit. The analysis should not change returned
-results. It should estimate whether an alternative query-unaware segment order
-could reduce fast segment calls or accurate segment calls under the same safety
-condition. If no simple data-only order has a clear advantage, stop the
-search-procedure direction.
+Run `bin/profile_segment_order` on the default GIST sample100k K512 B=4 index
+at nprobe 160 and 240. If the default order remains tied for best or better
+than the simple query-unaware alternatives, stop the segment-order branch and
+record it as limitation evidence for the search-procedure direction.
 
 ## Constraints
 
