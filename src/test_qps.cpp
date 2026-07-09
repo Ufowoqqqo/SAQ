@@ -19,6 +19,7 @@ using namespace saqlib;
 
 DEFINE_int32(fix_nprobe, 0, "Fixed nprobe value for QPS test. 0 means [5, 4000]");
 DEFINE_int32(fix_thread, 24, "Fixed thread value for QPS test. 0 means [1, 48]");
+DEFINE_bool(print_runtime_profile, false, "Print aggregate SAQ search runtime-profile counters");
 
 constexpr size_t TOPK = 100;
 constexpr size_t ROUND = 10;
@@ -103,6 +104,7 @@ class QPSTester {
         utils::AvgMaxRecorder dist_ratio;
         size_t bandwith_sum_mb{0};
         size_t comput_sum_kop{0};
+        QueryRuntimeMetrics runtime_profile_sum;
         // utils::AvgMaxRecorder bandwith_mbps;
         // utils::AvgMaxRecorder comput_kops;
         Stats curr_stats;
@@ -114,6 +116,7 @@ class QPSTester {
             // comput_kops.insert(m.total_comp_cnt / 1000.0 / (tm_ms[i] / 1000));
             bandwith_sum_mb += (m.fast_bitsum + m.acc_bitsum) / 8.0 / 1024 / 1024;
             comput_sum_kop += m.total_comp_cnt / 1000.0;
+            runtime_profile_sum += m;
         }
 
         float recall = static_cast<float>(total_correct) / total_count;
@@ -132,6 +135,27 @@ class QPSTester {
         std::cout << "compute_kopps: " << curr_stats.compute_kopps << "KOP/s\t";
 
         std::cout << std::endl;
+
+        if (FLAGS_print_runtime_profile) {
+            const double inv_nq = NQ ? 1.0 / static_cast<double>(NQ) : 0.0;
+            auto avg = [&](size_t value) {
+                return static_cast<double>(value) * inv_nq;
+            };
+            std::cout << "runtime_profile_avg:"
+                      << " clusters_scanned=" << avg(runtime_profile_sum.clusters_scanned)
+                      << " blocks_scanned=" << avg(runtime_profile_sum.blocks_scanned)
+                      << " valid_lanes_scanned=" << avg(runtime_profile_sum.valid_lanes_scanned)
+                      << " variance_blocks=" << avg(runtime_profile_sum.variance_blocks)
+                      << " variance_pruned_blocks=" << avg(runtime_profile_sum.variance_pruned_blocks)
+                      << " fast_segment_calls=" << avg(runtime_profile_sum.fast_segment_calls)
+                      << " fast_pruned_blocks=" << avg(runtime_profile_sum.fast_pruned_blocks)
+                      << " accurate_candidate_attempts=" << avg(runtime_profile_sum.accurate_candidate_attempts)
+                      << " accurate_segment_calls=" << avg(runtime_profile_sum.accurate_segment_calls)
+                      << " accurate_segment_early_exits=" << avg(runtime_profile_sum.accurate_segment_early_exits)
+                      << " result_insert_attempts=" << avg(runtime_profile_sum.result_insert_attempts)
+                      << " result_insert_successes=" << avg(runtime_profile_sum.result_insert_successes)
+                      << std::endl;
+        }
 
         return curr_stats;
     }

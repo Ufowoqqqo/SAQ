@@ -14,19 +14,21 @@ struct ResultPool {
     ResultPool(size_t capacity, bool greater = false)
         : greater_(greater), ids_(capacity + 1), distances_(capacity + 1), capacity_(capacity) {}
 
-    void insert(PID u, float dist) {
+    bool insert(PID u, float dist) {
         if (greater_)
             dist = -dist; // Invert distance if greater is true
         if (size_ == capacity_ && dist > distances_[size_ - 1]) {
-            return;
+            return false;
         }
+        const bool has_room = size_ < capacity_;
         size_t lo = find_bsearch(dist);
+        const bool accepted = has_room || lo < capacity_;
         std::memmove(&ids_[lo + 1], &ids_[lo], (size_ - lo) * sizeof(PID));
         ids_[lo] = u;
         std::memmove(&distances_[lo + 1], &distances_[lo], (size_ - lo) * sizeof(float));
         distances_[lo] = dist;
         size_ += (size_ < capacity_);
-        return;
+        return accepted;
     }
 
     float distk() {

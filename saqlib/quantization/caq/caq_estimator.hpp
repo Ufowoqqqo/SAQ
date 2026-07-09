@@ -22,6 +22,48 @@ struct QueryRuntimeMetrics {
     size_t fast_bitsum = 0;
     size_t acc_bitsum = 0;
     size_t total_comp_cnt = 0;
+
+    size_t clusters_scanned = 0;
+    size_t blocks_scanned = 0;
+    size_t valid_lanes_scanned = 0;
+
+    size_t variance_blocks = 0;
+    size_t variance_pruned_blocks = 0;
+
+    size_t fast_segment_calls = 0;
+    size_t fast_pruned_blocks = 0;
+
+    size_t accurate_candidate_attempts = 0;
+    size_t accurate_segment_calls = 0;
+    size_t accurate_segment_early_exits = 0;
+
+    size_t result_insert_attempts = 0;
+    size_t result_insert_successes = 0;
+
+    QueryRuntimeMetrics &operator+=(const QueryRuntimeMetrics &other) {
+        fast_bitsum += other.fast_bitsum;
+        acc_bitsum += other.acc_bitsum;
+        total_comp_cnt += other.total_comp_cnt;
+
+        clusters_scanned += other.clusters_scanned;
+        blocks_scanned += other.blocks_scanned;
+        valid_lanes_scanned += other.valid_lanes_scanned;
+
+        variance_blocks += other.variance_blocks;
+        variance_pruned_blocks += other.variance_pruned_blocks;
+
+        fast_segment_calls += other.fast_segment_calls;
+        fast_pruned_blocks += other.fast_pruned_blocks;
+
+        accurate_candidate_attempts += other.accurate_candidate_attempts;
+        accurate_segment_calls += other.accurate_segment_calls;
+        accurate_segment_early_exits += other.accurate_segment_early_exits;
+
+        result_insert_attempts += other.result_insert_attempts;
+        result_insert_successes += other.result_insert_successes;
+
+        return *this;
+    }
 };
 
 template <DistType kDistType = DistType::Any>

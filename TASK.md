@@ -130,15 +130,16 @@ and simple segment-cost objectives fail to produce a recall-matched improvement
 under a one-global-plan, query-unaware constraint?
 ```
 
-The immediate next step is to add minimal runtime-profile counters for the
-existing SAQ search path. Do not implement a new search policy yet.
+The immediate next step is to run the minimal runtime-profile diagnostic for
+the existing SAQ search path. Do not implement a new search policy yet.
 
 The first profile should measure GIST sample100k K512 B=4 with the SAQ default
-plan, R@100, `-searcher_safe_block_min_mode=2`, and nprobe around the existing
-operating point. It should report cluster/block scan volume, variance pruning,
-fast-stage segment calls and pruning, accurate-refinement attempts and early
-exits, and top-k result-pool insertions. The result should decide whether a
-search-procedure method is plausible or whether this direction should stop.
+plan, R@100, `-searcher_safe_block_min_mode=2`, `-print_runtime_profile=true`,
+and nprobe around the existing operating point. It should report cluster/block
+scan volume, variance pruning, fast-stage segment calls and pruning,
+accurate-refinement attempts and early exits, and top-k result-pool insertions.
+The result should decide whether a search-procedure method is plausible or
+whether this direction should stop.
 
 ## Constraints
 

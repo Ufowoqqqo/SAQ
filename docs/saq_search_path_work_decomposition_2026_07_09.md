@@ -332,6 +332,21 @@ Rationale: counters are less intrusive than timers and should be added first.
 Timers can perturb tight SIMD loops, so they should be enabled only for small
 diagnostic runs.
 
+Implementation status: this counter layer is now implemented in
+`QueryRuntimeMetrics` and populated in `SAQSearcher`. The existing QPS output is
+unchanged by default. To print per-query average profile counters in
+`test_qps`, use:
+
+```text
+-print_runtime_profile=true
+```
+
+`result_insert_successes` means that a candidate was accepted into the
+fixed-capacity top-k result pool, not merely that refinement was attempted.
+`accurate_segment_early_exits` counts candidate refinements that stopped before
+all segments because the partial accurate distance already crossed the current
+top-k boundary.
+
 ### Step 2: Produce A Single-Query And Aggregate Report
 
 Add a small diagnostic binary or a flag-gated path for:
@@ -398,6 +413,6 @@ Stop this direction if:
 
 ## Immediate Next Task
 
-Implement only the minimal runtime-profile counters needed for Step 1, guarded
-so normal QPS runs remain compatible. Then run the Step 2 diagnostic on GIST
-sample100k K512 B=4 with safe search.
+Run the Step 2 diagnostic on GIST sample100k K512 B=4 with safe search and
+`-print_runtime_profile=true`. The goal is to determine whether there is a
+concentrated query-time work source before proposing any new estimator schedule.
