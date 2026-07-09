@@ -127,3 +127,7 @@ used. For multi-segment recall/QPS claims in the SAQ IVF path, prefer:
   across datasets and operating points.
 - Do not implement full graph-index integration until an offline traversal
   replay shows a graph-specific SAQ limitation.
+- Before proposing any new research idea, first survey closely related work.
+  If similar work exists, state what it already solves, what assumptions or
+  gaps remain, and how the proposed idea avoids duplication by targeting a
+  distinct SAQ-specific limitation or contribution.

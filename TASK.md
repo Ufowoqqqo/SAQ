@@ -105,5 +105,9 @@ The first profiler should answer:
   held-out evaluation, and either sensitivity evidence or an ablation plan.
 - Do not overclaim a universal improvement over SAQ before validation across
   datasets and operating points.
+- Before proposing any new research idea, first survey closely related work.
+  If similar work exists, state what it already solves, what assumptions or
+  gaps remain, and how the proposed idea avoids duplication by targeting a
+  distinct SAQ-specific limitation or contribution.
 - Prefer small, falsifiable experiments over more tooling.
 - Keep documentation concise and paper-facing.
