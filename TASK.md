@@ -38,6 +38,14 @@ that the repository has no active graph-index implementation and that the first
 study should be an offline fixed-adjacency replay, not HNSW/DiskANN
 integration.
 
+The graph quantization related-work and novelty gate is recorded in
+`docs/saq_graph_quantization_related_work_and_novelty_gate_2026_07_09.md`. It
+concludes that SymphonyQG, NGT-QG, and graph-aware quantization work already
+cover broad quantization-plus-graph integration. The branch must target a
+narrower SAQ-specific contribution: whether SAQ's segmented progressive
+estimator provides a traversal/refinement advantage beyond a
+RaBitQ/SymphonyQG-style graph quantization baseline.
+
 ## Research Priority
 
 **Graph-index compatibility and traversal-sensitivity analysis**
@@ -72,13 +80,17 @@ Required accounting:
 ## Immediate Next Step
 
 Implement the minimal local expansion ordering profiler only after reviewing
-`docs/saq_graph_traversal_measurement_design_2026_07_09.md`. Do not implement
-full HNSW or DiskANN integration yet.
+both `docs/saq_graph_traversal_measurement_design_2026_07_09.md` and
+`docs/saq_graph_quantization_related_work_and_novelty_gate_2026_07_09.md`. Do
+not implement full HNSW or DiskANN integration yet.
 
 The first profiler should answer:
 
 - whether `saq_full`, `saq_fast`, and `saq_var` preserve the exact-float best
   neighbor inside a fixed graph expansion neighborhood;
+- whether SAQ's staged estimates provide any rank-recovery or work-reduction
+  advantage over a RaBitQ/SymphonyQG-style single-stage graph-quantization
+  baseline;
 - the rank distribution of the exact-best neighbor under each SAQ estimate;
 - how many cheap-ranked candidates would need full SAQ refinement to recover
   exact-float expansion choices;

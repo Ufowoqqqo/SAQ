@@ -6,6 +6,14 @@ This note records the first graph-index compatibility review on the
 `saq-graph-traversal-analysis` branch and defines a minimal offline
 traversal-sensitivity measurement.
 
+Related-work update: this design should now be read together with
+`docs/saq_graph_quantization_related_work_and_novelty_gate_2026_07_09.md`.
+That note identifies SymphonyQG, NGT-QG, and graph-aware quantization work as
+strong related work. Therefore an SAQ-only graph replay is not sufficient. The
+first profiler must compare SAQ's segmented progressive estimates against a
+RaBitQ/SymphonyQG-style graph-quantization baseline or the direction risks
+duplicating existing work.
+
 The goal is not to integrate SAQ into HNSW or DiskANN yet. The goal is to
 answer a smaller falsifiable question:
 
