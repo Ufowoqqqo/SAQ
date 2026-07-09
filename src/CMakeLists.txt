@@ -9,6 +9,9 @@ target_link_libraries(test_qps PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
 add_executable(profile_segment_order profile_segment_order.cpp)
 target_link_libraries(profile_segment_order PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
 
+add_executable(profile_variance_bound profile_variance_bound.cpp)
+target_link_libraries(profile_variance_bound PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
+
 # add_executable(test_qps_thread test_qps_thread.cpp)
 # target_link_libraries(test_qps_thread PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
 

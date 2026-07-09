@@ -104,6 +104,14 @@ remaining allowed search-procedure question is a final bound-focused
 measurement explaining why the variance-pruning stage is almost inactive and
 whether any safe, non-empirical refinement exists.
 
+The final variance-bound inactivity measurement is recorded in
+`docs/saq_variance_bound_inactivity_final_2026_07_09.md`. It shows that the
+variance-stage block minimum is usually far below the current top-k boundary:
+the median relative gap is about 0.74, and meaningful pruning would require
+removing roughly 58-63% of the current variance slack. This would be arbitrary
+calibration without a new safety argument. The search-procedure direction is
+therefore closed as a main method direction.
+
 ## Research Priority
 
 **Data-only SAQ planner-objective analysis**
@@ -158,15 +166,17 @@ and simple segment-cost objectives fail to produce a recall-matched improvement
 under a one-global-plan, query-unaware constraint?
 ```
 
-The immediate next step is the final allowed search-procedure measurement. Do
-not implement a new search policy yet.
+The immediate next step is to synthesize the negative search-procedure evidence
+and decide the next structural SAQ limitation to study. Do not implement more
+search-loop scheduling changes on this branch.
 
-Measure why the variance-pruning stage is almost inactive on GIST sample100k
-K512 B=4. The measurement should inspect how close variance-stage block minima
-are to the current top-k boundary at nprobe 160, 200, and 240, and estimate how
-much tighter the bound would need to be before it prunes meaningful work. Do
-not tune `searcher_vars_bound_m` as a method unless the tightening has a
-mechanism-level derivation and a safety or explicit approximation argument.
+The synthesis should clearly state that one-global-plan objective changes,
+static segment-cost DP, mixed local plans, simple segment reordering, and
+variance-bound tightening by calibration have all failed as main methods. The
+next direction should move away from small IVF search-loop scheduling changes
+and toward a more structural SAQ limitation, such as graph-index compatibility,
+estimator-bound theory, or non-PCA transform objectives with a stronger
+derivation.
 
 ## Constraints
 
