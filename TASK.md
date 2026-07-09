@@ -91,6 +91,12 @@ sample100k K512 B=4 at nprobe=200, simple hyperparameter-free alternatives do
 not reduce work relative to the default order; reverse and dimension-descending
 orders are substantially worse.
 
+The segment-order robustness check is recorded in
+`docs/saq_segment_order_robustness_2026_07_09.md`. At nprobe 160, 200, and 240,
+the default `pca` order remains tied for the lowest observed work among the
+tested simple query-unaware orders. The simple segment-order branch should stop
+as a main method direction.
+
 ## Research Priority
 
 **Data-only SAQ planner-objective analysis**
@@ -145,13 +151,16 @@ and simple segment-cost objectives fail to produce a recall-matched improvement
 under a one-global-plan, query-unaware constraint?
 ```
 
-The immediate next step is a small robustness check for the segment-order
-counterfactual analysis. Do not implement a new search policy yet.
+The immediate next step is to decide whether any search-procedure direction
+still has a defensible mechanism after the segment-order branch failed. Do not
+implement a new search policy yet.
 
-Run `bin/profile_segment_order` on the default GIST sample100k K512 B=4 index
-at nprobe 160 and 240. If the default order remains tied for best or better
-than the simple query-unaware alternatives, stop the segment-order branch and
-record it as limitation evidence for the search-procedure direction.
+The most concrete remaining observation is that SAQ's variance stage is almost
+inactive on GIST sample100k K512 B=4. Before doing more implementation, write a
+short decision note comparing two options: stop the search-procedure direction
+entirely, or run one final bound-focused measurement that explains why the
+variance stage prunes so little and whether a safe bound refinement exists
+without arbitrary calibration.
 
 ## Constraints
 
