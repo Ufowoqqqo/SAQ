@@ -1,0 +1,1603 @@
+\documentclass[aspectratio=169,10pt]{beamer}
+
+\usetheme{Madrid}
+\usecolortheme{default}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{mathtools}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{codebg}{RGB}{248,248,248}
+\definecolor{darkblue}{RGB}{25,60,110}
+
+\lstdefinestyle{plaincode}{
+  basicstyle=\ttfamily\scriptsize,
+  backgroundcolor=\color{codebg},
+  columns=fullflexible,
+  keepspaces=true,
+  breaklines=true,
+  frame=single,
+  framerule=0.2pt,
+  rulecolor=\color{black!20},
+  xleftmargin=0.5em,
+  xrightmargin=0.5em
+}
+\lstset{style=plaincode}
+
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\smallcite}[1]{{\scriptsize #1}}
+
+\title[SAQ Follow-Up Progress]{SAQ Follow-Up Research Progress}
+\subtitle{From Local Plan Corrections To Graph-Traversal Compatibility}
+\author{Kaibin Lu}
+\institute{PhD Research Meeting}
+\date{2026-07-09}
+
+\begin{document}
+
+% ----------------------------------------------------------------------
+\begin{frame}
+  \titlepage
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Meeting Goal}
+\small
+This meeting is not about presenting one finished method.
+
+\vspace{0.6em}
+The goal is to explain, from a PhD research perspective:
+\begin{enumerate}
+  \item What SAQ already contributes.
+  \item Why a follow-up is difficult.
+  \item What directions we tried.
+  \item Which directions produced useful evidence but should not be the main method.
+  \item What the current graph-traversal direction is testing.
+  \item What evidence is still missing before this can become a SIGMOD/VLDB/ICDE-level contribution.
+\end{enumerate}
+
+\vspace{0.4em}
+\begin{block}{Main message}
+\small
+So far, we have not found an independent method that clearly dominates SAQ.
+The useful research value is that these attempts narrow the search space:
+small empirical plan tuning is weak, mixed local plans add overhead, static
+global cost objectives do not transfer, and SAQ's IVF search path is already
+hard to improve with simple query-unaware scheduling.
+\end{block}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Branch Map}
+\scriptsize
+\begin{tabularx}{\textwidth}{>{\ttfamily}lX}
+\toprule
+branch & role \\
+\midrule
+main & upstream SAQ code \\
+saq-correctness-base & clean base with only confirmed correctness fixes \\
+saq-boundary-audit & older default-neighborhood fixed-policy experiments \\
+saq-structural-followup & mixed shared local-plan experiments \\
+saq-global-cost-dp & one-global-plan static segment-cost DP experiments \\
+saq-planner-objective-analysis & fac-error planner objective and IVF search-procedure measurements \\
+saq-graph-traversal-analysis & current graph-index compatibility direction \\
+\bottomrule
+\end{tabularx}
+
+\vspace{0.8em}
+\begin{block}{Current branch}
+\begin{lstlisting}
+saq-graph-traversal-analysis
+latest commit at deck time: d94279d
+\end{lstlisting}
+\end{block}
+
+\small
+Except for \code{main} and \code{saq-correctness-base}, the other branches are
+research-attempt branches. The old fixed-policy slides are stylistically useful
+but substantively out of date.
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{What We Can Safely Say Today}
+\small
+\begin{block}{Safe statement}
+SAQ is a strong baseline. Most simple query-unaware corrections around its
+segment planner or IVF search path are either too empirical, too small, or too
+expensive.
+\end{block}
+
+\vspace{0.5em}
+\begin{itemize}
+  \item Fixed-policy local plan corrections: repeated small positives on GIST/CIFAR, but empirical and handcrafted.
+  \item Shared local plans: residual-local signal exists, but mixed-plan dispatch loses QPS.
+  \item Static global segment-cost DP: SAQ default is not dominated on simple risk-cost frontiers.
+  \item Fac-error planner objective: plan can move, but GIST custom plan does not recover default recall before losing the QPS advantage.
+  \item Search-procedure measurements: fast-stage pruning and accurate-stage early exit are already effective.
+  \item Graph-traversal direction: SAQ staged estimates show local rank recovery against a formula-level SymphonyQG-style vertex proxy, but the baseline still needs fuller alignment.
+\end{itemize}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Core Problem Setting}
+\small
+We store a database:
+\[
+X = \{x_1, x_2, \ldots, x_N\}, \quad x_i \in \mathbb{R}^D.
+\]
+
+Given a query:
+\[
+q \in \mathbb{R}^D,
+\]
+nearest-neighbor search wants:
+\[
+\arg\min_i d(q, x_i).
+\]
+
+For L2 search:
+\[
+d(q,x_i)=\|q-x_i\|_2^2.
+\]
+
+\vspace{0.5em}
+In high-dimensional ANNS, exact float32 distance computation is expensive:
+many candidates may be scanned per query, and each candidate has \(D\) dimensions.
+Vector quantization stores compressed codes and estimates distances from these codes.
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{SAQ In One Slide}
+\small
+SAQ stands for Segmented Adjusted Quantization.
+
+\vspace{0.5em}
+High-level flow:
+\begin{enumerate}
+  \item Rotate data with PCA.
+  \item Split PCA dimensions into contiguous segments.
+  \item Assign more bits to high-variance segments and fewer bits to low-variance segments.
+  \item Use CAQ-style code adjustment inside each segment.
+  \item Use staged distance estimation during search.
+\end{enumerate}
+
+\vspace{0.6em}
+\begin{block}{Important code paths}
+\begin{lstlisting}
+saqlib/quantization/saq_data.hpp
+  dynamic_programming(...)
+
+saqlib/quantization/saq_estimator.hpp
+  varsEstDist(...)
+  compFastDist(...)
+  compAccurateDist(...)
+
+saqlib/quantization/saq_searcher.hpp
+  progressive block scan and refinement
+\end{lstlisting}
+\end{block}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Segment Plan Notation}
+\small
+We write a plan as:
+\begin{lstlisting}
+dim:bits, dim:bits, ...
+\end{lstlisting}
+
+Running example, GIST full / K4096 / B=4:
+\begin{lstlisting}
+64:11,192:6,320:4,256:2,128:0
+\end{lstlisting}
+
+\vspace{0.5em}
+\scriptsize
+\begin{tabular}{rrrr}
+\toprule
+segment & PCA dimension range & dimensions & bits/dim \\
+\midrule
+1 & 0--63 & 64 & 11 \\
+2 & 64--255 & 192 & 6 \\
+3 & 256--575 & 320 & 4 \\
+4 & 576--831 & 256 & 2 \\
+5 & 832--959 & 128 & 0 \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.6em}
+\small
+The final 0-bit segment is a dropped low-variance tail.
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Variable Glossary}
+\scriptsize
+\begin{tabularx}{\textwidth}{lXl}
+\toprule
+symbol & meaning & typical/default value \\
+\midrule
+\(N\) & number of base vectors & dataset-dependent \\
+\(D\) & original dimension & GIST 960, CIFAR 512, DEEP 256, audio 192 \\
+\(D_p\) & padded dimension & rounded to multiple of 64 \\
+\(g\) & SAQ segment granularity & 64 dimensions \\
+\(n\) & number of 64-d blocks, \(D_p/g\) & GIST 15 \\
+\(B\) & average bits per dimension & usually 3, 4, or 5 \\
+\(K\) & IVF cluster count & GIST full 4096, many samples 512 \\
+\(S\) & number of SAQ segments & plan-dependent \\
+\(b_s\) & bitwidth of segment \(s\) & 0 to 13 \\
+\(P_0\) & SAQ default segment plan & DP output \\
+\(P\) & candidate/custom segment plan & direction-dependent \\
+\(k\) & retrieval cutoff & R@100 or R@10 \\
+\(\text{nprobe}\) & number of IVF clusters scanned & setting-dependent \\
+\bottomrule
+\end{tabularx}
+
+\vspace{0.8em}
+\begin{block}{Code constants}
+\begin{lstlisting}
+kDimPaddingSize = 64
+KMaxQuantizeBits = 13
+KFastScanSize = 32
+positive-segment factor overhead = 64 bits
+\end{lstlisting}
+\end{block}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{SAQ Default Planner Formula}
+\small
+SAQ's default dynamic program minimizes a variance-risk proxy.
+
+\vspace{0.5em}
+For a positive-bit segment \([a,b)\) with bitwidth \(r\):
+\[
+\operatorname{risk}([a,b),r)
+= \frac{\sum_{i=a}^{b-1}\operatorname{var}_i}{2^r}.
+\]
+
+For a zero-bit tail:
+\[
+\operatorname{risk}([a,D),0)
+= \sum_{i=a}^{D-1}\operatorname{var}_i.
+\]
+
+Conceptual DP state:
+\[
+f[\text{num\_segments}][\text{block\_index}][\text{used\_bits}]
+= \text{minimum risk so far}.
+\]
+
+\begin{block}{Code}
+\begin{lstlisting}
+saqlib/quantization/saq_data.hpp
+  SaqDataWrapper::dynamic_programming(...)
+\end{lstlisting}
+\end{block}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{SAQ Planner Complexity}
+\small
+Let:
+\[
+n = D_p/64,\quad C = \lfloor B D_p + 64 \rfloor,\quad R = 13,
+\]
+and let \(S_{\max}\) be the maximum number of segments considered.
+
+\vspace{0.5em}
+The implementation enumerates:
+\[
+\text{segment count} \times \text{current block} \times
+\text{used bits} \times \text{next segment length} \times \text{bitwidth}.
+\]
+
+Conservative complexity:
+\[
+\text{time} = O(S_{\max} \cdot n \cdot C \cdot n \cdot R),
+\]
+\[
+\text{memory} = O(S_{\max} \cdot n \cdot C).
+\]
+
+For GIST B=4:
+\[
+D_p=960,\quad n=15,\quad C=4\cdot960+64=3904,\quad R=13.
+\]
+
+\vspace{0.4em}
+This DP is offline and cheap compared with full index construction, but it only
+optimizes the variance-risk proxy.
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Running Example: Why The Follow-Up Is Hard}
+\small
+SAQ default for GIST full / K4096 / B=4:
+\begin{lstlisting}
+P0 = 64:11,192:6,320:4,256:2,128:0
+\end{lstlisting}
+
+\vspace{0.5em}
+A tempting idea:
+\begin{lstlisting}
+Maybe a nearby plan can be faster or more accurate.
+\end{lstlisting}
+
+\vspace{0.5em}
+But any custom plan must answer:
+\begin{enumerate}
+  \item Does it improve or preserve recall?
+  \item Does it improve QPS or memory traffic?
+  \item Does it avoid extra index/search overhead?
+  \item Does it generalize beyond one dataset?
+  \item Is the selection rule query-unaware?
+  \item Is it more than parameter tuning around SAQ?
+\end{enumerate}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Correctness Base: Not A Research Contribution}
+\small
+The clean base branch preserves two correctness fixes:
+\begin{enumerate}
+  \item positive 1-bit segment packing support;
+  \item padded-lane finite block-min search mode.
+\end{enumerate}
+
+Relevant flag:
+\begin{lstlisting}
+-searcher_safe_block_min_mode=2
+\end{lstlisting}
+
+Meaning:
+\begin{lstlisting}
+0 = native behavior
+1 = scalar finite valid-lane block minimum
+2 = SIMD finite valid-lane block minimum
+\end{lstlisting}
+
+Code paths:
+\begin{lstlisting}
+src/define_options.h
+saqlib/quantization/saq_searcher.hpp
+src/test_qps.cpp
+src/test_relative_error.cpp
+\end{lstlisting}
+
+These fixes are necessary for fair evaluation, but should not be presented as novelty.
+\end{frame}
+
+% ----------------------------------------------------------------------
+\section{Attempt 1: Fixed Policy}
+
+\begin{frame}[fragile]{Attempt 1: Default-Neighborhood Fixed Policy}
+\small
+Research question:
+\begin{lstlisting}
+Can we improve SAQ by searching a small local neighborhood around its default
+plan using only base/index artifacts, without representative query workloads?
+\end{lstlisting}
+
+Method:
+\begin{lstlisting}
+SAQ default plan P0
+  -> classify default-plan shape
+  -> generate local candidate neighborhood N(P0)
+  -> score candidates with data-only boundary pairs
+  -> promote, reject, or abstain
+\end{lstlisting}
+
+Core boundary-pair weight:
+\[
+w = \exp(-m/\tau),
+\quad
+m=d_{\mathrm{exact}}(\text{negative})-d_{\mathrm{exact}}(\text{positive}).
+\]
+
+\begin{block}{Old branch code}
+\begin{lstlisting}
+script/generate_default_neighborhood_plans.py
+script/score_default_neighborhood_plans.py
+script/sweep_data_boundary_pairs.py
+script/run_fixed_policy_matrix.py
+\end{lstlisting}
+\end{block}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Fixed Policy: Running Example}
+\small
+GIST full / K4096 / B=4.
+
+\begin{columns}[T,totalwidth=\textwidth]
+\begin{column}{0.48\textwidth}
+\begin{block}{Default}
+\begin{lstlisting}
+64:11,192:6,320:4,256:2,128:0
+\end{lstlisting}
+\end{block}
+\begin{block}{Selected candidate}
+\begin{lstlisting}
+128:9,320:5,320:3,192:0
+\end{lstlisting}
+\end{block}
+\end{column}
+\begin{column}{0.48\textwidth}
+\begin{itemize}
+  \item head widened: 64 to 128 dimensions
+  \item positive segments reduced: 4 to 3
+  \item zero tail expanded: 128 to 192 dimensions
+\end{itemize}
+\end{column}
+\end{columns}
+
+\vspace{0.8em}
+\begin{block}{Scorer and validation}
+\begin{lstlisting}
+recall-risk = 0.9071
+speed-proxy = 0.7792
+role = conservative_eligible
+
+R@100 at nprobe 800: 0.98845 -> 0.98922   delta +0.00077
+QPS at nprobe 800:   1013.64 -> 1211.10   ratio 1.1948x
+\end{lstlisting}
+\end{block}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Fixed Policy: Evidence Table}
+\scriptsize
+\begin{tabularx}{\textwidth}{l l X X}
+\toprule
+setting & decision & selected/tested plan & measured readout \\
+\midrule
+GIST K4096 B=3 & promote & \code{64:8,320:5,320:2,256:0} & +0.00159 R@100, 1.1119x QPS at np800 \\
+GIST K4096 B=4 & promote & \code{128:9,320:5,320:3,192:0} & +0.00077 R@100, 1.1948x QPS at np800 \\
+GIST K4096 B=5 & promote & \code{128:9,128:7,320:5,320:3,64:0} & +0.00028 R@100, 1.0793x QPS at np800 \\
+CIFAR B=3 & promote & \code{128:6,64:4,192:2,128:0} & +0.0004 R@10, 1.0761x QPS at np200 \\
+CIFAR B=4 & promote & \code{128:7,256:4,128:0} & +0.0004 R@10, 1.0745x QPS at np200 \\
+CIFAR B=5 & promote & \code{128:8,64:6,256:4,64:0} & +0.0008 R@10, 1.0609x QPS at np200 \\
+DEEP B=4 & reject & \code{128:4,128:3} & +QPS, but -0.02757 R@100 at np200 \\
+DEEP B=5 & reject & \code{128:5,128:4} & +QPS, but -0.01429 R@100 at np200 \\
+audio B=4 & abstain & none & single-uniform default \\
+word2vec B=4 & abstain & none & single-uniform default \\
+\bottomrule
+\end{tabularx}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Fixed Policy: Complexity And Overhead}
+\small
+Let:
+\[
+C_{\mathrm{cand}}=\text{number of candidate plans},\quad
+P=\text{number of boundary pairs},\quad S=\text{segments}.
+\]
+
+Approximate scoring complexity:
+\[
+O(C_{\mathrm{cand}}\cdot P \cdot S)
+\]
+after feature construction.
+
+\vspace{0.5em}
+\scriptsize
+\begin{tabular}{lrrrr}
+\toprule
+run & candidates & pairs & planner runtime & qps curve geomean \\
+\midrule
+GIST K4096 B=3 & 2 & 14740 & 145.265 s & 1.1077 \\
+GIST K4096 B=4 & 5 & 14740 & 150.580 s & 1.1511 \\
+GIST K4096 B=5 & 5 & 14740 & 149.590 s & 1.0668 \\
+CIFAR B=3 & 4 & 1068 & 8.562 s & 1.0528 \\
+DEEP B=4 & 2 & 1904 & 5.804 s & 1.0802, rejected \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.8em}
+\small
+Conclusion: the scorer cost is large relative to the small metric gains.
+This weakens novelty and practical value.
+\end{frame}
+
+% ----------------------------------------------------------------------
+\section{Attempt 2: Shared Local Plans}
+
+\begin{frame}[fragile]{Attempt 2: Mixed Shared Local Plans}
+\small
+Research question:
+\begin{lstlisting}
+Can IVF clusters with different residual profiles share a small number of
+local SAQ plans, improving local residual quantization without learning from
+queries?
+\end{lstlisting}
+
+Core assignment rule:
+\[
+\operatorname{assign}(c)=\arg\min_P \operatorname{cost}(\operatorname{residual\_profile}_c,P).
+\]
+
+Variables:
+\begin{itemize}
+  \item \(c\): IVF cluster id.
+  \item \(P\): one shared plan from a small family.
+  \item \(M\): number of shared plans, tested \(M\in\{2,4,8\}\).
+\end{itemize}
+
+\begin{block}{Old branch code}
+\begin{lstlisting}
+script/cluster_residual_feasibility_matrix.py
+shared-plan materialization code in saqlib/ and src/
+\end{lstlisting}
+\end{block}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Shared Local Plans: Offline Signal}
+\scriptsize
+\begin{tabularx}{\textwidth}{l r X r r r r l}
+\toprule
+case & B & global plan & oracle & M & assigned & retention & decision \\
+\midrule
+GIST K4096 & 3 & \code{64:9,192:5,320:3,192:1,192:0} & 0.9581 & 4 & 0.9627 & 0.889 & continue \\
+GIST K4096 & 4 & \code{64:11,192:6,320:4,256:2,128:0} & 0.9420 & 4 & 0.9435 & 0.974 & continue \\
+GIST K4096 & 5 & \code{64:11,192:7,320:5,320:3,64:0} & 0.9606 & 4 & 0.9640 & 0.915 & continue \\
+CIFAR B=3 & 3 & \code{64:8,128:4,192:2,128:0} & 0.9641 & 2 & 0.9654 & 0.966 & continue \\
+DEEP/audio/word2vec & 3--5 & compact or uniform & near 1.000 & 2 & 1.000 & 0.000 & abstain \\
+\bottomrule
+\end{tabularx}
+
+\vspace{0.8em}
+\small
+Interpretation:
+\begin{lstlisting}
+GIST and some CIFAR cases show local residual structure.
+DEEP, audio, and word2vec do not show useful local-plan opportunity.
+\end{lstlisting}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Shared Local Plans: End-To-End Result}
+\scriptsize
+GIST full / K4096 / B=4, safe search, R@100, nprobe 200.
+
+\vspace{0.5em}
+\begin{tabular}{lrrrr}
+\toprule
+index & R@100 & QPS & QPS ratio & index size \\
+\midrule
+SAQ default & 0.94469 & 2677.16 & 1.0000 & 570M \\
+shared local M4 & 0.94548 & 2434.73 & 0.9094 & 573M \\
+cost-aware M4 & 0.94485 & 2398.13 & 0.8958 & 567M \\
+\bottomrule
+\end{tabular}
+
+\vspace{1em}
+Runtime decomposition:
+
+\begin{tabular}{lrrrr}
+\toprule
+index & fast bit ratio & accurate bit ratio & accurate segment eval ratio & distinct plans/query \\
+\midrule
+shared local M4 & 0.9741 & 0.9097 & 0.9853 & 2.907 \\
+cost-aware M4 & 0.9547 & 0.8809 & 0.8989 & 3.336 \\
+\bottomrule
+\end{tabular}
+
+\vspace{1em}
+\small
+Measured work decreases, but QPS also decreases. The likely cause is mixed-plan
+overhead: multiple query-side estimator states, lookup-table setup paths, and
+worse cache/layout locality.
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Shared Local Plans: Complexity}
+\small
+Let:
+\[
+K=\text{IVF clusters},\quad M=\text{shared plans},\quad
+n=D_p/64,\quad C=\text{bit budget},\quad R=13.
+\]
+
+Local per-cluster DP can cost:
+\[
+O(K\cdot S_{\max}\cdot n\cdot C\cdot n\cdot R).
+\]
+
+Shared assignment after plan generation:
+\[
+O(K\cdot M\cdot \operatorname{cost\_eval}).
+\]
+
+Search-time architecture:
+\begin{lstlisting}
+default SAQ: one plan, one query-side estimator state
+shared plans: up to M plan-specific estimator states per query
+\end{lstlisting}
+
+Observed on GIST B=4:
+\begin{lstlisting}
+2.907 to 3.336 distinct plan states per query
+\end{lstlisting}
+
+Conclusion: this is useful limitation evidence, but not a main method.
+\end{frame}
+
+% ----------------------------------------------------------------------
+\section{Attempt 3: Global Segment-Cost DP}
+
+\begin{frame}[fragile]{Attempt 3: Single-Global Segment-Cost DP}
+\small
+Research question:
+\begin{lstlisting}
+Can we keep one global SAQ plan but add search-time cost awareness to the
+planner objective?
+\end{lstlisting}
+
+To avoid arbitrary weights, we did not start with:
+\[
+\operatorname{risk} + \lambda\cdot\operatorname{cost}.
+\]
+
+Instead, we built Pareto frontiers for separate static cost terms:
+\begin{itemize}
+  \item positive dimensions;
+  \item total code-bit volume;
+  \item accurate extra bit volume;
+  \item positive segment count;
+  \item segment-factor bits;
+  \item zero-tail risk.
+\end{itemize}
+
+\begin{block}{Old branch code}
+\begin{lstlisting}
+script/global_segment_cost_frontier.py
+\end{lstlisting}
+\end{block}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Global Cost DP: Offline Frontier Result}
+\scriptsize
+B=4 snapshot:
+
+\vspace{0.4em}
+\begin{tabularx}{\textwidth}{lXrrrr}
+\toprule
+dataset & SAQ default plan & pos dim & pos segs & code bits & closest lower-code risk \\
+\midrule
+GIST K4096 & \code{64:11,192:6,320:4,256:2,128:0} & 832 & 4 & 3648 & 1.0100 \\
+GIST sample100k & same & 832 & 4 & 3648 & 1.0099 \\
+CIFAR60K & \code{64:9,192:5,128:3,128:0} & 384 & 3 & 1920 & 1.1104 \\
+DEEP sample100k & \code{64:6,192:3} & 256 & 2 & 960 & 1.0164 \\
+audio K4096 & \code{192:4} & 192 & 1 & 768 & 2.0000 \\
+word2vec sample100k & \code{320:4} & 320 & 1 & 1280 & 1.0319 \\
+\bottomrule
+\end{tabularx}
+
+\vspace{1em}
+\small
+Main result:
+\begin{lstlisting}
+No lower-cost plan dominated the SAQ default at no worse variance-risk.
+\end{lstlisting}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Global Cost DP: End-To-End Check}
+\scriptsize
+GIST full / K4096 / B=4, safe search, R@100.
+
+\vspace{0.4em}
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+label & plan \\
+\midrule
+default & \code{64:11,192:6,320:4,256:2,128:0} \\
+code-volume & \code{64:10,128:7,192:5,192:3,256:2,128:0} \\
+positive-dim & \code{64:10,128:7,192:5,384:3,192:0} \\
+\bottomrule
+\end{tabularx}
+
+\vspace{0.8em}
+\begin{tabular}{r l r r r}
+\toprule
+nprobe & label & R@100 & QPS & QPS ratio \\
+\midrule
+100 & default & 0.86604 & 4275.79 & 1.0000 \\
+100 & code-volume & 0.86630 & 4031.72 & 0.9429 \\
+100 & positive-dim & 0.86639 & 4212.68 & 0.9852 \\
+200 & default & 0.94469 & 2732.35 & 1.0000 \\
+200 & code-volume & 0.94506 & 2503.10 & 0.9161 \\
+200 & positive-dim & 0.94537 & 2673.65 & 0.9785 \\
+400 & default & 0.97999 & 1642.83 & 1.0000 \\
+400 & code-volume & 0.98092 & 1499.40 & 0.9127 \\
+400 & positive-dim & 0.98139 & 1620.92 & 0.9867 \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.6em}
+\small
+Slight recall gain, no QPS gain. Static cost proxies do not transfer reliably.
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Global Cost DP: Complexity}
+\small
+Offline frontier generation:
+\begin{lstlisting}
+enumerate SAQ DP candidate plans
+evaluate variance risk and each static cost metric
+filter metric-specific Pareto frontiers
+\end{lstlisting}
+
+Approximate complexity:
+\[
+\text{DP candidate enumeration}=O(S_{\max} n C n R),
+\]
+\[
+\text{frontier filtering}=O(P\log P)\quad\text{per cost metric}.
+\]
+
+Where:
+\[
+P = \text{number of retained candidate states/plans}.
+\]
+
+\vspace{0.8em}
+Why the direction stopped:
+\begin{lstlisting}
+The complexity is acceptable.
+The issue is objective validity: static code-volume or segment-count terms did
+not predict real QPS benefit.
+\end{lstlisting}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\section{Attempt 4: Fac-Error Planner Objective}
+
+\begin{frame}[fragile]{Attempt 4: Fac-Error Planner Objective}
+\small
+Research question:
+\begin{lstlisting}
+Does SAQ's variance-risk proxy mismatch measured CAQ/SAQ segment error?
+\end{lstlisting}
+
+Measured quantities:
+\begin{itemize}
+  \item variance proxy: \(\sum \operatorname{variance}/2^{\text{bits}}\);
+  \item raw SSE;
+  \item scale-aligned SSE;
+  \item direction loss: \(1-\cos(o,o_a)^2\);
+  \item CAQ fac-error.
+\end{itemize}
+
+\begin{block}{Old branch code}
+\begin{lstlisting}
+src/measure_planner_proxy.cpp
+script/summarize_planner_proxy.py
+script/falsify_fac_error_dp.py
+\end{lstlisting}
+\end{block}
+
+Candidate enumeration:
+\begin{lstlisting}
+all contiguous 64-dimensional block intervals
+all bitwidths from 0 to 13
+deterministic 1024-row or 2048-row residual sample
+\end{lstlisting}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Planner Proxy Measurement Result}
+\scriptsize
+SAQ's variance proxy strongly ranks energy-weighted residual error.
+
+\vspace{0.4em}
+\begin{tabular}{lrrr}
+\toprule
+dataset & aligned-SSE Spearman & within-bit Spearman & discordant pairs \\
+\midrule
+audio K4096 & 0.9113 & 1.0000 & 0.0000 \\
+CIFAR60K & 0.9624 & 0.9979 & 0.0080 \\
+DEEP sample100k & 0.9651 & 1.0000 & 0.0000 \\
+GIST sample100k & 0.9684 & 0.9981 & 0.0123 \\
+word2vec sample100k & 0.9917 & 0.9452 & 0.0782 \\
+\bottomrule
+\end{tabular}
+
+\vspace{1em}
+Direction-only mismatch:
+
+\begin{tabular}{lrr}
+\toprule
+dataset & direction-loss Spearman & fac-error Spearman \\
+\midrule
+audio K4096 & 0.4769 & 0.7143 \\
+CIFAR60K & 0.5516 & 0.9505 \\
+DEEP sample100k & 0.5189 & 0.8294 \\
+GIST sample100k & 0.5234 & 0.9753 \\
+word2vec sample100k & 0.7412 & 0.9838 \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.8em}
+\small
+Interpretation: the obvious measured-SSE replacement objective is not promising.
+The visible gap is direction quality, but its system relevance is unclear.
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Fac-Error DP Falsification}
+\scriptsize
+We replaced SAQ variance cost with measured fac-error cost in the same DP.
+
+\vspace{0.4em}
+\begin{tabularx}{\textwidth}{lXXc}
+\toprule
+dataset & variance plan & fac-error plan & changed? \\
+\midrule
+audio K4096 & \code{192x4} & \code{192x4} & no \\
+CIFAR60K & \code{64x9_192x5_128x3_128x0} & \code{128x8_320x3_64x0} & yes \\
+DEEP sample100k & \code{64x6_192x3} & \code{64x6_192x3} & no \\
+GIST sample100k & \code{64x11_192x6_320x4_256x2_128x0} & \code{192x9_512x4_256x0} & yes \\
+word2vec sample100k & \code{320x4} & \code{320x4} & no \\
+\bottomrule
+\end{tabularx}
+
+\vspace{1em}
+\small
+This avoided the trivial negative outcome that the objective always reproduces
+SAQ. But end-to-end GIST recall-matched evaluation failed.
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Fac-Error GIST Recall-Matched Check}
+\scriptsize
+GIST sample100k / K512 / B=4 / R@100 / 24 threads.
+
+\vspace{0.4em}
+Default target:
+\begin{lstlisting}
+SAQ variance, nprobe=200:
+R@100 = 0.99132
+QPS = 9215.208
+\end{lstlisting}
+
+Fac-error custom plan:
+\begin{lstlisting}
+192x9_512x4_256x0
+\end{lstlisting}
+
+\begin{tabular}{lrrr}
+\toprule
+plan / nprobe & R@100 & QPS & QPS vs default \\
+\midrule
+SAQ variance / 200 & 0.99132 & 9215.208 & 1.000x \\
+fac-error / 200 & 0.99059 & 12334.094 & 1.338x \\
+fac-error / 240 & 0.99084 & 10957.260 & 1.189x \\
+fac-error / 280 & 0.99091 & 9875.544 & 1.072x \\
+fac-error / 300 & 0.99091 & 9422.062 & 1.022x \\
+fac-error / 320 & 0.99091 & 8956.573 & 0.972x \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.6em}
+\small
+The custom plan does not recover default recall before crossing below default QPS.
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Fac-Error Direction: Complexity}
+\small
+Let:
+\[
+R_s=\text{sampled residual vectors or pairs},\quad
+n=D_p/64,\quad
+B_w=\text{tested bitwidth count}.
+\]
+
+Number of contiguous intervals:
+\[
+I=\frac{n(n+1)}{2}.
+\]
+
+Measurement complexity:
+\[
+O(R_s\cdot B_w\cdot \sum\text{interval lengths})
+\]
+or as an upper view:
+\[
+O(R_s\cdot B_w\cdot n^3\cdot64).
+\]
+
+DP after measurement:
+\[
+O(S_{\max}nCnR).
+\]
+
+Why it stopped:
+\begin{lstlisting}
+Even when measurement moves the plan, the first changed GIST plan produces a
+speed/recall tradeoff, not a recall-matched improvement.
+\end{lstlisting}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\section{Attempt 5: Search Procedure}
+
+\begin{frame}[fragile]{Attempt 5: Search-Procedure Analysis}
+\small
+Research question:
+\begin{lstlisting}
+Can SAQ's current IVF search path be improved by a query-unaware estimator
+scheduling or pruning rule?
+\end{lstlisting}
+
+Search path quantities:
+\begin{itemize}
+  \item variance stage: cheap lower estimate per block;
+  \item fast stage: 1-bit estimate over positive segments;
+  \item accurate stage: full-bit segment refinement;
+  \item result pool: top-k candidate maintenance.
+\end{itemize}
+
+\begin{block}{Old branch instrumentation}
+\begin{lstlisting}
+runtime profile counters in test_qps
+profile_segment_order
+profile_variance_bound
+\end{lstlisting}
+\end{block}
+
+Key code:
+\begin{lstlisting}
+saqlib/quantization/saq_searcher.hpp
+saqlib/quantization/saq_estimator.hpp
+src/test_qps.cpp
+\end{lstlisting}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Runtime Profile Evidence}
+\scriptsize
+GIST sample100k / K512 / B=4 / default plan:
+\begin{lstlisting}
+64x11_192x6_320x4_256x2_128x0
+\end{lstlisting}
+
+\begin{tabular}{rrrrr}
+\toprule
+nprobe & R@100 & QPS & scanned cand/query & accurate cand/query \\
+\midrule
+160 & 0.99036 & 10119.473 & 37339.7 & 2696.3 \\
+200 & 0.99132 & 9192.221 & 45810.0 & 2767.4 \\
+240 & 0.99153 & 8183.555 & 54044.2 & 2805.3 \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.8em}
+\begin{tabular}{rrrrr}
+\toprule
+nprobe & variance-pruned & fast-pruned & accurate/scanned & early exits/accurate \\
+\midrule
+160 & 0.14\% & 45.29\% & 7.22\% & 83.91\% \\
+200 & 0.27\% & 52.02\% & 6.04\% & 84.32\% \\
+240 & 0.45\% & 57.60\% & 5.19\% & 84.52\% \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.8em}
+\small
+Fast-stage pruning and accurate-stage early exit already do useful work.
+Variance pruning is almost inactive.
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Segment-Order Counterfactual}
+\scriptsize
+Question:
+\begin{lstlisting}
+Is SAQ's default PCA/bit segment order suboptimal for progressive pruning?
+\end{lstlisting}
+
+Tested orders:
+\begin{lstlisting}
+pca, reverse, bit_desc, dim_desc, cost_asc, risk_per_cost_desc
+\end{lstlisting}
+
+At nprobe 200, deltas relative to default \code{pca}:
+
+\begin{tabular}{lrrrr}
+\toprule
+order & recall delta & fast-call delta & accurate-call delta & fast-bit delta \\
+\midrule
+reverse & -0.00092 & +47.41\% & +167.81\% & +69.06\% \\
+bit\_desc & 0.00000 & 0.00\% & 0.00\% & 0.00\% \\
+dim\_desc & -0.00091 & +47.39\% & +148.07\% & +69.04\% \\
+cost\_asc & +0.00002 & +1.34\% & +0.48\% & +1.78\% \\
+risk\_per\_cost\_desc & 0.00000 & 0.00\% & 0.00\% & 0.00\% \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.8em}
+\small
+Default PCA/bit order is already tied for lowest work among simple
+hyperparameter-free alternatives.
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Variance-Bound Inactivity}
+\scriptsize
+Final search-procedure measurement:
+\begin{lstlisting}
+Why does the variance stage prune less than 0.5% of blocks?
+\end{lstlisting}
+
+\begin{tabular}{rrrrr}
+\toprule
+nprobe & blocks & finite-boundary blocks & variance-pruned & variance-prune rate \\
+\midrule
+160 & 1,245,446 & 1,241,443 & 1,750 & 0.1405\% \\
+200 & 1,530,007 & 1,526,004 & 4,104 & 0.2682\% \\
+240 & 1,807,095 & 1,803,092 & 8,173 & 0.4523\% \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.8em}
+Gap to the top-k boundary:
+
+\begin{tabular}{rrr}
+\toprule
+nprobe & median relative gap & 90th-percentile relative gap \\
+\midrule
+160 & 0.7467 & 0.8635 \\
+200 & 0.7427 & 0.8585 \\
+240 & 0.7386 & 0.8537 \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.8em}
+\small
+Useful pruning would require removing a large fraction of conservative slack,
+which has no safe derivation in the current evidence.
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Search-Procedure Complexity}
+\small
+Let:
+\[
+Q=\text{queries},\quad
+B_c=\text{32-lane blocks scanned/query},\quad
+S_{\mathrm{pos}}=\text{positive-bit segments},
+\]
+\[
+R_{\mathrm{acc}}=\text{candidates entering accurate refinement},\quad
+S_{\mathrm{acc}}=\text{average accurate segments per refined candidate}.
+\]
+
+Simplified per-query work:
+\[
+\text{variance stage}=O(B_c),
+\]
+\[
+\text{fast stage}=O(B_c\cdot\text{segments evaluated before block pruning}),
+\]
+\[
+\text{accurate stage}=O(R_{\mathrm{acc}}\cdot S_{\mathrm{acc}}).
+\]
+
+Measured GIST B=4 at nprobe 200:
+\begin{lstlisting}
+B_c ~= 1530 blocks/query
+fast segment calls ~= 4135/query
+R_acc ~= 2767 candidates/query
+S_acc ~= 1.71 segments/candidate
+\end{lstlisting}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\section{Current Direction: Graph Traversal}
+
+\begin{frame}[fragile]{Pivot: Why Graph Traversal Is Different}
+\small
+IVF search:
+\begin{lstlisting}
+centroid probing determines candidate clusters
+SAQ estimates mostly filter and rerank vectors inside selected clusters
+\end{lstlisting}
+
+Graph ANNS:
+\begin{lstlisting}
+approximate distance can determine which node is expanded next
+\end{lstlisting}
+
+That changes the role of quantization error:
+\begin{lstlisting}
+IVF error affects scoring among reached candidates.
+Graph error can affect the path through the graph.
+\end{lstlisting}
+
+\begin{block}{Current research question}
+Can SAQ-style progressive compressed distance estimation stabilize graph
+frontier decisions, and does it provide a refinement/work tradeoff beyond
+RaBitQ/SymphonyQG-style graph quantization?
+\end{block}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Related Work Gate For Graph Direction}
+\small
+Important related work:
+\begin{itemize}
+  \item SymphonyQG;
+  \item NGT-QG;
+  \item Routing-Guided Learned Product Quantization.
+\end{itemize}
+
+What SymphonyQG already covers:
+\begin{itemize}
+  \item graph-side neighbor code layout;
+  \item FastScan distance estimates during graph traversal;
+  \item RaBitQ-style graph quantization;
+  \item current-vertex residual normalization;
+  \item multiple estimates to reduce missed nearest neighbors.
+\end{itemize}
+
+Unsafe claims:
+\begin{lstlisting}
+first quantization + graph index integration
+first estimated-distance graph traversal
+first graph-specific RaBitQ normalization
+\end{lstlisting}
+
+Narrow possible SAQ-specific claim:
+\begin{lstlisting}
+SAQ's segmented progressive estimator may offer a better frontier refinement
+axis than a single-stage RaBitQ/FastScan-style graph estimator.
+\end{lstlisting}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Graph Replay Measurement Design}
+\small
+Diagnostic harness:
+\begin{lstlisting}
+build fixed exact-kNN adjacency on a deterministic subset
+for query q and current graph node u:
+  compare exact and compressed estimates over N(u)
+\end{lstlisting}
+
+Metric:
+\[
+v_{\mathrm{exact}}=\arg\min_{v\in N(u)}d_{\mathrm{exact}}(q,v),
+\]
+\[
+\operatorname{rank}_{\mathrm{est}}(v_{\mathrm{exact}})
+=\text{rank of }v_{\mathrm{exact}}\text{ under estimator distance}.
+\]
+
+Reported:
+\begin{itemize}
+  \item top1 disagreement rate;
+  \item mean and p90 rank of exact-best neighbor;
+  \item top-L containment curve;
+  \item average distinct IVF clusters per expansion event.
+\end{itemize}
+
+Complexity:
+\[
+\text{adjacency build}=O(M^2D),\quad
+\text{replay scoring}=O(E\cdot \text{degree}\cdot\text{estimator\_cost}).
+\]
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Graph Replay: First GIST Result}
+\scriptsize
+GIST sample50k / K512 / B=4:
+\begin{lstlisting}
+plan = 64:11,192:6,320:4,256:2,128:0
+subset = 4096
+degree = 32
+queries = 100
+roots per query = 8
+events = 800
+\end{lstlisting}
+
+\begin{tabular}{lrrrrr}
+\toprule
+estimator & bits/cand & top1 disag. & mean rank & p90 rank & top8 contain. \\
+\midrule
+global rabitq-style proxy & 960 & 0.90625 & 12.4812 & 27 & 0.44625 \\
+saq\_fast & 832 & 0.46125 & 2.2575 & 5 & 0.98125 \\
+saq\_prefix\_acc1 & 1472 & 0.13750 & 1.1725 & 2 & 1.00000 \\
+saq\_prefix\_acc2 & 2432 & 0.02750 & 1.0300 & 1 & 1.00000 \\
+saq\_full & 3648 & 0.00625 & 1.00625 & 1 & 1.00000 \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.6em}
+\small
+SAQ staged estimates recover local expansion order much better than the weak
+global proxy, but the proxy was not a faithful SymphonyQG baseline.
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{SymphonyQG Sanity Baseline}
+\scriptsize
+Local official SymphonyQG source:
+\begin{lstlisting}
+/rwproject/kdd-db/kluaq/SymphonyQG
+commit 6124ddb
+\end{lstlisting}
+
+Small GIST baseline:
+\begin{lstlisting}
+N = 10,000 base vectors
+Q = 100 queries
+D = 960
+top-k = 10
+degree = 32
+build EF = 100
+build iterations = 2
+\end{lstlisting}
+
+\begin{tabular}{rrr}
+\toprule
+search EF & Recall@10 & QPS \\
+\midrule
+20 & 0.891 & 37173.659 \\
+40 & 0.960 & 29269.393 \\
+80 & 0.983 & 20404.281 \\
+120 & 0.994 & 16214.257 \\
+200 & 0.997 & 10358.608 \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.8em}
+\small
+This is not directly comparable to SAQ replay, but it confirms the official
+implementation is usable for source-level baseline extraction.
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{SymphonyQG Estimator Formula}
+\small
+For current graph vertex \(c\), outgoing neighbor \(x\), query \(q\):
+\[
+r=x-c,\qquad s_i=
+\begin{cases}
++1,& r_i>0,\\
+-1,& r_i\le 0.
+\end{cases}
+\]
+
+\[
+\operatorname{fac\_norm}=1/\sqrt{D},
+\quad
+\operatorname{fac\_x0}=\langle r,s\cdot\operatorname{fac\_norm}\rangle/\|r\|,
+\]
+\[
+\operatorname{fac\_x1}=\langle c,s\cdot\operatorname{fac\_norm}\rangle,
+\quad
+x\_x0=\|r\|/\operatorname{fac\_x0}.
+\]
+
+\[
+\operatorname{triple\_x}=\|r\|^2+2\cdot x\_x0\cdot\operatorname{fac\_x1},
+\]
+\[
+\operatorname{factor\_dq}=-2\cdot x\_x0\cdot\operatorname{fac\_norm},
+\quad
+\operatorname{factor\_vq}=\operatorname{factor\_dq}\sum_i s_i.
+\]
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{SymphonyQG Query Quantization And Distance}
+\small
+Query is scalar-quantized with \(QG\_BQUERY=6\):
+\[
+\operatorname{width}=\frac{\max(q)-\min(q)}{2^6-1},
+\]
+\[
+q\_code_i=\operatorname{round}\left(\frac{q_i-\min(q)}{\operatorname{width}}+0.5\right).
+\]
+
+Signed dot product:
+\[
+\operatorname{dot\_code}=\sum_i s_i q\_code_i.
+\]
+
+Extracted distance:
+\[
+d(q,x\mid c)=\|q-c\|^2+\operatorname{triple\_x}
+\]
+\[
+\quad+\operatorname{factor\_dq}\cdot\operatorname{width}\cdot\operatorname{dot\_code}
+\]
+\[
+\quad+\operatorname{factor\_vq}\cdot\min(q).
+\]
+
+Source:
+\begin{lstlisting}
+SymphonyQG/symqglib/quantization/rabitq.hpp
+SymphonyQG/symqglib/qg/qg_query.hpp
+SymphonyQG/symqglib/qg/qg_scanner.hpp
+SymphonyQG/symqglib/qg/qg.hpp
+\end{lstlisting}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Current Stronger Local Baseline}
+\small
+Implemented in current branch:
+\begin{lstlisting}
+src/profile_graph_frontier.cpp
+  SymphonyQGVertexProxy
+\end{lstlisting}
+
+What it preserves:
+\begin{itemize}
+  \item current-vertex residual centering;
+  \item 1-bit residual signs;
+  \item 6-bit query scalar quantization;
+  \item \(\operatorname{triple\_x}\), \(\operatorname{factor\_dq}\), \(\operatorname{factor\_vq}\) formula.
+\end{itemize}
+
+What it omits:
+\begin{itemize}
+  \item FHT rotation;
+  \item padded power-of-two dimension;
+  \item packed FastScan layout;
+  \item SIMD lookup table reproduction;
+  \item SymphonyQG-built graph.
+\end{itemize}
+
+Complexity:
+\[
+\text{formula-level proxy}=O(D)\text{ per edge}.
+\]
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Stronger Baseline Result}
+\scriptsize
+GIST sample50k / K512 / B=4 / subset 4096.
+
+\begin{tabular}{lrrrrrr}
+\toprule
+estimator & bits/cand & top1 disag. & mean rank & p90 rank & top4 & top8 \\
+\midrule
+global rabitq-style proxy & 960 & 0.90625 & 12.4812 & 27 & 0.25625 & 0.44625 \\
+symqg\_vertex\_proxy & 960 & 0.87625 & 8.2775 & 19 & 0.38250 & 0.61500 \\
+saq\_fast & 832 & 0.46125 & 2.2575 & 5 & 0.87625 & 0.98125 \\
+saq\_prefix\_acc1 & 1472 & 0.13750 & 1.1725 & 2 & 0.99750 & 1.00000 \\
+saq\_prefix\_acc2 & 2432 & 0.02750 & 1.0300 & 1 & 1.00000 & 1.00000 \\
+saq\_full & 3648 & 0.00625 & 1.00625 & 1 & 1.00000 & 1.00000 \\
+\bottomrule
+\end{tabular}
+
+\vspace{1em}
+\small
+Interpretation:
+\begin{lstlisting}
+The stronger vertex-centered baseline improves over the weak global proxy, but
+SAQ staged estimates still show much stronger local rank recovery.
+\end{lstlisting}
+
+Strict limitation:
+\begin{lstlisting}
+This still does not prove an end-to-end graph method.
+\end{lstlisting}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Current Direction: Fuller SymphonyQG Alignment}
+\small
+Immediate research question:
+\begin{lstlisting}
+Does SAQ's segmented progressive estimator retain a graph-frontier
+rank-recovery advantage over a closer SymphonyQG/RaBitQ FastScan-style
+estimator?
+\end{lstlisting}
+
+Next implementation target:
+\begin{itemize}
+  \item FHT rotation;
+  \item padded dimension;
+  \item 6-bit query quantization;
+  \item current-vertex residual neighbor code;
+  \item \(\operatorname{triple\_x}/\operatorname{factor\_dq}/\operatorname{factor\_vq}\);
+  \item FastScan-equivalent signed dot product.
+\end{itemize}
+
+Same-replay comparison:
+\begin{lstlisting}
+exact_float
+symqg_vertex_proxy
+fuller_symqg_fastscan_like
+saq_fast
+saq_prefix_acc1/2
+saq_full
+\end{lstlisting}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Overall Evidence Summary}
+\scriptsize
+\begin{tabularx}{\textwidth}{lXX}
+\toprule
+direction & evidence & status \\
+\midrule
+fixed-policy default-neighborhood & GIST/CIFAR small positives, DEEP reject, audio/word2vec abstain; scorer overhead 145--151s on GIST & useful but too empirical \\
+mixed shared local plans & residual-local signal; GIST B=4 R@100 +0.00079 but QPS ratio 0.9094 & stopped as main method \\
+global static segment-cost DP & SAQ default not dominated; near-frontier GIST plans slightly higher recall but slower & stopped as main method \\
+fac-error planner objective & objective changes GIST/CIFAR plans; GIST custom plan faster at same nprobe but not recall-matched & stopped as main method \\
+search-procedure scheduling & fast pruning and accurate early exit already strong; variance pruning weak but unsafe to tighten empirically & stopped as main method \\
+graph traversal compatibility & SAQ prefix estimates recover exact-best graph neighbor better than formula-level SymphonyQG vertex proxy & active, but baseline not fully aligned \\
+\bottomrule
+\end{tabularx}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{What We Should Not Claim}
+\small
+Unsafe claims:
+\begin{itemize}
+  \item We already have a new quantizer.
+  \item We already have a method that universally improves SAQ.
+  \item The fixed-policy scorer is a paper-level contribution.
+  \item The shared local plan direction improves SAQ end to end.
+  \item Static segment-cost DP solves SAQ's planner limitation.
+  \item Fac-error DP gives a recall-matched speedup.
+  \item Simple search-loop scheduling improves SAQ.
+  \item The current graph result proves end-to-end graph-search improvement.
+\end{itemize}
+
+\begin{block}{Safer claim}
+The negative and partial-positive evidence narrows the credible follow-up
+space. The current graph direction tests a structural mismatch between SAQ's
+IVF-centered progressive estimator and graph traversal decisions, with
+SymphonyQG as the required novelty gate.
+\end{block}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Proposed Meeting Discussion}
+\small
+\begin{enumerate}
+  \item Is graph-traversal compatibility the right remaining direction, given the negative evidence on local plan tuning and IVF search-loop scheduling?
+  \item What level of SymphonyQG baseline alignment is enough before proposing a SAQ-specific graph frontier refinement policy?
+  \item If fuller SymphonyQG erases the current advantage, should we pivot to theory of SAQ/CAQ estimator bounds or to transform objectives beyond PCA?
+  \item Should the paper story include the negative evidence as a motivation section, or keep it only as internal research reasoning?
+\end{enumerate}
+
+\vspace{1em}
+\begin{block}{Suggested meeting stance}
+Evaluate novelty first, before spending time on end-to-end graph integration.
+\end{block}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Recommended Next Step}
+\small
+Do not start full HNSW/DiskANN integration yet.
+
+\vspace{0.6em}
+Recommended next step:
+\begin{lstlisting}
+Fuller SymphonyQG baseline alignment / same-replay evaluation.
+\end{lstlisting}
+
+Concrete deliverable:
+\begin{lstlisting}
+One profiler update and one evidence note showing whether:
+  SAQ staged estimates still beat a closer SymphonyQG/FastScan-style baseline
+  on the same fixed GIST graph replay.
+\end{lstlisting}
+
+Pass condition:
+\begin{lstlisting}
+SAQ prefix refinement keeps a stable rank-recovery advantage with controlled
+bit-read accounting.
+\end{lstlisting}
+
+Fail condition:
+\begin{lstlisting}
+A closer SymphonyQG baseline matches or nearly matches SAQ prefix rank recovery.
+\end{lstlisting}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\appendix
+\section{Backup}
+
+\begin{frame}[fragile]{Backup: One-Slide Running Example}
+\small
+GIST full / K4096 / B=4, SAQ default:
+\begin{lstlisting}
+64:11,192:6,320:4,256:2,128:0
+\end{lstlisting}
+
+Old fixed-policy candidate:
+\begin{lstlisting}
+128:9,320:5,320:3,192:0
+R@100 np800: 0.98845 -> 0.98922
+QPS np800:   1013.64 -> 1211.10
+\end{lstlisting}
+
+Why not enough:
+\begin{lstlisting}
+small recall delta
+handcrafted local candidate families
+145-151s planner/scorer overhead on GIST
+not a new quantizer or principled planner
+\end{lstlisting}
+
+Current graph running example:
+\begin{lstlisting}
+GIST sample50k / K512 / B=4 / subset 4096
+symqg_vertex_proxy p90 exact-best rank = 19
+saq_fast p90 exact-best rank = 5
+saq_prefix_acc1 p90 exact-best rank = 2
+\end{lstlisting}
+\end{frame}
+
+% ----------------------------------------------------------------------
+\begin{frame}[fragile]{Backup: Code Map}
+\scriptsize
+Current branch:
+\begin{lstlisting}
+SAQ planner:
+  saqlib/quantization/saq_data.hpp
+
+SAQ estimator:
+  saqlib/quantization/saq_estimator.hpp
+  saqlib/quantization/caq/caq_estimator.hpp
+
+SAQ search path:
+  saqlib/quantization/saq_searcher.hpp
+  src/test_qps.cpp
+
+Graph replay:
+  src/profile_graph_frontier.cpp
+
+Correctness/evaluation flags:
+  src/define_options.h
+\end{lstlisting}
+
+Historical branches:
+\begin{lstlisting}
+fixed policy:
+  script/generate_default_neighborhood_plans.py
+  script/score_default_neighborhood_plans.py
+  script/sweep_data_boundary_pairs.py
+
+shared local plans:
+  script/cluster_residual_feasibility_matrix.py
+
+global cost DP:
+  script/global_segment_cost_frontier.py
+
+fac-error planner:
+  src/measure_planner_proxy.cpp
+  script/summarize_planner_proxy.py
+  script/falsify_fac_error_dp.py
+\end{lstlisting}
+\end{frame}
+
+\end{document}
