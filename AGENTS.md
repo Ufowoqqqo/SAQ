@@ -28,12 +28,15 @@ code correctness, debugging, or repository maintenance.
 
 ## Active Direction
 
-**Data-only SAQ planner-objective analysis.** Study whether SAQ's global
-variance-risk model, `sum(segment_variance) / 2^bits`, is a faithful
-query-unaware objective for CAQ/SAQ quantization and distance estimation.
+**Graph-index compatibility proposal stage.** The current question is whether
+SAQ's segmented progressive distance estimator remains traversal-stable in
+graph-based ANNS, where approximate distances affect frontier expansion rather
+than only filtering a fixed IVF candidate set.
 
-Any proposed method should preserve SAQ's one-plan search architecture unless a
-later note explicitly motivates a different architecture:
+Do not implement a full HNSW or DiskANN integration before a paper/source-code
+review and a minimal offline traversal-sensitivity measurement. Any proposed
+method should preserve SAQ's one global quantization plan unless a later note
+explicitly motivates a different architecture:
 
 ```text
 one dataset-level segment/bit plan
@@ -42,9 +45,9 @@ no per-cluster plan ids
 no mixed-plan search dispatch
 ```
 
-The first implementation should be offline only: compare SAQ's variance proxy
-against measured data-only segment error across existing datasets and bit
-budgets before proposing a replacement planner or building new indexes.
+The first implementation should be offline only: compare exact float frontier
+decisions with full SAQ estimates and staged SAQ estimates on a fixed graph or
+adjacency replay, without changing SAQ's persisted index format.
 
 Retired main directions on this branch:
 
@@ -52,7 +55,13 @@ Retired main directions on this branch:
   estimator overhead can dominate the recall benefit;
 - simple single-global static segment-cost DP: useful limitation evidence, but
   deterministic risk-cost frontiers did not dominate SAQ default and GIST
-  near-frontier plans did not improve safe-search QPS.
+  near-frontier plans did not improve safe-search QPS;
+- one-global-plan planner-objective modification using measured CAQ estimator
+  error: useful evidence, but the changed GIST plan did not produce a
+  recall-matched QPS improvement;
+- small IVF search-procedure changes, including simple segment reordering and
+  variance-bound calibration: useful evidence, but no defensible low-overhead
+  main method.
 
 ## Branch Hygiene
 

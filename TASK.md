@@ -3,9 +3,9 @@
 ## Active Goal
 
 Develop a clean query-unaware structural SAQ follow-up from original SAQ code
-plus confirmed correctness fixes. The current main direction is data-only
-planner-objective analysis for SAQ: evaluate whether SAQ's global variance-risk
-model is the right objective for CAQ/SAQ quantization and search.
+plus confirmed correctness fixes. The current proposal-stage direction is
+graph-index compatibility for SAQ: evaluate whether SAQ's progressive
+compressed distance estimator remains traversal-stable in graph-based ANNS.
 
 The target is a database top-conference-level contribution suitable for SIGMOD,
 VLDB, or ICDE. Future work should be judged by research novelty, evidence,
@@ -112,36 +112,44 @@ removing roughly 58-63% of the current variance slack. This would be arbitrary
 calibration without a new safety argument. The search-procedure direction is
 therefore closed as a main method direction.
 
+The pivot synthesis and graph-index proposal is recorded in
+`docs/saq_pivot_synthesis_graph_index_proposal_2026_07_09.md`. It treats
+mixed local plans, static segment-cost DP, direct fac-error DP, simple segment
+ordering, and variance-bound calibration as limitation evidence. The next
+candidate direction is graph-index compatibility and traversal path
+sensitivity, starting with review and offline replay rather than full HNSW or
+DiskANN integration.
+
 ## Research Priority
 
-**Data-only SAQ planner-objective analysis**
+**Graph-index compatibility and traversal-sensitivity analysis**
 
 Question:
 
 ```text
-Does SAQ's variance-risk objective, sum(segment_variance) / 2^bits, accurately
-predict the actual query-unaware quantization and distance-estimation error of
-CAQ/SAQ segments?
+Can SAQ-style progressive compressed distance estimation be used inside
+graph-based ANNS traversal without destabilizing the search path, and what
+query-unaware refinement policy is needed to preserve the recall/work tradeoff?
 ```
 
-Candidate method:
+Candidate method, only if the first evidence supports it:
 
 ```text
-If the SAQ proxy has a systematic, cross-dataset mismatch with measured
-data-only CAQ/SAQ error, derive a replacement global DP objective that keeps one
-global plan and does not use representative queries.
+A traversal-aware refinement policy that uses SAQ's stored estimator quantities
+to refine only frontier-ambiguous candidates, without representative-query
+learning and without changing SAQ's global quantization plan.
 ```
 
 Required accounting:
 
-- exact SAQ proxy risk for each evaluated segment and bit width;
-- measured data-only quantization or estimator error for the same segment and
-  bit width;
-- cross-dataset agreement or disagreement between proxy risk and measured
-  error;
-- offline measurement cost and how it compares with SAQ index construction;
-- if a replacement objective is proposed, recall/QPS under safe search, index
-  build time, index size, plan shape, and total bit budget.
+- graph nodes visited and neighbor expansions;
+- exact-float versus SAQ-estimate frontier disagreement;
+- rank of the exact-best expansion under staged SAQ estimates;
+- number of frontier candidates requiring refinement to recover stable
+  traversal decisions;
+- compressed code reads, segment/factor reads, and any exact-refinement reads;
+- recall/work tradeoff under fixed graph construction and search parameters;
+- index size and any additional metadata if a later method changes storage.
 
 ## Immediate Next Step
 
@@ -166,17 +174,20 @@ and simple segment-cost objectives fail to produce a recall-matched improvement
 under a one-global-plan, query-unaware constraint?
 ```
 
-The immediate next step is to synthesize the negative search-procedure evidence
-and decide the next structural SAQ limitation to study. Do not implement more
-search-loop scheduling changes on this branch.
+The immediate next step is graph-index compatibility review plus a minimal
+traversal-sensitivity measurement design. Do not implement full HNSW or DiskANN
+integration yet.
 
-The synthesis should clearly state that one-global-plan objective changes,
-static segment-cost DP, mixed local plans, simple segment reordering, and
-variance-bound tightening by calibration have all failed as main methods. The
-next direction should move away from small IVF search-loop scheduling changes
-and toward a more structural SAQ limitation, such as graph-index compatibility,
-estimator-bound theory, or non-PCA transform objectives with a stronger
-derivation.
+The first graph-index step should answer:
+
+- which existing graph implementation or offline adjacency harness can be used
+  without changing SAQ's persisted index format;
+- whether SAQ approximate/staged estimates change graph frontier ordering
+  relative to exact float distances;
+- how many frontier candidates would require refinement to recover stable
+  traversal decisions;
+- whether the observed behavior is a graph-specific SAQ limitation rather than
+  another generic recall/speed tradeoff.
 
 ## Constraints
 
