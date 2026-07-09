@@ -51,6 +51,13 @@ at nprobe=200 with safe search, the fac-error plan is 1.34x faster and 4.7%
 smaller, but R@100 drops from 0.99132 to 0.99059. This is a speed/space/recall
 tradeoff, not a strict improvement over SAQ.
 
+The recall-matched follow-up is recorded in
+`docs/fac_error_gist_b4_recall_matched_2026_07_09.md`. Increasing the custom
+plan's nprobe up to the QPS break-even point did not recover the default R@100.
+At nprobe=300, the custom plan is still 1.022x faster but R@100 remains below
+default; at nprobe=320, it is slower than default and still below default
+recall.
+
 ## Research Priority
 
 **Data-only SAQ planner-objective analysis**
@@ -84,33 +91,31 @@ Required accounting:
 
 ## Immediate Next Step
 
-Do not broaden the fac-error objective yet. First run a tiny recall-matched
-check for the GIST sample100k B=4 fac-error plan:
+Stop treating the current fac-error DP objective as the main method. It should
+now be written up as limitation evidence:
 
 ```text
 SAQ variance plan:   64x11_192x6_320x4_256x2_128x0
 fac-error plan:      192x9_512x4_256x0
 ```
 
-The same-nprobe result showed a large QPS gain but a small R@100 drop. The next
-test should increase custom-plan nprobe minimally, using safe search, to see
-whether it can recover the default R@100=0.99132 while staying faster than the
-default QPS=9215.208 at nprobe=200.
+The result is useful because it shows that direct CAQ estimator-error objectives
+can move SAQ toward lower search cost, but the first changed plan does not
+produce a recall-matched QPS improvement. Do not continue broad fac-error
+sweeps unless a new mechanism explains why recall should be preserved.
 
 The current research question is:
 
 ```text
-Does replacing SAQ's variance-risk DP cost with a directly measured CAQ
-fac-error cost produce a materially different and end-to-end useful
-one-global-plan allocation without using query workloads?
+What SAQ limitation remains after variance-risk, direct CAQ estimator-error,
+and simple segment-cost objectives fail to produce a recall-matched improvement
+under a one-global-plan, query-unaware constraint?
 ```
 
-The strict-reviewer objection is that `fac_error` may be a tautological,
-offline-expensive remeasurement of CAQ's own estimator bound. Any follow-up must
-therefore report measurement cost, plan difference, and one end-to-end
-safe-search check before claiming a method. Stop if the changed GIST plan does
-not remain faster under recall-matched evaluation or if the custom-plan
-machinery becomes the dominant contribution.
+The immediate next step should be synthesis, not another sweep: summarize the
+negative evidence from static segment-cost DP and fac-error DP, identify which
+assumption actually failed, and propose a new research hypothesis only after a
+strict-reviewer review.
 
 ## Constraints
 
