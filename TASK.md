@@ -58,6 +58,12 @@ At nprobe=300, the custom plan is still 1.022x faster but R@100 remains below
 default; at nprobe=320, it is slower than default and still below default
 recall.
 
+The planner-objective synthesis is recorded in
+`docs/saq_planner_objective_limitations_2026_07_09.md`. It concludes that the
+current one-global-plan objective-modification line should stop as a main
+method. Static segment-cost, direct CAQ estimator-error, and earlier local-plan
+directions all fail to produce a defensible recall-matched improvement.
+
 ## Research Priority
 
 **Data-only SAQ planner-objective analysis**
@@ -91,18 +97,18 @@ Required accounting:
 
 ## Immediate Next Step
 
-Stop treating the current fac-error DP objective as the main method. It should
-now be written up as limitation evidence:
+Stop treating the current one-global-plan planner-objective modification line
+as the main method. It is now limitation evidence:
 
 ```text
 SAQ variance plan:   64x11_192x6_320x4_256x2_128x0
 fac-error plan:      192x9_512x4_256x0
 ```
 
-The result is useful because it shows that direct CAQ estimator-error objectives
-can move SAQ toward lower search cost, but the first changed plan does not
-produce a recall-matched QPS improvement. Do not continue broad fac-error
-sweeps unless a new mechanism explains why recall should be preserved.
+The useful result is that direct CAQ estimator-error objectives can move SAQ
+toward lower search cost, but the first changed plan does not produce a
+recall-matched QPS improvement. Static segment-cost and earlier local-plan
+directions also failed under end-to-end review.
 
 The current research question is:
 
@@ -112,10 +118,16 @@ and simple segment-cost objectives fail to produce a recall-matched improvement
 under a one-global-plan, query-unaware constraint?
 ```
 
-The immediate next step should be synthesis, not another sweep: summarize the
-negative evidence from static segment-cost DP and fac-error DP, identify which
-assumption actually failed, and propose a new research hypothesis only after a
-strict-reviewer review.
+The immediate next step is not another sweep. Write a short proposal note that
+chooses one surviving direction from the synthesis:
+
+- query-unaware boundary-stability diagnosis;
+- search-procedure / estimator-scheduling integration;
+- graph-index compatibility gap.
+
+Before implementation, the proposal must state the challenged SAQ assumption,
+why the idea is not parameter tuning, expected overhead, first falsifiable
+experiment, strict-reviewer objection, and stop condition.
 
 ## Constraints
 
