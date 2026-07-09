@@ -70,6 +70,12 @@ search-procedure / estimator-scheduling integration as the next candidate
 direction, but only after a code-level search-path review and work-decomposition
 plan. No new search policy is approved yet.
 
+The search-path review is recorded in
+`docs/saq_search_path_work_decomposition_2026_07_09.md`. It locates the current
+fast-estimation, accurate-refinement, safe block-min, pruning, top-k result-pool
+maintenance, and runtime-metric code paths. It also defines the minimal
+query-time work decomposition needed before any new search policy is proposed.
+
 ## Research Priority
 
 **Data-only SAQ planner-objective analysis**
@@ -124,15 +130,15 @@ and simple segment-cost objectives fail to produce a recall-matched improvement
 under a one-global-plan, query-unaware constraint?
 ```
 
-The immediate next step is a code-level review of SAQ's search path and a
-work-decomposition plan. Do not implement a new search policy yet.
+The immediate next step is to add minimal runtime-profile counters for the
+existing SAQ search path. Do not implement a new search policy yet.
 
-The review must locate where fast estimation, accurate refinement, safe
-block-min logic, pruning, heap updates, and runtime metrics are implemented.
-It must identify which counters already exist and which minimal counters would
-be needed to measure query-time work on GIST sample100k K512 B=4.
-
-Only after that review should instrumentation code be added.
+The first profile should measure GIST sample100k K512 B=4 with the SAQ default
+plan, R@100, `-searcher_safe_block_min_mode=2`, and nprobe around the existing
+operating point. It should report cluster/block scan volume, variance pruning,
+fast-stage segment calls and pruning, accurate-refinement attempts and early
+exits, and top-k result-pool insertions. The result should decide whether a
+search-procedure method is plausible or whether this direction should stop.
 
 ## Constraints
 
