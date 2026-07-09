@@ -32,6 +32,12 @@ Historical directions are treated as limitation evidence, not active methods:
 - simple IVF segment reordering and variance-bound calibration did not expose a
   defensible low-overhead search-procedure method.
 
+The first graph-index compatibility review and measurement design is recorded
+in `docs/saq_graph_traversal_measurement_design_2026_07_09.md`. It concludes
+that the repository has no active graph-index implementation and that the first
+study should be an offline fixed-adjacency replay, not HNSW/DiskANN
+integration.
+
 ## Research Priority
 
 **Graph-index compatibility and traversal-sensitivity analysis**
@@ -65,20 +71,19 @@ Required accounting:
 
 ## Immediate Next Step
 
-Perform a graph-index compatibility review plus a minimal
-traversal-sensitivity measurement design. Do not implement full HNSW or DiskANN
-integration yet.
+Implement the minimal local expansion ordering profiler only after reviewing
+`docs/saq_graph_traversal_measurement_design_2026_07_09.md`. Do not implement
+full HNSW or DiskANN integration yet.
 
-The first graph-index step should answer:
+The first profiler should answer:
 
-- which existing graph implementation or offline adjacency harness can be used
-  without changing SAQ's persisted index format;
-- whether SAQ approximate/staged estimates change graph frontier ordering
-  relative to exact float distances;
-- how many frontier candidates would require refinement to recover stable
-  traversal decisions;
-- whether the observed behavior is a graph-specific SAQ limitation rather than
-  another generic recall/speed tradeoff.
+- whether `saq_full`, `saq_fast`, and `saq_var` preserve the exact-float best
+  neighbor inside a fixed graph expansion neighborhood;
+- the rank distribution of the exact-best neighbor under each SAQ estimate;
+- how many cheap-ranked candidates would need full SAQ refinement to recover
+  exact-float expansion choices;
+- how many IVF residual-reference clusters a graph expansion event touches,
+  because current SAQ codes are cluster-residual coded.
 
 ## Constraints
 
