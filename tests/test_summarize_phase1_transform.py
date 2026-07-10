@@ -1,5 +1,6 @@
 import csv
 import importlib.util
+import json
 import sys
 import tempfile
 import unittest
@@ -300,6 +301,19 @@ class SummarizePhase1TransformTest(unittest.TestCase):
             )
             for path in paths.values():
                 self.assertTrue(path.is_file(), path)
+
+            with paths["provenance"].open(encoding="utf-8") as handle:
+                provenance = json.load(handle)
+            self.assertEqual(provenance["bootstrap_replicates"], 200)
+            self.assertEqual(provenance["bootstrap_seed"], 17)
+            self.assertEqual(
+                provenance["inputs"]["current_pca"]["configs"]["sha256"],
+                MODULE.sha256_file(Path(f"{root / 'current_pca'}.configs.csv")),
+            )
+            self.assertEqual(
+                provenance["outputs"]["paired_vs_pca"]["sha256"],
+                MODULE.sha256_file(paths["paired_vs_pca"]),
+            )
 
             curves = read_csv(paths["stage_curves"])
             identity_seeded = [

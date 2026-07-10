@@ -7,6 +7,14 @@ from `saq-correctness-base`. The first objective is to test whether PCA is an
 actual SAQ limitation. It does not authorize a learned replacement before the
 limitation survives simple controls.
 
+**Outcome update:** Phase 1 found a small GIST estimator mismatch but no stable
+ranking improvement. The preregistered CIFAR60k Phase 1b replication then
+failed to reproduce the estimator effect and closed the direction. See
+`saq_transform_phase1_limitation_evidence_2026_07_10.md` and
+`saq_transform_phase1b_external_replication_evidence_2026_07_10.md`. The later
+method phases below are retained as the original conditional design; they are
+not authorized next steps.
+
 The central decision is:
 
 ```text

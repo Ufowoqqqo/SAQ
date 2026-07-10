@@ -212,6 +212,54 @@ def validate_raw_outputs(
         plans = {row["plan_control"] for row in configs}
         plan_strings = {row["plan"] for row in configs}
         scopes = {row["exact_distance_scope"] for row in configs}
+        segment_count = {as_int(row, "segments") for row in configs}
+        if len(segment_count) != 1:
+            raise ValueError(f"{label} has inconsistent segment counts")
+        segments_per_config = next(iter(segment_count))
+        expected_stages = {"vars_conservative_lower_bound_all", "fast_all", "full"}
+        expected_stages.update(
+            f"fast_prefix_{prefix}" for prefix in range(1, segments_per_config)
+        )
+        expected_stages.update(
+            f"accurate_prefix_{prefix}" for prefix in range(1, segments_per_config)
+        )
+        config_ids = {row["config_id"] for row in configs}
+        query_grid = {
+            (row["config_id"], as_int(row, "query"), row["stage"])
+            for row in queries
+        }
+        complete_query_grid = (
+            len(queries)
+            == len(configs) * EXPECTED_Q * len(expected_stages)
+            == len(query_grid)
+            and {as_int(row, "query") for row in queries} == set(range(EXPECTED_Q))
+            and {row["config_id"] for row in queries} == config_ids
+            and {row["stage"] for row in queries} == expected_stages
+            and {
+                row.get("distance_reference_scope") for row in queries
+            }
+            == {EXPECTED_EXACT_SCOPE}
+        )
+        expected_segment_modes = {
+            "vars_conservative_lower_bound",
+            "fast_1bit",
+            "accurate_full_code",
+        }
+        segment_grid = {
+            (row["config_id"], as_int(row, "segment"), row["distance_mode"])
+            for row in segments
+        }
+        complete_segment_grid = (
+            len(segments)
+            == len(configs) * segments_per_config * len(expected_segment_modes)
+            == len(segment_grid)
+            and {row["config_id"] for row in segments} == config_ids
+            and {as_int(row, "segment") for row in segments}
+            == set(range(segments_per_config))
+            and {row["distance_mode"] for row in segments} == expected_segment_modes
+            and {row.get("distance_reference_scope") for row in segments}
+            == {"transform_view_segment_float32_squared_L2"}
+        )
         structural = all(
             as_int(row, "N") == EXPECTED_N
             and as_int(row, "D") == EXPECTED_D
@@ -249,6 +297,16 @@ def validate_raw_outputs(
                     f"{label}_finite_and_candidate_count",
                     no_nonfinite and min_candidates >= EXPECTED_TOPK,
                     f"nonfinite={not no_nonfinite} min_candidates={min_candidates}",
+                ),
+                check(
+                    f"{label}_complete_measurement_grid",
+                    complete_query_grid and complete_segment_grid,
+                    (
+                        f"query_rows={len(queries)} expected="
+                        f"{len(configs) * EXPECTED_Q * len(expected_stages)} "
+                        f"segment_rows={len(segments)} expected="
+                        f"{len(configs) * segments_per_config * len(expected_segment_modes)}"
+                    ),
                 ),
             ]
         )
@@ -294,14 +352,109 @@ def validate_raw_outputs(
     )
     reference_rows = load_csv(reference_paths["current_pca"])
     reference_queries = {as_int(row, "query") for row in reference_rows}
+    reference_structure = all(
+        as_int(row, "candidate_count") >= EXPECTED_TOPK
+        and as_int(row, "exact_topk_used") == EXPECTED_TOPK
+        and len(row["exact_topk_ids"].split("|")) == EXPECTED_TOPK
+        and row["exact_reference_scope"] == EXPECTED_EXACT_SCOPE
+        for row in reference_rows
+    )
     checks.append(
         check(
             "canonical_query_reference_coverage",
-            reference_queries == set(range(EXPECTED_Q)),
+            len(reference_rows) == EXPECTED_Q
+            and reference_queries == set(range(EXPECTED_Q))
+            and reference_structure,
             f"queries={len(reference_queries)} rows={len(reference_rows)}",
         )
     )
     return checks, reference_hashes
+
+
+def validate_summary_provenance(
+    summary_prefix: Path, current_prefix: Path, residual_prefix: Path
+) -> list[dict[str, object]]:
+    provenance_path = Path(f"{summary_prefix}.provenance.json")
+    provenance = load_json(provenance_path)
+    settings_match = (
+        provenance.get("schema_version") == 1
+        and provenance.get("baseline") == "current_pca"
+        and provenance.get("bootstrap_replicates") == EXPECTED_BOOTSTRAP_REPLICATES
+        and provenance.get("bootstrap_seed") == EXPECTED_BOOTSTRAP_SEED
+    )
+    input_prefixes = {
+        "current_pca": current_prefix,
+        "residual_pca": residual_prefix,
+    }
+    input_match = True
+    input_details: list[str] = []
+    inputs = provenance.get("inputs", {})
+    for label, prefix in input_prefixes.items():
+        recorded = inputs.get(label, {}) if isinstance(inputs, Mapping) else {}
+        for suffix in ("query_stages", "segment_errors", "configs"):
+            path = Path(f"{prefix}.{suffix}.csv")
+            identity = recorded.get(suffix, {}) if isinstance(recorded, Mapping) else {}
+            observed = sha256_file(path)
+            matches = (
+                identity.get("sha256") == observed
+                and identity.get("bytes") == path.stat().st_size
+            )
+            input_match = input_match and matches
+            if not matches:
+                input_details.append(f"{label}.{suffix}")
+        reference_path = Path(f"{prefix}.query_reference.csv")
+        reference_identity = (
+            recorded.get("query_reference", {}) if isinstance(recorded, Mapping) else {}
+        )
+        reference_matches = (
+            reference_identity.get("sha256") == sha256_file(reference_path)
+            and reference_identity.get("bytes") == reference_path.stat().st_size
+        )
+        input_match = input_match and reference_matches
+        if not reference_matches:
+            input_details.append(f"{label}.query_reference")
+
+    outputs = provenance.get("outputs", {})
+    output_match = True
+    output_details: list[str] = []
+    for label, suffix in (
+        ("paired_vs_pca", "paired_vs_pca.csv"),
+        ("per_seed_effects", "per_seed_effects.csv"),
+        ("config_summary", "config_summary.csv"),
+        ("stage_curves", "stage_curves.csv"),
+        ("segment_proxy", "segment_proxy.csv"),
+        ("markdown", "md"),
+    ):
+        path = Path(f"{summary_prefix}.{suffix}")
+        identity = outputs.get(label, {}) if isinstance(outputs, Mapping) else {}
+        matches = (
+            identity.get("sha256") == sha256_file(path)
+            and identity.get("bytes") == path.stat().st_size
+        )
+        output_match = output_match and matches
+        if not matches:
+            output_details.append(label)
+    return [
+        check(
+            "summary_provenance_settings",
+            settings_match,
+            (
+                f"baseline={provenance.get('baseline')} bootstrap="
+                f"{provenance.get('bootstrap_replicates')}/"
+                f"{provenance.get('bootstrap_seed')}"
+            ),
+        ),
+        check(
+            "summary_provenance_raw_binding",
+            input_match,
+            "none" if not input_details else ",".join(input_details),
+        ),
+        check(
+            "summary_provenance_output_binding",
+            output_match,
+            "none" if not output_details else ",".join(output_details),
+        ),
+    ]
 
 
 def select_row(
@@ -474,15 +627,21 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         gate = report[gate_name]
         lines.append(f"### {gate_name.replace('_', ' ').title()}")
         lines.append("")
-        for name, passed in gate["conditions"].items():
-            lines.append(f"- {'PASS' if passed else 'FAIL'}: `{name}`")
+        evaluated = gate_name == "gate_a" or bool(gate.get("evaluated"))
+        if not evaluated:
+            lines.append(
+                "- Not evaluated because an earlier preregistered gate failed."
+            )
+        else:
+            for name, passed in gate["conditions"].items():
+                lines.append(f"- {'PASS' if passed else 'FAIL'}: `{name}`")
         lines.append("")
     lines.extend(
         [
             "## Interpretation Boundary",
             "",
-            "This is a fixed-candidate estimator replication. It does not establish an ",
-            "end-to-end IVF Recall-QPS result, a learned-transform contribution, or a claim ",
+            "This is a fixed-candidate estimator replication. It does not establish an",
+            "end-to-end IVF Recall-QPS result, a learned-transform contribution, or a claim",
             "about full-dimensional IVF partition quality.",
             "",
         ]
@@ -498,6 +657,13 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         args.current_result_prefix, args.residual_result_prefix
     )
     checks.extend(raw_checks)
+    checks.extend(
+        validate_summary_provenance(
+            args.summary_prefix,
+            args.current_result_prefix,
+            args.residual_result_prefix,
+        )
+    )
     artifact_pass = all(bool(item["pass"]) for item in checks)
 
     paired_rows = load_csv(Path(f"{args.summary_prefix}.paired_vs_pca.csv"))

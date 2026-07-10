@@ -28,15 +28,22 @@ code correctness, debugging, or repository maintenance.
 
 ## Active Direction
 
-**Query-unaware transform and SAQ-plan compatibility analysis.** Study whether
-PCA's variance-only objective is mismatched with SAQ's segmented CAQ estimator,
-progressive prefix behavior, and actual storage/work budget.
+**Completed query-unaware transform and SAQ-plan compatibility analysis.** The
+study tested whether PCA's variance-only objective was mismatched with SAQ's
+segmented CAQ estimator, progressive prefix behavior, and actual storage/work
+budget.
 
-The primary study is not generic dimensionality reduction. It compares
+**Status: closed after the preregistered Phase 1b replication.** This branch
+now preserves the evidence and decision boundary; it does not authorize more
+PCA-replacement method development. Select a distinct SAQ research question
+before beginning new experiments.
+
+The completed primary study was not generic dimensionality reduction. It
+compared
 full-dimensional, dataset-level transforms that preserve the original L2
 problem. Physical `D -> d` projection is a separate, explicitly lossy secondary
-study whose projection error must be measured against the original-space ground
-truth.
+study whose projection error would need original-space ground truth; it is not
+an active next step after the failed Phase 1b gate.
 
 Preserve the following architecture unless a later evidence note explicitly
 motivates a change:
@@ -55,7 +62,7 @@ held-out queries for evaluation only
 The authoritative research proposal is
 `docs/saq_transform_replacement_research_proposal_2026_07_10.md`.
 
-## Phase 1 Decision
+## Phase 1 And Phase 1b Decision
 
 The minimal Phase 1 operating point is complete. The authoritative evidence and
 method-development decision are recorded in
@@ -69,14 +76,30 @@ not establish a top-k, boundary-inversion, or exact-best-rank improvement, and
 the fast prefixes worsened. Identity/random gains were explained by plan shape
 and internal rotation.
 
-Therefore do not proceed to a learned SAQ-aware transform, broad transform
-matrix, persisted-format change, or positive method claim on this branch unless
-the user explicitly reopens the direction with new evidence. Preserve the
-result as a narrow positive mechanism diagnostic and a negative contribution
-gate: current raw-data PCA is not perfectly aligned with SAQ estimator RMSE,
-but it was not demonstrated to be a practical progressive-ranking limitation.
-If reopened, first preregister one second-regime replication with a common raw
-exact reference; do not tune a learner on the GIST evaluation queries.
+Phase 1 did not authorize a learned SAQ-aware transform, broad transform
+matrix, persisted-format change, or positive method claim. Its only permitted
+closure test was one preregistered second-regime replication with a common raw
+exact reference and no tuning on the GIST evaluation queries.
+
+That second-regime replication is now complete. The authoritative Phase 1b
+protocol and evidence are:
+
+- `docs/saq_transform_phase1b_external_replication_protocol_2026_07_10.md`;
+- `docs/saq_transform_phase1b_external_replication_evidence_2026_07_10.md`.
+
+On CIFAR60k, all artifact checks passed, but the GIST residual-PCA RMSE effect
+did not reproduce. At `accurate_prefix_1`, mean-query RMSE was slightly worse
+and the CI crossed zero; at `full`, the small favorable point estimate also had
+a CI crossing zero. Seed agreement was only 4/10 and 5/10, rotation-off was
+opposite to the registered direction, and `fast_all` RMSE significantly
+favored current PCA. The preregistered decision is
+`close_one_dataset_estimator_effect`.
+
+Do not substitute another prefix, dataset, budget, codebook, or transform after
+this failure. Do not begin the counterfactual `(segment, bit)` analysis or a
+learner. The combined result is a useful negative finding: PCA is locally
+imperfect on GIST but has not been shown to be a systematic practical SAQ
+limitation.
 
 ## Evidence And Novelty Gate
 
@@ -84,13 +107,15 @@ Do not assume that replacing PCA is a contribution. Classical transform coding,
 ITQ/OPQ, LeanVec, GleanVec, MRQ, and related projection-plus-quantization work
 already cover large parts of the design space.
 
-The first offline limitation measurement has been completed. It compared the
+The first offline limitation measurement and its external closure replication
+have been completed. Phase 1 compared the
 SAQ variance proxy with measured full-code and prefix estimator error under
 current PCA and simple controls. Its weak diagnostic trigger was positive, but
-its learner/contribution gate failed. Do not train a new transform, change the
-persisted index format, or start a broad post-hoc dataset matrix from this
-result. The selected-segment Spearman analysis is descriptive; it did not test
-the full counterfactual `(segment, bit)` planner choice space.
+its learner/contribution gate failed. Phase 1b then failed to reproduce even
+the narrow estimator gate on the registered second dataset. Do not train a new
+transform, change the persisted index format, start a broad post-hoc dataset
+matrix, or execute the counterfactual `(segment, bit)` analysis from these
+results. The selected-segment Spearman analysis remains descriptive.
 
 A learned method is justified only if the evidence shows a systematic gap that
 is not explained by residual PCA, a coordinate permutation, a seeded random
@@ -205,6 +230,8 @@ reduction behavior.
 ## Do-Not Rules
 
 - Do not present a plug-in replacement of PCA as a research contribution.
+- Do not continue PCA-replacement experiments after the failed preregistered
+  Phase 1b gate by changing the dataset, prefix, budget, codebook, or transform.
 - Do not conflate full-dimensional PCA rotation with physical dimension
   reduction.
 - Do not claim a lossy projection gain without original-space ground truth and

@@ -1,0 +1,517 @@
+{
+  "created_at_utc": "2026-07-10T15:50:49.330372+00:00",
+  "diagnostics": {
+    "base_covariance_after_transform": {
+      "block64_variance_sums": [
+        0.4513084681531606,
+        0.06164384123663295,
+        0.029209770790985648,
+        0.016592831698247382,
+        0.009430410215465684,
+        0.005143088381765432,
+        0.0018265972490462213,
+        0.00012679161766928897
+      ],
+      "covariance_frobenius_norm": 0.11216450184388234,
+      "dimension": 512,
+      "off_diagonal_frobenius_norm": 0.040188945685484395,
+      "off_diagonal_to_total_frobenius_ratio": 0.3583036078689309,
+      "population_denominator": "N",
+      "prefix_variance_fraction": {
+        "256": 0.9712716663679923,
+        "512": 1.0,
+        "64": 0.7844998202074149
+      },
+      "trace": 0.5752817993429732,
+      "variance_first_16": [
+        0.06651893605054152,
+        0.05183516014986076,
+        0.0324885792973452,
+        0.02422539371138407,
+        0.0147343049527842,
+        0.014576710825824877,
+        0.014062388417500769,
+        0.015582436381943211,
+        0.014396691322257536,
+        0.009445079101277428,
+        0.010446117069072926,
+        0.008981790544478407,
+        0.00831343179506218,
+        0.007445238195418548,
+        0.007559242503738221,
+        0.006910125752914203
+      ],
+      "variance_max": 0.06651893605054152,
+      "variance_mean": 0.0011235972643417445,
+      "variance_min": 8.001621733518008e-08,
+      "variance_sha256": "8dabe6929f6c8a5fc90f9d5bdfee7f292d644d8d9518dd79726c9a11c1b18acc"
+    },
+    "fixed_probe_recomputed_in_view": {
+      "exact_order_fraction": 1.0,
+      "fixed_probe_sha256": "e60e5cef7d1bda215fe8df22eb9ed90abb702f45c51b94c2a7fe9b03430f1f69",
+      "id_position_agreement_fraction": 1.0,
+      "nprobe": 16,
+      "observed_probe_sha256": "e60e5cef7d1bda215fe8df22eb9ed90abb702f45c51b94c2a7fe9b03430f1f69",
+      "queries": 1000,
+      "rows_with_exact_order": 1000
+    },
+    "isometry": {
+      "row_indices_sha256": "7109d29f6eaa5e3a1358a765645e13202fc04cd2654c22cf0a4c8edf7d68aaf8",
+      "sample_pairs": 512,
+      "squared_distance_max_absolute_error": 8.360439807120201e-08,
+      "squared_distance_relative_error_max": 4.0681176722081726e-08,
+      "squared_distance_relative_error_mean": 8.447993038988604e-09,
+      "squared_distance_relative_error_p99": 3.0901379335823263e-08,
+      "squared_distance_relative_l2_error": 1.1837164979465132e-08
+    }
+  },
+  "inputs": {
+    "cluster_ids": {
+      "count": 60000,
+      "dimension": 1,
+      "format": "ivecs",
+      "mtime_ns": 1783338497799241668,
+      "path": "/tmp/saq-run/data/cifar60k/cifar60k_cluster_id_512.ivecs",
+      "sha256": "3168f05171f74afb175c50a0ec9e584b0f666b157fbedba6d3841cc2e43107e9",
+      "size_bytes": 480000
+    },
+    "historical_ivf_provenance": {
+      "bytes": 853,
+      "format": "json",
+      "path": "/tmp/saq-run/data/cifar60k/cifar60k_sampled_pca_ivf_summary.json",
+      "sha256": "29874c5262cb52234649967ba2aa947daf20b1a19d2899ab28ff17bac8cc5723"
+    },
+    "historical_pca_base": {
+      "count": 60000,
+      "dimension": 512,
+      "format": "fvecs",
+      "mtime_ns": 1783338497798241678,
+      "path": "/tmp/saq-run/data/cifar60k/cifar60k_base_pca.fvecs",
+      "sha256": "2019cfa391c5d10742a9963b6dc3d28d633097632b7bb1acde737caa6d314845",
+      "size_bytes": 123120000
+    },
+    "historical_pca_centroids": {
+      "count": 512,
+      "dimension": 512,
+      "format": "fvecs",
+      "mtime_ns": 1783338497799241668,
+      "path": "/tmp/saq-run/data/cifar60k/cifar60k_centroid_512_pca.fvecs",
+      "sha256": "ad4498c3b67a1ab598eb47bee560133a3d6ca46a7867db29ffb55ce53b3c9827",
+      "size_bytes": 1050624
+    },
+    "historical_pca_query": {
+      "count": 1000,
+      "dimension": 512,
+      "format": "fvecs",
+      "mtime_ns": 1783338497853241152,
+      "path": "/tmp/saq-run/data/cifar60k/cifar60k_query_pca.fvecs",
+      "sha256": "42a9a3b5461af5eca9a434520ffb780a5a4f887a873c032b1993100f0d708683",
+      "size_bytes": 2052000
+    },
+    "historical_pca_variance": {
+      "count": 1,
+      "dimension": 512,
+      "format": "fvecs",
+      "mtime_ns": 1783338497798241678,
+      "path": "/tmp/saq-run/data/cifar60k/cifar60k_base_pca.vars.fvecs",
+      "sha256": "8ec4a1399e012c8d227e368968a1de588fa095b2d3516466152bf29335e0ba15",
+      "size_bytes": 2052
+    },
+    "raw_base": {
+      "count": 60000,
+      "dimension": 512,
+      "format": "fvecs",
+      "mtime_ns": 1533129715000000000,
+      "path": "/rwproject/kdd-db/kluaq/dataset/cifar60k/cifar60k_base.fvecs",
+      "sha256": "a7170faaa80a072cd603ed472104049ead87fbaff224e94a529021d161f8aea4",
+      "size_bytes": 123120000
+    },
+    "raw_query": {
+      "count": 1000,
+      "dimension": 512,
+      "format": "fvecs",
+      "mtime_ns": 1533129712000000000,
+      "path": "/rwproject/kdd-db/kluaq/dataset/cifar60k/cifar60k_query.fvecs",
+      "sha256": "88109c80b4f4d779440422df89eb9242c23d8cd4021682782294c50c57cca6d7",
+      "size_bytes": 2052000
+    }
+  },
+  "manifest_schema_version": 1,
+  "outputs": {
+    "base": {
+      "count": 60000,
+      "dimension": 512,
+      "format": "fvecs",
+      "relative_path": "cifar60k_phase1b_residual_pca_base.fvecs",
+      "sha256": "4e1d34fa156c68a2642e4ac9aea33efff572f6fbfd960bbcfe2044e93e834687",
+      "size_bytes": 123120000,
+      "storage": "materialized"
+    },
+    "centroids": {
+      "count": 512,
+      "dimension": 512,
+      "format": "fvecs",
+      "relative_path": "cifar60k_phase1b_residual_pca_centroid_512.fvecs",
+      "sha256": "a2888281235de7da50edc6c23ededb0f9ece7b8ea18fc423f8e41df4ad1b15bd",
+      "size_bytes": 1050624,
+      "storage": "materialized"
+    },
+    "cluster_ids": {
+      "count": 60000,
+      "dimension": 1,
+      "format": "ivecs",
+      "relative_path": "cifar60k_phase1b_residual_pca_cluster_id_512.ivecs",
+      "sha256": "3168f05171f74afb175c50a0ec9e584b0f666b157fbedba6d3841cc2e43107e9",
+      "size_bytes": 480000,
+      "storage": "symlink",
+      "symlink_target": "/tmp/saq-run/data/cifar60k/cifar60k_cluster_id_512.ivecs"
+    },
+    "fixed_probe_clusters": {
+      "count": 1000,
+      "dimension": 16,
+      "format": "ivecs",
+      "relative_path": "cifar60k_phase1b_residual_pca_fixed_probe_clusters_q1000_nprobe16.ivecs",
+      "sha256": "8c81117a919a85e032fe2139a81e654bcde0c899f5fc5b735418a6e1f5e5afd4",
+      "size_bytes": 68000,
+      "storage": "materialized"
+    },
+    "operator": {
+      "format": "npz",
+      "relative_path": "cifar60k_phase1b_residual_pca_transform.npz",
+      "sha256": "36a9608ea53271aa98ec494d0528de1a23c2c55a60e2ddc06897e700f6268d3c",
+      "size_bytes": 2111088,
+      "storage": "materialized"
+    },
+    "query": {
+      "count": 1000,
+      "dimension": 512,
+      "format": "fvecs",
+      "relative_path": "cifar60k_phase1b_residual_pca_query.fvecs",
+      "sha256": "b2de5922fe9b78cf451542a0364c1d03039b0f4cb3b8419fa522b903e77084d3",
+      "size_bytes": 2052000,
+      "storage": "materialized"
+    },
+    "variance": {
+      "count": 1,
+      "dimension": 512,
+      "format": "fvecs",
+      "relative_path": "cifar60k_phase1b_residual_pca_base.vars.fvecs",
+      "sha256": "4f59fd0560563829490b8d23c1984a4e9b8bb2c2b1eec466e45784f2fcaf4c1d",
+      "size_bytes": 2052,
+      "storage": "materialized"
+    }
+  },
+  "research_contract": {
+    "cluster_state": "one shared canonical IVF codebook and fixed cluster ids",
+    "dimension_reduction": false,
+    "fit_data": "base/index artifacts only",
+    "metric": "L2",
+    "operator_scope": "one dataset-level affine orthogonal transform",
+    "plan_scope": "one global SAQ plan per view (created downstream)",
+    "query_usage": "paired artifact validation and predeclared first-query probe materialization only; never transform/plan selection",
+    "view_validation": {
+      "max_squared_distance_relative_l2_error": 1e-05,
+      "require_exact_fixed_probe_order": true
+    }
+  },
+  "shared_provenance": {
+    "canonical_raw_codebook": {
+      "cluster_assignment_count_max": 324,
+      "cluster_assignment_count_min": 1,
+      "count": 512,
+      "dimension": 512,
+      "empty_clusters": 0,
+      "formula": "raw_centroid = pca_centroid @ operator.T + apply_mean",
+      "method": "inverse affine transform of historical PCA centroids after held-out recovery gates",
+      "pca_roundtrip_max_absolute_error": 2.220446049250313e-15,
+      "pca_roundtrip_relative_frobenius_error": 3.316460921023292e-15,
+      "sha256_float64": "078fe230e4b59eabbba3af3af605417d0fac881f7c73253d9a92b1604a7769f9"
+    },
+    "common_apply_mean": {
+      "definition": "recovered historical PCA base mean, shared by every view",
+      "l2_difference_from_streamed_raw_mean": 3.4246396690125184e-08,
+      "sha256": "5ce893e47bbd5689d75090c0178c992d5a03aebf8d68e532b380283b8098b576"
+    },
+    "environment": {
+      "blas_opt_info": {
+        "define_macros": [
+          [
+            "HAVE_CBLAS",
+            null
+          ]
+        ],
+        "language": "c",
+        "libraries": [
+          "flexiblas",
+          "flexiblas"
+        ],
+        "library_dirs": [
+          "/usr/lib64"
+        ],
+        "runtime_library_dirs": [
+          "/usr/lib64"
+        ]
+      },
+      "byteorder": "little",
+      "numpy_version": "1.23.5",
+      "platform": "Linux-5.14.0-687.15.1.el9_8.x86_64-x86_64-with-glibc2.34",
+      "python_version": "3.9.25 (main, Apr 17 2026, 00:00:00) \n[GCC 11.5.0 20240719 (Red Hat 11.5.0-14)]"
+    },
+    "fixed_probe_clusters": {
+      "distance": "squared L2 to canonical raw codebook",
+      "nprobe": 16,
+      "query_index_begin": 0,
+      "query_index_end_exclusive": 1000,
+      "query_indices": "first 1000 raw queries",
+      "sha256": "e60e5cef7d1bda215fe8df22eb9ed90abb702f45c51b94c2a7fe9b03430f1f69",
+      "tie_break": "stable centroid id order"
+    },
+    "historical_ivf_construction": {
+      "cluster_dims": 64,
+      "cluster_size_max": 324,
+      "cluster_size_min": 1,
+      "cluster_size_p50": 112.0,
+      "cluster_size_p90": 177.90000000000003,
+      "dataset": "cifar60k",
+      "dimension": 512,
+      "empty_clusters": 0,
+      "groundtruth": {
+        "groundtruth_input": "/rwproject/kdd-db/kluaq/dataset/cifar60k/cifar60k_groundtruth_l2.ivecs",
+        "groundtruth_output": "/tmp/saq-run/data/cifar60k/cifar60k_groundtruth.ivecs"
+      },
+      "input": "/rwproject/kdd-db/kluaq/dataset/cifar60k/cifar60k_base.fvecs",
+      "iterations": 4,
+      "k": 512,
+      "output_dir": "/tmp/saq-run/data/cifar60k",
+      "query": {
+        "query_dimension": 512,
+        "query_input": "/rwproject/kdd-db/kluaq/dataset/cifar60k/cifar60k_query.fvecs",
+        "query_rows": 1000
+      },
+      "sample_size": 60000,
+      "seed": 0,
+      "variance_top1_share": 0.142588809132576,
+      "variance_top64_share": 0.7853183150291443
+    },
+    "historical_pca_recovery": {
+      "cross_covariance_numerical_rank": 512,
+      "cross_singular_value_max": 683.5786654990613,
+      "cross_singular_value_min": 0.0006182061412775813,
+      "fit_error": {
+        "max_absolute_error": 4.3385867920520127e-07,
+        "relative_frobenius_error": 3.0028516720078613e-07,
+        "rmse": 1.0067642861210412e-08
+      },
+      "fit_indices_sha256": "f4fc6394d522568d70ea164272a5f37ca355bd7b122f17e91b0e6a0244850c50",
+      "fit_rows": 8192,
+      "heldout_error": {
+        "max_absolute_error": 3.8671564328573993e-07,
+        "relative_frobenius_error": 3.054810540488498e-07,
+        "rmse": 1.0169582219192356e-08
+      },
+      "heldout_indices_sha256": "7b7a74fc4500626eb301e658bc758338e1ee9d8b0cf2475adb7df292d1d212bc",
+      "heldout_rows": 4096,
+      "mean_sha256": "5ce893e47bbd5689d75090c0178c992d5a03aebf8d68e532b380283b8098b576",
+      "method": "centered orthogonal Procrustes on evenly spaced paired base rows",
+      "operator_determinant_sign": 1.0,
+      "operator_log_abs_determinant": 5.706546346573305e-14,
+      "operator_orthogonality_frobenius_error": 9.524695475379729e-14,
+      "operator_sha256": "b16b661eacc59a3960b6b2b0889de74590ef269efe2703bb3e022aacfe9f6792",
+      "query_artifact_error": {
+        "max_absolute_error": 3.5408125748093155e-07,
+        "relative_frobenius_error": 3.0541250361456185e-07,
+        "rmse": 1.0334402011522711e-08
+      },
+      "thresholds": {
+        "max_absolute_error": 0.0001,
+        "max_relative_frobenius_error": 1e-05
+      }
+    },
+    "historical_pca_variance_comparison": {
+      "max_absolute_error": 8.454389075623903e-07,
+      "relative_l2_error": 8.63950045308823e-06
+    },
+    "raw_base_covariance": {
+      "block64_variance_sums": [
+        0.10335940991662027,
+        0.09772391294196758,
+        0.12430586622207639,
+        0.1123139521191445,
+        0.06047163685106938,
+        0.0518673658204958,
+        0.013949263721758512,
+        0.011290391749840745
+      ],
+      "covariance_frobenius_norm": 0.11216450184388237,
+      "dimension": 512,
+      "off_diagonal_frobenius_norm": 0.10770608620973425,
+      "off_diagonal_to_total_frobenius_ratio": 0.9602510994043942,
+      "population_denominator": "N",
+      "prefix_variance_fraction": {
+        "256": 0.7608499724825426,
+        "512": 1.0,
+        "64": 0.17966744304211713
+      },
+      "trace": 0.5752817993429731,
+      "variance_first_16": [
+        0.0025261954756196237,
+        0.002385430146639555,
+        0.002421353402768018,
+        0.002525106236890189,
+        0.002193014081347916,
+        0.0019235803412459484,
+        0.0019389876369689215,
+        0.002198239292644134,
+        0.002487278863488352,
+        0.0026440670237803453,
+        0.002683432248124837,
+        0.0025365232769574233,
+        0.0028123593763570904,
+        0.0034442215175772574,
+        0.003391095723945648,
+        0.002777205491698347
+      ],
+      "variance_max": 0.004456247257651974,
+      "variance_mean": 0.0011235972643417443,
+      "variance_min": 0.00010707689866098302,
+      "variance_sha256": "4da25f996ba8d7f175cafb4f17f116ad4fc3fd99a28359dfbd8f1a8d52bca1a7"
+    },
+    "residual_pca_fit": {
+      "cluster_ids_sha256": "3168f05171f74afb175c50a0ec9e584b0f666b157fbedba6d3841cc2e43107e9",
+      "eigenvalues_first_16": [
+        0.008886044173168895,
+        0.008252346230904014,
+        0.008088530609476133,
+        0.007607957174140731,
+        0.007381592893763554,
+        0.007250047518370103,
+        0.006924135554221847,
+        0.00678134005437137,
+        0.006700545725056762,
+        0.006586717823569392,
+        0.006203764475481208,
+        0.005951315905967906,
+        0.005577238909435489,
+        0.005491881813324084,
+        0.005389070285923194,
+        0.005089784290182481
+      ],
+      "eigenvalues_sha256": "3baed3e12fb14295201f66578bd89e4ed7781d5a92c0e93680ce22b2348dbd0c",
+      "operator_sha256": "1ae9259d7caea71ca7cd6ee3cf9967880a5c6e3c3e47c1b6a0c7e0d8346b37e9",
+      "residual_covariance": {
+        "block64_variance_sums": [
+          0.05918511776281478,
+          0.05744889673257063,
+          0.07356365638428303,
+          0.06856416178391919,
+          0.04022306245793157,
+          0.03498354079293605,
+          0.010671166661676359,
+          0.008467672546922224
+        ],
+        "covariance_frobenius_norm": 0.034580300218040406,
+        "dimension": 512,
+        "off_diagonal_frobenius_norm": 0.029223110533703613,
+        "off_diagonal_to_total_frobenius_ratio": 0.8450797231210281,
+        "population_denominator": "N",
+        "prefix_variance_fraction": {
+          "256": 0.7328136543587558,
+          "512": 1.0,
+          "64": 0.1676122864990234
+        },
+        "trace": 0.35310727512305384,
+        "variance_first_16": [
+          0.0012614608241303562,
+          0.0011224625144174373,
+          0.001130306401908674,
+          0.0012296738035121088,
+          0.0013004990639160468,
+          0.0012434977863914614,
+          0.001241706827672032,
+          0.0012916495175540011,
+          0.0014288170373678187,
+          0.0014170808066129078,
+          0.001434451903703902,
+          0.0014304646139883317,
+          0.0015280839182795385,
+          0.0015055694996509669,
+          0.0014924873954176002,
+          0.0015266174077147015
+        ],
+        "variance_max": 0.002101218023941938,
+        "variance_mean": 0.0006896626467247145,
+        "variance_min": 7.444542348027412e-05,
+        "variance_sha256": "e49ff7e3d1e822144a3caae18354eddf2afd02bdd7dc9759eab12e8f140b5ae4"
+      },
+      "residual_mean_l2_norm": 2.6006930833362164e-09,
+      "residual_mean_sha256": "fecc42ff81d5f0fc76f1dc8a02a99e4a85e61a4e3d43bbc8db0d373f6f1c27b4",
+      "training_rows": 60000,
+      "training_rows_definition": "all base residuals x_i - canonical_centroid[cid_i]"
+    },
+    "script": {
+      "manifest_schema_version": 1,
+      "path": "/rwproject/kdd-db/kluaq/saq/script/prepare_phase1_transform_views.py",
+      "sha256": "6a291670f83e914361bbed6c38269bd2e3d2bb6e3e23c241eadc67d3454a5ec1"
+    },
+    "shared_timings_seconds": {
+      "canonical_centroid_inversion": 0.0024633859284222126,
+      "fixed_probe_generation": 0.02122760796919465,
+      "historical_pca_recovery": 0.23506132513284683,
+      "input_hash": 0.4618742438033223,
+      "raw_covariance": 0.18222834169864655,
+      "residual_pca_fit": 0.337958708871156
+    }
+  },
+  "timings_seconds": {
+    "base_output_seconds": 0.24232468893751502,
+    "centroid_output_seconds": 0.0015953932888805866,
+    "cluster_id_reference_seconds": 0.00011893967166543007,
+    "fixed_probe_output_seconds": 0.00011459877714514732,
+    "manifest_write_seconds": 0.0011215601116418839,
+    "operator_output_seconds": 0.0025632409378886223,
+    "output_hash_seconds": 0.23470611637458205,
+    "query_output_seconds": 0.003892160952091217,
+    "variance_output_seconds": 0.00021187681704759598
+  },
+  "transform": {
+    "application": "(row - apply_mean) @ operator",
+    "apply_mean_sha256": "5ce893e47bbd5689d75090c0178c992d5a03aebf8d68e532b380283b8098b576",
+    "base_storage": "materialized transformed fvecs",
+    "fit": {
+      "component_orientation": "largest-absolute entry positive",
+      "method": "full-D eigendecomposition of population covariance over all base residuals relative to the canonical raw codebook",
+      "query_rows": 0,
+      "training_rows": 60000
+    },
+    "input_dimension": 512,
+    "kind": "global-residual-pca-full",
+    "operator_diagnostics": {
+      "bytes": 2097152,
+      "determinant_sign": -1.0,
+      "dimension": 512,
+      "dtype": "float64",
+      "log_abs_determinant": -3.597122599785507e-14,
+      "orthogonality_frobenius_error": 5.498819324470207e-14,
+      "orthogonality_max_absolute_error": 2.3314683517128287e-15,
+      "sha256": "1ae9259d7caea71ca7cd6ee3cf9967880a5c6e3c3e47c1b6a0c7e0d8346b37e9"
+    },
+    "output_dimension": 512,
+    "query_storage": "materialized transformed fvecs",
+    "runtime_state_contract": {
+      "dense_mac_per_raw_query": 262144,
+      "dtype": "float32",
+      "mean_bytes": 2048,
+      "mean_shape": [
+        512
+      ],
+      "operator_bytes": 1048576,
+      "operator_shape": [
+        512,
+        512
+      ],
+      "total_bytes": 1050624
+    },
+    "seed": null
+  },
+  "view_name": "cifar60k_phase1b_residual_pca"
+}

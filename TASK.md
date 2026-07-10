@@ -2,9 +2,10 @@
 
 ## Active Goal
 
-Determine whether the full-dimensional PCA stage in original SAQ is a genuine
-limitation for segmented progressive quantization, and only then evaluate a
-query-unaware replacement with a defensible SAQ-specific objective.
+Preserve the completed Phase 1/1b evidence and closure decision for the
+full-dimensional PCA limitation hypothesis. Do not continue PCA-replacement
+method development from this branch; select a distinct SAQ research question
+before beginning another experiment.
 
 The target is a database top-conference-level contribution suitable for SIGMOD,
 VLDB, or ICDE. The work is independent of the graph-index direction. Judge it
@@ -14,7 +15,7 @@ reviewer defensibility rather than by implementation volume.
 The authoritative plan is
 `docs/saq_transform_replacement_research_proposal_2026_07_10.md`.
 
-## Phase 1 Decision
+## Phase 1 And Phase 1b Decision
 
 The minimal Phase 1 operating point is complete. The result is recorded in
 `docs/saq_transform_phase1_limitation_evidence_2026_07_10.md`, with compact
@@ -34,6 +35,36 @@ included zero and the fast prefixes worsened. Identity and random orthogonal
 transforms exposed plan/rotation tradeoffs rather than an outer-transform
 dominance result. The evidence therefore identifies a narrow estimator
 mismatch, not a defensible SAQ progressive-ranking contribution.
+
+The explicitly reopened Phase 1b external replication is also complete. Its
+preregistered protocol and evidence are recorded in:
+
+- `docs/saq_transform_phase1b_external_replication_protocol_2026_07_10.md`;
+- `docs/saq_transform_phase1b_external_replication_evidence_2026_07_10.md`.
+
+Phase 1b used CIFAR60k, all 1,000 queries, one canonical raw float64 exact
+reference, a frozen four-segment current-PCA plan, identical candidates and
+serialized bytes, ten paired internal-rotation seeds, and rotation off. The
+artifact gate passed, but the narrow replication gate failed:
+
+```text
+accurate_prefix_1 mean-query RMSE delta: +1.394e-6
+95% CI: [-2.216e-5, +2.461e-5], seeds favoring residual PCA: 4/10
+
+full mean-query RMSE delta: -2.610e-7
+95% CI: [-1.043e-6, +5.094e-7], seeds favoring residual PCA: 5/10
+```
+
+Rotation-off was opposite to the registered direction at both endpoints, and
+`fast_all` RMSE significantly favored current PCA. The registered decision is:
+
+```text
+close_one_dataset_estimator_effect
+```
+
+This closes the PCA-replacement premise on this branch. It does not prove PCA
+universally optimal; it establishes that the current evidence does not justify
+spending research degrees of freedom on a learner or broader transform sweep.
 
 ## Starting Point
 
@@ -129,20 +160,17 @@ Therefore:
 
 ## Immediate Next Step
 
-Do not implement a learned transform or broaden the transform sweep.
-Preserve this branch as negative/limitation evidence and review the stop
-decision before selecting a different independent SAQ research question.
-
-If this direction is explicitly reopened, the only justified next experiment
-is a preregistered replication on a second spectral regime. It must remain a
-validation of the Phase 1 conclusion, not post-hoc tuning of a loss, transform,
-dimension, threshold, or plan on benchmark queries.
+Do not implement a learned transform, broaden the transform sweep, rerun the
+gate on a more favorable dataset/plan/budget, or begin the counterfactual
+`(segment, bit)` analysis. Preserve this branch as completed negative evidence
+and select a different independent SAQ research question.
 
 ## Continue Gate
 
-The weak diagnostic trigger was met by the stable accurate-prefix RMSE
-mismatch. The stronger learner/contribution gate was not met; a learned
-transform would have required all of the following:
+Phase 1 met the weak diagnostic trigger through one stable GIST
+accurate-prefix RMSE mismatch. Phase 1b failed to reproduce that trigger on the
+registered second regime. The stronger learner/contribution gate remains
+closed; a learned transform would have required all of the following:
 
 - the variance proxy systematically mispredicts measured CAQ or prefix error;
 - the mismatch is stable across predeclared seeds and more than one spectral
@@ -154,12 +182,16 @@ transform would have required all of the following:
   not explain the result;
 - the improvement has a plausible path to end-to-end IVF Recall-QPS gains.
 
-The observed 0.60% accurate-prefix and 0.33% full-code RMSE changes do not
-satisfy these conditions and must not be used to justify a learner. The current
-selected-segment proxy correlations also do not replace a counterfactual
-segment-by-bit evaluation of the planner choice space.
+The GIST 0.60% accurate-prefix and 0.33% full-code RMSE changes, followed by the
+failed CIFAR replication, do not satisfy these conditions and must not be used
+to justify a learner. The selected-segment proxy correlations also do not
+replace a counterfactual segment-by-bit evaluation of the planner choice
+space—and the failed replication does not authorize that evaluation.
 
 ## Lossy Projection Diagnostic
+
+This is a historical secondary-track specification, not an active next step.
+The failed Phase 1b gate does not authorize it.
 
 Only after the primary diagnostic is defined, evaluate `D -> d` as a separate
 track. For the existing GIST PCA plan, use predeclared plan boundaries rather

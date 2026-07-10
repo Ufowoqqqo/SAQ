@@ -7,6 +7,11 @@ narrow limitation of the current *raw-data* PCA target, but it does not support
 the stronger hypothesis that PCA should be replaced as SAQ's main research
 direction.
 
+**Phase 1b update:** the preregistered CIFAR60k external replication passed its
+artifact gate but failed to reproduce this narrow estimator effect. The branch
+is now closed for PCA-replacement work; see
+`saq_transform_phase1b_external_replication_evidence_2026_07_10.md`.
+
 The result is deliberately narrower than "PCA is optimal":
 
 - residual PCA reduces mean per-query candidate RMSE by about `0.60%` at the
@@ -328,10 +333,13 @@ Run each view with explicit artifact paths. The current-PCA command is:
 ```bash
 V=/tmp/saq-phase1-transform/views/gist_sample50k_phase1_current_pca
 P=gist_sample50k_phase1_current_pca
+R=data/gist_sample50k
 
 ./bin/phase1_transform_diagnostic \
   -base_file=$V/${P}_base.fvecs \
   -query_file=$V/${P}_query.fvecs \
+  -exact_base_file=$R/gist_sample50k_base.fvecs \
+  -exact_query_file=$R/gist_sample50k_query.fvecs \
   -centroids_file=$V/${P}_centroid_512.fvecs \
   -cluster_ids_file=$V/${P}_cluster_id_512.ivecs \
   -variance_file=$V/${P}_base.vars.fvecs \
@@ -347,6 +355,9 @@ P=gist_sample50k_phase1_current_pca
 
 Repeat with the identity, residual-PCA, and random-orthogonal view paths and
 labels, always using current PCA's variance file for the frozen-plan reference.
+The runner now requires the two common raw exact-reference paths shown above;
+this removes the transform-view roundoff scope retained by the historical
+Phase 1 output.
 
 Generate query-level summaries:
 

@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import json
 import math
 import statistics
 import sys
@@ -281,6 +282,14 @@ def read_csv(path: Path, required: set[str]) -> list[dict[str, str]]:
     return rows
 
 
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(4 * 1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
 def split_input_spec(specification: str) -> tuple[str | None, Path]:
     if "=" not in specification:
         return None, Path(specification)
@@ -297,9 +306,7 @@ def load_bundle(specification: str) -> InputBundle:
     config_rows = read_csv(Path(f"{prefix}.configs.csv"), CONFIG_REQUIRED)
     query_reference_path = Path(f"{prefix}.query_reference.csv")
     if query_reference_path.is_file():
-        query_reference_sha256 = hashlib.sha256(
-            query_reference_path.read_bytes()
-        ).hexdigest()
+        query_reference_sha256 = sha256_file(query_reference_path)
     else:
         query_reference_path = None
         query_reference_sha256 = None
@@ -2147,6 +2154,44 @@ def summarize(
         bootstrap_seed,
         warnings,
     )
+    provenance_path = Path(f"{output_prefix}.provenance.json")
+    provenance_inputs: dict[str, dict[str, object]] = {}
+    for bundle in bundles:
+        files: dict[str, object] = {}
+        for suffix in ("query_stages", "segment_errors", "configs"):
+            path = Path(f"{bundle.prefix}.{suffix}.csv")
+            files[suffix] = {
+                "path": str(path.resolve(strict=True)),
+                "bytes": path.stat().st_size,
+                "sha256": sha256_file(path),
+            }
+        if bundle.query_reference_path is not None:
+            files["query_reference"] = {
+                "path": str(bundle.query_reference_path.resolve(strict=True)),
+                "bytes": bundle.query_reference_path.stat().st_size,
+                "sha256": bundle.query_reference_sha256,
+            }
+        provenance_inputs[bundle.label] = files
+    provenance_outputs = {
+        label: {
+            "path": str(path.resolve(strict=True)),
+            "bytes": path.stat().st_size,
+            "sha256": sha256_file(path),
+        }
+        for label, path in paths.items()
+    }
+    provenance = {
+        "schema_version": 1,
+        "baseline": baseline,
+        "bootstrap_replicates": bootstrap_replicates,
+        "bootstrap_seed": bootstrap_seed,
+        "inputs": provenance_inputs,
+        "outputs": provenance_outputs,
+    }
+    with provenance_path.open("w", encoding="utf-8") as handle:
+        json.dump(provenance, handle, indent=2, sort_keys=True)
+        handle.write("\n")
+    paths["provenance"] = provenance_path
     return paths
 
 
