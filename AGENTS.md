@@ -55,17 +55,42 @@ held-out queries for evaluation only
 The authoritative research proposal is
 `docs/saq_transform_replacement_research_proposal_2026_07_10.md`.
 
+## Phase 1 Decision
+
+The minimal Phase 1 operating point is complete. The authoritative evidence and
+method-development decision are recorded in
+`docs/saq_transform_phase1_limitation_evidence_2026_07_10.md`.
+
+The study found a narrow estimator mismatch: at the same five-segment plan and
+serialized index bytes, residual PCA reduced mean per-query candidate RMSE by
+about 0.60% at the first accurate prefix and 0.33% at full code. The prefix
+effect held for all ten internal-rotation seeds and with rotation off. It did
+not establish a top-k, boundary-inversion, or exact-best-rank improvement, and
+the fast prefixes worsened. Identity/random gains were explained by plan shape
+and internal rotation.
+
+Therefore do not proceed to a learned SAQ-aware transform, broad transform
+matrix, persisted-format change, or positive method claim on this branch unless
+the user explicitly reopens the direction with new evidence. Preserve the
+result as a narrow positive mechanism diagnostic and a negative contribution
+gate: current raw-data PCA is not perfectly aligned with SAQ estimator RMSE,
+but it was not demonstrated to be a practical progressive-ranking limitation.
+If reopened, first preregister one second-regime replication with a common raw
+exact reference; do not tune a learner on the GIST evaluation queries.
+
 ## Evidence And Novelty Gate
 
 Do not assume that replacing PCA is a contribution. Classical transform coding,
 ITQ/OPQ, LeanVec, GleanVec, MRQ, and related projection-plus-quantization work
 already cover large parts of the design space.
 
-The first study must be a small offline falsification of the proposed
-limitation. It should compare the SAQ variance proxy with measured full-code and
-prefix estimator error under current PCA and simple controls. Do not train a
-new transform, change the persisted index format, or start a broad dataset
-matrix before this gate.
+The first offline limitation measurement has been completed. It compared the
+SAQ variance proxy with measured full-code and prefix estimator error under
+current PCA and simple controls. Its weak diagnostic trigger was positive, but
+its learner/contribution gate failed. Do not train a new transform, change the
+persisted index format, or start a broad post-hoc dataset matrix from this
+result. The selected-segment Spearman analysis is descriptive; it did not test
+the full counterfactual `(segment, bit)` planner choice space.
 
 A learned method is justified only if the evidence shows a systematic gap that
 is not explained by residual PCA, a coordinate permutation, a seeded random

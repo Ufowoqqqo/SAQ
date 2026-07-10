@@ -17,3 +17,6 @@ target_link_libraries(compute_gt PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES}
 
 add_executable(test_ivf test_ivf.cpp)
 target_link_libraries(test_ivf PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
+
+add_executable(phase1_transform_diagnostic phase1_transform_diagnostic.cpp)
+target_link_libraries(phase1_transform_diagnostic PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})

@@ -97,7 +97,8 @@ class SaqCluEstimator : public SaqEstimatorBase<CaqCluEstimator<kDistType>> {
 
     virtual ~SaqCluEstimator() = default;
 
-    auto &getEstimators() const { return estimators_; }
+    auto &getEstimators() { return estimators_; }
+    const auto &getEstimators() const { return estimators_; }
 
     /**
      * @brief Prepare estimators for search on specific cluster data
@@ -198,7 +199,8 @@ class SaqCluEstimatorSingle : public SaqEstimatorBase<CaqCluEstimatorSingle<kDis
 
     virtual ~SaqCluEstimatorSingle() = default;
 
-    auto &getEstimators() const { return estimators_; }
+    auto &getEstimators() { return estimators_; }
+    const auto &getEstimators() const { return estimators_; }
 
     /**
      * @brief Prepare estimators for search on specific cluster data
@@ -264,7 +266,8 @@ class SaqSingleEstimator : public SaqEstimatorBase<CaqSingleEstimator<kDistType>
 
     virtual ~SaqSingleEstimator() = default;
 
-    auto &getEstimators() const { return estimators_; }
+    auto &getEstimators() { return estimators_; }
+    const auto &getEstimators() const { return estimators_; }
 
     float varsEstDist(const SaqSingleDataWrapper &wrapper) {
         float res = 0;

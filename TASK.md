@@ -14,6 +14,27 @@ reviewer defensibility rather than by implementation volume.
 The authoritative plan is
 `docs/saq_transform_replacement_research_proposal_2026_07_10.md`.
 
+## Phase 1 Decision
+
+The minimal Phase 1 operating point is complete. The result is recorded in
+`docs/saq_transform_phase1_limitation_evidence_2026_07_10.md`, with compact
+machine-readable summaries under
+`docs/saq_transform_phase1_artifacts_2026_07_10/`.
+
+Decision:
+
+```text
+Do not advance to learned-transform development from this evidence.
+```
+
+Residual PCA lowered matched-plan mean per-query candidate RMSE by about 0.60%
+at the first accurate prefix and 0.33% at full code. The prefix effect held for
+all ten rotation seeds and with rotation off, but ranking confidence intervals
+included zero and the fast prefixes worsened. Identity and random orthogonal
+transforms exposed plan/rotation tradeoffs rather than an outer-transform
+dominance result. The evidence therefore identifies a narrow estimator
+mismatch, not a defensible SAQ progressive-ranking contribution.
+
 ## Starting Point
 
 This branch starts from `saq-correctness-base` and keeps only correctness fixes
@@ -108,40 +129,20 @@ Therefore:
 
 ## Immediate Next Step
 
-Execute only the minimal limitation measurement. Do not train a new transform
-or modify the persisted index format yet.
+Do not implement a learned transform or broaden the transform sweep.
+Preserve this branch as negative/limitation evidence and review the stop
+decision before selecting a different independent SAQ research question.
 
-Use a fixed, small operating point first:
-
-```text
-dataset: gist_sample50k
-IVF K: 512
-nominal B: 4
-block-min mode: 2
-candidate lists: fixed across transforms
-transform controls: current PCA, residual PCA, identity, seeded random orthogonal
-```
-
-For each control:
-
-1. record the transform manifest, covariance diagnostics, native SAQ plan, and
-   actual storage/work accounting;
-2. compare planner variance proxy with measured per-segment full-CAQ error;
-3. compare the proxy with full-estimator and progressive-prefix ranking error;
-4. repeat with the native plan, a frozen PCA plan, and a uniform/no-segmentation
-   CAQ control where meaningful;
-5. ablate segment random rotations using fixed seeds and default/fixed/off
-   settings;
-6. report fixed-candidate top-k agreement, boundary flips, error bias and
-   p50/p90/p99, bytes per candidate, and cycles or time per candidate.
-
-Use predeclared seeds `0..9` and query-level paired bootstrap 95% confidence
-intervals for comparative claims. Held-out queries evaluate the fixed design;
-they do not select the transform, plan, seed, loss, threshold, or dimension.
+If this direction is explicitly reopened, the only justified next experiment
+is a preregistered replication on a second spectral regime. It must remain a
+validation of the Phase 1 conclusion, not post-hoc tuning of a loss, transform,
+dimension, threshold, or plan on benchmark queries.
 
 ## Continue Gate
 
-Continue to a learned transform only if all of the following hold:
+The weak diagnostic trigger was met by the stable accurate-prefix RMSE
+mismatch. The stronger learner/contribution gate was not met; a learned
+transform would have required all of the following:
 
 - the variance proxy systematically mispredicts measured CAQ or prefix error;
 - the mismatch is stable across predeclared seeds and more than one spectral
@@ -153,10 +154,10 @@ Continue to a learned transform only if all of the following hold:
   not explain the result;
 - the improvement has a plausible path to end-to-end IVF Recall-QPS gains.
 
-If the gate passes, the candidate contribution is a base-only, global,
-full-dimensional SAQ-estimator-aware transform and plan co-design. Initialize it
-from PCA and optimize actual CAQ/prefix error on a disjoint base validation set,
-not benchmark queries.
+The observed 0.60% accurate-prefix and 0.33% full-code RMSE changes do not
+satisfy these conditions and must not be used to justify a learner. The current
+selected-segment proxy correlations also do not replace a counterfactual
+segment-by-bit evaluation of the planner choice space.
 
 ## Lossy Projection Diagnostic
 

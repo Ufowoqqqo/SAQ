@@ -5,6 +5,7 @@
 #include <cstring>
 #include <fstream>
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include "glog/logging.h"
@@ -65,6 +66,7 @@ class SaqDataMaker {
     const size_t num_dim_;
     const size_t num_dim_padded_; // padded dimension
     std::unique_ptr<SaqData> data_;
+    std::optional<QuantPlanT> custom_quant_plan_;
 
   public:
     explicit SaqDataMaker(QuantizeConfig cfg, size_t num_dim)
@@ -80,6 +82,38 @@ class SaqDataMaker {
 
     bool is_variance_set() const {
         return data_->data_variance.cols() != 0;
+    }
+
+    /**
+     * Install one dataset-level plan before constructing quantizers. The plan
+     * is intentionally not added to QuantizeConfig or serialized separately:
+     * the existing BaseQuantizerData records remain the persisted source of
+     * truth, so old and new index files have the same format.
+     */
+    void set_custom_quant_plan(QuantPlanT plan) {
+        CHECK(!plan.empty()) << "custom SAQ plan must contain at least one segment";
+
+        size_t planned_dim = 0;
+        for (size_t i = 0; i < plan.size(); ++i) {
+            const auto [dim, bits] = plan[i];
+            CHECK_GT(dim, 0) << "custom SAQ segment " << i << " has zero dimensions";
+            CHECK_EQ(dim % kDimPaddingSize, 0)
+                << "custom SAQ segment " << i << " must be aligned to " << kDimPaddingSize << " dimensions";
+            CHECK_LE(bits, kMaxQuantBit)
+                << "custom SAQ segment " << i << " exceeds the supported quantization width";
+            CHECK(bits != 0 || i + 1 == plan.size())
+                << "only the final custom SAQ segment may use zero bits";
+            CHECK_LE(dim, num_dim_padded_ - planned_dim)
+                << "custom SAQ plan exceeds the padded input dimension";
+            planned_dim += dim;
+        }
+        CHECK_EQ(planned_dim, num_dim_padded_)
+            << "custom SAQ plan must cover the padded input dimension exactly";
+
+        custom_quant_plan_ = std::move(plan);
+        if (is_variance_set()) {
+            prepare_quantizers();
+        }
     }
 
     void set_variance(FloatVec vars) {
@@ -118,6 +152,11 @@ class SaqDataMaker {
 
     void analyze_plan() {
         DCHECK_EQ(num_dim_padded_ % kDimPaddingSize, 0);
+
+        if (custom_quant_plan_) {
+            data_->quant_plan = *custom_quant_plan_;
+            return;
+        }
 
         if (data_->cfg.enable_segmentation) {
             if (data_->cfg.seg_eqseg > 0) {

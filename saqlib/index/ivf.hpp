@@ -106,6 +106,12 @@ class IVF
         saq_data_maker_->set_variance(std::move(vars));
     }
 
+    void set_custom_quant_plan(SaqData::QuantPlanT plan)
+    {
+        CHECK(saq_data_maker_) << "custom SAQ plans must be set before IVF construction";
+        saq_data_maker_->set_custom_quant_plan(std::move(plan));
+    }
+
     void printQPlan(const SaqData *data)
     {
         LOG(INFO) << "Dynamic bits allocation plan:";
