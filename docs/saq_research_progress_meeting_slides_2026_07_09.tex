@@ -1436,30 +1436,31 @@ claim. Its code-bit counts are not complete storage or runtime work.
 \end{frame}
 
 % ----------------------------------------------------------------------
-\begin{frame}[fragile]{Review-Time Baseline Correction}
+\begin{frame}[fragile]{Source-Aligned Scalar Baseline Correction}
 \scriptsize
-A scalar review-time reproduction added random-sign FHT and padded GIST from
-960 to 1024 dimensions. Across fixed seeds 0--4:
+A committed scalar implementation now matches pinned SymphonyQG revision
+\texttt{6124ddb3...} field by field. The first GIST sample50k / K512 / B=4 /
+subset-512 / seed-0 sanity run has 128 events:
 
-\begin{tabular}{lrrrr}
+\begin{tabular}{lrrrrr}
 \toprule
-estimator & top1 disag. & mean rank & p90 rank & top8 \\
+estimator & code bits & top1 disag. & mean rank & p90 rank & top4 \\
 \midrule
-unrotated symqg proxy & 0.87625 & 8.2775 & 19 & 0.61500 \\
-review-time FHT reproduction & 0.2475--0.2975 & 1.4425--1.5600 & 2--3 & 0.99625--1.0000 \\
-saq\_fast & 0.46125 & 2.2575 & 5 & 0.98125 \\
+unrotated symqg proxy & 960 & 0.867188 & 8.85156 & 22 & 0.390625 \\
+symqg\_fht\_scalar & 1024 & 0.304688 & 1.54688 & 3 & 0.968750 \\
+saq\_fast & 832 & 0.453125 & 1.93750 & 4 & 0.914062 \\
 \bottomrule
 \end{tabular}
 
 \vspace{0.8em}
 \begin{alertblock}{Interpretation}
-The omitted transform may remove or reverse the apparent SAQ advantage. The
-old positive comparison is provisional.
+The aligned scalar baseline is much stronger than the old proxy and is stronger
+than saq\_fast in this small setting. The old comparison is invalid as
+comparative evidence.
 \end{alertblock}
 
-This reproduction is also not a validated result: it is not a committed runner
-and does not reproduce packed FastScan. It requires the source-aligned Phase 2
-comparison before further method design.
+Release and ASAN parity cover query state, edge factors, distances, and tie
+ordering. Packed FastScan, multiple estimates, and traversal remain absent.
 \end{frame}
 
 % ----------------------------------------------------------------------
@@ -1475,7 +1476,7 @@ estimator?
 Required ordered work:
 \begin{enumerate}
   \item Phase 1: completed; correctness defaults and focused tests pass.
-  \item Phase 2: active; source-aligned scalar estimator, then parity-tested packed path.
+  \item Phase 2: scalar milestone complete; parity-tested packed path remains.
   \item Phase 3: fixed-seed same-replay evaluation and stop/continue decision.
 \end{enumerate}
 
@@ -1513,7 +1514,7 @@ mixed shared local plans & residual-local signal; GIST B=4 R@100 +0.00079 but QP
 global static segment-cost DP & SAQ default not dominated; near-frontier GIST plans slightly higher recall but slower & stopped as main method \\
 fac-error planner objective & objective changes GIST/CIFAR plans; GIST custom plan faster at same nprobe but not recall-matched & stopped as main method \\
 search-procedure scheduling & fast pruning and accurate early exit already strong; variance pruning weak but unsafe to tighten empirically & stopped as main method \\
-graph traversal compatibility & old unrotated proxy result is provisional; review-time FHT reproduction may match or dominate saq\_fast & active only as a source-aligned baseline-validation gate \\
+graph traversal compatibility & aligned scalar baseline is stronger than saq\_fast on a small seed-0 sanity run; packed/traversal evidence absent & active only as a source-aligned baseline-validation gate \\
 \bottomrule
 \end{tabularx}
 \end{frame}
@@ -1566,14 +1567,12 @@ Do not start full HNSW/DiskANN integration yet.
 \vspace{0.6em}
 Immediate next step:
 \begin{lstlisting}
-Phase 2: implement a deterministic source-aligned SymphonyQG scalar estimator
-with random-sign FHT, power-of-two padding, and an explicit rotation seed.
+Phase 2: implement the packed/FastScan-equivalent path and establish ordering
+parity with the validated source-aligned scalar estimator.
 \end{lstlisting}
 
-Then complete scalar parity and execute Phase 3:
+Then execute Phase 3:
 \begin{lstlisting}
-compare transformed vectors, query codes, factors, and every local estimate
-add a packed/FastScan-equivalent path only after scalar parity
 rerun the same local replay over predeclared seeds 0..9
 apply the documented stop/continue condition
 \end{lstlisting}

@@ -2,7 +2,8 @@
 
 add_executable(unit_tests ut_main.cpp ut_ivf_error.cpp
                           ut_ivf_recall.cpp ut_cluster_estimator.cpp
-                          ut_single_estimator.cpp ut_searcher_correctness.cpp)
+                          ut_single_estimator.cpp ut_searcher_correctness.cpp
+                          ut_symphonyqg_scalar.cpp)
 target_link_libraries(
   unit_tests PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES} GTest::gtest
                      GTest::gtest_main)

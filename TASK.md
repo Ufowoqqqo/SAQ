@@ -52,19 +52,21 @@ the authoritative execution sequence for this branch.
 
 ## Current Evidence Status
 
-The existing local graph result is provisional. The implemented
-`symqg_vertex_proxy` preserves the current-vertex residual factor formula but
-omits SymphonyQG's random-sign FHT, power-of-two padding, packed FastScan path,
-and multiple-estimate traversal behavior. An independent review-time scalar
-reproduction indicates that adding FHT and padding may remove or reverse the
-apparent `saq_fast` local-rank advantage. This reproduction must be implemented
-and verified in the repository before the graph direction can pass its first
-research gate.
+The historical local graph result remains provisional. The old
+`symqg_vertex_proxy` omits random-sign FHT and power-of-two padding and is kept
+only as a historical control. Phase 2 now includes a parity-tested
+`symqg_fht_scalar` implementation aligned with pinned SymphonyQG revision
+`6124ddb34ee4d176edea1bd7ad38d1672343df28`. On the small GIST sample50k,
+subset-512, seed-0 sanity run, its top-1 disagreement is `0.304688`, compared
+with `0.867188` for the old proxy and `0.453125` for `saq_fast`. This supports
+the baseline correction, not a graph-search contribution.
 
-The current profiler measures independent query-near local-neighborhood
-ordering. It does not yet implement a frontier heap, visited set, path-dependent
-beam traversal, or SymphonyQG's multiple estimates. Its bit figures count code
-bits only and must not be interpreted as complete storage or runtime work.
+The current profiler still measures independent query-near local-neighborhood
+ordering. It does not implement packed FastScan, a frontier heap, visited set,
+path-dependent beam traversal, or SymphonyQG's multiple estimates. Its bit
+figures count code bits only and must not be interpreted as complete storage or
+runtime work. The scalar implementation and verification record is
+`docs/saq_symphonyqg_scalar_parity_2026_07_10.md`.
 
 ## Research Priority
 
@@ -107,14 +109,18 @@ have focused regression coverage, and full GIST/K4096/B=3 completes fresh
 build/load/search evaluation. The verification record is
 `docs/saq_phase1_correctness_verification_2026_07_10.md`.
 
-Execute Phase 2 next:
+The Phase 2 scalar milestone is complete: power-of-two padding, explicit seeded
+random-sign FHT, official 6-bit query quantization, transformed residual
+factors, and deterministic ordering all pass pinned-source parity in Release and
+ASAN Debug builds.
 
-1. implement power-of-two padding and deterministic random-sign FHT;
-2. make the rotation seed explicit and serializable;
-3. reproduce official 6-bit query quantization and vertex-residual factors in
-   the transformed space;
-4. establish scalar parity against pinned SymphonyQG source before adding a
-   packed/FastScan-equivalent path.
+Complete the remaining Phase 2 work next:
+
+1. implement a packed/FastScan-equivalent evaluation path;
+2. verify field-level accumulation and scalar-equivalent signed dots;
+3. establish packed-to-scalar rank-order parity on the synthetic fixture;
+4. record the packed code/factor storage and work model without using scalar
+   runtime as a performance baseline.
 
 After Phase 2 parity passes, apply the fixed-seed local replay stop gate in
 Phase 3.

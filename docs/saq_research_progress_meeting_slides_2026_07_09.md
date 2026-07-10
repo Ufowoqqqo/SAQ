@@ -1579,27 +1579,30 @@ claim. Its code-bit counts are not complete storage or runtime work.
 
 ---
 
-## 41A. Review-Time Baseline Correction
+## 41A. Source-Aligned Scalar Baseline Correction
 
-A scalar review-time reproduction added random-sign FHT and padded GIST from
-960 to 1024 dimensions. Across fixed seeds `0..4`:
+A committed scalar implementation now matches pinned SymphonyQG revision
+`6124ddb34ee4d176edea1bd7ad38d1672343df28` field by field. The first
+GIST sample50k / K512 / B=4 / subset-512 / seed-0 sanity run has 128 events:
 
-| estimator | top1 disagreement | mean exact-best rank | p90 rank | top8 containment |
-|---|---:|---:|---:|---:|
-| unrotated `symqg_vertex_proxy` | 0.87625 | 8.2775 | 19 | 0.61500 |
-| review-time FHT reproduction | 0.2475--0.2975 | 1.4425--1.5600 | 2--3 | 0.99625--1.0000 |
-| `saq_fast` | 0.46125 | 2.2575 | 5 | 0.98125 |
+| estimator | code_bits_only | top1 disagreement | mean exact-best rank | p90 rank | top4 containment |
+|---|---:|---:|---:|---:|---:|
+| unrotated `symqg_vertex_proxy` | 960 | 0.867188 | 8.85156 | 22 | 0.390625 |
+| `symqg_fht_scalar` | 1024 | 0.304688 | 1.54688 | 3 | 0.968750 |
+| `saq_fast` | 832 | 0.453125 | 1.93750 | 4 | 0.914062 |
 
 Interpretation:
 
 ```text
-The omitted transform may remove or reverse the apparent SAQ advantage.
-The old positive comparison is therefore provisional.
+The source-aligned scalar baseline is much stronger than the old proxy and is
+stronger than saq_fast in this small setting. The old positive comparison is
+invalid as comparative evidence.
 ```
 
-This reproduction is also not a validated result: it is not a committed
-runner and does not implement packed FastScan. Its role is to require the
-source-aligned Phase 2 comparison before further method design.
+Release and ASAN Debug parity cover transformed values, query codes, residual
+bits, factors, distances, and deterministic tie ordering. This run still does
+not implement packed FastScan, multiple estimates, or graph traversal, so it is
+a baseline-correction sanity result rather than a graph-search claim.
 
 ---
 
@@ -1617,7 +1620,7 @@ Required ordered work:
 
 ```text
 Phase 1: completed; correctness defaults and focused tests pass
-Phase 2: active; source-aligned scalar estimator, then parity-tested packed path
+Phase 2: scalar milestone complete; parity-tested packed path remains
 Phase 3: fixed-seed same-replay evaluation and stop/continue decision
 
 Phase 2 must reproduce:
@@ -1660,7 +1663,7 @@ limitation evidence rather than a method foundation.
 | global static segment-cost DP | SAQ default not dominated; near-frontier GIST plans slightly higher recall but slower | stopped as main method |
 | fac-error planner objective | objective changes GIST/CIFAR plans; GIST custom plan faster at same nprobe but not recall-matched | stopped as main method |
 | search-procedure scheduling | fast pruning and accurate early exit already strong; variance pruning weak but unsafe to tighten empirically | stopped as main method |
-| graph traversal compatibility | old unrotated proxy result is provisional; review-time FHT reproduction may match or dominate `saq_fast` | active only as a source-aligned baseline-validation gate |
+| graph traversal compatibility | parity-tested scalar SymphonyQG baseline is stronger than `saq_fast` on a small seed-0 sanity run; packed/traversal evidence absent | active only as a source-aligned baseline-validation gate |
 
 Speaker notes:
 
@@ -1739,15 +1742,13 @@ Do not start full HNSW/DiskANN integration yet.
 Immediate next step:
 
 ```text
-Phase 2: implement a deterministic source-aligned SymphonyQG scalar estimator
-with random-sign FHT, power-of-two padding, and an explicit rotation seed.
+Phase 2: implement the packed/FastScan-equivalent path and establish ordering
+parity with the validated source-aligned scalar estimator.
 ```
 
-Then complete scalar parity and execute Phase 3:
+Then execute Phase 3:
 
 ```text
-compare transformed vectors, query codes, factors, and every local estimate
-add a packed/FastScan-equivalent path only after scalar parity
 rerun the same local replay over predeclared seeds 0..9
 apply the documented stop/continue condition
 ```

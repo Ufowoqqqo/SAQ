@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <numeric>
 #include <sstream>
 #include <string>
@@ -20,6 +21,7 @@
 #include "define_options.h"
 
 #include "defines.hpp"
+#include "baseline/symphonyqg_scalar.hpp"
 #include "index/ivf.hpp"
 #include "quantization/saq_estimator.hpp"
 #include "utils/IO.hpp"
@@ -38,6 +40,8 @@ DEFINE_int32(graph_roots_per_query, 8, "Exact-nearest subset roots evaluated per
 DEFINE_int32(graph_max_events, 0, "Global event cap. 0 means no cap beyond query/root budgets.");
 DEFINE_int32(graph_topl_max, 32, "Largest top-L containment value reported as powers of two.");
 DEFINE_bool(graph_write_event_csv, true, "Write per-event estimator ranks.");
+DEFINE_uint64(graph_symqg_rotation_seed, 0,
+              "Deterministic random-sign FHT seed for the source-aligned SymphonyQG scalar estimator.");
 
 namespace {
 
@@ -90,6 +94,7 @@ struct CandidateScores {
     float exact = 0.0f;
     float rabitq_style = 0.0f;
     float symqg_vertex = 0.0f;
+    float symqg_fht_scalar = 0.0f;
     float saq_var = 0.0f;
     float saq_fast = 0.0f;
     float saq_full = 0.0f;
@@ -416,6 +421,10 @@ class GraphFrontierProfiler {
     std::vector<std::vector<PID>> adjacency_;
     OneBitStyleProxy one_bit_proxy_;
     SymphonyQGVertexProxy symqg_vertex_proxy_;
+    std::unique_ptr<baseline::SymphonyQGScalarEstimator> symqg_scalar_;
+    FloatRowMat symqg_rotated_data_;
+    std::vector<std::vector<baseline::SymphonyQGScalarNeighbor>>
+        symqg_encoded_adjacency_;
     std::vector<size_t> top_l_values_;
 
     size_t subset_ = 0;
@@ -427,9 +436,19 @@ class GraphFrontierProfiler {
     double exact_margin_sum_ = 0.0;
     double distinct_clusters_sum_ = 0.0;
     size_t events_ = 0;
+    size_t symqg_zero_residual_edges_ = 0;
 
     std::vector<EstimatorStats> stats_;
     std::ofstream event_csv_;
+
+    size_t exact_stat_ = 0;
+    size_t rabitq_proxy_stat_ = 0;
+    size_t symqg_vertex_proxy_stat_ = 0;
+    size_t symqg_fht_scalar_stat_ = 0;
+    size_t saq_var_stat_ = 0;
+    size_t saq_fast_stat_ = 0;
+    size_t saq_full_stat_ = 0;
+    size_t saq_prefix_stat_begin_ = 0;
 
     size_t add_stat(const std::string &name, double bits) {
         stats_.emplace_back(name, bits, top_l_values_.size());
@@ -441,12 +460,17 @@ class GraphFrontierProfiler {
         CHECK(saq_data);
         num_segments_ = saq_data->quant_plan.size();
 
-        add_stat("exact_float", static_cast<double>(ivf_.num_dim()) * 32.0);
-        add_stat("rabitq_style_proxy", static_cast<double>(ivf_.num_dim()));
-        add_stat("symqg_vertex_proxy", symqg_vertex_proxy_.approx_bits_per_candidate());
-        add_stat("saq_var", 0.0);
-        add_stat("saq_fast", saq_fast_bits(*saq_data));
-        add_stat("saq_full", saq_full_bits(*saq_data));
+        CHECK(symqg_scalar_);
+        exact_stat_ = add_stat("exact_float", static_cast<double>(ivf_.num_dim()) * 32.0);
+        rabitq_proxy_stat_ = add_stat("rabitq_style_proxy", static_cast<double>(ivf_.num_dim()));
+        symqg_vertex_proxy_stat_ =
+            add_stat("symqg_vertex_proxy", symqg_vertex_proxy_.approx_bits_per_candidate());
+        symqg_fht_scalar_stat_ = add_stat(
+            "symqg_fht_scalar", static_cast<double>(symqg_scalar_->padded_dimension()));
+        saq_var_stat_ = add_stat("saq_var", 0.0);
+        saq_fast_stat_ = add_stat("saq_fast", saq_fast_bits(*saq_data));
+        saq_full_stat_ = add_stat("saq_full", saq_full_bits(*saq_data));
+        saq_prefix_stat_begin_ = stats_.size();
         for (size_t prefix = 0; prefix <= num_segments_; ++prefix) {
             add_stat(fmt::format("saq_prefix_acc{}", prefix), saq_bits_for_prefix(*saq_data, prefix));
         }
@@ -456,14 +480,21 @@ class GraphFrontierProfiler {
         const FloatVec &curr_query,
         PID root_id,
         const std::vector<PID> &neighbors,
+        const baseline::SymphonyQGScalarQuery &symqg_query,
         SaqCluEstimator<DistType::L2Sqr> &saq_estimator) {
         std::vector<CandidateScores> scores;
         scores.reserve(neighbors.size());
 
+        CHECK(symqg_scalar_);
+        CHECK_LT(root_id, subset_);
+        const float current_distance = l2_sqr(curr_query, data_.row(root_id));
         PID prepared_cluster = std::numeric_limits<PID>::max();
         const auto &clusters = ivf_.get_pclusters();
 
-        for (PID id : neighbors) {
+        CHECK_EQ(symqg_encoded_adjacency_[root_id].size(), neighbors.size());
+        for (size_t neighbor_pos = 0; neighbor_pos < neighbors.size(); ++neighbor_pos) {
+            const PID id = neighbors[neighbor_pos];
+            CHECK_LT(id, subset_);
             CHECK_LT(id, id_to_loc_.size());
             const auto loc = id_to_loc_[id];
             CHECK(loc.valid);
@@ -478,6 +509,9 @@ class GraphFrontierProfiler {
             s.exact = l2_sqr(curr_query, data_.row(id));
             s.rabitq_style = one_bit_proxy_.estimate_l2(data_, curr_query, id);
             s.symqg_vertex = symqg_vertex_proxy_.estimate_l2(data_, curr_query, root_id, id);
+            s.symqg_fht_scalar = symqg_scalar_->estimate(
+                symqg_query, current_distance,
+                symqg_encoded_adjacency_[root_id][neighbor_pos]);
             s.saq_var = saq_estimator.varsEstDistSingle(loc.local_idx);
             s.saq_fast = saq_estimator.compFastDistSingle(loc.local_idx);
             s.saq_full = saq_estimator.compAccurateDist(loc.local_idx);
@@ -526,11 +560,14 @@ class GraphFrontierProfiler {
         }
     }
 
-    void add_event(PID query_id, PID root_id, const FloatVec &curr_query, SaqCluEstimator<DistType::L2Sqr> &saq_estimator) {
+    void add_event(PID query_id, PID root_id, const FloatVec &curr_query,
+                   const baseline::SymphonyQGScalarQuery &symqg_query,
+                   SaqCluEstimator<DistType::L2Sqr> &saq_estimator) {
         const auto &neighbors = adjacency_[root_id];
         CHECK(!neighbors.empty());
 
-        auto scores = score_event(curr_query, root_id, neighbors, saq_estimator);
+        auto scores = score_event(
+            curr_query, root_id, neighbors, symqg_query, saq_estimator);
         size_t exact_best_pos = 0;
         size_t exact_second_pos = scores.size() > 1 ? 1 : 0;
         for (size_t i = 1; i < scores.size(); ++i) {
@@ -568,38 +605,43 @@ class GraphFrontierProfiler {
         for (size_t i = 0; i < scores.size(); ++i) {
             estimate[i] = scores[i].exact;
         }
-        add_estimator_event(0, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
+        add_estimator_event(exact_stat_, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
 
         for (size_t i = 0; i < scores.size(); ++i) {
             estimate[i] = scores[i].rabitq_style;
         }
-        add_estimator_event(1, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
+        add_estimator_event(rabitq_proxy_stat_, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
 
         for (size_t i = 0; i < scores.size(); ++i) {
             estimate[i] = scores[i].symqg_vertex;
         }
-        add_estimator_event(2, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
+        add_estimator_event(symqg_vertex_proxy_stat_, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
+
+        for (size_t i = 0; i < scores.size(); ++i) {
+            estimate[i] = scores[i].symqg_fht_scalar;
+        }
+        add_estimator_event(symqg_fht_scalar_stat_, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
 
         for (size_t i = 0; i < scores.size(); ++i) {
             estimate[i] = scores[i].saq_var;
         }
-        add_estimator_event(3, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
+        add_estimator_event(saq_var_stat_, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
 
         for (size_t i = 0; i < scores.size(); ++i) {
             estimate[i] = scores[i].saq_fast;
         }
-        add_estimator_event(4, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
+        add_estimator_event(saq_fast_stat_, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
 
         for (size_t i = 0; i < scores.size(); ++i) {
             estimate[i] = scores[i].saq_full;
         }
-        add_estimator_event(5, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
+        add_estimator_event(saq_full_stat_, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
 
         for (size_t prefix = 0; prefix <= num_segments_; ++prefix) {
             for (size_t i = 0; i < scores.size(); ++i) {
                 estimate[i] = scores[i].saq_prefix[prefix];
             }
-            add_estimator_event(6 + prefix, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
+            add_estimator_event(saq_prefix_stat_begin_ + prefix, query_id, root_id, scores, estimate, exact_best_pos, exact_best_id, exact_gap, distinct_clusters);
         }
     }
 
@@ -612,7 +654,10 @@ class GraphFrontierProfiler {
         for (const size_t l : top_l_values_) {
             out << ",top" << l << "_containment";
         }
-        out << ",avg_exact_margin,avg_distinct_clusters_per_event\n";
+        out << ",avg_exact_margin,avg_distinct_clusters_per_event"
+            << ",symqg_padded_dimension,symqg_rotation_seed"
+            << ",symqg_source_revision,symqg_evaluation_path"
+            << ",symqg_zero_residual_edges\n";
 
         for (const auto &s : stats_) {
             const double events = static_cast<double>(s.events);
@@ -630,7 +675,12 @@ class GraphFrontierProfiler {
             }
             out << ','
                 << (events_ ? exact_margin_sum_ / static_cast<double>(events_) : 0.0) << ','
-                << (events_ ? distinct_clusters_sum_ / static_cast<double>(events_) : 0.0)
+                << (events_ ? distinct_clusters_sum_ / static_cast<double>(events_) : 0.0) << ','
+                << symqg_scalar_->padded_dimension() << ','
+                << symqg_scalar_->rotation_seed() << ','
+                << baseline::SymphonyQGScalarEstimator::kSourceRevision << ','
+                << "scalar" << ','
+                << symqg_zero_residual_edges_
                 << '\n';
         }
         std::cout << "Aggregate CSV written to: " << path << '\n';
@@ -646,9 +696,12 @@ class GraphFrontierProfiler {
         out << "## Scope\n\n";
         out << "This provisional diagnostic independently scores fixed query-root\n";
         out << "neighbor sets. It does not execute a frontier or path-dependent graph\n";
-        out << "traversal. The SymphonyQG formula-level vertex proxy omits random-sign\n";
-        out << "FHT, power-of-two padding, packed FastScan, and multiple-estimate\n";
-        out << "behavior, so it is not a source-aligned SymphonyQG baseline.\n\n";
+        out << "traversal. `symqg_fht_scalar` reproduces the pinned SymphonyQG\n";
+        out << "random-sign FHT, power-of-two padding, query quantization, edge code,\n";
+        out << "stored factors, and scalar distance formula. `symqg_vertex_proxy` is\n";
+        out << "retained only as a historical unrotated proxy. This diagnostic does not\n";
+        out << "reproduce packed FastScan, multiple-estimate behavior, or an end-to-end\n";
+        out << "SymphonyQG graph traversal.\n\n";
 
         out << "## Inputs\n\n";
         out << "- data_file: `" << paths_.data_file << "`\n";
@@ -659,6 +712,16 @@ class GraphFrontierProfiler {
         out << "- max_queries: " << max_queries_ << "\n";
         out << "- roots_per_query: " << roots_per_query_ << "\n";
         out << "- events: " << events_ << "\n";
+        out << "- SymphonyQG source_revision: `"
+            << baseline::SymphonyQGScalarEstimator::kSourceRevision << "`\n";
+        out << "- SymphonyQG evaluation_path: `scalar`\n";
+        out << "- SymphonyQG original_dimension: " << symqg_scalar_->dimension() << "\n";
+        out << "- SymphonyQG padded_dimension: " << symqg_scalar_->padded_dimension() << "\n";
+        out << "- SymphonyQG rotation_seed: " << symqg_scalar_->rotation_seed() << "\n";
+        out << "- SymphonyQG query_bits: "
+            << baseline::SymphonyQGScalarEstimator::kQueryBits << "\n";
+        out << "- SymphonyQG zero_residual_edges: "
+            << symqg_zero_residual_edges_ << "\n";
         out << "- SAQ quant_plan: `" << format_quant_plan(*ivf_.get_saq_data()) << "`\n";
         out << "- avg_exact_margin: " << (events_ ? exact_margin_sum_ / static_cast<double>(events_) : 0.0) << "\n";
         out << "- avg_distinct_clusters_per_event: "
@@ -689,10 +752,11 @@ class GraphFrontierProfiler {
         }
 
         out << "\n## Interpretation Rule\n\n";
-        out << "Do not interpret this provisional proxy comparison as an\n";
-        out << "SAQ-versus-SymphonyQG result. Apply the graph-direction stop gate only\n";
-        out << "after a source-aligned FHT/padded estimator and complete work accounting\n";
-        out << "are available.\n";
+        out << "The `symqg_fht_scalar` row can be used to evaluate scalar estimator\n";
+        out << "ordering under the pinned transform semantics. It is not a packed-path\n";
+        out << "runtime comparison and not an end-to-end SAQ-versus-SymphonyQG graph\n";
+        out << "result. Complete storage/work accounting and graph traversal remain\n";
+        out << "separate research gates.\n";
 
         std::cout << "Summary written to: " << path << '\n';
     }
@@ -735,6 +799,41 @@ class GraphFrontierProfiler {
 
         one_bit_proxy_.build(data_);
         symqg_vertex_proxy_.build(data_);
+        symqg_scalar_ = std::make_unique<baseline::SymphonyQGScalarEstimator>(
+            static_cast<size_t>(data_.cols()), FLAGS_graph_symqg_rotation_seed);
+        symqg_rotated_data_.resize(subset_, symqg_scalar_->padded_dimension());
+        utils::StopW rotation_timer;
+        for (size_t id = 0; id < subset_; ++id) {
+            FloatVec rotated;
+            symqg_scalar_->rotate(data_.row(id).data(), rotated);
+            symqg_rotated_data_.row(id) = rotated;
+        }
+        std::cout << "SymphonyQG scalar data rotation completed in "
+                  << rotation_timer.getElapsedTimeMili() / 1000.0 << "s"
+                  << " (source=" << baseline::SymphonyQGScalarEstimator::kSourceRevision
+                  << ", seed=" << symqg_scalar_->rotation_seed()
+                  << ", padded_dim=" << symqg_scalar_->padded_dimension() << ")\n";
+
+        utils::StopW encoding_timer;
+        symqg_encoded_adjacency_.resize(subset_);
+        for (size_t root = 0; root < subset_; ++root) {
+            auto &encoded_neighbors = symqg_encoded_adjacency_[root];
+            encoded_neighbors.resize(adjacency_[root].size());
+            for (size_t neighbor_pos = 0;
+                 neighbor_pos < adjacency_[root].size(); ++neighbor_pos) {
+                const PID neighbor = adjacency_[root][neighbor_pos];
+                symqg_scalar_->encodeNeighbor(
+                    symqg_rotated_data_.row(root).data(),
+                    symqg_rotated_data_.row(neighbor).data(),
+                    encoded_neighbors[neighbor_pos]);
+                if (encoded_neighbors[neighbor_pos].zero_residual) {
+                    ++symqg_zero_residual_edges_;
+                }
+            }
+        }
+        std::cout << "SymphonyQG scalar edge encoding completed in "
+                  << encoding_timer.getElapsedTimeMili() / 1000.0 << "s"
+                  << " (zero_residual_edges=" << symqg_zero_residual_edges_ << ")\n";
         initialize_stats();
 
         if (FLAGS_graph_write_event_csv) {
@@ -751,13 +850,14 @@ class GraphFrontierProfiler {
         utils::StopW timer;
         for (PID qid = 0; qid < max_queries_; ++qid) {
             const FloatVec curr_query = query_.row(qid);
+            const auto symqg_query = symqg_scalar_->prepareQuery(curr_query.data());
             SaqCluEstimator<DistType::L2Sqr> saq_estimator(*ivf_.get_saq_data(), searcher_cfg_, curr_query);
             const auto roots = exact_nearest_subset_roots(data_, curr_query, subset_, roots_per_query_);
             for (PID root : roots) {
                 if (max_events_ != 0 && events_ >= max_events_) {
                     break;
                 }
-                add_event(qid, root, curr_query, saq_estimator);
+                add_event(qid, root, curr_query, symqg_query, saq_estimator);
             }
             if (max_events_ != 0 && events_ >= max_events_) {
                 break;
