@@ -631,14 +631,13 @@ class GraphFrontierProfiler {
         ensure_parent_dir(path);
         std::ofstream out(path);
 
-        out << "# Graph Expansion-Order Profiler Summary\n\n";
+        out << "# Local Neighbor-Order Profiler Summary\n\n";
         out << "## Scope\n\n";
-        out << "This diagnostic compares exact local graph-expansion ordering with a\n";
-        out << "global 1-bit proxy, a SymphonyQG formula-level vertex proxy, and SAQ\n";
-        out << "staged estimates on a fixed exact-kNN adjacency replay. The vertex proxy\n";
-        out << "uses SymphonyQG's current-vertex residual centering and RaBitQ factor\n";
-        out << "formula in the profiler data space, but it is not a full SymphonyQG\n";
-        out << "implementation or FastScan layout reproduction.\n\n";
+        out << "This provisional diagnostic independently scores fixed query-root\n";
+        out << "neighbor sets. It does not execute a frontier or path-dependent graph\n";
+        out << "traversal. The SymphonyQG formula-level vertex proxy omits random-sign\n";
+        out << "FHT, power-of-two padding, packed FastScan, and multiple-estimate\n";
+        out << "behavior, so it is not a source-aligned SymphonyQG baseline.\n\n";
 
         out << "## Inputs\n\n";
         out << "- data_file: `" << paths_.data_file << "`\n";
@@ -655,7 +654,7 @@ class GraphFrontierProfiler {
             << (events_ ? distinct_clusters_sum_ / static_cast<double>(events_) : 0.0) << "\n\n";
 
         out << "## Aggregate Metrics\n\n";
-        out << "| estimator | bits/candidate | top1 disagreement | mean rank | p90 rank |";
+        out << "| estimator | code_bits_only | top1 disagreement | mean rank | p90 rank |";
         for (const size_t l : top_l_values_) {
             out << " top" << l << " containment |";
         }

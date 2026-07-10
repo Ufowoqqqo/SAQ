@@ -264,8 +264,8 @@ Required evidence:
 
 - current IVF-residual SAQ frontiers touch many residual-reference clusters, or
   estimator preparation becomes a real overhead;
-- a graph-side SAQ layout has a clear advantage over simply using SymphonyQG's
-  RaBitQ/FastScan layout;
+- a graph-side SAQ layout has a defensible incremental benefit relative to
+  SymphonyQG's RaBitQ/FastScan layout;
 - duplicated neighbor-side SAQ segment codes do not create prohibitive memory
   overhead.
 

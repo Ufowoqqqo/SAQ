@@ -1,4 +1,10 @@
-# SymphonyQG Estimator Extraction and Stronger Local Baseline
+# SymphonyQG Formula-Level Proxy and Provisional Local Evidence
+
+> **Evidence status (revised 2026-07-10): historical and provisional.** The
+> implemented `symqg_vertex_proxy` reproduces part of the estimator formula but
+> omits SymphonyQG's random-sign FHT and power-of-two padding. Those omissions
+> change rank quality, not only implementation speed. This note must not be
+> cited as evidence of a comparative SAQ/SymphonyQG advantage.
 
 ## Purpose
 
@@ -7,15 +13,16 @@ weak global-centered 1-bit proxy. That proxy was useful as a first novelty gate,
 but it was not close enough to SymphonyQG's graph estimator to support a
 research claim.
 
-This note records a stronger local baseline extracted from SymphonyQG source
-code. The goal is still diagnostic:
+This note records a formula-level proxy informed by SymphonyQG source code.
+The original diagnostic question was:
 
 ```text
 Does SAQ retain a local graph-expansion rank-recovery advantage after replacing
 the weak global proxy with a vertex-centered SymphonyQG/RaBitQ-style estimator?
 ```
 
-This is not yet a full SymphonyQG integration.
+This is neither a source-aligned SymphonyQG estimator nor a graph-search
+integration.
 
 ## Source Review
 
@@ -45,7 +52,9 @@ The relevant implementation points are:
 ## Extracted Formula
 
 For a current graph vertex `c`, one outgoing neighbor `x`, and query `q`,
-SymphonyQG stores a 1-bit code for the rotated residual:
+SymphonyQG first pads vectors to a power-of-two dimension and applies a shared
+random-sign FHT. In that common transformed space, it stores a 1-bit code for
+the residual:
 
 ```text
 r = x - c
@@ -87,9 +96,10 @@ dist(q, x | c) =
   + factor_vq * min(q)
 ```
 
-This preserves SymphonyQG's current-vertex residual centering and factor-based
-neighbor scoring, which are the important differences from the old global
-1-bit proxy.
+The formula preserves SymphonyQG's current-vertex residual centering and
+factor-based neighbor scoring. The implemented proxy applies it directly in
+the original 960-dimensional GIST space, so it does not preserve the official
+estimator geometry.
 
 ## Implementation in This Branch
 
@@ -103,7 +113,7 @@ It is used only by the offline graph-frontier profiler:
   prefix refinements;
 - it does not change the SAQ index, query path, or stored code format.
 
-Important omissions are intentional and must be kept visible:
+Important omissions must be kept visible:
 
 - no FHT rotation from SymphonyQG is reproduced;
 - no padded power-of-two dimension is used in the extracted proxy;
@@ -112,8 +122,10 @@ Important omissions are intentional and must be kept visible:
 - the measurement uses held-out queries only for evaluation, not for training or
   selecting a method.
 
-Therefore, `symqg_vertex_proxy` is a stronger formula-level local baseline, not
-a complete SymphonyQG system baseline.
+Therefore, `symqg_vertex_proxy` is an incomplete formula-level diagnostic, not
+a valid SymphonyQG comparison baseline. The profiler also evaluates each
+query-root neighbor set independently; it has no frontier heap, visited set,
+path-dependent traversal, or SymphonyQG multiple-estimate behavior.
 
 ## Commands
 
@@ -167,7 +179,7 @@ Replay budget:
 - average exact best-vs-second margin: `0.0963506`
 - average distinct IVF clusters per expansion event: `17.0925`
 
-| estimator | bits/candidate | top-1 disagreement | mean rank | p90 rank | top-4 containment | top-8 containment |
+| estimator | code_bits_only | top-1 disagreement | mean rank | p90 rank | top-4 containment | top-8 containment |
 |---|---:|---:|---:|---:|---:|---:|
 | `rabitq_style_proxy` | 960 | 0.9000 | 12.9725 | 26 | 0.2850 | 0.4300 |
 | `symqg_vertex_proxy` | 960 | 0.8725 | 8.7400 | 20 | 0.3625 | 0.5825 |
@@ -185,7 +197,7 @@ Replay budget:
 - average exact best-vs-second margin: `0.0887893`
 - average distinct IVF clusters per expansion event: `13.6312`
 
-| estimator | bits/candidate | top-1 disagreement | mean rank | p90 rank | top-4 containment | top-8 containment |
+| estimator | code_bits_only | top-1 disagreement | mean rank | p90 rank | top-4 containment | top-8 containment |
 |---|---:|---:|---:|---:|---:|---:|
 | `rabitq_style_proxy` | 960 | 0.90625 | 12.4812 | 27 | 0.25625 | 0.44625 |
 | `symqg_vertex_proxy` | 960 | 0.87625 | 8.2775 | 19 | 0.38250 | 0.61500 |
@@ -194,10 +206,9 @@ Replay budget:
 | `saq_prefix_acc2` | 2432 | 0.02750 | 1.0300 | 1 | 1.00000 | 1.00000 |
 | `saq_full` | 3648 | 0.00625 | 1.00625 | 1 | 1.00000 | 1.00000 |
 
-## Interpretation
+## Historical Interpretation And Correction
 
-The stronger local baseline changes the novelty-gate result in the right
-direction but does not eliminate the SAQ signal.
+The formula-level proxy improved over the older global proxy:
 
 Compared with the old global proxy, `symqg_vertex_proxy` is consistently
 better:
@@ -207,25 +218,42 @@ better:
 - top-8 containment improves from 0.4300 to 0.5825 on subset 1024 and from
   0.44625 to 0.61500 on subset 4096.
 
-However, SAQ staged estimates still have a much stronger local expansion-order
-curve:
+In the same incomplete comparison, SAQ staged estimates had a better
+local-neighborhood rank curve:
 
-- at 832 bits/candidate, `saq_fast` has p90 rank 4-5 while
+- at 832 code bits per candidate, `saq_fast` has p90 rank 4-5 while
   `symqg_vertex_proxy` has p90 rank 19-20;
-- at 1472 bits/candidate, `saq_prefix_acc1` has p90 rank 2 and near-complete
-  top-4 containment;
-- at 2432 bits/candidate, `saq_prefix_acc2` nearly recovers exact local
+- at 1472 code bits per candidate, `saq_prefix_acc1` evaluates the first SAQ
+  segment accurately for every candidate and has p90 rank 2;
+- at 2432 code bits per candidate, `saq_prefix_acc2` evaluates the first two
+  segments accurately for every candidate and nearly recovers exact local
   ordering.
 
-The result supports one narrower claim:
+These nominal code-bit counts omit factors, padding, residual-reference
+metadata, memory layout, estimator preparation, and runtime. They do not
+establish a complete-work advantage.
+
+A review-time scalar reproduction added GIST padding from 960 to 1024
+dimensions and random-sign FHT for five fixed seeds. It was not committed as a
+durable runner and did not reproduce the official packed FastScan path, but it
+is a material warning that the old conclusion may reverse:
+
+| estimator | top-1 disagreement | mean exact-best rank | p90 rank | top-8 containment |
+|---|---:|---:|---:|---:|
+| current unrotated `symqg_vertex_proxy` | 0.87625 | 8.2775 | 19 | 0.61500 |
+| review-time FHT reproduction, seeds 0--4 | 0.2475--0.2975 | 1.4425--1.5600 | 2--3 | 0.99625--1.0000 |
+| current `saq_fast` | 0.46125 | 2.2575 | 5 | 0.98125 |
+
+The only supported conclusion is:
 
 ```text
-SAQ's segmented progressive estimates can recover local graph-expansion order
-more effectively than a formula-level vertex-centered SymphonyQG/RaBitQ proxy
-on this diagnostic GIST replay.
+The incomplete unrotated proxy is not an adequate SymphonyQG baseline. A
+source-aligned implementation is required before deciding whether SAQ has any
+local rank-quality advantage.
 ```
 
-It does not yet support a full graph-index method claim.
+The review-time reproduction is itself provisional and must not be reported as
+a validated SymphonyQG result.
 
 ## Remaining Limitations
 
@@ -240,19 +268,20 @@ IVF clusters, so estimator preparation overhead remains a central concern.
 Third, the evidence is still GIST sample50k/K512/B=4. It is useful for a
 directional decision, but not enough for a paper-level claim.
 
-Fourth, local rank recovery is not the same as end-to-end graph search
-throughput. The next positive step must connect this local ordering signal to a
-concrete graph traversal policy with measured overhead.
+Fourth, local rank recovery is not the same as end-to-end graph search. The
+current profiler has no traversal state and cannot support a throughput or
+path-stability claim.
 
-## Decision
+## Superseding Decision
 
-Continue only if the next step can either:
+Follow `docs/saq_graph_direction_research_validity_plan_2026_07_10.md`:
 
-1. extract or run a fuller SymphonyQG baseline in the same local expansion
-   setting, or
-2. propose a SAQ-specific graph traversal mechanism whose overhead is clearly
-   bounded and whose advantage is not already explained by SymphonyQG-style
-   vertex residual scoring.
+1. complete the correctness prerequisites;
+2. implement scalar and packed/FastScan-equivalent source-aligned estimators
+   with explicit FHT seed and power-of-two padding;
+3. verify parity against pinned SymphonyQG source;
+4. rerun the local replay over the fixed seed schedule and apply the documented
+   stop condition.
 
-If neither is feasible, this evidence should be treated as a limitation note
-instead of a main-method foundation.
+Do not design a traversal policy or broaden the dataset matrix unless this gate
+passes.

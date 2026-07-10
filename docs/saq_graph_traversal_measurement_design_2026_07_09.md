@@ -14,6 +14,13 @@ first profiler must compare SAQ's segmented progressive estimates against a
 RaBitQ/SymphonyQG-style graph-quantization baseline or the direction risks
 duplicating existing work.
 
+Implementation-status correction (2026-07-10): the current profiler implements
+independent local-neighborhood replay, not frontier or traversal replay. Its
+`symqg_vertex_proxy` is an unrotated formula-level diagnostic and is not the
+required source-aligned baseline. See
+`docs/saq_graph_direction_research_validity_plan_2026_07_10.md` for the
+superseding execution sequence.
+
 The goal is not to integrate SAQ into HNSW or DiskANN yet. The goal is to
 answer a smaller falsifiable question:
 
@@ -95,9 +102,12 @@ The lower-level estimator structure is:
 - `SaqEstimatorBase` splits the query by SAQ segment and prepares one CAQ
   estimator per segment;
 - `SaqCluEstimator` aggregates per-segment `varsEstDist`, `compFastDist`, and
-  `compAccurateDist` over cluster-packed SAQ data;
-- `SaqCluEstimatorSingle` exposes single-vector versions for cluster-packed
-  data;
+  `compAccurateDist` over cluster-packed SAQ data and exposes the single-vector
+  methods used by the profiler: `varsEstDistSingle`, `compFastDistSingle`,
+  `compAccurateDist`, `compFastDistSegmentSingle`, and
+  `compAccurateDistSegmentSingle`;
+- `SaqCluEstimatorSingle` is a separate class, but it is not used by the
+  implemented profiler;
 - `SaqSingleEstimator` can score a `SaqSingleDataWrapper`, but the current IVF
   index stores vectors in cluster-packed form.
 
@@ -185,19 +195,25 @@ For each query-candidate pair, compare:
    - squared L2 distance on original vectors, or equivalently on PCA-rotated
      vectors because PCA rotation preserves L2 distance.
 2. `saq_full`
-   - `SaqCluEstimatorSingle::compAccurateDist`, using all stored quantized
-     bits.
+   - `SaqCluEstimator::compAccurateDist`, using all stored quantized bits for
+     one cluster-local vector.
 3. `saq_fast`
-   - `SaqCluEstimatorSingle::compFastDist`, using the 1-bit fast estimator.
+   - `SaqCluEstimator::compFastDistSingle`, using the 1-bit fast estimator.
 4. `saq_var`
-   - `SaqCluEstimatorSingle::varsEstDist`, using the variance-stage estimate.
-5. `saq_refine_top_r`
-   - a diagnostic counterfactual: sort by a cheap estimate, then refine the top
-     `r` candidates with `saq_full`.
+   - `SaqCluEstimator::varsEstDistSingle`, using the variance-stage estimate.
+5. `saq_prefix_acc_p`
+   - the implemented segment-prefix counterfactual: for every candidate,
+     evaluate segments `[0,p)` accurately and all remaining positive-bit
+     segments with their 1-bit fast estimates.
+6. `saq_refine_top_r`
+   - an unimplemented candidate-selection counterfactual: sort by a cheap
+     estimate, then evaluate only the top `r` candidates with `saq_full`.
 
-The `saq_refine_top_r` setting is not a method yet. Its purpose is to measure
-how much refinement is needed to recover exact-float expansion choices. Report
-the whole rank distribution rather than selecting a tuned `r`.
+These are two different refinement axes. The existing CSV rows named
+`saq_prefix_acc*` measure segment-prefix refinement for every candidate; they
+must not be described as top-`r` candidate refinement. A future
+`saq_refine_top_r` curve would measure how many candidates require complete
+evaluation and must be labeled separately.
 
 ## Local Expansion Metrics
 
@@ -256,7 +272,7 @@ Report:
 This second stage is closer to real graph search, but it is still a replay. It
 should not change graph construction or SAQ index format.
 
-## Refinement Counterfactuals
+## Proposed Candidate-Refinement Counterfactual
 
 Do not tune thresholds from benchmark recall. The first refinement analysis
 should use rank-based counterfactuals:
@@ -276,6 +292,10 @@ r = 1, 2, 4, 8, ..., degree
 This is not a method hyperparameter because no value of `r` is selected for
 deployment in this measurement. It is a diagnostic curve that estimates how
 expensive a stable traversal-aware policy might need to be.
+
+This candidate-refinement counterfactual is not implemented in the current
+profiler. The reported `saq_prefix_acc*` rows instead replace fast estimates
+with accurate estimates for a prefix of SAQ segments on every candidate.
 
 If the curve says almost all neighbors must be refined, the graph direction is
 weak. If small `r` recovers most exact-best expansions, the next method could
@@ -301,9 +321,13 @@ The prototype builds a deterministic exact-kNN adjacency on the first
 `-graph_subset` base vectors, chooses query-near roots inside that fixed subset,
 and reports local expansion-order rank metrics. It compares exact float
 distance, a `rabitq_style_proxy` single-stage 1-bit centered-direction estimate,
-SAQ variance/fast/full estimates, and a SAQ prefix-accurate refinement curve.
-The proxy is included as a novelty gate against SymphonyQG/RaBitQ-style graph
-quantization; it is not a SymphonyQG implementation.
+the provisional `symqg_vertex_proxy`, SAQ variance/fast/full estimates, and an
+all-candidate SAQ segment-prefix accurate curve. Neither proxy passes the
+required source-aligned SymphonyQG novelty gate.
+
+Despite the binary name, this implementation does not maintain a frontier,
+visited set, or path-dependent traversal state. Here an "expansion event" means
+one independently scored fixed neighbor set around a selected root.
 
 Expected inputs:
 
@@ -321,7 +345,8 @@ Expected internal steps:
 2. Load base and query vectors.
 3. Build `id_to_cluster_local` by scanning `IVF::get_pclusters()`.
 4. Load or build fixed adjacency.
-5. For each query, construct one `SaqCluEstimatorSingle`.
+5. For each query, construct one `SaqCluEstimator` over the loaded
+   cluster-packed SAQ data.
 6. For each candidate id, prepare the estimator for the candidate's cluster and
    score its local offset.
 7. Write one aggregate CSV and one Markdown summary.

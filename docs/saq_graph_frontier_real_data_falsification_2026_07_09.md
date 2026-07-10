@@ -1,5 +1,12 @@
 # SAQ Graph Frontier Real-Data Falsification
 
+> **Evidence status (revised 2026-07-10): historical and provisional.** This
+> experiment compares SAQ with an intentionally weak, unrotated
+> `rabitq_style_proxy`. It does not compare with a source-aligned SymphonyQG
+> estimator and does not execute graph traversal. The tables remain as a record
+> of the initial diagnostic, not as evidence that SAQ outperforms RaBitQ or
+> SymphonyQG.
+
 ## Purpose
 
 This note records the first real-data run of `bin/profile_graph_frontier`.
@@ -93,7 +100,7 @@ Replay budget:
 - average exact best-vs-second margin: `0.0963506`
 - average distinct IVF residual clusters per expansion event: `17.0925`
 
-| estimator | bits/candidate | top-1 disagreement | mean rank | p90 rank | top-4 containment | top-8 containment |
+| estimator | code_bits_only | top-1 disagreement | mean rank | p90 rank | top-4 containment | top-8 containment |
 |---|---:|---:|---:|---:|---:|---:|
 | `rabitq_style_proxy` | 960 | 0.9000 | 12.9725 | 26 | 0.2850 | 0.4300 |
 | `saq_var` | 0 | 0.9850 | 17.1875 | 29 | 0.1050 | 0.2150 |
@@ -111,7 +118,7 @@ Replay budget:
 - average exact best-vs-second margin: `0.0887893`
 - average distinct IVF residual clusters per expansion event: `13.6312`
 
-| estimator | bits/candidate | top-1 disagreement | mean rank | p90 rank | top-4 containment | top-8 containment |
+| estimator | code_bits_only | top-1 disagreement | mean rank | p90 rank | top-4 containment | top-8 containment |
 |---|---:|---:|---:|---:|---:|---:|
 | `rabitq_style_proxy` | 960 | 0.90625 | 12.4812 | 27 | 0.25625 | 0.44625 |
 | `saq_var` | 0 | 0.97500 | 17.6700 | 29 | 0.11000 | 0.20250 |
@@ -122,28 +129,39 @@ Replay budget:
 
 ## Interpretation
 
-This is a positive falsification result for the current graph direction, but
-only against the current proxy baseline.
+This historical diagnostic rejected the narrow hypothesis that the unrotated
+global proxy would match SAQ's local-neighborhood ordering. It did not pass the
+graph direction's SymphonyQG novelty gate.
 
 The main signal is not that full SAQ can score graph candidates. The useful
-signal is that SAQ's staged estimator gives a much better frontier rank curve
-than the one-stage `rabitq_style_proxy` at comparable or moderately higher
-bit-read budgets:
+signal was that SAQ's staged estimator gave a better independent-neighborhood
+rank curve than the one-stage `rabitq_style_proxy` at comparable or moderately
+higher nominal code-bit counts:
 
-- at 832 bits/candidate, `saq_fast` has p90 exact-best rank 4-5, while the
-  960-bit proxy has p90 rank 26-27;
-- at 1472 bits/candidate, refining only the first SAQ segment moves p90 rank to
-  2 and gives almost complete top-4 containment;
-- at 2432 bits/candidate, refining the first two SAQ segments nearly recovers
-  exact local expansion order.
+- at 832 code bits per candidate, `saq_fast` has p90 exact-best rank 4-5,
+  while the 960-bit proxy has p90 rank 26-27;
+- at 1472 code bits per candidate, evaluating the first SAQ segment accurately
+  for every candidate moves p90 rank to 2 and gives almost complete top-4
+  containment;
+- at 2432 code bits per candidate, evaluating the first two SAQ segments
+  accurately for every candidate nearly recovers exact local-neighborhood
+  order.
+
+These counts omit factors, residual-reference metadata, padding, memory
+layout, estimator preparation, and runtime. They therefore cannot establish a
+work advantage.
 
 This suggests a plausible SAQ-specific graph question:
 
 ```text
-Can a graph traversal refine only the high-variance/high-bit SAQ head segments
-for ambiguous frontier candidates and recover stable expansion order with less
-work than full SAQ scoring?
+Could a graph traversal use SAQ segment stages to recover stable frontier
+decisions with less complete work than a source-aligned graph-quantization
+baseline?
 ```
+
+The present experiment does not answer this question. It evaluates fixed
+neighbor sets independently and has no frontier heap, visited set,
+path-dependent expansion, or multiple-estimate behavior.
 
 ## Limitations
 
@@ -167,19 +185,12 @@ preparation overhead.
 Fourth, `saq_var` is not useful in this setting. The useful curve begins at the
 1-bit fast code and improves through prefix-accurate segment refinement.
 
-## Decision
+## Superseding Decision
 
-Continue the graph direction for one more focused step.
-
-The next step should not be full HNSW/DiskANN integration. It should strengthen
-the novelty gate by replacing the weak global-centered proxy with a more
-faithful query-unaware baseline:
-
-```text
-Implement or approximate a RaBitQ/SymphonyQG-style graph estimator with
-per-event or vertex-centered normalization, then rerun the same local expansion
-profile.
-```
-
-Stop or reframe if the SAQ prefix curve loses its advantage against that
-stronger baseline.
+The original continuation decision is superseded by
+`docs/saq_graph_direction_research_validity_plan_2026_07_10.md`. Complete the
+correctness prerequisites, implement a source-aligned SymphonyQG estimator
+with FHT and power-of-two padding, and rerun the same local replay over the
+predeclared rotation seeds. Stop using local rank recovery as the graph
+direction's foundation if that baseline matches or dominates SAQ after
+complete work accounting.

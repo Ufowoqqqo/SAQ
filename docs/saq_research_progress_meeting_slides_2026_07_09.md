@@ -2,7 +2,9 @@
 
 From Local Plan Corrections To Graph-Traversal Compatibility
 
-Date: 2026-07-09
+Original date: 2026-07-09
+
+Research-validity revision: 2026-07-10
 
 Audience assumption: familiar with vector search and approximate nearest
 neighbor search at a high level, but not familiar with SAQ internals or the
@@ -65,7 +67,7 @@ Current branch:
 
 ```text
 saq-graph-traversal-analysis
-latest commit at deck time: d94279d
+validity plan recorded at: a33f7fe
 ```
 
 Current branch starts from `saq-correctness-base`, not from the old fixed-policy
@@ -95,7 +97,10 @@ What we have as evidence:
 - Static global segment-cost DP: SAQ default is not dominated on simple risk-cost frontiers.
 - Fac-error planner objective: plan can move, but the GIST custom plan does not recover default recall before losing the QPS advantage.
 - Search-procedure measurements: fast-stage pruning and accurate-stage early exit are already effective; variance pruning is weak but hard to tighten safely.
-- Graph-traversal direction: SAQ staged estimates show strong local rank recovery against a formula-level SymphonyQG-style vertex proxy, but the baseline still needs fuller alignment.
+- Graph-traversal direction: the old unrotated formula-level proxy comparison
+  is provisional. A review-time FHT reproduction may remove or reverse the
+  apparent SAQ local-rank advantage, so no SAQ-versus-SymphonyQG conclusion is
+  currently supported.
 
 Speaker notes:
 
@@ -284,7 +289,7 @@ Code:
 
 ```text
 saqlib/quantization/saq_data.hpp
-  SaqDataWrapper::dynamic_programming(...)
+  SaqDataMaker::dynamic_programming(...)
 ```
 
 Speaker notes:
@@ -1299,7 +1304,8 @@ axis than a single-stage RaBitQ/FastScan-style graph estimator.
 
 Speaker notes:
 
-- This is why the current branch immediately built a SymphonyQG baseline path.
+- This is why the current branch first implemented a formula-level diagnostic
+  proxy and now requires source-aligned parity before any comparative claim.
 
 ---
 
@@ -1354,9 +1360,23 @@ E = number of (query, root) expansion events
 degree = fixed graph degree, currently 32
 ```
 
+Current implementation boundary:
+
+```text
+each (query, root) neighbor set is scored independently
+no frontier heap
+no visited set
+no path-dependent beam traversal
+no SymphonyQG multiple-estimate behavior
+```
+
+`saq_prefix_accp` means that every candidate uses accurate estimates for the
+first `p` SAQ segments and 1-bit fast estimates for the remaining positive-bit
+segments. It is not top-`r` candidate refinement.
+
 ---
 
-## 37. Graph Replay: First GIST Result
+## 37. Historical Weak-Proxy GIST Diagnostic
 
 GIST sample50k / K512 / B=4:
 
@@ -1369,9 +1389,9 @@ roots per query = 8
 events = 800
 ```
 
-Initial weak baseline comparison:
+Initial weak-proxy comparison, retained only as historical diagnostic evidence:
 
-| estimator | bits/candidate | top1 disagreement | mean rank | p90 rank | top8 containment |
+| estimator | code_bits_only | top1 disagreement | mean rank | p90 rank | top8 containment |
 |---|---:|---:|---:|---:|---:|
 | global `rabitq_style_proxy` | 960 | 0.90625 | 12.4812 | 27 | 0.44625 |
 | `saq_fast` | 832 | 0.46125 | 2.2575 | 5 | 0.98125 |
@@ -1382,9 +1402,13 @@ Initial weak baseline comparison:
 Interpretation:
 
 ```text
-SAQ staged estimates recover local expansion order much better than the weak
-global proxy, but the proxy was not a faithful SymphonyQG baseline.
+SAQ staged estimates ordered these independent local neighbor sets better than
+the weak global proxy. This was not a faithful SymphonyQG comparison and says
+nothing about path-dependent graph traversal.
 ```
+
+The code-bit column excludes factors, padding, metadata, memory layout,
+estimator preparation, and runtime. It is not a complete-work comparison.
 
 ---
 
@@ -1431,7 +1455,9 @@ baseline extraction.
 
 ## 39. SymphonyQG Estimator Formula
 
-For current graph vertex `c`, outgoing neighbor `x`, query `q`:
+For current graph vertex `c`, outgoing neighbor `x`, query `q`, the official
+path first pads all vectors to the next power-of-two dimension and applies the
+same random-sign FHT. The following quantities live in that transformed space:
 
 ```text
 r = x - c
@@ -1474,7 +1500,7 @@ SymphonyQG/symqglib/qg/qg.hpp
 
 ---
 
-## 40. Current Stronger Local Baseline
+## 40. Current Incomplete Formula-Level Proxy
 
 Implemented in current branch:
 
@@ -1500,6 +1526,7 @@ padded power-of-two dimension
 packed FastScan layout
 SIMD lookup table reproduction
 SymphonyQG-built graph
+multiple estimates for a vertex reached from different parents
 ```
 
 Complexity:
@@ -1511,16 +1538,17 @@ full FastScan-style implementation: O(D / SIMD_width) per edge batch after O(D l
 
 Speaker notes:
 
-- This is a stronger baseline than the old proxy, but still not full SymphonyQG.
-- The next task is fuller baseline alignment.
+- FHT and padding affect estimator geometry and rank quality; they are not
+  merely performance optimizations.
+- This proxy is not a source-aligned SymphonyQG baseline.
 
 ---
 
-## 41. Stronger Baseline Result
+## 41. Provisional Formula-Level Proxy Result
 
 GIST sample50k / K512 / B=4 / subset 4096:
 
-| estimator | bits/candidate | top1 disagreement | mean rank | p90 rank | top4 containment | top8 containment |
+| estimator | code_bits_only | top1 disagreement | mean rank | p90 rank | top4 containment | top8 containment |
 |---|---:|---:|---:|---:|---:|---:|
 | global `rabitq_style_proxy` | 960 | 0.90625 | 12.4812 | 27 | 0.25625 | 0.44625 |
 | `symqg_vertex_proxy` | 960 | 0.87625 | 8.2775 | 19 | 0.38250 | 0.61500 |
@@ -1532,16 +1560,40 @@ GIST sample50k / K512 / B=4 / subset 4096:
 Interpretation:
 
 ```text
-The stronger vertex-centered baseline improves over the weak global proxy, but
-SAQ staged estimates still show much stronger local rank recovery.
+Within the incomplete unrotated comparison, the vertex-centered proxy improves
+over the global proxy and SAQ has better local-neighborhood rank metrics.
 ```
 
 Strict limitation:
 
 ```text
-This still does not prove an end-to-end graph method.
-It only supports continuing the graph direction to fuller baseline alignment.
+This table cannot support an SAQ-versus-SymphonyQG claim or an end-to-end graph
+claim. Its code-bit counts are not complete storage or runtime work.
 ```
+
+---
+
+## 41A. Review-Time Baseline Correction
+
+A scalar review-time reproduction added random-sign FHT and padded GIST from
+960 to 1024 dimensions. Across fixed seeds `0..4`:
+
+| estimator | top1 disagreement | mean exact-best rank | p90 rank | top8 containment |
+|---|---:|---:|---:|---:|
+| unrotated `symqg_vertex_proxy` | 0.87625 | 8.2775 | 19 | 0.61500 |
+| review-time FHT reproduction | 0.2475--0.2975 | 1.4425--1.5600 | 2--3 | 0.99625--1.0000 |
+| `saq_fast` | 0.46125 | 2.2575 | 5 | 0.98125 |
+
+Interpretation:
+
+```text
+The omitted transform may remove or reverse the apparent SAQ advantage.
+The old positive comparison is therefore provisional.
+```
+
+This reproduction is also not a validated result: it is not a committed
+runner and does not implement packed FastScan. Its role is to require the
+source-aligned Phase 2 comparison before further method design.
 
 ---
 
@@ -1555,10 +1607,14 @@ rank-recovery advantage over a closer SymphonyQG/RaBitQ FastScan-style
 estimator, rather than only over a formula-level vertex proxy?
 ```
 
-Next implementation target:
+Required ordered work:
 
 ```text
-extract or reproduce:
+Phase 1: correctness defaults and focused regression tests
+Phase 2: source-aligned scalar estimator, then parity-tested packed path
+Phase 3: fixed-seed same-replay evaluation and stop/continue decision
+
+Phase 2 must reproduce:
   FHT rotation
   padded dimension
   6-bit query quantization
@@ -1571,8 +1627,9 @@ Same-replay comparison:
 
 ```text
 exact_float
-symqg_vertex_proxy
-fuller_symqg_fastscan_like
+symqg_vertex_proxy              historical diagnostic only
+symqg_fht_scalar                source-aligned reference
+symqg_fht_fastscan              after parity testing
 saq_fast
 saq_prefix_acc1
 saq_prefix_acc2
@@ -1597,7 +1654,7 @@ limitation evidence rather than a method foundation.
 | global static segment-cost DP | SAQ default not dominated; near-frontier GIST plans slightly higher recall but slower | stopped as main method |
 | fac-error planner objective | objective changes GIST/CIFAR plans; GIST custom plan faster at same nprobe but not recall-matched | stopped as main method |
 | search-procedure scheduling | fast pruning and accurate early exit already strong; variance pruning weak but unsafe to tighten empirically | stopped as main method |
-| graph traversal compatibility | SAQ prefix estimates recover exact-best graph neighbor better than formula-level SymphonyQG vertex proxy | active, but baseline not fully aligned |
+| graph traversal compatibility | old unrotated proxy result is provisional; review-time FHT reproduction may match or dominate `saq_fast` | active only as a source-aligned baseline-validation gate |
 
 Speaker notes:
 
@@ -1619,6 +1676,7 @@ Static segment-cost DP solves SAQ's planner limitation.
 Fac-error DP gives a recall-matched speedup.
 Simple search-loop scheduling improves SAQ.
 The current graph result proves end-to-end graph-search improvement.
+A comparative SAQ/SymphonyQG local-order advantage has already been established.
 ```
 
 Safer claim:
@@ -1672,31 +1730,33 @@ Speaker notes:
 
 Do not start full HNSW/DiskANN integration yet.
 
-Recommended next step:
+Immediate next step:
 
 ```text
-Fuller SymphonyQG baseline alignment / same-replay evaluation.
+Phase 1: make finite valid-lane block minima the tested default and add focused
+one-bit-segment and partial-block regression coverage.
 ```
 
-Concrete deliverable:
+Then execute Phases 2--3:
 
 ```text
-One profiler update and one evidence note showing whether:
-  SAQ staged estimates still beat a closer SymphonyQG/FastScan-style baseline
-  on the same fixed GIST graph replay.
+implement and parity-test a deterministic source-aligned SymphonyQG estimator
+rerun the same local replay over predeclared seeds 0..9
+apply the documented stop/continue condition
 ```
 
 Pass condition:
 
 ```text
-SAQ prefix refinement keeps a stable rank-recovery advantage with controlled
-bit-read accounting.
+At least one SAQ stage is consistently non-dominated in rank quality versus
+complete logical work across the predeclared rotations.
 ```
 
 Fail condition:
 
 ```text
-A closer SymphonyQG baseline matches or nearly matches SAQ prefix rank recovery.
+A source-aligned SymphonyQG estimator matches or dominates saq_fast and no SAQ
+prefix point gives a stable Pareto improvement after complete work accounting.
 ```
 
 If pass:
@@ -1742,15 +1802,17 @@ Current graph running example:
 
 ```text
 GIST sample50k / K512 / B=4 / subset 4096
-symqg_vertex_proxy p90 exact-best rank = 19
-saq_fast p90 exact-best rank = 5
-saq_prefix_acc1 p90 exact-best rank = 2
+unrotated symqg_vertex_proxy p90 rank = 19       historical
+review-time FHT reproduction p90 rank = 2-3      provisional
+saq_fast p90 rank = 5
 ```
 
 Why still incomplete:
 
 ```text
-current SymphonyQG baseline is formula-level, not full FastScan-aligned.
+the old comparison omitted source-critical transform steps
+the FHT reproduction is not a committed parity-tested runner
+neither experiment executes graph traversal
 ```
 
 ---
@@ -1808,4 +1870,3 @@ External baseline:
   symqglib/qg/qg_query.hpp
   symqglib/qg/qg_scanner.hpp
 ```
-
