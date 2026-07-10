@@ -46,6 +46,26 @@ narrower SAQ-specific contribution: whether SAQ's segmented progressive
 estimator provides a traversal/refinement advantage beyond a
 RaBitQ/SymphonyQG-style graph quantization baseline.
 
+The ordered research-validity and evaluation plan is recorded in
+`docs/saq_graph_direction_research_validity_plan_2026_07_10.md`. That plan is
+the authoritative execution sequence for this branch.
+
+## Current Evidence Status
+
+The existing local graph result is provisional. The implemented
+`symqg_vertex_proxy` preserves the current-vertex residual factor formula but
+omits SymphonyQG's random-sign FHT, power-of-two padding, packed FastScan path,
+and multiple-estimate traversal behavior. An independent review-time scalar
+reproduction indicates that adding FHT and padding may remove or reverse the
+apparent `saq_fast` local-rank advantage. This reproduction must be implemented
+and verified in the repository before the graph direction can pass its first
+research gate.
+
+The current profiler measures independent query-near local-neighborhood
+ordering. It does not yet implement a frontier heap, visited set, path-dependent
+beam traversal, or SymphonyQG's multiple estimates. Its bit figures count code
+bits only and must not be interpreted as complete storage or runtime work.
+
 ## Research Priority
 
 **Graph-index compatibility and traversal-sensitivity analysis**
@@ -79,23 +99,20 @@ Required accounting:
 
 ## Immediate Next Step
 
-Implement the minimal local expansion ordering profiler only after reviewing
-both `docs/saq_graph_traversal_measurement_design_2026_07_09.md` and
-`docs/saq_graph_quantization_related_work_and_novelty_gate_2026_07_09.md`. Do
-not implement full HNSW or DiskANN integration yet.
+Execute Phases 0--3 of
+`docs/saq_graph_direction_research_validity_plan_2026_07_10.md` in order:
 
-The first profiler should answer:
+1. mark the current graph comparison as provisional and synchronize the task,
+   synthesis, and slides;
+2. make finite valid-lane block minima the tested default and add focused
+   one-bit/partial-block regression coverage;
+3. implement and parity-test a deterministic, source-aligned SymphonyQG
+   estimator with FHT and power-of-two padding;
+4. rerun the same local replay over a predeclared rotation schedule and apply
+   the documented continue/stop condition.
 
-- whether `saq_full`, `saq_fast`, and `saq_var` preserve the exact-float best
-  neighbor inside a fixed graph expansion neighborhood;
-- whether SAQ's staged estimates provide any rank-recovery or work-reduction
-  advantage over a RaBitQ/SymphonyQG-style single-stage graph-quantization
-  baseline;
-- the rank distribution of the exact-best neighbor under each SAQ estimate;
-- how many cheap-ranked candidates would need full SAQ refinement to recover
-  exact-float expansion choices;
-- how many IVF residual-reference clusters a graph expansion event touches,
-  because current SAQ codes are cluster-residual coded.
+Do not implement full HNSW/DiskANN integration, broaden the dataset matrix, or
+design a refinement policy until this gate passes.
 
 ## Constraints
 
