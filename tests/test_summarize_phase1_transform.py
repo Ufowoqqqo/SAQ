@@ -574,6 +574,40 @@ class SummarizePhase1TransformTest(unittest.TestCase):
                 {"rotation_control": "seed9", "rotation_seed": "3"}
             )
 
+    def test_requires_identical_canonical_query_reference_inventories(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            specs = self.make_experiment(root)
+            inventory = "query,candidate_count,rank,base_id,exact_distance\n0,20,1,7,1.5\n"
+            for transform in (
+                "current_pca",
+                "identity",
+                "residual_pca",
+                "random_orthogonal",
+            ):
+                Path(f"{root / transform}.query_reference.csv").write_text(
+                    inventory, encoding="utf-8"
+                )
+            MODULE.summarize(
+                specs,
+                root / "valid_reference_summary",
+                bootstrap_replicates=10,
+                bootstrap_seed=3,
+            )
+
+            Path(f"{root / 'residual_pca'}.query_reference.csv").write_text(
+                inventory.replace(",7,", ",8,"), encoding="utf-8"
+            )
+            with self.assertRaisesRegex(
+                ValueError, "canonical query-reference inventory differs"
+            ):
+                MODULE.summarize(
+                    specs,
+                    root / "invalid_reference_summary",
+                    bootstrap_replicates=10,
+                    bootstrap_seed=3,
+                )
+
 
 if __name__ == "__main__":
     unittest.main()

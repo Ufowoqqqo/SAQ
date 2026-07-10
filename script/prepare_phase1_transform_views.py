@@ -38,6 +38,8 @@ OPERATOR_SCHEMA_VERSION = 1
 DEFAULT_DATASET = "gist_sample50k"
 DEFAULT_K = 512
 DEFAULT_RANDOM_SEEDS = (20260710,)
+DEFAULT_VIEWS = ("identity", "current_pca", "residual_pca", "random_orthogonal")
+VALID_VIEWS = frozenset(DEFAULT_VIEWS)
 MAX_ISOMETRY_RELATIVE_L2_ERROR = 1e-5
 DEFAULT_PREFIX_DIMS = (64, 256, 576, 832, 960)
 
@@ -841,6 +843,18 @@ def materialize_view(
                 "output_dimension": raw_base.shape[1],
                 "application": "(row - apply_mean) @ operator",
                 "apply_mean_sha256": sha256_array(spec.apply_mean),
+                "runtime_state_contract": {
+                    "dtype": "float32",
+                    "operator_shape": [raw_base.shape[1], raw_base.shape[1]],
+                    "mean_shape": [raw_base.shape[1]],
+                    "operator_bytes": raw_base.shape[1] * raw_base.shape[1] * 4,
+                    "mean_bytes": raw_base.shape[1] * 4,
+                    "total_bytes": (
+                        raw_base.shape[1] * raw_base.shape[1] * 4
+                        + raw_base.shape[1] * 4
+                    ),
+                    "dense_mac_per_raw_query": raw_base.shape[1] * raw_base.shape[1],
+                },
                 "seed": spec.seed,
                 "base_storage": base_storage,
                 "query_storage": query_storage,
@@ -899,6 +913,21 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--view-prefix")
     parser.add_argument(
         "--random-seeds", type=int, nargs="+", default=list(DEFAULT_RANDOM_SEEDS)
+    )
+    parser.add_argument(
+        "--views",
+        nargs="+",
+        choices=sorted(VALID_VIEWS),
+        default=list(DEFAULT_VIEWS),
+        help=(
+            "Transform views to materialize. Phase 1b uses only "
+            "current_pca residual_pca."
+        ),
+    )
+    parser.add_argument(
+        "--ivf-provenance-json",
+        type=Path,
+        help="Optional query-unaware IVF construction record copied into each manifest.",
     )
     parser.add_argument("--chunk-rows", type=int, default=4096)
     parser.add_argument("--procrustes-fit-rows", type=int, default=8192)
@@ -959,6 +988,12 @@ def run(args: argparse.Namespace) -> list[Path]:
         raise ValueError("Procrustes validation thresholds must be positive")
     if len(set(args.random_seeds)) != len(args.random_seeds):
         raise ValueError("random seeds must be unique")
+    if len(set(args.views)) != len(args.views):
+        raise ValueError("views must be unique")
+    if args.ivf_provenance_json is not None and not args.ivf_provenance_json.is_file():
+        raise FileNotFoundError(
+            f"missing IVF provenance JSON: {args.ivf_provenance_json}"
+        )
 
     paths = resolve_input_paths(args)
     required_paths = {key: value for key, value in paths.items() if key != "pca_vars"}
@@ -1046,6 +1081,16 @@ def run(args: argparse.Namespace) -> list[Path]:
         input_identities["historical_pca_variance"] = vector_file_identity(
             paths["pca_vars"], "fvecs", hash_cache
         )
+    historical_ivf_construction: dict[str, Any] | None = None
+    if args.ivf_provenance_json is not None:
+        with args.ivf_provenance_json.open(encoding="utf-8") as handle:
+            historical_ivf_construction = json.load(handle)
+        input_identities["historical_ivf_provenance"] = {
+            "path": str(args.ivf_provenance_json.resolve(strict=True)),
+            "format": "json",
+            "bytes": args.ivf_provenance_json.stat().st_size,
+            "sha256": hash_cache.sha256(args.ivf_provenance_json),
+        }
     input_hash_seconds = time.perf_counter() - hash_start
 
     recovery_start = time.perf_counter()
@@ -1122,6 +1167,7 @@ def run(args: argparse.Namespace) -> list[Path]:
         },
         "environment": environment_provenance(),
         "historical_pca_recovery": recovery.diagnostics,
+        "historical_ivf_construction": historical_ivf_construction,
         "canonical_raw_codebook": {
             "method": (
                 "inverse affine transform of historical PCA centroids after "
@@ -1185,8 +1231,8 @@ def run(args: argparse.Namespace) -> list[Path]:
     existing_base_reference = None if args.materialize_current_pca_base_query else pca_base_path
     existing_query_reference = None if args.materialize_current_pca_base_query else pca_query_path
     identity = np.eye(dim, dtype=np.float64)
-    view_specs = [
-        ViewSpec(
+    view_specs_by_kind: dict[str, list[ViewSpec]] = {
+        "identity": [ViewSpec(
             kind="identity-full",
             name=f"{prefix}_identity",
             operator=identity,
@@ -1195,8 +1241,8 @@ def run(args: argparse.Namespace) -> list[Path]:
                 "method": "identity orientation with the common recovered base mean",
                 "training_rows": 0,
             },
-        ),
-        ViewSpec(
+        )],
+        "current_pca": [ViewSpec(
             kind="current-pca-full-recovered",
             name=f"{prefix}_current_pca",
             operator=recovery.operator,
@@ -1210,8 +1256,8 @@ def run(args: argparse.Namespace) -> list[Path]:
             },
             reference_base=existing_base_reference,
             reference_query=existing_query_reference,
-        ),
-        ViewSpec(
+        )],
+        "residual_pca": [ViewSpec(
             kind="global-residual-pca-full",
             name=f"{prefix}_residual_pca",
             operator=residual_operator,
@@ -1227,13 +1273,14 @@ def run(args: argparse.Namespace) -> list[Path]:
                 "query_rows": 0,
                 "component_orientation": "largest-absolute entry positive",
             },
-        ),
-    ]
+        )],
+        "random_orthogonal": [],
+    }
     for seed in args.random_seeds:
         random_start = time.perf_counter()
         random_operator = random_orthogonal_matrix(dim, seed)
         random_seconds = time.perf_counter() - random_start
-        view_specs.append(
+        view_specs_by_kind["random_orthogonal"].append(
             ViewSpec(
                 kind="seeded-random-orthogonal-full",
                 name=f"{prefix}_random_seed{seed}",
@@ -1248,6 +1295,11 @@ def run(args: argparse.Namespace) -> list[Path]:
                 },
             )
         )
+    view_specs = [
+        spec
+        for kind in args.views
+        for spec in view_specs_by_kind[kind]
+    ]
 
     targets = [args.output_parent / spec.name for spec in view_specs]
     if not args.force:

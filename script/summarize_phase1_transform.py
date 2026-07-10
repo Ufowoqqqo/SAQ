@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Summarize the fixed-candidate SAQ Phase-1 transform diagnostic.
 
-The C++ diagnostic writes one CSV triplet per transform view. This script
-combines those triplets and uses NumPy to vectorize the query bootstrap.
+The C++ diagnostic writes one CSV triplet per transform view and may also write
+a canonical query-reference inventory. This script combines those outputs and
+uses NumPy to vectorize the query bootstrap.
 Rotation seeds 0..9 are averaged *within each query* before any cross-transform inference;
 the no-rotation control is kept as a separate group.  Paired confidence
 intervals therefore use queries, not candidates or rotation seeds, as the
@@ -246,6 +247,8 @@ class InputBundle:
     query_rows: tuple[dict[str, str], ...]
     segment_rows: tuple[dict[str, str], ...]
     config_rows: tuple[dict[str, str], ...]
+    query_reference_path: Path | None
+    query_reference_sha256: str | None
 
 
 def parse_number(value: str, column: str) -> float:
@@ -292,6 +295,14 @@ def load_bundle(specification: str) -> InputBundle:
     query_rows = read_csv(Path(f"{prefix}.query_stages.csv"), QUERY_REQUIRED)
     segment_rows = read_csv(Path(f"{prefix}.segment_errors.csv"), SEGMENT_REQUIRED)
     config_rows = read_csv(Path(f"{prefix}.configs.csv"), CONFIG_REQUIRED)
+    query_reference_path = Path(f"{prefix}.query_reference.csv")
+    if query_reference_path.is_file():
+        query_reference_sha256 = hashlib.sha256(
+            query_reference_path.read_bytes()
+        ).hexdigest()
+    else:
+        query_reference_path = None
+        query_reference_sha256 = None
     source_transforms = {
         row["transform"]
         for rows in (query_rows, segment_rows, config_rows)
@@ -316,7 +327,27 @@ def load_bundle(specification: str) -> InputBundle:
         query_rows=tuple(query_rows),
         segment_rows=tuple(segment_rows),
         config_rows=tuple(config_rows),
+        query_reference_path=query_reference_path,
+        query_reference_sha256=query_reference_sha256,
     )
+
+
+def validate_query_references(bundles: Sequence[InputBundle]) -> None:
+    present = [bundle for bundle in bundles if bundle.query_reference_path is not None]
+    if not present:
+        return
+    if len(present) != len(bundles):
+        missing = [bundle.label for bundle in bundles if bundle.query_reference_path is None]
+        raise ValueError(
+            "canonical query-reference inventory is missing for: " + ", ".join(missing)
+        )
+    reference = present[0]
+    for bundle in present[1:]:
+        if bundle.query_reference_sha256 != reference.query_reference_sha256:
+            raise ValueError(
+                "canonical query-reference inventory differs between "
+                f"{reference.label} and {bundle.label}"
+            )
 
 
 def rotation_group(row: Mapping[str, str]) -> tuple[str, int | None]:
@@ -2052,10 +2083,12 @@ def summarize(
             f"baseline {baseline!r} is absent; use {baseline}=PREFIX or --baseline LABEL"
         )
     warnings: list[str] = []
-    if len(bundles) != 4:
+    if len(bundles) not in {2, 4}:
         warnings.append(
-            f"Expected four Phase-1 transform prefixes, received {len(bundles)}."
+            f"Expected two Phase-1b or four Phase-1 transform prefixes, received {len(bundles)}."
         )
+
+    validate_query_references(bundles)
 
     raw_query_rows = [row for bundle in bundles for row in bundle.query_rows]
     raw_config_rows = [row for bundle in bundles for row in bundle.config_rows]

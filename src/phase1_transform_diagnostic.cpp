@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -33,6 +34,8 @@ using namespace saqlib;
 
 DEFINE_string(base_file, "", "Explicit transformed base fvecs/fbin path.");
 DEFINE_string(query_file, "", "Explicit transformed query fvecs/fbin path.");
+DEFINE_string(exact_base_file, "", "Canonical raw base fvecs/fbin used as the common exact reference.");
+DEFINE_string(exact_query_file, "", "Canonical raw query fvecs/fbin used as the common exact reference.");
 DEFINE_string(centroids_file, "", "Explicit transformed IVF centroid fvecs/fbin path.");
 DEFINE_string(cluster_ids_file, "", "Explicit fixed cluster-id ivecs/bin path.");
 DEFINE_string(variance_file, "", "Explicit transformed base-variance fvecs/fbin path.");
@@ -55,6 +58,10 @@ using Clock = std::chrono::steady_clock;
 using QuantPlan = SaqData::QuantPlanT;
 
 constexpr double kRelativeEpsilon = 1e-12;
+constexpr const char *kCanonicalExactScope = "canonical_raw_float64_squared_L2";
+constexpr const char *kTransformSegmentExactScope = "transform_view_segment_float32_squared_L2";
+constexpr uint64_t kFnv1aOffsetBasis = UINT64_C(14695981039346656037);
+constexpr uint64_t kFnv1aPrime = UINT64_C(1099511628211);
 
 double seconds_since(Clock::time_point begin) {
     return std::chrono::duration<double>(Clock::now() - begin).count();
@@ -94,6 +101,53 @@ std::string csv_string(const std::string &value) {
     }
     escaped.push_back('"');
     return escaped;
+}
+
+void fnv1a_append_byte(uint64_t &hash, uint8_t value) {
+    hash ^= value;
+    hash *= kFnv1aPrime;
+}
+
+void fnv1a_append_u32(uint64_t &hash, uint32_t value) {
+    for (unsigned int shift = 0; shift < 32; shift += 8) {
+        fnv1a_append_byte(hash, static_cast<uint8_t>((value >> shift) & UINT32_C(0xff)));
+    }
+}
+
+void fnv1a_append_u64(uint64_t &hash, uint64_t value) {
+    for (unsigned int shift = 0; shift < 64; shift += 8) {
+        fnv1a_append_byte(hash, static_cast<uint8_t>((value >> shift) & UINT64_C(0xff)));
+    }
+}
+
+std::string uint64_hex(uint64_t value) {
+    std::ostringstream output;
+    output << std::hex << std::setfill('0') << std::setw(16) << value;
+    return output.str();
+}
+
+std::string pipe_separated_ids(const std::vector<PID> &ids) {
+    std::ostringstream output;
+    for (size_t index = 0; index < ids.size(); ++index) {
+        if (index) {
+            output << '|';
+        }
+        output << ids[index];
+    }
+    return output.str();
+}
+
+template <class LeftDerived, class RightDerived>
+double squared_l2_float64(const Eigen::MatrixBase<LeftDerived> &left,
+                          const Eigen::MatrixBase<RightDerived> &right) {
+    CHECK_EQ(left.cols(), right.cols());
+    double result = 0;
+    for (Eigen::Index dimension = 0; dimension < left.cols(); ++dimension) {
+        const double difference = static_cast<double>(left(dimension)) -
+                                  static_cast<double>(right(dimension));
+        result += difference * difference;
+    }
+    return result;
 }
 
 std::string plan_string(const QuantPlan &plan) {
@@ -516,6 +570,8 @@ struct SegmentMeasurements {
 struct LoadedView {
     FloatRowMat base;
     FloatRowMat queries;
+    FloatRowMat exact_base;
+    FloatRowMat exact_queries;
     FloatRowMat centroids;
     UintRowMat cluster_ids;
     FloatVec variance;
@@ -534,6 +590,8 @@ LoadedView load_view() {
     LoadedView view;
     utils::load_something<float, FloatRowMat>(FLAGS_base_file.c_str(), view.base);
     utils::load_something<float, FloatRowMat>(FLAGS_query_file.c_str(), view.queries);
+    utils::load_something<float, FloatRowMat>(FLAGS_exact_base_file.c_str(), view.exact_base);
+    utils::load_something<float, FloatRowMat>(FLAGS_exact_query_file.c_str(), view.exact_queries);
     utils::load_something<float, FloatRowMat>(FLAGS_centroids_file.c_str(), view.centroids);
     utils::load_something<PID, UintRowMat>(FLAGS_cluster_ids_file.c_str(), view.cluster_ids);
     view.variance = load_single_vector(FLAGS_variance_file, "transform variance");
@@ -543,6 +601,15 @@ LoadedView load_view() {
     CHECK_GT(view.base.rows(), 0);
     CHECK_GT(view.base.cols(), 0);
     CHECK_EQ(view.queries.cols(), view.base.cols());
+    CHECK_EQ(view.exact_base.rows(), view.base.rows())
+        << "canonical exact base must preserve base-id row alignment";
+    CHECK_EQ(view.exact_queries.rows(), view.queries.rows())
+        << "canonical exact queries must preserve query-row alignment";
+    CHECK_EQ(view.exact_base.cols(), view.exact_queries.cols());
+    CHECK_EQ(view.exact_base.cols(), view.base.cols())
+        << "Phase 1b requires a full-dimensional L2-isometric transform";
+    CHECK(view.exact_base.allFinite()) << "canonical exact base contains a non-finite value";
+    CHECK(view.exact_queries.allFinite()) << "canonical exact queries contain a non-finite value";
     CHECK_EQ(view.centroids.cols(), view.base.cols());
     CHECK_EQ(view.cluster_ids.rows(), view.base.rows());
     CHECK_EQ(view.cluster_ids.cols(), 1);
@@ -584,10 +651,126 @@ std::vector<PID> probes_for_query(const LoadedView &view, size_t query_index) {
     return probes;
 }
 
+struct QueryExactReference {
+    std::vector<PID> candidate_ids;
+    std::vector<double> exact_distances;
+    uint64_t candidate_ids_digest = kFnv1aOffsetBasis;
+    uint64_t exact_id_distance_digest = kFnv1aOffsetBasis;
+    PID exact_best_id = 0;
+    std::vector<PID> exact_topk_ids;
+    double exact_topk_boundary_distance = std::numeric_limits<double>::quiet_NaN();
+    double exact_first_outside_distance = std::numeric_limits<double>::quiet_NaN();
+    double exact_boundary_gap = std::numeric_limits<double>::quiet_NaN();
+};
+
+std::vector<QueryExactReference> build_query_exact_references(const LoadedView &view,
+                                                              size_t queries_to_measure) {
+    std::vector<std::vector<PID>> cluster_members(view.centroids.rows());
+    for (Eigen::Index data_index = 0; data_index < view.cluster_ids.rows(); ++data_index) {
+        const PID cluster_id = view.cluster_ids(data_index, 0);
+        cluster_members[cluster_id].push_back(static_cast<PID>(data_index));
+    }
+
+    std::vector<QueryExactReference> references;
+    references.reserve(queries_to_measure);
+    for (size_t query_index = 0; query_index < queries_to_measure; ++query_index) {
+        QueryExactReference reference;
+        const auto probes = probes_for_query(view, query_index);
+        size_t candidate_count = 0;
+        for (PID cluster_id : probes) {
+            candidate_count += cluster_members[cluster_id].size();
+        }
+        CHECK_GE(candidate_count, static_cast<size_t>(FLAGS_topk))
+            << "query " << query_index << " has fewer canonical candidates than top-k";
+        reference.candidate_ids.reserve(candidate_count);
+        reference.exact_distances.reserve(candidate_count);
+        const auto exact_query = view.exact_queries.row(query_index);
+        for (PID cluster_id : probes) {
+            for (PID data_id : cluster_members[cluster_id]) {
+                reference.candidate_ids.push_back(data_id);
+                const double distance = squared_l2_float64(
+                    exact_query, view.exact_base.row(data_id));
+                CHECK(std::isfinite(distance))
+                    << "canonical exact distance is non-finite for query " << query_index
+                    << " and base id " << data_id;
+                reference.exact_distances.push_back(distance);
+            }
+        }
+        CHECK_EQ(reference.candidate_ids.size(), candidate_count);
+
+        std::vector<size_t> exact_order(candidate_count);
+        std::iota(exact_order.begin(), exact_order.end(), 0);
+        std::sort(exact_order.begin(), exact_order.end(), [&](size_t lhs, size_t rhs) {
+            if (reference.exact_distances[lhs] != reference.exact_distances[rhs]) {
+                return reference.exact_distances[lhs] < reference.exact_distances[rhs];
+            }
+            return reference.candidate_ids[lhs] < reference.candidate_ids[rhs];
+        });
+        reference.exact_best_id = reference.candidate_ids[exact_order.front()];
+        const size_t topk = static_cast<size_t>(FLAGS_topk);
+        reference.exact_topk_ids.reserve(topk);
+        for (size_t rank = 0; rank < topk; ++rank) {
+            reference.exact_topk_ids.push_back(reference.candidate_ids[exact_order[rank]]);
+        }
+        reference.exact_topk_boundary_distance = reference.exact_distances[exact_order[topk - 1]];
+        if (topk < exact_order.size()) {
+            reference.exact_first_outside_distance = reference.exact_distances[exact_order[topk]];
+            reference.exact_boundary_gap = reference.exact_first_outside_distance -
+                                           reference.exact_topk_boundary_distance;
+        }
+
+        std::vector<size_t> id_order(candidate_count);
+        std::iota(id_order.begin(), id_order.end(), 0);
+        std::sort(id_order.begin(), id_order.end(), [&](size_t lhs, size_t rhs) {
+            return reference.candidate_ids[lhs] < reference.candidate_ids[rhs];
+        });
+        fnv1a_append_u64(reference.candidate_ids_digest, static_cast<uint64_t>(candidate_count));
+        fnv1a_append_u64(reference.exact_id_distance_digest, static_cast<uint64_t>(candidate_count));
+        PID previous_id = 0;
+        bool have_previous_id = false;
+        for (size_t position : id_order) {
+            const PID data_id = reference.candidate_ids[position];
+            CHECK(!have_previous_id || previous_id != data_id)
+                << "duplicate canonical candidate id " << data_id << " for query " << query_index;
+            have_previous_id = true;
+            previous_id = data_id;
+            fnv1a_append_u32(reference.candidate_ids_digest, data_id);
+            fnv1a_append_u32(reference.exact_id_distance_digest, data_id);
+            fnv1a_append_u64(reference.exact_id_distance_digest,
+                             std::bit_cast<uint64_t>(reference.exact_distances[position]));
+        }
+        references.push_back(std::move(reference));
+    }
+    return references;
+}
+
+void write_query_exact_references(const std::string &path,
+                                  const std::vector<QueryExactReference> &references) {
+    std::ofstream output(path, std::ios::trunc);
+    CHECK(output.is_open());
+    output << std::setprecision(17);
+    output << "query,candidate_count,candidate_ids_fnv1a64,exact_id_distance_fnv1a64,"
+              "exact_best_id,exact_topk_used,exact_topk_ids,exact_topk_boundary_distance,"
+              "exact_first_outside_distance,exact_boundary_gap,exact_reference_scope\n";
+    for (size_t query_index = 0; query_index < references.size(); ++query_index) {
+        const auto &reference = references[query_index];
+        output << query_index << ',' << reference.candidate_ids.size() << ','
+               << uint64_hex(reference.candidate_ids_digest) << ','
+               << uint64_hex(reference.exact_id_distance_digest) << ','
+               << reference.exact_best_id << ',' << reference.exact_topk_ids.size() << ','
+               << csv_string(pipe_separated_ids(reference.exact_topk_ids)) << ','
+               << reference.exact_topk_boundary_distance << ','
+               << reference.exact_first_outside_distance << ',' << reference.exact_boundary_gap << ','
+               << kCanonicalExactScope << '\n';
+    }
+}
+
 void validate_required_flags() {
-    const std::array<std::pair<const std::string *, const char *>, 9> required{{
+    const std::array<std::pair<const std::string *, const char *>, 11> required{{
         {&FLAGS_base_file, "base_file"},
         {&FLAGS_query_file, "query_file"},
+        {&FLAGS_exact_base_file, "exact_base_file"},
+        {&FLAGS_exact_query_file, "exact_query_file"},
         {&FLAGS_centroids_file, "centroids_file"},
         {&FLAGS_cluster_ids_file, "cluster_ids_file"},
         {&FLAGS_variance_file, "variance_file"},
@@ -623,6 +806,11 @@ int main(int argc, char **argv) {
     const std::filesystem::path prefix(FLAGS_output_prefix);
     const std::filesystem::path output_directory = prefix.parent_path().empty() ? "." : prefix.parent_path();
     std::filesystem::create_directories(output_directory);
+    // This transform-independent replay reference is built once, before any
+    // plan or internal-rotation configuration can affect estimator state.
+    const auto query_exact_references = build_query_exact_references(
+        view, queries_to_measure);
+    write_query_exact_references(FLAGS_output_prefix + ".query_reference.csv", query_exact_references);
     std::ofstream query_output(FLAGS_output_prefix + ".query_stages.csv", std::ios::trunc);
     std::ofstream segment_output(FLAGS_output_prefix + ".segment_errors.csv", std::ios::trunc);
     std::ofstream config_output(FLAGS_output_prefix + ".configs.csv", std::ios::trunc);
@@ -635,6 +823,7 @@ int main(int argc, char **argv) {
 
     query_output
         << "transform,config_id,plan_control,rotation_control,rotation_seed,query,stage,stage_semantics,"
+           "distance_reference_scope,"
            "candidate_count,finite_count,nonfinite_count,bias,mae,rmse,abs_relative_eps1e-12_p50,"
            "abs_relative_eps1e-12_p90,abs_relative_eps1e-12_p99,topk_used,fixed_candidate_topk_agreement,"
            "exact_best_estimated_rank,strict_exact_topk_vs_outside_boundary_inversions,boundary_pairs,"
@@ -643,7 +832,7 @@ int main(int argc, char **argv) {
            "logical_total_requested_bytes_per_candidate,logical_byte_model\n";
     segment_output
         << "transform,config_id,plan_control,rotation_control,rotation_seed,segment,offset,dimensions,bits,"
-           "distance_mode,mode_semantics,total_count,finite_count,nonfinite_count,bias,mae,rmse,"
+           "distance_mode,mode_semantics,distance_reference_scope,total_count,finite_count,nonfinite_count,bias,mae,rmse,"
            "abs_relative_eps1e-12_p50,abs_relative_eps1e-12_p90,abs_relative_eps1e-12_p99,"
            "transform_variance_sum,pca_variance_sum,transform_planner_proxy,pca_planner_proxy,"
            "true_residual_ip_mean,true_residual_ip_abs_mean,true_residual_ip_sq_mean,"
@@ -701,12 +890,16 @@ int main(int argc, char **argv) {
             const auto &clusters = ivf->get_pclusters();
             for (size_t query_index = 0; query_index < queries_to_measure; ++query_index) {
                 const FloatVec query = view.queries.row(query_index);
+                const auto &query_exact_reference = query_exact_references[query_index];
+                size_t exact_reference_position = 0;
                 SaqCluEstimator<DistType::L2Sqr> estimator(*ivf->get_saq_data(), searcher_config, query);
                 const auto probes = probes_for_query(view, query_index);
                 size_t candidate_reserve = 0;
                 for (PID cluster_id : probes) {
                     candidate_reserve += clusters[cluster_id].num_vec_;
                 }
+                CHECK_EQ(candidate_reserve, query_exact_reference.candidate_ids.size())
+                    << "candidate count drifted from the canonical reference for query " << query_index;
                 std::vector<PID> candidate_ids;
                 std::vector<double> exact_distances;
                 std::vector<std::vector<double>> stage_estimates(stages.size());
@@ -747,7 +940,6 @@ int main(int argc, char **argv) {
                             std::vector<float> vars(plan.size());
                             std::vector<float> fast(plan.size());
                             std::vector<float> accurate(plan.size());
-                            double exact_distance = 0;
 
                             for (size_t segment_index = 0; segment_index < plan.size(); ++segment_index) {
                                 const auto &descriptor = segment_descriptors[segment_index];
@@ -759,6 +951,9 @@ int main(int argc, char **argv) {
                                 double query_residual_norm_sq = 0;
                                 double data_residual_norm_sq = 0;
                                 double true_residual_ip = 0;
+                                // Per-segment attribution is necessarily local
+                                // to this transform's coordinate partition. It
+                                // must not be replaced by raw-coordinate slices.
                                 if (actual_dimensions > 0) {
                                     const auto query_segment = query.segment(descriptor.offset, actual_dimensions);
                                     const auto data_segment = view.base.row(data_id).segment(
@@ -772,8 +967,6 @@ int main(int argc, char **argv) {
                                     data_residual_norm_sq = data_residual.squaredNorm();
                                     true_residual_ip = query_residual.dot(data_residual);
                                 }
-                                exact_distance += exact_segment_distance;
-
                                 vars[segment_index] = vars_block[segment_index][lane];
                                 fast[segment_index] = fast_block[segment_index][lane];
                                 accurate[segment_index] =
@@ -791,8 +984,16 @@ int main(int argc, char **argv) {
                                 segment_measurements[segment_index].residual_ip.add(true_residual_ip, implied_ip);
                             }
 
+                            CHECK_LT(exact_reference_position, query_exact_reference.candidate_ids.size());
+                            CHECK_EQ(data_id, query_exact_reference.candidate_ids[exact_reference_position])
+                                << "candidate order drifted from the canonical reference for query "
+                                << query_index;
                             candidate_ids.push_back(data_id);
-                            exact_distances.push_back(exact_distance);
+                            // Overall distance and ranking endpoints use the
+                            // one common raw-space label for every transform.
+                            exact_distances.push_back(
+                                query_exact_reference.exact_distances[exact_reference_position]);
+                            ++exact_reference_position;
                             for (size_t stage_index = 0; stage_index < stages.size(); ++stage_index) {
                                 stage_estimates[stage_index].push_back(
                                     compose_stage(stages[stage_index], vars, fast, accurate));
@@ -800,6 +1001,7 @@ int main(int argc, char **argv) {
                         }
                     }
                 }
+                CHECK_EQ(exact_reference_position, query_exact_reference.candidate_ids.size());
                 CHECK(!candidate_ids.empty()) << "query " << query_index << " has no fixed-probe candidates";
                 candidate_evaluations += candidate_ids.size();
 
@@ -819,7 +1021,7 @@ int main(int argc, char **argv) {
                                  << (stage.kind == StageKind::VarsLowerBound
                                          ? "conservative_lower_bound_not_ordinary_distance_estimator"
                                          : "progressive_distance_estimate")
-                                 << ',';
+                                 << ',' << kCanonicalExactScope << ',';
                     write_metric_columns(query_output, metrics);
                     query_output << ',' << ranking.topk_used << ',' << ranking.topk_agreement << ','
                                  << ranking.exact_best_estimated_rank << ',' << ranking.boundary_inversions << ','
@@ -846,7 +1048,8 @@ int main(int argc, char **argv) {
                     segment_output << csv_string(FLAGS_transform_label) << ',' << csv_string(config_id) << ','
                                    << plan_control.label << ',' << rotation.label << ',' << rotation.seed << ','
                                    << descriptor.index << ',' << descriptor.offset << ',' << descriptor.dimensions << ','
-                                   << descriptor.bits << ',' << mode_labels[mode] << ',' << mode_semantics[mode] << ',';
+                                   << descriptor.bits << ',' << mode_labels[mode] << ',' << mode_semantics[mode] << ','
+                                   << kTransformSegmentExactScope << ',';
                     write_metric_columns(segment_output, metrics);
                     segment_output << ',' << descriptor.transform_variance_sum << ','
                                    << descriptor.pca_variance_sum << ',' << descriptor.transform_proxy << ','
@@ -880,7 +1083,7 @@ int main(int argc, char **argv) {
                           << transform_proxy_total << ',' << pca_proxy_total << ',' << serialized_bytes << ','
                           << static_cast<double>(serialized_bytes) / static_cast<double>(view.base.rows()) << ','
                           << build_time << ',' << serialization_time << ',' << measurement_time << ','
-                          << candidate_evaluations << ',' << "transform_view_squared_L2" << '\n';
+                          << candidate_evaluations << ',' << kCanonicalExactScope << '\n';
             query_output.flush();
             segment_output.flush();
             config_output.flush();

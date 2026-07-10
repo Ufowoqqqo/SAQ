@@ -157,6 +157,10 @@ class PreparePhase1TransformViewsTest(unittest.TestCase):
                     manifest["research_contract"]["operator_scope"],
                     "one dataset-level affine orthogonal transform",
                 )
+                self.assertEqual(
+                    manifest["transform"]["runtime_state_contract"]["total_bytes"],
+                    (8 * 8 + 8) * 4,
+                )
                 self.assertEqual(len(manifest["inputs"]["raw_base"]["sha256"]), 64)
                 self.assertEqual(len(manifest["outputs"]["base"]["sha256"]), 64)
                 self.assertEqual(
@@ -204,6 +208,69 @@ class PreparePhase1TransformViewsTest(unittest.TestCase):
                 max_absolute_error=1e-6,
                 chunk_rows=32,
             )
+
+    def test_selects_phase1b_views_and_copies_ivf_provenance(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            input_directory, _, _ = self.make_fixture(root)
+            provenance_path = root / "ivf_summary.json"
+            provenance = {
+                "sample_size": 192,
+                "k": 6,
+                "cluster_dims": 4,
+                "iterations": 4,
+                "seed": 0,
+            }
+            provenance_path.write_text(json.dumps(provenance), encoding="utf-8")
+            output_parent = root / "views"
+            arguments = [
+                "--dataset",
+                "toy",
+                "--input-dir",
+                str(input_directory),
+                "--output-parent",
+                str(output_parent),
+                "--k",
+                "6",
+                "--views",
+                "current_pca",
+                "residual_pca",
+                "--ivf-provenance-json",
+                str(provenance_path),
+                "--chunk-rows",
+                "32",
+                "--procrustes-fit-rows",
+                "96",
+                "--procrustes-validation-rows",
+                "48",
+                "--probe-query-count",
+                "12",
+                "--nprobe",
+                "3",
+                "--isometry-pairs",
+                "16",
+            ]
+            self.assertEqual(MODULE.main(arguments), 0)
+
+            self.assertFalse((output_parent / "toy_phase1_identity").exists())
+            self.assertFalse(
+                (output_parent / "toy_phase1_random_seed20260710").exists()
+            )
+            for suffix in ("current_pca", "residual_pca"):
+                view_name = f"toy_phase1_{suffix}"
+                manifest_path = (
+                    output_parent / view_name / f"{view_name}_manifest.json"
+                )
+                with manifest_path.open(encoding="utf-8") as handle:
+                    manifest = json.load(handle)
+                self.assertEqual(
+                    manifest["shared_provenance"]["historical_ivf_construction"],
+                    provenance,
+                )
+                self.assertEqual(
+                    len(manifest["inputs"]["historical_ivf_provenance"]["sha256"]),
+                    64,
+                )
 
     def test_view_gate_rejects_isometry_or_probe_order_failure(self) -> None:
         valid_isometry = {"squared_distance_relative_l2_error": 1e-8}
