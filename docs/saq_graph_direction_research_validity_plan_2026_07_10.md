@@ -42,11 +42,12 @@ fixed rotation seeds produced the following range:
 | review-time FHT reproduction | 0.2475--0.2975 | 1.4425--1.5600 | 2--3 | 0.99625--1.0000 |
 | current `saq_fast` | 0.46125 | 2.2575 | 5 | 0.98125 |
 
-Phase 2 now contains a parity-tested source-aligned scalar implementation. A
-small seed-0 sanity run reproduces the same qualitative correction: the aligned
-scalar estimator is substantially stronger than the historical unrotated proxy.
-The packed FastScan path and multiple-estimate traversal behavior remain absent,
-so the current graph result is still provisional.
+Phase 2 now contains parity-tested source-aligned scalar and packed FastScan
+implementations. A small seed-0 sanity run gives identical scalar and packed
+ordering and reproduces the same qualitative correction: the aligned baseline
+is substantially stronger than the historical unrotated proxy. Multiple-
+estimate traversal behavior remains absent, so the current graph result is
+still provisional.
 
 ## Execution Overview
 
@@ -54,7 +55,7 @@ so the current graph result is still provisional.
 |---|---|---|---|
 | 0 | contain unsupported claims and synchronize control documents | completed (2026-07-10) | none |
 | 1 | make confirmed correctness behavior the default and test it | completed (2026-07-10) | phase 0 |
-| 2 | implement a deterministic source-aligned SymphonyQG estimator | scalar milestone completed; packed path pending | phase 1 |
+| 2 | implement a deterministic source-aligned SymphonyQG estimator | completed (2026-07-10) | phase 1 |
 | 3 | rerun the local replay and apply the research stop gate | pending | phase 2 |
 | 4 | replace nominal code-bit comparisons with complete work accounting | pending | phase 3 passes |
 | 5 | implement a true fixed-graph frontier/traversal replay | pending | phases 3 and 4 pass |
@@ -172,14 +173,16 @@ implementation with the official source for:
 - Output records padded dimension, rotation seed, source revision, and whether
   scalar or packed evaluation was used.
 
-### Scalar milestone status (2026-07-10)
+### Milestone status (2026-07-10)
 
 The scalar implementation, official-source fixture, Release/ASAN parity tests,
 and small real-data sanity run are recorded in
 `docs/saq_symphonyqg_scalar_parity_2026_07_10.md`. The implementation matches
 the pinned source for rotation, query state, edge code, factors, distances, and
-ordering. Full Phase 2 remains open because packed/FastScan-to-scalar ordering
-parity has not yet been established.
+ordering. The packed implementation, official-source fixture extension,
+Release/ASAN parity tests, storage/work model, and real-data sanity run are
+recorded in `docs/saq_symphonyqg_fastscan_parity_2026_07_10.md`. Packed and
+scalar ordering match; all Phase 2 acceptance criteria are satisfied.
 
 ## Phase 3: Local-Replay Re-evaluation and Research Stop Gate
 
@@ -206,7 +209,7 @@ budget, not a method hyperparameter. Report every seed and the aggregate.
 exact_float
 symqg_unrotated_proxy        historical diagnostic only
 symqg_fht_scalar             source-aligned reference
-symqg_fht_fastscan           when parity-tested
+symqg_fht_fastscan           source-aligned packed path
 saq_fast
 saq_prefix_acc1 ... saq_prefix_accS
 saq_full
@@ -386,8 +389,8 @@ Use small commits in this order:
    2026-07-10)
 2. `Make finite block minima the tested default` (completed 2026-07-10)
 3. `Add one-bit and partial-block regression coverage` (completed 2026-07-10)
-4. `Add source-aligned SymphonyQG scalar estimator`
-5. `Validate SymphonyQG estimator parity`
+4. `Add source-aligned SymphonyQG scalar estimator` (completed 2026-07-10)
+5. `Validate SymphonyQG estimator parity` (completed 2026-07-10)
 6. `Record aligned local-replay decision`
 7. `Add complete graph-estimator work accounting` only if Phase 3 passes
 8. `Add fixed-graph frontier replay` only if Phases 3 and 4 pass
@@ -407,7 +410,7 @@ Until the Phase 3 gate passes, do not:
 - add new SAQ candidate-plan families;
 - describe the current proxy result as a research contribution.
 
-The immediate executable work is the remaining Phase 2 milestone: implement a
-packed/FastScan-equivalent path and establish ordering parity with the validated
-scalar reference. Do not start Phase 3 method evaluation until this comparison
-path is available.
+The immediate executable work is Phase 3: run the predeclared fixed-seed local
+replay, aggregate at the query level, compare rank quality against complete
+logical work, and apply the documented stop gate before any method design or
+full graph integration.

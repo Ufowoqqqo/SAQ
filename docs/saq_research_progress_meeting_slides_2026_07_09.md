@@ -1579,34 +1579,36 @@ claim. Its code-bit counts are not complete storage or runtime work.
 
 ---
 
-## 41A. Source-Aligned Scalar Baseline Correction
+## 41A. Source-Aligned Scalar And Packed Baseline
 
-A committed scalar implementation now matches pinned SymphonyQG revision
-`6124ddb34ee4d176edea1bd7ad38d1672343df28` field by field. The first
+A committed scalar and packed implementation now matches pinned SymphonyQG
+revision `6124ddb34ee4d176edea1bd7ad38d1672343df28` field by field. The first
 GIST sample50k / K512 / B=4 / subset-512 / seed-0 sanity run has 128 events:
 
 | estimator | code_bits_only | top1 disagreement | mean exact-best rank | p90 rank | top4 containment |
 |---|---:|---:|---:|---:|---:|
 | unrotated `symqg_vertex_proxy` | 960 | 0.867188 | 8.85156 | 22 | 0.390625 |
 | `symqg_fht_scalar` | 1024 | 0.304688 | 1.54688 | 3 | 0.968750 |
+| `symqg_fht_fastscan` | 1024 | 0.304688 | 1.54688 | 3 | 0.968750 |
 | `saq_fast` | 832 | 0.453125 | 1.93750 | 4 | 0.914062 |
 
 Interpretation:
 
 ```text
-The source-aligned scalar baseline is much stronger than the old proxy and is
+The source-aligned baseline is much stronger than the old proxy and is
 stronger than saq_fast in this small setting. The old positive comparison is
 invalid as comparative evidence.
 ```
 
-Release and ASAN Debug parity cover transformed values, query codes, residual
-bits, factors, distances, and deterministic tie ordering. This run still does
-not implement packed FastScan, multiple estimates, or graph traversal, so it is
-a baseline-correction sanity result rather than a graph-search claim.
+Release and ASAN Debug parity cover transformed values, packed bytes, query
+LUTs, accumulators, factors, distances, and deterministic tie ordering. Scalar
+and packed ordering are identical. This run still omits multiple estimates and
+graph traversal, so it is a baseline-correction sanity result rather than a
+graph-search claim.
 
 ---
 
-## 42. Current Direction: Fuller SymphonyQG Alignment
+## 42. Current Direction: Fixed-Seed Local Replay Gate
 
 Immediate research question:
 
@@ -1620,10 +1622,10 @@ Required ordered work:
 
 ```text
 Phase 1: completed; correctness defaults and focused tests pass
-Phase 2: scalar milestone complete; parity-tested packed path remains
+Phase 2: completed; scalar and packed paths match pinned source
 Phase 3: fixed-seed same-replay evaluation and stop/continue decision
 
-Phase 2 must reproduce:
+Completed Phase 2 alignment:
   FHT rotation
   padded dimension
   6-bit query quantization
@@ -1638,7 +1640,7 @@ Same-replay comparison:
 exact_float
 symqg_vertex_proxy              historical diagnostic only
 symqg_fht_scalar                source-aligned reference
-symqg_fht_fastscan              after parity testing
+symqg_fht_fastscan              source-aligned packed path
 saq_fast
 saq_prefix_acc1
 saq_prefix_acc2
@@ -1663,7 +1665,7 @@ limitation evidence rather than a method foundation.
 | global static segment-cost DP | SAQ default not dominated; near-frontier GIST plans slightly higher recall but slower | stopped as main method |
 | fac-error planner objective | objective changes GIST/CIFAR plans; GIST custom plan faster at same nprobe but not recall-matched | stopped as main method |
 | search-procedure scheduling | fast pruning and accurate early exit already strong; variance pruning weak but unsafe to tighten empirically | stopped as main method |
-| graph traversal compatibility | parity-tested scalar SymphonyQG baseline is stronger than `saq_fast` on a small seed-0 sanity run; packed/traversal evidence absent | active only as a source-aligned baseline-validation gate |
+| graph traversal compatibility | scalar and packed SymphonyQG paths match; aligned baseline is stronger than `saq_fast` on a small seed-0 sanity run; traversal evidence absent | Phase 3 stop-gate evaluation next |
 
 Speaker notes:
 
@@ -1742,14 +1744,15 @@ Do not start full HNSW/DiskANN integration yet.
 Immediate next step:
 
 ```text
-Phase 2: implement the packed/FastScan-equivalent path and establish ordering
-parity with the validated source-aligned scalar estimator.
+Phase 3: rerun the fixed local replay at subsets 1024 and 4096 over every
+predeclared rotation seed 0..9.
 ```
 
-Then execute Phase 3:
+Required decision evidence:
 
 ```text
-rerun the same local replay over predeclared seeds 0..9
+aggregate roots at the query level with confidence intervals
+compare rank quality against complete logical work
 apply the documented stop/continue condition
 ```
 

@@ -133,6 +133,26 @@ int main(int argc, char **argv) {
         }
     }
 
+    constexpr size_t packed_neighbor_count = symqg::kBatchSize;
+    std::vector<uint64_t> binary_words(
+        input::kNeighborCount * input::kPaddedDimension / 64);
+    symqg::space::pack_binary(
+        binary.data(), binary_words.data(),
+        input::kNeighborCount * input::kPaddedDimension);
+    std::vector<uint8_t> packed_codes(
+        packed_neighbor_count * input::kPaddedDimension / 8);
+    symqg::pack_codes(
+        input::kPaddedDimension, binary_words.data(), input::kNeighborCount,
+        packed_codes.data());
+
+    std::vector<uint8_t> packed_lut(input::kPaddedDimension << 2);
+    symqg::pack_lut_impl(
+        input::kPaddedDimension, query_codes.data(), packed_lut.data());
+    std::vector<uint16_t> positive_code_sum(packed_neighbor_count, 0);
+    symqg::accumulate_impl(
+        input::kPaddedDimension, packed_codes.data(), packed_lut.data(),
+        positive_code_sum.data());
+
     std::vector<float> triple(input::kNeighborCount);
     std::vector<float> factor_dq(input::kNeighborCount);
     std::vector<float> factor_vq(input::kNeighborCount);
@@ -159,12 +179,38 @@ int main(int argc, char **argv) {
         signed_dot.data(), triple.data(), factor_dq.data(), factor_vq.data(),
         estimated_distance.data());
 
+    std::vector<float> packed_factors(3 * packed_neighbor_count, 0.0f);
+    for (size_t neighbor = 0; neighbor < input::kNeighborCount; ++neighbor) {
+        packed_factors[neighbor] = triple[neighbor];
+        packed_factors[packed_neighbor_count + neighbor] = factor_dq[neighbor];
+        packed_factors[(2 * packed_neighbor_count) + neighbor] = factor_vq[neighbor];
+    }
+    std::vector<float> packed_estimated_distance(packed_neighbor_count, 0.0f);
+    symqg::QGScanner scanner(input::kPaddedDimension, packed_neighbor_count);
+    scanner.scan_neighbors(
+        packed_estimated_distance.data(), packed_lut.data(), current_distance,
+        lower, width, query_code_sum, packed_codes.data(), packed_factors.data());
+    std::vector<int32_t> packed_signed_dot(input::kNeighborCount);
+    for (size_t neighbor = 0; neighbor < input::kNeighborCount; ++neighbor) {
+        packed_signed_dot[neighbor] =
+            (static_cast<int32_t>(positive_code_sum[neighbor]) << 1) -
+            query_code_sum;
+    }
+    packed_estimated_distance.resize(input::kNeighborCount);
+
     std::vector<size_t> order(input::kNeighborCount);
     std::iota(order.begin(), order.end(), 0);
     std::sort(order.begin(), order.end(), [&](size_t left, size_t right) {
         return std::tie(estimated_distance[left], left) <
                std::tie(estimated_distance[right], right);
     });
+    std::vector<size_t> packed_order(input::kNeighborCount);
+    std::iota(packed_order.begin(), packed_order.end(), 0);
+    std::sort(
+        packed_order.begin(), packed_order.end(), [&](size_t left, size_t right) {
+            return std::tie(packed_estimated_distance[left], left) <
+                   std::tie(packed_estimated_distance[right], right);
+        });
 
     std::cout << "#pragma once\n\n";
     std::cout << "#include <array>\n#include <cstddef>\n#include <cstdint>\n\n";
@@ -176,6 +222,8 @@ int main(int argc, char **argv) {
               << input::kPaddedDimension << ";\n";
     std::cout << "inline constexpr size_t kNeighborCount = "
               << input::kNeighborCount << ";\n";
+    std::cout << "inline constexpr size_t kPackedNeighborCount = "
+              << packed_neighbor_count << ";\n";
     std::cout << "inline constexpr uint64_t kRotationSeed = "
               << input::kRotationSeed << ";\n\n";
 
@@ -192,15 +240,22 @@ int main(int argc, char **argv) {
     std::cout << "inline constexpr int32_t kQueryCodeSum = "
               << query_code_sum << ";\n\n";
     printArray("kQueryCodes", query_codes, "uint8_t");
+    printArray("kPackedLut", packed_lut, "uint8_t");
+    printArray("kPackedCodes", packed_codes, "uint8_t");
+    printArray("kPositiveCodeSum", positive_code_sum, "uint16_t");
     printArray("kResidualPositive", binary_flat, "uint8_t");
     printArray("kTriple", triple, "float");
     printArray("kFactorDq", factor_dq, "float");
     printArray("kFactorVq", factor_vq, "float");
     printArray("kSignedDot", signed_dot, "float");
+    printArray("kPackedSignedDot", packed_signed_dot, "int32_t");
     std::cout << "inline constexpr float kCurrentDistance = "
               << std::setprecision(9) << current_distance << "f;\n\n";
     printArray("kEstimatedDistance", estimated_distance, "float");
     printArray("kOrder", order, "size_t");
+    printArray(
+        "kPackedEstimatedDistance", packed_estimated_distance, "float");
+    printArray("kPackedOrder", packed_order, "size_t");
     std::cout << "} // namespace " << output_namespace << "\n";
     return 0;
 }

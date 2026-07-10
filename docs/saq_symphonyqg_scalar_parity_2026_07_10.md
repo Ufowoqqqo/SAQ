@@ -239,8 +239,8 @@ The canonical aggregate output is
 
 ## Phase Decision
 
-The source-aligned scalar milestone is complete. It corrects the baseline
-semantics and confirms that the old proxy was not adequate. Full Phase 2 remains
-open until a packed/FastScan-equivalent path matches scalar rank ordering on the
-parity cases. No SAQ-specific graph method should be designed before that
-remaining baseline step and the subsequent Phase 3 stop gate.
+The source-aligned scalar milestone corrected the baseline semantics and
+confirmed that the old proxy was not adequate. The subsequent packed path is
+now complete and recorded in
+`docs/saq_symphonyqg_fastscan_parity_2026_07_10.md`. Phase 2 is therefore
+complete; Phase 3 fixed-seed evaluation is the next research gate.
