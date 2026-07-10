@@ -53,7 +53,7 @@ source-aligned implementation reproduces or refutes this result.
 | phase | objective | status | dependency |
 |---|---|---|---|
 | 0 | contain unsupported claims and synchronize control documents | completed (2026-07-10) | none |
-| 1 | make confirmed correctness behavior the default and test it | pending | phase 0 |
+| 1 | make confirmed correctness behavior the default and test it | completed (2026-07-10) | phase 0 |
 | 2 | implement a deterministic source-aligned SymphonyQG estimator | pending | phase 1 |
 | 3 | rerun the local replay and apply the research stop gate | pending | phase 2 |
 | 4 | replace nominal code-bit comparisons with complete work accounting | pending | phase 3 passes |
@@ -375,8 +375,8 @@ Use small commits in this order:
 
 1. `Clarify provisional graph evidence and execution plan` (completed
    2026-07-10)
-2. `Make finite block minima the tested default`
-3. `Add one-bit and partial-block regression coverage`
+2. `Make finite block minima the tested default` (completed 2026-07-10)
+3. `Add one-bit and partial-block regression coverage` (completed 2026-07-10)
 4. `Add source-aligned SymphonyQG scalar estimator`
 5. `Validate SymphonyQG estimator parity`
 6. `Record aligned local-replay decision`
@@ -398,5 +398,5 @@ Until the Phase 3 gate passes, do not:
 - add new SAQ candidate-plan families;
 - describe the current proxy result as a research contribution.
 
-The immediate executable work is Phase 1 correctness defaults and regression
-tests, followed by the source-aligned estimator in Phase 2.
+The immediate executable work is Phase 2: implement the source-aligned scalar
+SymphonyQG estimator and establish parity against the pinned reference source.

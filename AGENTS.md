@@ -55,7 +55,8 @@ This branch starts from `saq-correctness-base`, which keeps only confirmed
 correctness fixes needed for reliable evaluation:
 
 - positive 1-bit segment packing support;
-- padded-lane finite block-min search mode.
+- finite valid-lane SIMD block minima as the default multi-segment search
+  behavior, with native reduction retained only as explicit legacy mode 0.
 
 Treat previous branches as historical evidence, not code to migrate by default:
 
@@ -103,10 +104,21 @@ git status --short --branch
 
 If C++ search results are claimed, report dataset, K, B, PCA setting, graph or
 IVF parameters, top-k/recall metric, command, plan, and whether safe search was
-used. For multi-segment recall/QPS claims in the SAQ IVF path, prefer:
+used. Multi-segment SAQ search now defaults to:
 
 ```bash
 -searcher_safe_block_min_mode=2
+```
+
+No flag is required for normal evaluation. Use
+`-searcher_safe_block_min_mode=0` only to reproduce the legacy native-reduction
+behavior, and label that comparison explicitly.
+
+Focused correctness tests require Google Test and can be selected with:
+
+```bash
+ctest --test-dir <test-build> --output-on-failure \
+  -R "BlockMinCorrectnessTest|SearcherConfigCorrectnessTest|PositiveOneBitSegmentTest"
 ```
 
 ## Do-Not Rules

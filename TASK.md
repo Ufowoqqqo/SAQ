@@ -99,22 +99,25 @@ Required accounting:
 
 ## Immediate Next Step
 
-Phase 0 of
-`docs/saq_graph_direction_research_validity_plan_2026_07_10.md` is complete:
-the historical graph comparison is now marked provisional, nominal code bits
-are distinguished from complete work, and the evidence notes and slides no
-longer imply a source-aligned SymphonyQG comparison.
+Phases 0 and 1 of
+`docs/saq_graph_direction_research_validity_plan_2026_07_10.md` are complete.
+The historical graph comparison is visibly provisional, finite valid-lane SIMD
+block minima are the tested default, positive 1-bit segments and partial blocks
+have focused regression coverage, and full GIST/K4096/B=3 completes fresh
+build/load/search evaluation. The verification record is
+`docs/saq_phase1_correctness_verification_2026_07_10.md`.
 
-Execute Phase 1 next:
+Execute Phase 2 next:
 
-1. make finite valid-lane block minima the tested default;
-2. add focused positive one-bit-segment and partial-block regression coverage;
-3. reject invalid graph-profiler budgets and failed result-file creation;
-4. verify Release and ASAN Debug builds plus the GIST B=3 smoke evaluation.
+1. implement power-of-two padding and deterministic random-sign FHT;
+2. make the rotation seed explicit and serializable;
+3. reproduce official 6-bit query quantization and vertex-residual factors in
+   the transformed space;
+4. establish scalar parity against pinned SymphonyQG source before adding a
+   packed/FastScan-equivalent path.
 
-After Phase 1 passes, implement and parity-test the deterministic,
-source-aligned SymphonyQG estimator in Phase 2, then apply the fixed-seed local
-replay stop gate in Phase 3.
+After Phase 2 parity passes, apply the fixed-seed local replay stop gate in
+Phase 3.
 
 Do not implement full HNSW/DiskANN integration, broaden the dataset matrix, or
 design a refinement policy until this gate passes.

@@ -387,30 +387,36 @@ The clean base branch preserves two correctness fixes:
 Relevant flags:
 
 ```text
--searcher_safe_block_min_mode=2
+default: -searcher_safe_block_min_mode=2
+legacy comparison only: -searcher_safe_block_min_mode=0
 ```
 
 Meaning:
 
 ```text
-0 = native behavior
+0 = legacy native behavior
 1 = scalar finite valid-lane block minimum
-2 = SIMD finite valid-lane block minimum
+2 = SIMD finite valid-lane block minimum (default)
 ```
 
 Code paths:
 
 ```text
 src/define_options.h
+saqlib/quantization/block_min.hpp
 saqlib/quantization/saq_searcher.hpp
 src/test_qps.cpp
 src/test_relative_error.cpp
+unit_test/ut_searcher_correctness.cpp
 ```
 
 Speaker notes:
 
 - These fixes are necessary for fair evaluation.
 - They should not be presented as novelty.
+- Phase 1 verifies all partial valid-lane counts `1..31`, positive 1-bit index
+  round-trip behavior, Release/ASAN builds, and full GIST/K4096/B=3
+  build/load/search.
 
 ---
 
@@ -1610,8 +1616,8 @@ estimator, rather than only over a formula-level vertex proxy?
 Required ordered work:
 
 ```text
-Phase 1: correctness defaults and focused regression tests
-Phase 2: source-aligned scalar estimator, then parity-tested packed path
+Phase 1: completed; correctness defaults and focused tests pass
+Phase 2: active; source-aligned scalar estimator, then parity-tested packed path
 Phase 3: fixed-seed same-replay evaluation and stop/continue decision
 
 Phase 2 must reproduce:
@@ -1733,14 +1739,15 @@ Do not start full HNSW/DiskANN integration yet.
 Immediate next step:
 
 ```text
-Phase 1: make finite valid-lane block minima the tested default and add focused
-one-bit-segment and partial-block regression coverage.
+Phase 2: implement a deterministic source-aligned SymphonyQG scalar estimator
+with random-sign FHT, power-of-two padding, and an explicit rotation seed.
 ```
 
-Then execute Phases 2--3:
+Then complete scalar parity and execute Phase 3:
 
 ```text
-implement and parity-test a deterministic source-aligned SymphonyQG estimator
+compare transformed vectors, query codes, factors, and every local estimate
+add a packed/FastScan-equivalent path only after scalar parity
 rerun the same local replay over predeclared seeds 0..9
 apply the documented stop/continue condition
 ```
