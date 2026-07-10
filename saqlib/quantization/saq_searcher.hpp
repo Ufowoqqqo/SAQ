@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <bit>
-#include <cstring>
 #include <immintrin.h>
 #include <limits>
 #include <stdint.h>
@@ -10,6 +9,7 @@
 #include <glog/logging.h>
 
 #include "defines.hpp"
+#include "quantization/block_min.hpp"
 #include "quantization/caq/caq_estimator.hpp"
 #include "quantization/cluster_data.hpp"
 #include "quantization/config.h"
@@ -93,6 +93,7 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
 
             const auto blk_begin = blk_idx * KFastScanSize;
             const size_t valid_lanes = std::min<size_t>(KFastScanSize, num_points - blk_begin);
+            bool block_has_nonfinite = false;
             float mi = std::numeric_limits<float>::max();
 
             // 1. computes distance estimates using variance information for early pruning.
@@ -106,7 +107,8 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
                     curr_dist512[1] = _mm512_add_ps(curr_dist512[1], cd[1]);
                 }
 
-                mi = blockMin(curr_dist512, valid_lanes, curr_dist);
+                mi = conservativeBlockMin(
+                    curr_dist512, valid_lanes, curr_dist, block_has_nonfinite, blk_idx, "variance");
                 if (mi > distk) {
                     continue;
                 }
@@ -129,7 +131,8 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
                 curr_dist512[0] = _mm512_add_ps(curr_dist512[0], cd[0]);
                 curr_dist512[1] = _mm512_add_ps(curr_dist512[1], cd[1]);
 
-                mi = blockMin(curr_dist512, valid_lanes, curr_dist);
+                mi = conservativeBlockMin(
+                    curr_dist512, valid_lanes, curr_dist, block_has_nonfinite, blk_idx, "fast");
                 if (mi > distk) {
                     break;
                 }
@@ -145,10 +148,26 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
                     _mm512_store_ps(clu_dist_ + c_i * KFastScanSize + 16, clu_dist512_[c_i * FAST_ARRAY + 1]);
                 }
                 for (size_t j = 0; j < KFastScanSize; ++j) {
-                    if (curr_dist[j] < distk) {
-                        auto idx = blk_begin + j;
-                        if (idx >= num_points) {
-                            break;
+                    auto idx = blk_begin + j;
+                    if (idx >= num_points) {
+                        break;
+                    }
+                    if (block_has_nonfinite || curr_dist[j] < distk) {
+                        if (block_has_nonfinite) {
+                            float acc_dist = 0.0f;
+                            for (size_t c_i = 0; c_i < clus_num; ++c_i) {
+                                const float segment_dist = estimators_[c_i].compAccurateDist(idx);
+                                CHECK(block_min::rawFinite(segment_dist))
+                                    << "non-finite accurate segment distance at block " << blk_idx
+                                    << ", lane " << j << ", segment " << c_i;
+                                acc_dist += segment_dist;
+                            }
+                            CHECK(block_min::rawFinite(acc_dist))
+                                << "non-finite recomputed accurate distance at block " << blk_idx
+                                << ", lane " << j;
+                            KNNs.insert(saq_clust->ids()[idx], acc_dist);
+                            distk = KNNs.distk();
+                            continue;
                         }
                         float acc_dist = curr_dist[j];
                         for (size_t c_i = 0; c_i < clus_num; ++c_i) {
@@ -180,77 +199,43 @@ class SAQSearcher : public SaqCluEstimator<kDistType> {
     static int normalizeSafeBlockMinMode(const SearcherConfig &cfg) {
         CHECK_GE(cfg.searcher_safe_block_min_mode, 0);
         CHECK_LE(cfg.searcher_safe_block_min_mode, 2);
-        if (cfg.searcher_safe_block_min && cfg.searcher_safe_block_min_mode == 0) {
+        if (cfg.searcher_safe_block_min) {
             return 1;
         }
         return cfg.searcher_safe_block_min_mode;
     }
 
-    static bool rawFinite(float value) {
-        uint32_t bits = 0;
-        std::memcpy(&bits, &value, sizeof(bits));
-        return (bits & 0x7f800000u) != 0x7f800000u;
-    }
-
-    static __mmask16 lowMask(size_t n) {
-        return n >= 16 ? 0xffff : static_cast<__mmask16>((1u << n) - 1u);
-    }
-
-    static __m512 finiteOrMax(__m512 value, __mmask16 valid_mask) {
-        const __m512i bits = _mm512_castps_si512(value);
-        const __m512i exp = _mm512_and_si512(bits, _mm512_set1_epi32(0x7f800000));
-        const __mmask16 finite_mask = _mm512_cmpneq_epi32_mask(exp, _mm512_set1_epi32(0x7f800000));
-        const __mmask16 keep_mask = finite_mask & valid_mask;
-        return _mm512_mask_blend_ps(keep_mask, _mm512_set1_ps(std::numeric_limits<float>::max()), value);
-    }
-
-    static float hmin16(__m512 value) {
-        const __m256 lo = _mm512_castps512_ps256(value);
-        const __m256 hi = _mm512_extractf32x8_ps(value, 1);
-        const __m256 v8 = _mm256_min_ps(lo, hi);
-        const __m128 v8_lo = _mm256_castps256_ps128(v8);
-        const __m128 v8_hi = _mm256_extractf128_ps(v8, 1);
-        const __m128 v4 = _mm_min_ps(v8_lo, v8_hi);
-        const __m128 shuf1 = _mm_movehdup_ps(v4);
-        const __m128 v2 = _mm_min_ps(v4, shuf1);
-        const __m128 shuf2 = _mm_movehl_ps(shuf1, v2);
-        const __m128 v1 = _mm_min_ss(v2, shuf2);
-        return _mm_cvtss_f32(v1);
-    }
-
-    static float simdFiniteBlockMin(const __m512 *dist, size_t valid_lanes) {
-        const __mmask16 mask0 = lowMask(std::min<size_t>(valid_lanes, 16));
-        const __mmask16 mask1 = valid_lanes > 16 ? lowMask(valid_lanes - 16) : 0;
-        const __m512 v0 = finiteOrMax(dist[0], mask0);
-        const __m512 v1 = finiteOrMax(dist[1], mask1);
-        return hmin16(_mm512_min_ps(v0, v1));
-    }
-
-    static float scalarFiniteBlockMin(const __m512 *dist, size_t valid_lanes, float *scratch) {
-        _mm512_store_ps(scratch, dist[0]);
-        _mm512_store_ps(scratch + 16, dist[1]);
-        float mi = std::numeric_limits<float>::max();
-        for (size_t lane = 0; lane < valid_lanes; ++lane) {
-            const float val = scratch[lane];
-            if (rawFinite(val) && val < mi) {
-                mi = val;
-            }
-        }
-        return mi;
-    }
-
-    float blockMin(const __m512 *dist, size_t valid_lanes, float *scratch) const {
+    block_min::FiniteBlockMinResult blockMin(const __m512 *dist, size_t valid_lanes, float *scratch) const {
         switch (safe_block_min_mode_) {
-        case 0:
-            return _mm512_reduce_min_ps(_mm512_min_ps(dist[0], dist[1]));
+        case 0: {
+            auto result = block_min::scalarFiniteBlockMin(dist, valid_lanes, scratch);
+            result.min = _mm512_reduce_min_ps(_mm512_min_ps(dist[0], dist[1]));
+            return result;
+        }
         case 1:
-            return scalarFiniteBlockMin(dist, valid_lanes, scratch);
+            return block_min::scalarFiniteBlockMin(dist, valid_lanes, scratch);
         case 2:
-            return simdFiniteBlockMin(dist, valid_lanes);
+            return block_min::simdFiniteBlockMin(dist, valid_lanes);
         default:
             CHECK(false) << "bad safe block-min mode: " << safe_block_min_mode_;
-            return std::numeric_limits<float>::max();
+            return {};
         }
+    }
+
+    float conservativeBlockMin(const __m512 *dist, size_t valid_lanes, float *scratch,
+                               bool &block_has_nonfinite, size_t block_idx, const char *stage) const {
+        const auto result = blockMin(dist, valid_lanes, scratch);
+        const bool previously_nonfinite = block_has_nonfinite;
+        if (!result.all_valid_lanes_finite && !block_has_nonfinite) {
+            LOG(ERROR) << "non-finite distance in valid lane at block " << block_idx
+                       << " during " << stage
+                       << "; disabling approximate pruning for this block";
+        }
+        block_has_nonfinite = block_has_nonfinite || !result.all_valid_lanes_finite;
+        if (previously_nonfinite) {
+            return std::numeric_limits<float>::lowest();
+        }
+        return block_min::conservativePruningMin(result);
     }
 
     void scanCluster(const CAQClusterData *clusters, utils::ResultPool &KNNs) {

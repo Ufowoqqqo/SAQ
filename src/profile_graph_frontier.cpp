@@ -177,6 +177,15 @@ void ensure_parent_dir(const std::string &path) {
     }
 }
 
+void validate_graph_flags() {
+    CHECK_GT(FLAGS_graph_subset, 1) << "-graph_subset must be greater than 1";
+    CHECK_GT(FLAGS_graph_degree, 0) << "-graph_degree must be positive";
+    CHECK_GT(FLAGS_graph_max_queries, 0) << "-graph_max_queries must be positive";
+    CHECK_GT(FLAGS_graph_roots_per_query, 0) << "-graph_roots_per_query must be positive";
+    CHECK_GE(FLAGS_graph_max_events, 0) << "-graph_max_events must be non-negative";
+    CHECK_GT(FLAGS_graph_topl_max, 0) << "-graph_topl_max must be positive";
+}
+
 std::vector<ClusterLoc> build_id_to_cluster_local(const IVF &ivf) {
     std::vector<ClusterLoc> id_to_loc(ivf.num_data());
     const auto &clusters = ivf.get_pclusters();
@@ -598,6 +607,7 @@ class GraphFrontierProfiler {
         const auto path = paths_.output_prefix + ".csv";
         ensure_parent_dir(path);
         std::ofstream out(path);
+        CHECK(out.is_open()) << "failed to open aggregate CSV: " << path;
         out << "estimator,events,degree,approx_code_bits_per_candidate,top1_disagreement_rate,rank_mean,rank_p50,rank_p90,rank_p99";
         for (const size_t l : top_l_values_) {
             out << ",top" << l << "_containment";
@@ -630,6 +640,7 @@ class GraphFrontierProfiler {
         const auto path = paths_.output_prefix + ".md";
         ensure_parent_dir(path);
         std::ofstream out(path);
+        CHECK(out.is_open()) << "failed to open Markdown summary: " << path;
 
         out << "# Local Neighbor-Order Profiler Summary\n\n";
         out << "## Scope\n\n";
@@ -678,11 +689,10 @@ class GraphFrontierProfiler {
         }
 
         out << "\n## Interpretation Rule\n\n";
-        out << "Continue the graph direction only if the SAQ prefix curve shows a stable\n";
-        out << "rank-recovery or work-reduction advantage over `symqg_vertex_proxy`.\n";
-        out << "If the strongest result is merely that SAQ can score graph neighbors,\n";
-        out << "this profiler should be treated as negative evidence rather than a\n";
-        out << "method contribution.\n";
+        out << "Do not interpret this provisional proxy comparison as an\n";
+        out << "SAQ-versus-SymphonyQG result. Apply the graph-direction stop gate only\n";
+        out << "after a source-aligned FHT/padded estimator and complete work accounting\n";
+        out << "are available.\n";
 
         std::cout << "Summary written to: " << path << '\n';
     }
@@ -731,6 +741,7 @@ class GraphFrontierProfiler {
             const auto event_path = paths_.output_prefix + ".events.csv";
             ensure_parent_dir(event_path);
             event_csv_.open(event_path);
+            CHECK(event_csv_.is_open()) << "failed to open event CSV: " << event_path;
             event_csv_ << "query_id,root_id,exact_best_id,exact_gap,degree,distinct_clusters,estimator,rank_exact_best,est_best_id,top1_disagree\n";
             std::cout << "Event CSV will be written to: " << event_path << '\n';
         }
@@ -779,6 +790,7 @@ SearcherConfig make_searcher_config() {
 
 int main(int argc, char *argv[]) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
+    validate_graph_flags();
 
     QuantizeConfig cfg;
     auto args_str = parseArgs(&cfg);

@@ -259,7 +259,7 @@ int main(int argc, char *argv[]) {
     std::string result_file;
     result_file = fmt::format("{}/{}_{}_sm{}", paths.result_path,
                               FLAGS_dataset, args_str, FLAGS_searcher_vars_bound_m);
-    const int safe_block_min_mode = FLAGS_searcher_safe_block_min && FLAGS_searcher_safe_block_min_mode == 0
+    const int safe_block_min_mode = FLAGS_searcher_safe_block_min
                                     ? 1
                                     : FLAGS_searcher_safe_block_min_mode;
     if (safe_block_min_mode == 1) {

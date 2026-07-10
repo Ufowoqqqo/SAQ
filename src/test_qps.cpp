@@ -271,7 +271,7 @@ int main(int argc, char *argv[]) {
                                           dataset_str, args_str.c_str(), FLAGS_fix_thread, FLAGS_fix_nprobe);
 
     result_file += fmt::format("_sm{}", FLAGS_searcher_vars_bound_m);
-    const int safe_block_min_mode = FLAGS_searcher_safe_block_min && FLAGS_searcher_safe_block_min_mode == 0
+    const int safe_block_min_mode = FLAGS_searcher_safe_block_min
                                     ? 1
                                     : FLAGS_searcher_safe_block_min_mode;
     if (safe_block_min_mode == 1) {
