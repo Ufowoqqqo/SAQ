@@ -20,3 +20,6 @@ target_link_libraries(test_ivf PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
 
 add_executable(profile_graph_frontier profile_graph_frontier.cpp)
 target_link_libraries(profile_graph_frontier PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
+
+add_executable(benchmark_graph_estimators benchmark_graph_estimators.cpp)
+target_link_libraries(benchmark_graph_estimators PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})

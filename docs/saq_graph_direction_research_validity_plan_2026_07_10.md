@@ -56,9 +56,9 @@ still provisional.
 | 0 | contain unsupported claims and synchronize control documents | completed (2026-07-10) | none |
 | 1 | make confirmed correctness behavior the default and test it | completed (2026-07-10) | phase 0 |
 | 2 | implement a deterministic source-aligned SymphonyQG estimator | completed (2026-07-10) | phase 1 |
-| 3 | rerun the local replay and apply the research stop gate | pending | phase 2 |
-| 4 | replace nominal code-bit comparisons with complete work accounting | pending | phase 3 passes |
-| 5 | implement a true fixed-graph frontier/traversal replay | pending | phases 3 and 4 pass |
+| 3 | rerun the local replay and apply the research stop gate | completed (2026-07-11) | phase 2 |
+| 4 | replace nominal code-bit comparisons with complete work accounting | completed; stop (2026-07-11) | phase 3 passes |
+| 5 | implement a true fixed-graph frontier/traversal replay | not entered | phases 3 and 4 pass |
 | 6 | make preparation and evaluation reproducible from a clean checkout | pending | developed alongside phases 2--5 |
 | 7 | update related work, synthesis, and meeting materials | pending | each evidence-changing phase |
 
@@ -392,17 +392,17 @@ Use small commits in this order:
 4. `Add source-aligned SymphonyQG scalar estimator` (completed 2026-07-10)
 5. `Validate SymphonyQG estimator parity` (completed 2026-07-10)
 6. `Record aligned local-replay decision` (completed 2026-07-11)
-7. `Add complete graph-estimator work accounting` (next; Phase 3 supports only
-   this narrow continuation)
-8. `Add fixed-graph frontier replay` only if Phases 3 and 4 pass
-9. `Update graph related work and meeting synthesis`
+7. `Add complete graph-estimator work accounting` (completed 2026-07-11;
+   Phase 4 stop condition met)
+8. `Add fixed-graph frontier replay` (not authorized because Phase 4 failed)
+9. `Update graph related work and meeting synthesis` (next)
 
 Each evidence commit must include the exact command, fixed configuration,
 aggregate output, interpretation, and explicit continue/stop decision.
 
 ## Actions Explicitly Deferred
 
-Until the Phase 4 work gate passes, do not:
+Because the Phase 4 work gate did not pass, do not:
 
 - implement full HNSW or DiskANN integration;
 - add a learned or query-calibrated refinement policy;
@@ -415,6 +415,15 @@ Phase 3 is complete and recorded in
 `docs/saq_graph_phase3_canonical_evidence_2026_07_11.md`. `saq_fast` is worse
 than aligned packed SymphonyQG across both subsets and every fixed rotation.
 The first accurate SAQ prefix is consistently more accurate but reads more
-code, so the result supports only Phase 4 complete work accounting. The
-immediate executable work is to compare complete bytes and isolated estimator
-runtime before any method design or full graph integration.
+code, so the result supported only Phase 4 complete work accounting.
+
+Phase 4 is complete and recorded in
+`docs/saq_graph_phase4_complete_work_evidence_2026_07_11.md`. On the fixed
+subset-4096 trace, the first accurate prefix costs `52.5x` the accounted packed
+SymphonyQG time in candidate order and `26.8x` after implementable block
+grouping. Even a prepared, perfectly utilized 32-lane SAQ prefix kernel remains
+`4.2x` slower before query or cluster preparation. SAQ retains a compressed
+storage advantage, so this is not a universal dominance claim; it is a stop
+decision for the current graph-local-ranking hypothesis. The next work is to
+preserve the limitation evidence and return to a related-work-reviewed
+direction proposal, not to implement Phase 5.

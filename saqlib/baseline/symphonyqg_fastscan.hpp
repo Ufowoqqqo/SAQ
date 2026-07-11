@@ -34,6 +34,11 @@ struct SymphonyQGFastScanBatch {
     std::vector<float> factor_vq;
 };
 
+struct SymphonyQGFastScanScratch {
+    std::vector<uint16_t> positive_sums;
+    std::vector<float> signed_dots;
+};
+
 class SymphonyQGFastScanEstimator {
   public:
     static constexpr size_t kBatchSize = 32;
@@ -240,13 +245,22 @@ class SymphonyQGFastScanEstimator {
     std::vector<uint16_t> positiveCodeSums(
         const SymphonyQGFastScanQuery &query,
         const SymphonyQGFastScanBatch &batch) const {
+        std::vector<uint16_t> sums;
+        positiveCodeSumsInto(query, batch, sums);
+        return sums;
+    }
+
+    void positiveCodeSumsInto(
+        const SymphonyQGFastScanQuery &query,
+        const SymphonyQGFastScanBatch &batch,
+        std::vector<uint16_t> &sums) const {
         CHECK_EQ(query.packed_lut.size(), query_lut_bytes());
         CHECK_EQ(
             batch.padded_neighbor_count,
             roundUpBatch(batch.neighbor_count));
         CHECK_EQ(
             batch.packed_codes.size(), packedCodeBytes(batch.neighbor_count));
-        std::vector<uint16_t> sums(batch.padded_neighbor_count, 0);
+        sums.resize(batch.padded_neighbor_count);
         const size_t code_bytes_per_batch = padded_dimension_ << 2;
         for (size_t block = 0;
              block < batch.padded_neighbor_count; block += kBatchSize) {
@@ -254,7 +268,6 @@ class SymphonyQGFastScanEstimator {
                 &batch.packed_codes[(block / kBatchSize) * code_bytes_per_batch],
                 query.packed_lut.data(), padded_dimension_, &sums[block]);
         }
-        return sums;
     }
 
     std::vector<int32_t> signedQueryCodeDots(
@@ -273,28 +286,40 @@ class SymphonyQGFastScanEstimator {
     std::vector<float> estimateBatch(
         const SymphonyQGFastScanQuery &query, float current_distance,
         const SymphonyQGFastScanBatch &batch) const {
+        SymphonyQGFastScanScratch scratch;
+        std::vector<float> distances;
+        estimateBatchInto(query, current_distance, batch, scratch, distances);
+        distances.resize(batch.neighbor_count);
+        return distances;
+    }
+
+    void estimateBatchInto(
+        const SymphonyQGFastScanQuery &query, float current_distance,
+        const SymphonyQGFastScanBatch &batch,
+        SymphonyQGFastScanScratch &scratch,
+        std::vector<float> &distances) const {
         CHECK_EQ(batch.triple_x.size(), batch.padded_neighbor_count);
         CHECK_EQ(batch.factor_dq.size(), batch.padded_neighbor_count);
         CHECK_EQ(batch.factor_vq.size(), batch.padded_neighbor_count);
         CHECK_EQ(
             batch.padded_neighbor_count,
             roundUpBatch(batch.neighbor_count));
-        const auto positive_sums = positiveCodeSums(query, batch);
-        std::vector<float> signed_dots(batch.padded_neighbor_count, 0.0f);
+        positiveCodeSumsInto(query, batch, scratch.positive_sums);
+        scratch.signed_dots.resize(batch.padded_neighbor_count);
         for (size_t neighbor = 0;
              neighbor < batch.padded_neighbor_count; ++neighbor) {
-            signed_dots[neighbor] = static_cast<float>(
-                (static_cast<int32_t>(positive_sums[neighbor]) << 1) -
+            scratch.signed_dots[neighbor] = static_cast<float>(
+                (static_cast<int32_t>(scratch.positive_sums[neighbor]) << 1) -
                 query.code_sum);
         }
 
-        std::vector<float> distances(batch.padded_neighbor_count, 0.0f);
+        distances.resize(batch.padded_neighbor_count);
         const __m512 current = _mm512_set1_ps(current_distance);
         const __m512 width = _mm512_set1_ps(query.width);
         const __m512 lower = _mm512_set1_ps(query.lower);
         for (size_t offset = 0;
              offset < batch.padded_neighbor_count; offset += 16) {
-            const __m512 dot = _mm512_loadu_ps(&signed_dots[offset]);
+            const __m512 dot = _mm512_loadu_ps(&scratch.signed_dots[offset]);
             __m512 triple = _mm512_loadu_ps(&batch.triple_x[offset]);
             __m512 factor_dq = _mm512_loadu_ps(&batch.factor_dq[offset]);
             const __m512 factor_vq = _mm512_loadu_ps(&batch.factor_vq[offset]);
@@ -307,8 +332,6 @@ class SymphonyQGFastScanEstimator {
             const __m512 distance = _mm512_add_ps(factor_dq, query_value);
             _mm512_storeu_ps(&distances[offset], distance);
         }
-        distances.resize(batch.neighbor_count);
-        return distances;
     }
 };
 

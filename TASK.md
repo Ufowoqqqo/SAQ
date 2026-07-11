@@ -2,10 +2,11 @@
 
 ## Active Goal
 
-Develop a clean query-unaware structural SAQ follow-up from original SAQ code
-plus confirmed correctness fixes. The current branch studies graph-index
-compatibility for SAQ: whether SAQ's progressive compressed distance estimator
-remains traversal-stable in graph-based ANNS.
+Evaluate a clean query-unaware structural SAQ follow-up from original SAQ code
+plus confirmed correctness fixes. This branch has completed its graph-index
+compatibility study through the predeclared Phase 4 work gate. The current
+graph-local-ranking hypothesis is stopped; the branch now preserves its
+negative evidence and must not proceed to traversal-policy implementation.
 
 The target is a database top-conference-level contribution suitable for SIGMOD,
 VLDB, or ICDE. Future work should be judged by research novelty, evidence,
@@ -70,7 +71,7 @@ metric table labels code bits only; packed code, factor, LUT, padding, and SIMD
 work are reported separately. The completed Phase 2 record is
 `docs/saq_symphonyqg_fastscan_parity_2026_07_10.md`.
 
-## Research Priority
+## Completed Research Question
 
 **Graph-index compatibility and traversal-sensitivity analysis**
 
@@ -82,13 +83,16 @@ graph-based ANNS traversal without destabilizing the search path, and what
 query-unaware refinement policy is needed to preserve the recall/work tradeoff?
 ```
 
-Candidate method, only if the first evidence supports it:
+The candidate method would have been:
 
 ```text
 A traversal-aware refinement policy that uses SAQ's stored estimator quantities
 to refine only frontier-ambiguous candidates, without representative-query
 learning and without changing SAQ's global quantization plan.
 ```
+
+Phase 4 did not support implementing this method. Any new research priority
+must be selected through a separate related-work, novelty, and overhead review.
 
 Required accounting:
 
@@ -133,19 +137,21 @@ accurate, but it reads 1472 code bits per candidate versus SymphonyQG's 1024
 before complete factor and compute accounting. The result therefore supports
 only a narrow Phase 4 work evaluation, not a graph method claim.
 
-Execute Phase 4 next:
+Phase 4 is complete and recorded in
+`docs/saq_graph_phase4_complete_work_evidence_2026_07_11.md`. The measured
+trace exposes only `2.17` useful graph candidates per SAQ FastScan block and
+touches `13.63` residual clusters per root after grouping. `saq_prefix_acc1`
+costs `52.5x` the accounted packed SymphonyQG estimator time in candidate
+order and `26.8x` after implementable block grouping. A prepared, perfectly
+utilized 32-lane prefix kernel remains `4.2x` slower before preparation. The SAQ
+structure is still smaller, so the result is not a universal claim against SAQ
+or graph integration; it rejects this branch's current progressive-estimator
+hypothesis as a work-matched traversal foundation.
 
-1. derive complete logical bytes requested by `symqg_fht_fastscan`, `saq_fast`,
-   and `saq_prefix_acc1`, including factors, query tables, padding, and
-   amortization assumptions;
-2. add isolated estimator microbenchmarks without adjacency construction,
-   combined-profiler work, or file output;
-3. compare quality against complete bytes and estimator time;
-4. stop the graph-local-ranking direction if the first SAQ prefix no longer
-   supplies a stable Pareto point.
-
-Do not implement full HNSW/DiskANN integration, broaden the dataset matrix, or
-design a refinement policy before this work gate passes.
+Do not implement Phase 5, broaden the dataset matrix to search for a positive
+case, or design a refinement policy to rescue this result. Preserve the graph
+layout mismatch as negative evidence, synchronize the synthesis/meeting
+materials, and return to a new related-work-reviewed direction proposal.
 
 ## Constraints
 

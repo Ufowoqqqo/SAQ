@@ -193,10 +193,15 @@ class SaqCluEstimator : public SaqEstimatorBase<CaqCluEstimator<kDistType>> {
         DCHECK_LT(seg_idx, estimators_.size());
         float PORTABLE_ALIGN64 distances[KFastScanSize];
         __m512 cd[2];
-        estimators_[seg_idx].compFastDist(idx / KFastScanSize, cd);
+        compFastDistSegment(seg_idx, idx / KFastScanSize, cd);
         _mm512_store_ps(distances, cd[0]);
         _mm512_store_ps(distances + 16, cd[1]);
         return distances[idx % KFastScanSize];
+    }
+
+    void compFastDistSegment(size_t seg_idx, size_t block_idx, __m512 *distances) {
+        DCHECK_LT(seg_idx, estimators_.size());
+        estimators_[seg_idx].compFastDist(block_idx, distances);
     }
 
     float compAccurateDistSegment(size_t seg_idx, size_t idx) {

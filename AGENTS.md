@@ -26,17 +26,20 @@ task descriptions. Prefer words such as "review", "analyze", "evaluate",
 such as "audit", "harden", "triage", and "patch" unless the topic is literally
 code correctness, debugging, or repository maintenance.
 
-## Active Direction
+## Direction Status
 
-**Graph-index compatibility and traversal-sensitivity analysis.** Study whether
-SAQ's segmented progressive distance estimator remains traversal-stable in
-graph-based ANNS, where approximate distances affect frontier expansion rather
-than only filtering a fixed IVF candidate set.
+**Graph-index compatibility and traversal-sensitivity analysis has reached its
+predeclared Phase 4 stop condition.** The first accurate SAQ prefix improves
+local ordering, but complete estimator accounting shows that the current IVF
+residual-cluster and FastScan layout does not provide a work-matched random
+graph-edge estimator. Preserve this as SAQ limitation evidence; do not describe
+it as a universal result against SAQ or graph indexes.
 
-Do not implement a full HNSW or DiskANN integration before a paper/source-code
-review and a minimal offline traversal-sensitivity measurement. Any proposed
-method should preserve SAQ's one global quantization plan unless a later note
-explicitly motivates a different architecture:
+Do not implement Phase 5, a full HNSW/DiskANN integration, or a refinement
+policy to rescue this hypothesis. A new main direction must first pass a
+primary-source related-work and novelty review and should normally start on a
+clean branch. Any later SAQ method should preserve one global quantization plan
+unless a new note explicitly motivates a different architecture:
 
 ```text
 one dataset-level segment/bit plan
@@ -45,9 +48,9 @@ no per-cluster plan ids
 no mixed-plan search dispatch
 ```
 
-The first implementation should be offline only: compare exact float frontier
-decisions with full SAQ estimates and staged SAQ estimates on a fixed graph or
-adjacency replay, without changing SAQ's persisted index format.
+The completed graph evidence is recorded in
+`docs/saq_graph_phase3_canonical_evidence_2026_07_11.md` and
+`docs/saq_graph_phase4_complete_work_evidence_2026_07_11.md`.
 
 ## Branch Hygiene
 
@@ -145,8 +148,8 @@ python -m py_compile script/run_graph_phase3.py tests/test_graph_phase3.py
   evidence or an ablation plan.
 - Do not overclaim universal improvement over SAQ before end-to-end validation
   across datasets and operating points.
-- Do not implement full graph-index integration until an offline traversal
-  replay shows a graph-specific SAQ limitation.
+- Do not implement full graph-index integration on this branch; the Phase 4
+  estimator-work gate did not pass.
 - Before proposing any new research idea, first survey closely related work.
   If similar work exists, state what it already solves, what assumptions or
   gaps remain, and how the proposed idea avoids duplication by targeting a

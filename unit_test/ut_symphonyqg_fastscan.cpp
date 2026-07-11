@@ -110,8 +110,24 @@ TEST(SymphonyQGFastScanParityTest, PackedLayoutAndScanMatchPinnedSource) {
 
     const auto distances = fastscan.estimateBatch(
         packed_query, reference::kCurrentDistance, batch);
+    baseline::SymphonyQGFastScanScratch scratch;
+    std::vector<float> reusable_distances;
+    fastscan.estimateBatchInto(
+        packed_query, reference::kCurrentDistance, batch, scratch,
+        reusable_distances);
+    const auto *sum_storage = scratch.positive_sums.data();
+    const auto *dot_storage = scratch.signed_dots.data();
+    const auto *distance_storage = reusable_distances.data();
+    fastscan.estimateBatchInto(
+        packed_query, reference::kCurrentDistance, batch, scratch,
+        reusable_distances);
+    EXPECT_EQ(scratch.positive_sums.data(), sum_storage);
+    EXPECT_EQ(scratch.signed_dots.data(), dot_storage);
+    EXPECT_EQ(reusable_distances.data(), distance_storage);
+    EXPECT_EQ(reusable_distances.size(), batch.padded_neighbor_count);
     ASSERT_EQ(distances.size(), reference::kPackedEstimatedDistance.size());
     for (size_t neighbor = 0; neighbor < distances.size(); ++neighbor) {
+        EXPECT_FLOAT_EQ(reusable_distances[neighbor], distances[neighbor]);
         EXPECT_NEAR(
             distances[neighbor], reference::kPackedEstimatedDistance[neighbor],
             5e-5f)
