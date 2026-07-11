@@ -560,18 +560,25 @@ class GraphFrontierProfiler {
         size_t distinct_clusters) {
         auto [best_pos, rank] = best_and_rank_of_exact_best(scores, estimate, exact_best_pos);
         const bool disagree = scores[best_pos].id != exact_best_id;
+        const float exact_best_distance = scores[exact_best_pos].exact;
+        const float selected_exact_distance = scores[best_pos].exact;
+        const float exact_regret = selected_exact_distance - exact_best_distance;
         stats_[stat_idx].add(rank, disagree, top_l_values_);
 
         if (event_csv_.is_open()) {
             event_csv_ << query_id << ','
                        << root_id << ','
                        << exact_best_id << ','
+                       << exact_best_distance << ','
                        << exact_gap << ','
                        << scores.size() << ','
                        << distinct_clusters << ','
                        << stats_[stat_idx].name << ','
                        << rank << ','
                        << scores[best_pos].id << ','
+                       << estimate[best_pos] << ','
+                       << selected_exact_distance << ','
+                       << exact_regret << ','
                        << (disagree ? 1 : 0) << '\n';
         }
     }
@@ -904,7 +911,8 @@ class GraphFrontierProfiler {
             ensure_parent_dir(event_path);
             event_csv_.open(event_path);
             CHECK(event_csv_.is_open()) << "failed to open event CSV: " << event_path;
-            event_csv_ << "query_id,root_id,exact_best_id,exact_gap,degree,distinct_clusters,estimator,rank_exact_best,est_best_id,top1_disagree\n";
+            event_csv_ << std::setprecision(std::numeric_limits<float>::max_digits10);
+            event_csv_ << "query_id,root_id,exact_best_id,exact_best_distance,exact_gap,degree,distinct_clusters,estimator,rank_exact_best,est_best_id,est_best_estimate,est_best_exact_distance,exact_regret,top1_disagree\n";
             std::cout << "Event CSV will be written to: " << event_path << '\n';
         }
     }

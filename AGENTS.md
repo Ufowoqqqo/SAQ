@@ -121,6 +121,14 @@ ctest --test-dir <test-build> --output-on-failure \
   -R "BlockMinCorrectnessTest|SearcherConfigCorrectnessTest|PositiveOneBitSegmentTest"
 ```
 
+The Phase 3 fixed-seed driver and query-level aggregation have focused Python
+tests:
+
+```bash
+python -m unittest tests/test_graph_phase3.py -v
+python -m py_compile script/run_graph_phase3.py tests/test_graph_phase3.py
+```
+
 ## Do-Not Rules
 
 - Do not continue mixed shared local SAQ plans as the main method.

@@ -117,7 +117,16 @@ distances, and deterministic ordering pass pinned-source parity in Release and
 ASAN Debug builds. Scalar and packed rows are identical on the seed-0 sanity
 run, and packed storage/work metadata is recorded.
 
-Execute Phase 3 next:
+The Phase 3 query-level statistics and fixed-seed evaluation driver is
+implemented and documented in
+`docs/saq_graph_phase3_fixed_seed_driver_2026_07_10.md`. It records sufficient
+event-level values for exact-distance regret, aggregates nested roots within a
+query, averages fixed rotations within that query, reports query-level 95%
+confidence intervals and seed variation, and refuses resume when the command or
+event schema differs. A noncanonical two-query/two-seed smoke run verifies the
+complete output path but is not research evidence.
+
+Execute the canonical Phase 3 matrix next:
 
 1. run the fixed GIST sample50k/K512/B4 replay at subsets 1024 and 4096;
 2. use every predeclared rotation seed `0..9`, without selecting favorable
