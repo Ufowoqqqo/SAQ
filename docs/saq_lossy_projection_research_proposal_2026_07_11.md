@@ -6,8 +6,8 @@ This document opens an independent direction on branch
 `saq-lossy-projection-analysis`.
 
 ```text
-status: bounded related-work review complete for branch opening
-registered experiment: LP-0 Gate A only
+status: LP-0 Gate A completed and failed
+registered experiment: GIST/d576/B4 line stopped before Gate B
 method/contribution status: unproven
 ```
 
@@ -29,6 +29,8 @@ a separate gate test an SAQ-specific joint projection/plan mechanism.
 
 The detailed first protocol is
 `docs/saq_lossy_projection_lp0_preregistration_2026_07_11.md`.
+The completed evidence is
+`docs/saq_lossy_projection_lp0_gate_a_evidence_2026_07_11.md`.
 
 ## Why This Is Independent Of The Closed PCA Study
 
@@ -315,6 +317,10 @@ LP-0 has five roles:
 5. separate gross savings versus native SAQ from incremental materialization
    savings versus the equivalent logical view.
 
+Role 2 failed: the exact tail-norm oracle has lower top-100 agreement and more
+boundary inversions than native full-D SAQ under both registered one-sided
+bounds. Roles 3--5 are therefore not authorized on this line.
+
 If incremental evidence is storage-only, label it storage-only. LP-0 cannot
 establish the proposed plan interaction because the retained bits are frozen.
 
@@ -400,8 +406,8 @@ that lossy projection is universally ineffective.
 
 ## Immediate Deliverable
 
-Implement LP-0 Gate A only: validate frozen hashes, prepare exact `d=576`
-head/tail values, extend canonical replay to `raw_D != projected_d`, emit
-`D0/DP/DS`, and decide the preregistered oracle screen. Do not build projected
-SAQ, change the format, learn a projection, rebuild IVF, or sweep dimensions
-before that decision.
+LP-0 Gate A is complete and failed. Preserve its artifacts and stop the
+registered GIST/`d=576`/`B=4` line. Do not build projected SAQ, change the
+format, learn a projection, rebuild IVF, or sweep dimensions, budgets, plans,
+or tail rules to rescue this result. A future direction requires a distinct
+related-work-grounded limitation and a new preregistration.

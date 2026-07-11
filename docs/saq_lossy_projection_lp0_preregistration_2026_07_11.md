@@ -5,9 +5,28 @@
 ```text
 registered: 2026-07-11
 branch: saq-lossy-projection-analysis
-experiment status: not started
-authorized work: Gate A only
+experiment status: Gate A completed 2026-07-11
+registered authorization: Gate A only
+Gate A decision: FAIL
+current authorization: stop; Gate B not authorized
 ```
+
+The rules below preserve the preregistration as executed. The outcome is
+recorded in
+`docs/saq_lossy_projection_lp0_gate_a_evidence_2026_07_11.md`.
+
+```text
+seed-averaged agreement delta           -0.0017265625
+one-sided 95% agreement lower bound     -0.002578125       (requires >= 0)
+seed-averaged inversion delta            2.765607447e-6
+one-sided 95% inversion upper bound      4.216880965e-6    (requires <= 0)
+decision                                 FAIL
+```
+
+Artifact validity passed, including 442,823 candidate-level `D0/DP/DS` rows,
+the registered candidate hash, and byte-identical oracle/native raw-reference
+files. The result closes only the frozen GIST/`d=576`/`B=4` line; it is not a
+universal conclusion about lossy projection.
 
 LP-0 is a prerequisite falsification screen, not a method experiment. It can
 answer three questions:

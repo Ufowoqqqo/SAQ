@@ -13,7 +13,8 @@ Current status:
 branch opened
 bounded related-work review complete for branch opening
 LP-0 preregistered
-no experiment started
+LP-0 Gate A completed: FAIL
+registered GIST/d576/B4 line stopped before Gate B
 no contribution established
 ```
 
@@ -22,7 +23,8 @@ Authoritative documents:
 - `docs/saq_lossy_projection_research_proposal_2026_07_11.md`;
 - `docs/saq_lossy_projection_related_work_2026_07_11.md`;
 - `docs/saq_lossy_projection_related_work_sources_2026_07_11.json`;
-- `docs/saq_lossy_projection_lp0_preregistration_2026_07_11.md`.
+- `docs/saq_lossy_projection_lp0_preregistration_2026_07_11.md`;
+- `docs/saq_lossy_projection_lp0_gate_a_evidence_2026_07_11.md`.
 
 ## Boundary From The Parent Branch
 
@@ -57,12 +59,21 @@ and confidence-interval infrastructure that directly serves the new question.
    residual-tail inner product. A head plus tail norm is therefore a current
    SAQ/MRQ control, not a contribution.
 5. SAQ accepts a projected dimension and pads it to 64-coordinate blocks.
-6. The inherited diagnostic has canonical raw labels and deterministic replay,
-   but currently enforces equal raw/transformed dimensions and lacks a
-   projected-exact distance.
+6. The Gate-A diagnostic now supports common `D0` with `raw_D=960` and
+   projected `d=576`, emits candidate-level `D0/DP/DS`, and validates all
+   ranking and error identities against the frozen replay.
 7. The old PCA-prefix routine in `src/test_ivf.cpp` is not SAQ and has no
    checked-in evidence of a lossy run.
 8. No local ASH, MRQ, LeanVec, or GleanVec implementation/artifact is present.
+9. At the frozen point, the exact tail-norm oracle has top-100 agreement
+   `0.992890625` versus native SAQ `0.9946171875`; the paired delta lower bound
+   is `-0.002578125`, below zero.
+10. Its boundary-inversion rate is `6.852478398e-6` versus native
+    `4.086870951e-6`; the paired delta upper bound is `4.216880965e-6`, above
+    zero. Both Gate-A conditions fail, with the same directions rotation-off.
+11. Deployed float32 tail-summary RMSE is only `1.507223596e-7`, compared with
+    exact tail-norm projection RMSE `0.002481796224`; summary rounding does not
+    explain the ranking failure.
 
 ## Research Question
 
@@ -171,7 +182,13 @@ lower bound at least zero and inversion upper bound at most zero.
 Failure means insufficient evidence at this registered GIST/`d=576`/`B=4`
 point. It is not a universal claim about projection.
 
+**Observed result: FAIL.** Agreement lower bound `-0.002578125`; inversion
+upper bound `4.216880965e-6`. Stop this registered line.
+
 ### Gate B: Frozen Projected SAQ
+
+**Not authorized because Gate A failed.** The text below preserves the
+registered conditional rule and is not an execution instruction.
 
 After enforcing exact logical/physical equivalence, compare
 `physical576_norm.DQ` with `native_full_saq.full`. Require the same two
@@ -211,6 +228,9 @@ claim.
 
 ## Later Phases
 
+The phases below are not authorized on the registered line because Gate A
+failed. They remain historical conditional design, not an active plan.
+
 1. **Plan-interaction gate:** predeclare a byte-matched projected SAQ plan and
    uniform-rate control using base statistics only. Test whether `d` and SAQ's
    heterogeneous/progressive plan are genuinely non-separable.
@@ -223,18 +243,15 @@ claim.
 
 ## Immediate Next Action
 
-Implement **Gate A only**:
+Preserve the Gate-A negative result and stop the registered
+GIST/`d=576`/`B=4` line. Do not build projected SAQ, run Gates B--E, change the
+persisted format, learn a projection, rebuild IVF, import a large baseline, or
+sweep dimensions/budgets/plans/tail rules as a rescue.
 
-- regenerate and validate the frozen historical PCA/operator/probe view;
-- prepare `d=576` exact head/tail values without changing the index format;
-- extend or replace the diagnostic to accept `raw_D != projected_d` while
-  preserving canonical raw labels and candidate hashes;
-- emit `D0/DP/DS` plus ranking endpoints and invariant checks;
-- write a compact evidence note and stop/continue decision.
-
-Do not build projected SAQ, change the persisted format, learn a projection,
-rebuild IVF, import a large external baseline, or sweep dimensions before Gate
-A is decided.
+Before any new lossy-projection proposal, first review the closest primary
+work again and identify a distinct SAQ-specific limitation not answered by
+this exact-surrogate failure. A viable new question requires a new
+preregistration and cannot reuse held-out query outcomes to select its design.
 
 ## Stop And Reporting Rules
 

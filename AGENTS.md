@@ -44,16 +44,19 @@ is not explained or dominated by full-D SAQ, its logical 0-bit tail,
 truncated PCA, ASH, MRQ, LeanVec-ID, or DADE/ADSampling-style controls?
 ```
 
-**Status: proposal and falsification gate opened; no method claim exists.** The
-authoritative proposal and related-work review are:
+**Status: LP-0 Gate A completed and failed; the registered
+GIST/`d=576`/`B=4` line is closed and no method claim exists.** The
+authoritative proposal, review, protocol, and evidence are:
 
 - `docs/saq_lossy_projection_research_proposal_2026_07_11.md`;
 - `docs/saq_lossy_projection_related_work_2026_07_11.md`;
-- `docs/saq_lossy_projection_lp0_preregistration_2026_07_11.md`.
+- `docs/saq_lossy_projection_lp0_preregistration_2026_07_11.md`;
+- `docs/saq_lossy_projection_lp0_gate_a_evidence_2026_07_11.md`.
 
-Do not begin a learned projection or broad end-to-end experiment before the
-fixed-candidate projection floor and accounting gate is implemented and
-evaluated.
+Do not run LP-0 Gate B, sweep a rescue dimension/budget/plan/tail rule, or
+begin a learned projection or broad end-to-end experiment on this registered
+line. Any later lossy-projection direction requires a distinct SAQ-specific
+limitation, an updated primary-source review, and a new preregistration.
 
 Preserve this initial architecture:
 
@@ -180,6 +183,15 @@ inner product, so the tail-norm arm is an equivalence/control arm, not a
 proposed contribution.
 
 ## Phased Gate
+
+LP-0 Gate A is complete. At the frozen point, `oracle576_norm.DP` has lower
+top-100 agreement and more boundary inversions than seed-averaged
+`native_full_saq.full`; both registered one-sided zero-margin conditions fail.
+The float32 tail-summary error is negligible relative to projection error, so
+summary precision does not explain the failure. Gate B is not authorized.
+
+Treat the remaining text in this section as the preserved design and stop
+logic of the completed preregistration, not as permission to continue it.
 
 The first implementation is offline and fixed-candidate only. Its sole lossy
 dimension is `d=576`, selected from the frozen GIST plan before query

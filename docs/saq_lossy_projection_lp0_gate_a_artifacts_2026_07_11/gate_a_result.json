@@ -1,0 +1,135 @@
+{
+  "schema_version": "saq_lp0_gate_a_compact_result_v1",
+  "date": "2026-07-11",
+  "branch": "saq-lossy-projection-analysis",
+  "gate": {
+    "name": "LP-0 Gate A: Exact-Surrogate Upper-Bound Screen",
+    "comparison": "oracle576_norm.DP - native_full_saq.full",
+    "decision_group": "seed_average",
+    "pass": false,
+    "next_action": "stop_registered_gist_d576_b4_line",
+    "gate_b_authorized": false
+  },
+  "configuration": {
+    "dataset": "gist_sample50k",
+    "N": 50000,
+    "D": 960,
+    "d": 576,
+    "K": 512,
+    "queries": 128,
+    "nprobe": 16,
+    "candidates": 442823,
+    "topk": 100,
+    "nominal_B": 4.0,
+    "native_plan": "0:64@11b|64:256@6b|256:576@4b|576:832@2b|832:960@0b",
+    "bootstrap_replicates": 10000,
+    "bootstrap_seed": 20260711
+  },
+  "build": {
+    "compiler": "GCC 11.5.0 20240719 (Red Hat 11.5.0-14)",
+    "architecture": "x86_64",
+    "shared_native_oracle_release_flag_sequence": "-Wall -Wextra -march=native -fpic -ftree-vectorize -fexceptions -ffp-contract=off -fno-finite-math-only -O3 -DNDEBUG -Ofast -std=gnu++20 -mavx512f -mavx512dq -mavx512bw -mavx512vl"
+  },
+  "artifact_validation": {
+    "pass": true,
+    "candidate_inventory_sha256": "f5eaef79fbbceda7a0cb04adb5dc232d24d00e0173b4cd70bb0f29ddae25b099",
+    "candidate_distance_rows_validated": 442823,
+    "query_reference_files_byte_identical": true,
+    "query_reference_sha256": "c196e5900aa631852a4f926d06d098b33b079a8f045ab959d03737951ee3987b",
+    "error_sum_identity_max_abs": {
+      "none": 0.0,
+      "norm": 0.0
+    }
+  },
+  "inference": {
+    "seed_average": {
+      "topk_agreement": {
+        "oracle": 0.992890625,
+        "native": 0.9946171874999999,
+        "delta": -0.0017265625000000033,
+        "one_sided_95_lower": -0.002578124999999992,
+        "one_sided_95_upper": -0.0008750000000000068,
+        "pass": false
+      },
+      "boundary_inversion_rate": {
+        "oracle": 0.000006852478398330155,
+        "native": 0.000004086870951328906,
+        "delta": 0.0000027656074470012475,
+        "one_sided_95_lower": 0.0000015041893534486189,
+        "one_sided_95_upper": 0.000004216880965411707,
+        "pass": false
+      }
+    },
+    "rotation_off": {
+      "topk_agreement": {
+        "oracle": 0.992890625,
+        "native": 0.9942968750000001,
+        "delta": -0.0014062500000000012,
+        "one_sided_95_lower": -0.0025000000000000022,
+        "one_sided_95_upper": -0.0003125000000000003,
+        "pass": false
+      },
+      "boundary_inversion_rate": {
+        "oracle": 0.000006852478398330155,
+        "native": 0.0000041515825134218755,
+        "delta": 0.000002700895884908279,
+        "one_sided_95_lower": 0.000001076681625784759,
+        "one_sided_95_upper": 0.000004550981948590785,
+        "pass": false
+      }
+    }
+  },
+  "distance_diagnostics": {
+    "e_projection_none": {
+      "pooled_bias": -0.03391551666754559,
+      "pooled_mae": 0.03391551666754559,
+      "equal_query_mean_rmse": 0.03734477525683251,
+      "pooled_rmse": 0.04446495229095258,
+      "pooled_absolute_error_p50": 0.026662984519339128,
+      "pooled_absolute_error_p90": 0.06426805766050848,
+      "pooled_absolute_error_p99": 0.15623251129186053
+    },
+    "e_projection_norm": {
+      "pooled_bias": -0.0000032527065536309376,
+      "pooled_mae": 0.0015073614509143018,
+      "equal_query_mean_rmse": 0.002081108113725712,
+      "pooled_rmse": 0.0024817962244151003,
+      "pooled_absolute_error_p50": 0.0009091147974473746,
+      "pooled_absolute_error_p90": 0.003465974093033796,
+      "pooled_absolute_error_p99": 0.00930572199755457
+    },
+    "e_summary_norm": {
+      "pooled_bias": 5.365109818370163e-11,
+      "pooled_mae": 1.0506550885491508e-7,
+      "equal_query_mean_rmse": 1.2439736279927642e-7,
+      "pooled_rmse": 1.5072235956755392e-7,
+      "pooled_absolute_error_p50": 7.450747130377522e-8,
+      "pooled_absolute_error_p90": 2.3340967274521059e-7,
+      "pooled_absolute_error_p99": 5.434344141974631e-7
+    },
+    "e_total_norm": {
+      "pooled_bias": -0.0000032526529025327526,
+      "pooled_mae": 0.0015073612136696681,
+      "equal_query_mean_rmse": 0.0020811081054535863,
+      "pooled_rmse": 0.0024817962427768794,
+      "pooled_absolute_error_p50": 0.0009090871915304888,
+      "pooled_absolute_error_p90": 0.0034660235818786407,
+      "pooled_absolute_error_p99": 0.009305782100188082
+    },
+    "projection_summary_population_covariance": 3.4386088872693037e-14
+  },
+  "sha256": {
+    "preparation_manifest": "51af84bceec44091582ac58caad8af73f5869a94c1c7ef0d60d4f802763a87f0",
+    "native_comparator_manifest": "d0cfe99b37ffcef93e2e6c5805c4035bf4986b7f56059595b95a67c056704a3f",
+    "oracle_manifest": "0d1843b8f4c1e4cfe1ba3edf1d8a9f31c6eb941378661cdeaa2427bcaa2308d0",
+    "oracle_query_metrics": "a6e4c005db715bd0db46560bb8ca165438a6fb200f9332e5757b460f09c7381a",
+    "oracle_query_reference": "c196e5900aa631852a4f926d06d098b33b079a8f045ab959d03737951ee3987b",
+    "oracle_candidate_distances": "952d6a1cddeecf266493223c0d324ad8d8545703e08d051a27c5d0642e6efd50",
+    "full_evaluation_json": "593d65c10f38f4bc68ed9e3cc871c69a1eed77aefb1a49d88029987e0cf0a5a9",
+    "full_evaluation_markdown": "7bedde2d008f5e86f60310c4f4b6b5175dec6572d75fe6490792bd45ce9c04e1",
+    "full_evaluation_per_query": "b2f32bb0f99de51a4ad6e669a71840426f2a1cbe3aa7475c24168ee63468769b",
+    "prepare_source": "0252471d7157cf509360accc85c82c3e4e490b5b824a6769f30c2e57100bd2a1",
+    "diagnostic_source": "44bd6d4905112a082a4b20f01fce3b5ca44b7fc7e5589a11368e8be04a24ad38",
+    "evaluator_source": "50ef0afdb421c4bce1bb18f11bbd46d0be994d71720d0eddbb470ceaf0b12cb5"
+  }
+}

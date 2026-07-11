@@ -20,3 +20,6 @@ target_link_libraries(test_ivf PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
 
 add_executable(phase1_transform_diagnostic phase1_transform_diagnostic.cpp)
 target_link_libraries(phase1_transform_diagnostic PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
+
+add_executable(lp0_projection_gate_a lp0_projection_gate_a.cpp)
+target_link_libraries(lp0_projection_gate_a PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
