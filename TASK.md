@@ -2,245 +2,247 @@
 
 ## Active Goal
 
-Preserve the completed Phase 1/1b evidence and closure decision for the
-full-dimensional PCA limitation hypothesis. Do not continue PCA-replacement
-method development from this branch; select a distinct SAQ research question
-before beginning another experiment.
+Evaluate a new, independent **lossy projection + SAQ** research line. Test
+whether physically materializing a base-only `D -> d` representation exposes
+an original-space Recall-QPS-bytes opportunity beyond full-D SAQ and the
+closest projection/quantization systems.
 
-The target is a database top-conference-level contribution suitable for SIGMOD,
-VLDB, or ICDE. The work is independent of the graph-index direction. Judge it
-by research novelty, falsifiable evidence, complete overhead accounting, and
-reviewer defensibility rather than by implementation volume.
-
-The authoritative plan is
-`docs/saq_transform_replacement_research_proposal_2026_07_10.md`.
-
-## Phase 1 And Phase 1b Decision
-
-The minimal Phase 1 operating point is complete. The result is recorded in
-`docs/saq_transform_phase1_limitation_evidence_2026_07_10.md`, with compact
-machine-readable summaries under
-`docs/saq_transform_phase1_artifacts_2026_07_10/`.
-
-Decision:
+Current status:
 
 ```text
-Do not advance to learned-transform development from this evidence.
+branch opened
+bounded related-work review complete for branch opening
+LP-0 preregistered
+no experiment started
+no contribution established
 ```
 
-Residual PCA lowered matched-plan mean per-query candidate RMSE by about 0.60%
-at the first accurate prefix and 0.33% at full code. The prefix effect held for
-all ten rotation seeds and with rotation off, but ranking confidence intervals
-included zero and the fast prefixes worsened. Identity and random orthogonal
-transforms exposed plan/rotation tradeoffs rather than an outer-transform
-dominance result. The evidence therefore identifies a narrow estimator
-mismatch, not a defensible SAQ progressive-ranking contribution.
+Authoritative documents:
 
-The explicitly reopened Phase 1b external replication is also complete. Its
-preregistered protocol and evidence are recorded in:
+- `docs/saq_lossy_projection_research_proposal_2026_07_11.md`;
+- `docs/saq_lossy_projection_related_work_2026_07_11.md`;
+- `docs/saq_lossy_projection_related_work_sources_2026_07_11.json`;
+- `docs/saq_lossy_projection_lp0_preregistration_2026_07_11.md`.
 
-- `docs/saq_transform_phase1b_external_replication_protocol_2026_07_10.md`;
-- `docs/saq_transform_phase1b_external_replication_evidence_2026_07_10.md`.
+## Boundary From The Parent Branch
 
-Phase 1b used CIFAR60k, all 1,000 queries, one canonical raw float64 exact
-reference, a frozen four-segment current-PCA plan, identical candidates and
-serialized bytes, ten paired internal-rotation seeds, and rotation off. The
-artifact gate passed, but the narrow replication gate failed:
-
-```text
-accurate_prefix_1 mean-query RMSE delta: +1.394e-6
-95% CI: [-2.216e-5, +2.461e-5], seeds favoring residual PCA: 4/10
-
-full mean-query RMSE delta: -2.610e-7
-95% CI: [-1.043e-6, +5.094e-7], seeds favoring residual PCA: 5/10
-```
-
-Rotation-off was opposite to the registered direction at both endpoints, and
-`fast_all` RMSE significantly favored current PCA. The registered decision is:
+The parent `saq-transform-analysis` study tested full-dimensional L2-isometric
+transforms. Its preregistered CIFAR60k replication closed the PCA-objective
+replacement premise:
 
 ```text
 close_one_dataset_estimator_effect
 ```
 
-This closes the PCA-replacement premise on this branch. It does not prove PCA
-universally optimal; it establishes that the current evidence does not justify
-spending research degrees of freedom on a learner or broader transform sweep.
-
-## Starting Point
-
-This branch starts from `saq-correctness-base` and keeps only correctness fixes
-needed for reliable evaluation:
-
-- positive 1-bit segment packing support;
-- padded-lane finite block-min search support.
-
-No graph prototype, graph result, profiler, runner, or graph research document
-is part of the starting point. Previous branches remain historical evidence and
-should not be migrated by default.
-
-## Current Understanding
-
-The repository's current PCA preprocessing is full dimensional:
+Do not reopen it by changing the dataset, prefix, budget, or transform. That
+negative result did not test physical dimension reduction:
 
 ```text
-D_OUT = D_IN
+parent: D -> D, exact L2 preserved, basis objective tested
+current: D -> d, original-space error accepted, physical state/work tested
 ```
 
-It changes basis, decorrelates coordinates, and orders them by variance, but it
-does not physically reduce the vector dimension. Effective rate reduction is
-instead introduced by SAQ's mixed-bit plan, including an optional 0-bit tail.
+Reuse only canonical raw exact replay, deterministic candidates, provenance,
+and confidence-interval infrastructure that directly serves the new question.
 
-The current design exposes five research-relevant facts:
+## Current Evidence
 
-1. The planner minimizes a variance proxy approximately proportional to
-   `segment_variance / 2^bits`, rather than measured CAQ or prefix ranking
-   error.
-2. Segment boundaries are constrained to contiguous 64-dimensional blocks and
-   a 0-bit region is a tail segment.
-3. Each positive-bit segment may receive its own random orthogonal rotation,
-   which can erase gains from an outer transform that only changes within-
-   segment orientation.
-4. A 0-bit tail still stores a base residual norm. Its L2 estimate keeps the
-   base and query tail norms while omitting the tail inner product, so a simple
-   "PCA head plus tail norm" proposal overlaps both current SAQ behavior and
-   MRQ.
-5. Existing transformed-data tests can treat the projected space as exact and
-   therefore hide `D -> d` projection error. New lossy experiments must retain
-   original-space exact distance and ground truth.
+1. `python/pca.py` fixes `D_OUT = D_IN`; the checked-in execution path is
+   physically full dimensional.
+2. The SAQ paper nevertheless defines dimension reduction as PCA plus tail
+   discard and presents SAQ as bridging reduction and balancing.
+3. The frozen GIST plan is
+   `0:64@11 | 64:256@6 | 256:576@4 | 576:832@2 | 832:960@0`.
+4. A 0-bit L2 residual segment retains base/query residual norms and omits the
+   residual-tail inner product. A head plus tail norm is therefore a current
+   SAQ/MRQ control, not a contribution.
+5. SAQ accepts a projected dimension and pads it to 64-coordinate blocks.
+6. The inherited diagnostic has canonical raw labels and deterministic replay,
+   but currently enforces equal raw/transformed dimensions and lacks a
+   projected-exact distance.
+7. The old PCA-prefix routine in `src/test_ivf.cpp` is not SAQ and has no
+   checked-in evidence of a lossy run.
+8. No local ASH, MRQ, LeanVec, or GleanVec implementation/artifact is present.
 
 ## Research Question
 
 ```text
-Does PCA's variance-only objective mismatch the actual error of SAQ's
-segmented CAQ estimator and progressive prefixes, and can one base-only,
-global, full-dimensional orthogonal transform jointly with one global SAQ plan
-improve the rate-error-work or Recall-QPS-bytes Pareto frontier?
+At matched deployable bytes and complete query work, does physical D -> d
+projection interact non-separably with SAQ's heterogeneous segments, CAQ
+adjustment, and progressive stages, producing an original-space Pareto point
+not explained by logical tail omission, ASH, MRQ, LeanVec-ID, DADE/ADSampling,
+or uniform-bit projected quantization?
 ```
 
-The null result is valid and should stop the direction: PCA and the current SAQ
-plan may already be sufficiently well matched after simple controls and
-per-segment rotations.
+Null explanations are projection error, logical/physical equivalence,
+ordinary tail summaries, uniform rate reallocation, full-vector reranking, and
+closest-system dominance.
 
-## Scope
+## What LP-0 Can And Cannot Show
 
-Primary scope:
+LP-0 freezes the first three plan segments and does not reallocate saved bits.
+It can measure:
+
+- the exact projected-surrogate upper bound;
+- frozen projected-SAQ quality and progressive compatibility;
+- algebraic equivalence between physical and logical head-only estimators;
+- gross savings versus native full-D SAQ;
+- incremental persisted-state savings versus the equivalent logical view.
+
+It cannot demonstrate the non-separable plan hypothesis. Passing LP-0 only
+authorizes closest-baseline analysis and, conditionally, a separately
+preregistered byte-matched plan-interaction test.
+
+## LP-0 Frozen Point
 
 ```text
-L2 + IVF
-full-D affine orthogonal transforms
-base/index data only for fitting
-held-out queries only for evaluation
-one dataset-level transform
-one global segment/bit plan
-no index-format change during the limitation study
+dataset                 data/gist_sample50k
+N, D                    50,000, 960
+queries                 first 128
+IVF                     K=512, frozen nprobe=16 probes
+candidates              every vector in the frozen probed lists; no cap
+candidate inventory     442,823 total, frozen SHA-256 in protocol
+top-k                   100
+nominal parent budget   B=4
+confirmatory d          576 only
+retained plan           0:64@11 | 64:256@6 | 256:576@4
+retained payload        3,136 bits/vector, 5.444 bits/retained dimension
+rotation                seeds 0..9; off reported separately
+bootstrap               query-paired, 10,000 resamples, seed 20260711
 ```
 
-Secondary diagnostic scope:
+`d=576` is selected from the base-only plan. It removes 40% of PCA output
+components and 512 positive code bits: 13.33% of the nominal four-bit budget,
+or 14.04% of the frozen plan's actual positive code bits. Do not substitute a
+different `d`, budget, plan, prefix, or candidate set.
+
+All input/operator/probe hashes, numerical tolerances, tail precision, byte
+denominator, and decision rules are frozen in the LP-0 protocol.
+
+## LP-0 Arms
+
+- `native_full_saq`: full-D five-segment reference; confirmatory endpoints are
+  `full` and `fast_all`.
+- `oracle576_none`: exact retained PCA head only.
+- `oracle576_norm`: exact retained head plus exact float64 residual-tail norms,
+  omitting the tail inner product.
+- `logical576_norm`: full persisted index, first-three full-code estimates,
+  and the same one-scalar float32 tail sidecar/query term as the physical arm.
+- `physical576_norm`: three-segment persisted index plus that identical
+  sidecar and query term.
+
+The implemented `accurate_prefix_3` remains descriptive: it refines the first
+three segments but still uses fast suffix estimates. It is not a logical stop
+at dimension 576.
+
+`logical576_norm` and `physical576_norm` must have identical decoded retained
+state, estimator bit patterns, and ranking digests. A difference is an invalid
+artifact, never evidence that physical projection improves ranking.
+
+## Error Contract
+
+Every candidate uses a common original-space exact reference and emits:
 
 ```text
-lossy D -> d projection
-original-space ground truth retained
-projection, quantization, and staging error reported separately
-truncated PCA, LeanVec-ID, and MRQ treated as direct baselines
+D0 = original-space float64 exact distance
+DP = exact projected surrogate with exact tail treatment
+DS = exact projected head with deployed tail-summary precision
+DQ = full projected-SAQ with deployed tail summary
+DT = staged projected-SAQ with deployed tail summary
+
+e_projection   = DP - D0
+e_summary      = DS - DP
+e_quantization = DQ - DS
+e_staging      = DT - DQ
+e_total        = DT - D0
 ```
 
-## Related-Work Gate
+Report component covariance and validate the additive identity. Do not hide
+projection or summary error inside "quantization error".
 
-Simple transform coding and bit allocation, ITQ/OPQ-style learned rotations,
-LeanVec-style projection plus scalar quantization, GleanVec local projections,
-and MRQ's PCA head plus tail correction already occupy the broad design space.
-Therefore:
+## Registered Gates
 
-- random projection, FHT, ITQ, OPQ, truncated PCA, and compact tail summaries
-  are controls or baselines, not contributions;
-- a learned method is only viable if it targets measured SAQ-specific CAQ or
-  prefix-estimator error under an actual-byte budget;
-- if residual PCA, coordinate permutation, OPQ, or the internal segment
-  rotations explain the gain, stop rather than rebrand the baseline.
+### Gate A: Exact-Surrogate Upper Bound
 
-## Immediate Next Step
+Compare `oracle576_norm.DP` with seed-averaged `native_full_saq.full` under raw
+labels. Both one-sided zero-margin ranking bounds must be favorable: agreement
+lower bound at least zero and inversion upper bound at most zero.
 
-Do not implement a learned transform, broaden the transform sweep, rerun the
-gate on a more favorable dataset/plan/budget, or begin the counterfactual
-`(segment, bit)` analysis. Preserve this branch as completed negative evidence
-and select a different independent SAQ research question.
+Failure means insufficient evidence at this registered GIST/`d=576`/`B=4`
+point. It is not a universal claim about projection.
 
-## Continue Gate
+### Gate B: Frozen Projected SAQ
 
-Phase 1 met the weak diagnostic trigger through one stable GIST
-accurate-prefix RMSE mismatch. Phase 1b failed to reproduce that trigger on the
-registered second regime. The stronger learner/contribution gate remains
-closed; a learned transform would have required all of the following:
+After enforcing exact logical/physical equivalence, compare
+`physical576_norm.DQ` with `native_full_saq.full`. Require the same two
+zero-margin ranking bounds, at least 8/10 seeds with favorable point-estimate
+directions, and matching rotation-off directions. RMSE is required but
+secondary; do not use failure to reject a non-inferiority hypothesis that was
+not registered.
 
-- the variance proxy systematically mispredicts measured CAQ or prefix error;
-- the mismatch is stable across predeclared seeds and more than one spectral
-  regime;
-- a base-only global candidate improves error/ranking at matched actual bytes
-  and complete query work;
-- the result survives frozen-plan and segment-rotation ablations;
-- residual PCA, permutation, FHT/random rotation, and OPQ/ITQ-style controls do
-  not explain the result;
-- the improvement has a plausible path to end-to-end IVF Recall-QPS gains.
+### Gate C: Progressive Endpoint
 
-The GIST 0.60% accurate-prefix and 0.33% full-code RMSE changes, followed by the
-failed CIFAR replication, do not satisfy these conditions and must not be used
-to justify a learner. The selected-segment proxy correlations also do not
-replace a counterfactual segment-by-bit evaluation of the planner choice
-space—and the failed replication does not authorize that evaluation.
+The only confirmatory staged comparison is projected `fast_all` versus native
+`fast_all`, with the same zero-margin ranking bounds. Other stage curves are
+descriptive; no post-hoc stage may rescue failure.
 
-## Lossy Projection Diagnostic
+### Gate D: Systems Accounting
 
-This is a historical secondary-track specification, not an active next step.
-The failed Phase 1b gate does not authorize it.
+Report separate ledgers:
 
-Only after the primary diagnostic is defined, evaluate `D -> d` as a separate
-track. For the existing GIST PCA plan, use predeclared plan boundaries rather
-than tuning arbitrary dimensions:
+- gross versus native full-D SAQ: projection work, online operator state,
+  total serialized bytes, full-stage candidate bytes, and query preparation;
+- incremental versus `logical576_norm`: exact estimator equivalence and only
+  the persisted/resident state actually removed by physical materialization.
 
-```text
-d in {64, 256, 576, 832, 960}
-```
+If the incremental result is storage-only, label it storage-only. Do not
+attribute gross query-work savings to physical representation beyond a logical
+sliced view. Use the complete byte denominator and thresholds in the protocol.
 
-Measure, for the same query-candidate pairs:
+### Gate E: Closest Baselines
 
-```text
-D0: original exact distance
-DP: projected exact distance plus the selected tail summary
-DQ: projected full-SAQ distance with exact-tail diagnostic
-DT: projected staged/full-SAQ distance plus the selected tail summary
-```
+Only after Gates A--D pass, evaluate ASH, MRQ/MRQ+, LeanVec-ID or its
+reproducible projection control, uniform-bit projected quantization, and
+compatible DADE/ADSampling controls. Use simultaneous paired-query bounds over
+the baseline envelope.
 
-Report projection error, quantization error, staged error, their covariance,
-and total error. Keep the original IVF candidate lists fixed first; rebuild a
-low-dimensional IVF index only if the offline gate passes.
+Passing Gate E authorizes a new plan-interaction preregistration, not a method
+claim.
 
-## Stop Conditions
+## Later Phases
 
-Stop treating PCA replacement as a main research direction if any of the
-following is observed:
+1. **Plan-interaction gate:** predeclare a byte-matched projected SAQ plan and
+   uniform-rate control using base statistics only. Test whether `d` and SAQ's
+   heterogeneous/progressive plan are genuinely non-separable.
+2. **End-to-end IVF:** rebuild projected IVF only after the offline and closest
+   baseline gates. Time raw projection, routing, tail work, scan, refinement,
+   and original-vector reranking.
+3. **External replication:** freeze the mechanism and base-only selection rule
+   before a second spectral regime. Do not tune `d`, plan, stage, or bounds on
+   its held-out queries.
 
-- the variance proxy already predicts measured CAQ/prefix error adequately;
-- residual PCA, a coordinate permutation, OPQ, or internal segment rotations
-  reproduce the full gain;
-- projection error dominates and the best design is truncated PCA plus a tail
-  norm/variance, making it an MRQ-style variant;
-- the design requires benchmark queries, per-cluster transforms, plan ids, or
-  mixed dispatch;
-- transform/model/metadata overhead removes the scan benefit;
-- fixed-candidate improvements do not transfer to end-to-end IVF;
-- gains appear only on one dataset or operating point, are seed-sensitive, or
-  amount to small noisy recall/QPS changes.
+## Immediate Next Action
 
-Record a negative result as evidence that full-dimensional PCA and current SAQ
-are already well matched; do not force a method from a failed premise.
+Implement **Gate A only**:
 
-## Reporting Constraints
+- regenerate and validate the frozen historical PCA/operator/probe view;
+- prepare `d=576` exact head/tail values without changing the index format;
+- extend or replace the diagnostic to accept `raw_D != projected_d` while
+  preserving canonical raw labels and candidate hashes;
+- emit `D0/DP/DS` plus ranking endpoints and invariant checks;
+- write a compact evidence note and stop/continue decision.
 
-- Match actual serialized bytes, not nominal `B` alone.
-- Include raw-query transform and preparation time in end-to-end QPS.
-- Report model/operator bytes, centroids, segment rotators, factors, tail
-  metadata, padding/alignment, and rerank vectors consistently.
-- State dataset, `K`, `B`, transform, dimensions, `nprobe`, candidate set,
-  metric, plan, seeds, command, and block-min mode for every search claim.
-- Prefer small falsifiable experiments over more tooling.
-- Keep durable documents concise and paper-facing.
+Do not build projected SAQ, change the persisted format, learn a projection,
+rebuild IVF, import a large external baseline, or sweep dimensions before Gate
+A is decided.
+
+## Stop And Reporting Rules
+
+Stop if any registered gate fails, if logical/physical rankings differ, if the
+gain is storage-only and closest work already covers it, or if the method needs
+query-aware/local state. Record a negative result as no evidence at the frozen
+point, not as universal projection failure.
+
+For every claim record dataset and hashes, `D`, `d`, plan, `K`, `B`, probes,
+candidates, tail precision, seeds, command, raw-label scope, actual serialized
+and resident bytes, complete work, and block-min mode where applicable.

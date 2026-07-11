@@ -1,0 +1,106 @@
+{
+  "topic": "query-unaware lossy projection combined with SAQ",
+  "retrieved_on": "2026-07-11",
+  "selection_rule": "Primary paper or official artifact for the closest projection, quantization, and staged-search mechanisms.",
+  "sources": [
+    {
+      "id": "saq",
+      "title": "SAQ: Pushing the Limits of Vector Quantization through Code Adjustment and Dimension Segmentation",
+      "year": 2025,
+      "source_type": "local paper source",
+      "url": "https://arxiv.org/abs/2509.12086",
+      "local_path": "paper_src/2509.12086/main.tex",
+      "relevance": "Defines dimension reduction as PCA plus tail discard and presents SAQ as combining dimension reduction with dimension balancing."
+    },
+    {
+      "id": "ash",
+      "title": "ASH: Asymmetric Scalar Hashing With Learned Dimensionality Reduction for High-Fidelity Vector Quantization",
+      "year": 2026,
+      "source_type": "June 2026 arXiv v1 primary paper",
+      "url": "https://arxiv.org/abs/2606.07870",
+      "artifact_status": "No official source artifact linked from arXiv v1.",
+      "relevance": "Direct collision for a learned global D-to-d projection and a fixed-payload tradeoff between uniform bitrate and derived retained dimension; primary formulation is inner product/cosine, while the squared-L2 extension uses query/index regression calibration that must be separated from a base-only admissible variant."
+    },
+    {
+      "id": "mrq",
+      "title": "Quantization Meets Projection: A Happy Marriage for Approximate k-Nearest Neighbor Search",
+      "year": 2026,
+      "venue": "PVLDB 19(6)",
+      "doi": "10.14778/3797919.3797931",
+      "source_type": "publisher paper and official code",
+      "url": "https://www.vldb.org/pvldb/vol19/p1240-yang.pdf",
+      "artifact_url": "https://github.com/mingyu-hkustgz/RESQ",
+      "relevance": "Closest collision for a PCA head, per-vector tail norm, dataset-level residual variances, quantized estimation, parameterized error bounds, and multi-stage IVF refinement; var-count and bound parameters require base-only preregistration."
+    },
+    {
+      "id": "leanvec",
+      "title": "LeanVec: Searching vectors faster by making them fit",
+      "year": 2024,
+      "venue": "TMLR",
+      "source_type": "OpenReview primary paper",
+      "url": "https://openreview.net/forum?id=wczqrpOrIc",
+      "preprint_url": "https://arxiv.org/abs/2312.16335",
+      "artifact_url": "https://github.com/intel/ScalableVectorSearch",
+      "artifact_status": "Public SVS repository excludes proprietary LeanVec/LVQ source; distinguish projection control from packaged-system measurements.",
+      "relevance": "Combines linear dimensionality reduction and quantization; the in-distribution variant and primary/secondary representation are direct baselines, but reported target-d selection uses query performance and cannot be copied here."
+    },
+    {
+      "id": "gleanvec",
+      "title": "GleanVec: Accelerating vector search with minimalist nonlinear dimensionality reduction",
+      "year": 2024,
+      "source_type": "arXiv primary paper",
+      "url": "https://arxiv.org/abs/2410.22347",
+      "relevance": "Covers linear sphering and cluster-adaptive piecewise-linear projection; the latter conflicts with the one-global-projection scope."
+    },
+    {
+      "id": "dade",
+      "title": "Efficient Data-aware Distance Comparison Operations for High-Dimensional Approximate Nearest Neighbor Search",
+      "year": 2024,
+      "venue": "PVLDB 18(3)",
+      "doi": "10.14778/3712221.3712244",
+      "source_type": "publisher paper and official code",
+      "url": "https://www.vldb.org/pvldb/vol18/p812-zheng.pdf",
+      "preprint_url": "https://arxiv.org/abs/2411.17229",
+      "artifact_url": "https://github.com/Ur-Eine/DADE",
+      "relevance": "DADE covers PCA/data-aware lower-dimensional distance estimation, adaptive hypothesis-tested work, and IVF/HNSW integration; the same comparison space includes random-projection ADSampling-style controls."
+    },
+    {
+      "id": "opq",
+      "title": "Optimized Product Quantization",
+      "year": 2013,
+      "venue": "CVPR",
+      "source_type": "publisher paper",
+      "url": "https://openaccess.thecvf.com/content_cvpr_2013/html/Ge_Optimized_Product_Quantization_2013_CVPR_paper.html",
+      "relevance": "Classical learned orthogonal transform optimized for quantization distortion; a control for any later learned projection objective."
+    },
+    {
+      "id": "turboquant",
+      "title": "TurboQuant: Online Vector Quantization with Near-optimal Distortion Rate",
+      "year": 2026,
+      "venue": "ICLR 2026",
+      "source_type": "OpenReview primary paper",
+      "url": "https://openreview.net/forum?id=tO3ASKZlok",
+      "preprint_url": "https://arxiv.org/abs/2504.19874",
+      "arxiv_first_posted": "2025-04-28",
+      "relevance": "Modern random-rotation scalar quantizer and residual correction control; it does not physically project D to d."
+    },
+    {
+      "id": "mrl",
+      "title": "Matryoshka Representation Learning",
+      "year": 2022,
+      "source_type": "arXiv primary paper and official code",
+      "url": "https://arxiv.org/abs/2205.13147",
+      "artifact_url": "https://github.com/RAIVNLab/MRL",
+      "relevance": "Learns nested prefix embeddings at encoder-training time; relevant boundary but not a post-hoc projection baseline for fixed GIST vectors."
+    },
+    {
+      "id": "adanns",
+      "title": "AdANNS: A Framework for Adaptive Semantic Search",
+      "year": 2023,
+      "source_type": "OpenReview primary paper and official code",
+      "url": "https://openreview.net/forum?id=ZBzYWP2Gpl",
+      "artifact_url": "https://github.com/RAIVNLab/AdANNS",
+      "relevance": "Uses different nested dimensions across ANN stages; applies to Matryoshka embeddings rather than arbitrary fixed embeddings."
+    }
+  ]
+}
