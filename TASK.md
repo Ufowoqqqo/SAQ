@@ -2,10 +2,10 @@
 
 ## Active Goal
 
-Evaluate a new, independent **lossy projection + SAQ** research line. Test
-whether physically materializing a base-only `D -> d` representation exposes
-an original-space Recall-QPS-bytes opportunity beyond full-D SAQ and the
-closest projection/quantization systems.
+Preserve the completed **lossy projection + SAQ** negative result and select a
+new SAQ-specific question through a bounded primary-source limitation review.
+Do not rescue the failed projection point or treat a literature gap as a method
+claim.
 
 Current status:
 
@@ -15,6 +15,9 @@ bounded related-work review complete for branch opening
 LP-0 preregistered
 LP-0 Gate A completed: FAIL
 registered GIST/d576/B4 line stopped before Gate B
+bounded six-family primary-source limitation review complete
+C1--C5: NO-GO
+C6 finite-round CAQ optimality: CONDITIONAL GO for one oracle gate only
 no contribution established
 ```
 
@@ -24,7 +27,33 @@ Authoritative documents:
 - `docs/saq_lossy_projection_related_work_2026_07_11.md`;
 - `docs/saq_lossy_projection_related_work_sources_2026_07_11.json`;
 - `docs/saq_lossy_projection_lp0_preregistration_2026_07_11.md`;
-- `docs/saq_lossy_projection_lp0_gate_a_evidence_2026_07_11.md`.
+- `docs/saq_lossy_projection_lp0_gate_a_evidence_2026_07_11.md`;
+- `docs/saq_limitation_primary_source_review_2026_07_11.md`;
+- `docs/saq_limitation_primary_sources_2026_07_11.json`;
+- `docs/saq_next_direction_go_no_go_memo_2026_07_11.md`.
+
+## Post-LP0 Direction Decision
+
+The bounded review closes these candidates as independent main directions:
+
+```text
+certified segmented progressive bounds
+streaming updates / global-plan drift
+filtered or hybrid selectivity-aware staging
+physical SIMD, layout, or tiered-storage specialization
+arbitrary 2..B-bit CAQ prefix consistency
+```
+
+The only surviving question is whether production six-round CAQ leaves a
+material, SAQ-segment-amplified gap to the exact E-RaBitQ grid-on-sphere
+objective. This is authorized only as `CO-0`, a source-validated base-only
+oracle gate. A positive result establishes a limitation, not a method.
+
+Do not implement `CO-0` on this branch. If explicitly authorized, create
+`saq-caq-optimality-analysis` from `saq-correctness-base`, migrate the review,
+memo, and necessary research guidance, pin and validate the official
+Extended-RaBitQ oracle, then write the preregistration before reading dataset
+outputs.
 
 ## Boundary From The Parent Branch
 
@@ -75,7 +104,7 @@ and confidence-interval infrastructure that directly serves the new question.
     exact tail-norm projection RMSE `0.002481796224`; summary rounding does not
     explain the ranking failure.
 
-## Research Question
+## Closed LP-0 Research Question
 
 ```text
 At matched deployable bytes and complete query work, does physical D -> d
@@ -243,15 +272,16 @@ failed. They remain historical conditional design, not an active plan.
 
 ## Immediate Next Action
 
-Preserve the Gate-A negative result and stop the registered
-GIST/`d=576`/`B=4` line. Do not build projected SAQ, run Gates B--E, change the
-persisted format, learn a projection, rebuild IVF, import a large baseline, or
-sweep dimensions/budgets/plans/tail rules as a rescue.
+Preserve the Gate-A negative result and the bounded review. Do not build
+projected SAQ, run Gates B--E, change the persisted format, learn a projection,
+rebuild IVF, or sweep dimensions/budgets/plans/tail rules as a rescue.
 
-Before any new lossy-projection proposal, first review the closest primary
-work again and identify a distinct SAQ-specific limitation not answered by
-this exact-surrogate failure. A viable new question requires a new
-preregistration and cannot reuse held-out query outcomes to select its design.
+The next executable task, only after explicit authorization and branch
+creation, is to write and execute `CO-0A/CO-0B` exactly as bounded in the
+go/no-go memo. No benchmark query may be read by the limitation gate. Stop the
+new line if oracle parity fails, the registered cross-dataset high-bit
+amplification gate fails, ordinary extra CAQ rounds close the gap, or exact
+E-RaBitQ fallback is the only repair.
 
 ## Stop And Reporting Rules
 

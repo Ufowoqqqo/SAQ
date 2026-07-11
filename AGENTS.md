@@ -28,13 +28,11 @@ topic is literally code correctness or repository maintenance.
 
 ## Active Direction
 
-**Collision-first analysis of physical lossy projection with SAQ.** Study
-whether materializing a `D -> d` projected representation can reduce SAQ's
-query transform, code, metadata, and distance-estimation work while preserving
-original-space ranking quality, and whether any benefit is specifically due to
-SAQ's heterogeneous segments and progressive mixed-bit estimator.
+**Negative-result preservation and collision-first selection of the next SAQ
+limitation.** The physical `D -> d` lossy-projection point has failed its first
+registered gate. There is no active method on this branch.
 
-The research question is:
+The closed lossy-projection research question was:
 
 ```text
 At matched actual bytes and complete query work, does physical D -> d
@@ -52,6 +50,26 @@ authoritative proposal, review, protocol, and evidence are:
 - `docs/saq_lossy_projection_related_work_2026_07_11.md`;
 - `docs/saq_lossy_projection_lp0_preregistration_2026_07_11.md`;
 - `docs/saq_lossy_projection_lp0_gate_a_evidence_2026_07_11.md`.
+
+A bounded post-LP0 primary-source review is also complete:
+
+- `docs/saq_limitation_primary_source_review_2026_07_11.md`;
+- `docs/saq_limitation_primary_sources_2026_07_11.json`;
+- `docs/saq_next_direction_go_no_go_memo_2026_07_11.md`.
+
+It closes certified progressive bounds, streaming/plan drift,
+filtered-selectivity staging, layout/tiered-storage specialization, and
+arbitrary `2..B` prefix consistency as independent main directions. The only
+conditional continuation is a source-validated, base-only exact-oracle gate on
+finite-round CAQ encoding optimality. That gate tests whether production
+six-round CAQ leaves a material gap specifically amplified by SAQ's
+short/high-bit segments.
+
+Do not implement that gate on this branch. If explicitly authorized, start
+`saq-caq-optimality-analysis` from `saq-correctness-base`, migrate only the
+review/memo and necessary guidance, validate the official Extended-RaBitQ
+encoder, and preregister `CO-0` before inspecting base-data results. A positive
+oracle gap is limitation evidence, not a method claim.
 
 Do not run LP-0 Gate B, sweep a rescue dimension/budget/plan/tail rule, or
 begin a learned projection or broad end-to-end experiment on this registered
@@ -140,16 +158,14 @@ projected screening followed by original-vector reranking
 approximate -> projected exact -> original exact refinement
 ```
 
-The narrowest hypothesis not identified together in the bounded review is an
-empirically demonstrated, non-separable interaction between physical
-dimension, SAQ's heterogeneous segment/bit plan, CAQ adjustment, and
-progressive prefix decisions. If ASH, MRQ, LeanVec-ID, DADE/ADSampling,
-uniform-bit projected quantization, or current SAQ 0-bit-tail semantics explain
-the result, stop.
+The lossy branch's narrowest hypothesis was a non-separable interaction between
+physical dimension, SAQ's heterogeneous segment/bit plan, CAQ adjustment, and
+progressive decisions. LP-0 Gate A failed before that interaction could be
+tested, so the hypothesis is historical and cannot be rescued on this branch.
 
-Before proposing any additional idea, update the primary-source survey and
-state what the closest work solves, what gap remains, and why the idea is not a
-direct composition.
+Before proposing any additional idea beyond the reviewed `CO-0` gate, update
+the primary-source survey and state what the closest work solves, what gap
+remains, and why the idea is not a direct composition.
 
 ## Distance And Error Contract
 
