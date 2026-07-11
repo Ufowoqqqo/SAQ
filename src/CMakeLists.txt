@@ -17,3 +17,11 @@ target_link_libraries(compute_gt PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES}
 
 add_executable(test_ivf test_ivf.cpp)
 target_link_libraries(test_ivf PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
+
+add_executable(erabitq_source_parity erabitq_source_parity.cpp)
+target_include_directories(
+  erabitq_source_parity BEFORE PRIVATE
+  ${PROJECT_SOURCE_DIR}/third_party/Extended-RaBitQ/inc)
+target_compile_definitions(
+  erabitq_source_parity PRIVATE
+  ERABITQ_SOURCE_COMMIT="52b9e6c7ba6c316036cdb04074732fe561966a53")

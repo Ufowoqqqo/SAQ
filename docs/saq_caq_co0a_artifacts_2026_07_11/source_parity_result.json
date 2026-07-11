@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "date": "2026-07-11",
+  "gate": "CO-0A official-source parity",
+  "branch": "saq-caq-optimality-analysis",
+  "base": {
+    "branch": "saq-correctness-base",
+    "commit": "bc7829bdffecb17cec369e37c2f50a6c419af039"
+  },
+  "decision": {
+    "status": "FAIL",
+    "co0b_preregistration_authorized": false,
+    "dataset_outputs_inspected": false,
+    "research_interpretation": "Artifact-validation failure; not evidence for or against finite-round CAQ on SAQ datasets.",
+    "reasons": [
+      "The pinned official fast_quantize implementation does not score its initialized t_start state and misses a globally optimal code on a reachable D=64, total-B=3 input.",
+      "The official public IVF path supports only total bit widths 3, 4, 5, 7, 8, and 9, whereas the frozen GIST plan also requires total bit widths 2, 6, and 11.",
+      "For total B=11, fast_quantize computes 10-bit magnitude values but returns them through uint8_t, causing modulo-256 narrowing."
+    ]
+  },
+  "official_source": {
+    "repository": "https://github.com/VectorDB-NTU/Extended-RaBitQ.git",
+    "commit": "52b9e6c7ba6c316036cdb04074732fe561966a53",
+    "commit_date": "2026-03-30T17:40:13+02:00",
+    "license": "Apache-2.0",
+    "submodule_path": "third_party/Extended-RaBitQ",
+    "encoder": "inc/index/Quantizer.hpp:DataQuantizer::fast_quantize",
+    "public_constructor": "inc/index/IVF.hpp:IVF::IVF",
+    "sha256": {
+      "inc/index/Quantizer.hpp": "366acdb6180438e650357d84536575a42cc9bf9477825518ce9bd2ed8e83088f",
+      "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "CMakeLists.txt": "10e1e0a30a654033c531ee31b3009ce71155b74b2fc23d71677dd4640c3a9ca4"
+    },
+    "total_bits_definition": "total_B = EX_BITS + 1",
+    "public_total_bit_widths": [3, 4, 5, 7, 8, 9],
+    "frozen_saq_total_bit_widths_exercised": [2, 3, 4, 5, 6, 7, 8, 9, 11]
+  },
+  "harness": {
+    "source": "src/erabitq_source_parity.cpp",
+    "source_sha256": "5293282b367c8ff5f54b1aec4bab83401252eb35a0326ea59f71167be7c981ee",
+    "release_binary_sha256": "a7dcacf51c122af9c053b317bf8842e674d1551bea6e2ccdc739deb8f5d5fe26",
+    "objective_tolerance": 2e-12,
+    "official_factor_relative_tolerance": 3e-6,
+    "tiny_grid": {
+      "dimensions": [2, 3, 4],
+      "total_bit_widths": [2, 3, 4],
+      "deterministic_seeds_per_cell": 12,
+      "explicit_counterexamples": 1,
+      "complete_codebook_enumeration": true
+    },
+    "official_d64": {
+      "dimension": 64,
+      "fixture_families": 4,
+      "seeds_per_family_and_bit_width": 6,
+      "actual_official_private_encoder_invoked": true,
+      "source_faithful_widened_extraction_compared": true
+    }
+  },
+  "environment": {
+    "compiler": "c++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-14)",
+    "os": "Linux 5.14.0-687.15.1.el9_8.x86_64",
+    "cpu": "Intel(R) Core(TM) i9-10920X CPU @ 3.50GHz",
+    "logical_cpus": 24,
+    "isa": "AVX-512F/DQ/BW/VL",
+    "release_compile_flags": "-Wall -Wextra -march=native -fpic -ftree-vectorize -fexceptions -ffp-contract=off -fno-finite-math-only -O3 -DNDEBUG -Ofast -std=gnu++20 -mavx512f -mavx512dq -mavx512bw -mavx512vl",
+    "asan_compile_flags": "-std=gnu++20 -O0 -g -fsanitize=address -fno-omit-frame-pointer -mavx512f -mavx512dq -mavx512bw -mavx512vl -march=native -ffp-contract=off -fno-finite-math-only"
+  },
+  "commands": {
+    "configure": "cmake -S . -B build -DBUILD_UNIT_TESTS=OFF",
+    "build": "cmake --build build -j --target erabitq_source_parity",
+    "release_run": "./bin/erabitq_source_parity",
+    "asan_compile": "c++ -std=gnu++20 -O0 -g -fsanitize=address -fno-omit-frame-pointer -mavx512f -mavx512dq -mavx512bw -mavx512vl -march=native -ffp-contract=off -fno-finite-math-only -DERABITQ_SOURCE_COMMIT=\\\"52b9e6c7ba6c316036cdb04074732fe561966a53\\\" -Ithird_party/Extended-RaBitQ/inc -Isaqlib -o /tmp/erabitq_source_parity_asan_clean src/erabitq_source_parity.cpp",
+    "asan_run": "ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 /tmp/erabitq_source_parity_asan_clean"
+  },
+  "results": {
+    "tiny_exhaustive_cases": 109,
+    "full_event_tiny_exact": "PASS",
+    "max_tiny_full_event_objective_gap": 0,
+    "tiny_official_window_misses": 1,
+    "max_tiny_official_window_gap": 0.005307892151723226,
+    "official_supported_cases": 145,
+    "official_private_extension_cases": 48,
+    "official_b11_cases": 24,
+    "d64_official_window_misses": 1,
+    "max_full_event_gap": 0.002844955452831144,
+    "max_official_code_objective_gap": 0,
+    "max_official_factor_relative_gap": 5.584143775936138e-8,
+    "mapping_cases": 48,
+    "max_mapping_abs_gap": 0,
+    "b11_widened_values": 815,
+    "release_exit_code": 1,
+    "asan_exit_code": 1,
+    "asan_memory_error": false,
+    "official_source_exact_parity": "FAIL"
+  },
+  "counterexamples": {
+    "tiny": {
+      "dimension": 4,
+      "total_bits": 3,
+      "label": "initial-state-counterexample",
+      "exact_cosine": 0.9999202157647452,
+      "official_cosine": 0.994612323613022,
+      "exact_magnitude_code": [1, 0, 0, 0],
+      "official_magnitude_code": [3, 1, 1, 1]
+    },
+    "reachable_official_d64": {
+      "dimension": 64,
+      "total_bits": 3,
+      "input": "x=(3,1,...,1)/sqrt(72)",
+      "exact_cosine": 1,
+      "official_cosine": 0.9971550445471689,
+      "exact_magnitude_code": "[1,0,...,0]",
+      "official_magnitude_code": "[3,1,...,1]",
+      "mechanism": "The exact code is the initialized t_start state. fast_quantize initializes that state but sets max_ip=0 and t=0, then scores only post-increment states."
+    }
+  },
+  "caq_erabitq_mapping": {
+    "status": "PASS for nonzero coordinates",
+    "definition": "For total B, let L=2^(B-1), magnitude k in [0,L-1], and sign s in {0,1}. Set low=k for s=1 and low=L-1-k for s=0; the CAQ integer is c=L*s+low. Then c+0.5-L=(2*s-1)*(k+0.5).",
+    "estimator_equivalence": "For residual o with norm R, u=o/R, signed grid a, N=<u,a>, and decoded CAQ vector delta*a, CAQ rescale is R/(delta*N), so its rescaled inner-product estimate is R*<a,q>/N, equal to the E-RaBitQ expression.",
+    "error_factor": "R^2*epsilon*sqrt((1/cosine^2-1)/(D-1))",
+    "zero_coordinate_limitation": "The official encoder assumes positive magnitudes; an exact zero creates a sign/tie convention difference and was not claimed as source parity."
+  }
+}

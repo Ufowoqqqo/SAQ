@@ -1,0 +1,3 @@
+[submodule "third_party/Extended-RaBitQ"]
+	path = third_party/Extended-RaBitQ
+	url = https://github.com/VectorDB-NTU/Extended-RaBitQ.git
