@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "stage": "V2-B0",
+  "family_size": 24,
+  "alpha": 0.05,
+  "correction": "Holm step-down across all 24 one-sided hypotheses",
+  "bootstrap": {
+    "replicates": 10000,
+    "seed": 20260711,
+    "rng": "NumPy Generator(PCG64)",
+    "unit": "IVF cell",
+    "draws_per_replicate": 512,
+    "zero_ratio_denominator": "assign replicate statistic zero and report count"
+  },
+  "hypotheses": [
+    {"id": "M_GIST_R6", "class": "materiality", "dataset": "gist_sample50k_k512", "arm": "caq_r6", "statistic": "R_arm(leading_native)", "null": "<=", "value": 0.10},
+    {"id": "M_GIST_LOCAL", "class": "materiality", "dataset": "gist_sample50k_k512", "arm": "caq_local_fixed_point", "statistic": "R_arm(leading_native)", "null": "<=", "value": 0.10},
+    {"id": "M_CIFAR_R6", "class": "materiality", "dataset": "cifar60k_k512", "arm": "caq_r6", "statistic": "R_arm(leading_native)", "null": "<=", "value": 0.10},
+    {"id": "M_CIFAR_LOCAL", "class": "materiality", "dataset": "cifar60k_k512", "arm": "caq_local_fixed_point", "statistic": "R_arm(leading_native)", "null": "<=", "value": 0.10},
+
+    {"id": "A_GIST_R6_LEAD_B4", "class": "amplification", "dataset": "gist_sample50k_k512", "arm": "caq_r6", "statistic": "R_arm(leading_native)-R_arm(leading_uniform_b4)", "null": "<=", "value": 0.0},
+    {"id": "A_GIST_R6_S1", "class": "amplification", "dataset": "gist_sample50k_k512", "arm": "caq_r6", "statistic": "R_arm(leading_native)-R_arm(native_s1_d192_b6)", "null": "<=", "value": 0.0},
+    {"id": "A_GIST_R6_S2", "class": "amplification", "dataset": "gist_sample50k_k512", "arm": "caq_r6", "statistic": "R_arm(leading_native)-R_arm(native_s2_d320_b4)", "null": "<=", "value": 0.0},
+    {"id": "A_GIST_R6_S3", "class": "amplification", "dataset": "gist_sample50k_k512", "arm": "caq_r6", "statistic": "R_arm(leading_native)-R_arm(native_s3_d256_b2)", "null": "<=", "value": 0.0},
+    {"id": "A_GIST_R6_WHOLE", "class": "amplification", "dataset": "gist_sample50k_k512", "arm": "caq_r6", "statistic": "R_arm(leading_native)-R_arm(whole_d832_b4)", "null": "<=", "value": 0.0},
+    {"id": "A_GIST_LOCAL_LEAD_B4", "class": "amplification", "dataset": "gist_sample50k_k512", "arm": "caq_local_fixed_point", "statistic": "R_arm(leading_native)-R_arm(leading_uniform_b4)", "null": "<=", "value": 0.0},
+    {"id": "A_GIST_LOCAL_S1", "class": "amplification", "dataset": "gist_sample50k_k512", "arm": "caq_local_fixed_point", "statistic": "R_arm(leading_native)-R_arm(native_s1_d192_b6)", "null": "<=", "value": 0.0},
+    {"id": "A_GIST_LOCAL_S2", "class": "amplification", "dataset": "gist_sample50k_k512", "arm": "caq_local_fixed_point", "statistic": "R_arm(leading_native)-R_arm(native_s2_d320_b4)", "null": "<=", "value": 0.0},
+    {"id": "A_GIST_LOCAL_S3", "class": "amplification", "dataset": "gist_sample50k_k512", "arm": "caq_local_fixed_point", "statistic": "R_arm(leading_native)-R_arm(native_s3_d256_b2)", "null": "<=", "value": 0.0},
+    {"id": "A_GIST_LOCAL_WHOLE", "class": "amplification", "dataset": "gist_sample50k_k512", "arm": "caq_local_fixed_point", "statistic": "R_arm(leading_native)-R_arm(whole_d832_b4)", "null": "<=", "value": 0.0},
+
+    {"id": "A_CIFAR_R6_LEAD_B4", "class": "amplification", "dataset": "cifar60k_k512", "arm": "caq_r6", "statistic": "R_arm(leading_native)-R_arm(leading_uniform_b4)", "null": "<=", "value": 0.0},
+    {"id": "A_CIFAR_R6_S1", "class": "amplification", "dataset": "cifar60k_k512", "arm": "caq_r6", "statistic": "R_arm(leading_native)-R_arm(native_s1_d192_b5)", "null": "<=", "value": 0.0},
+    {"id": "A_CIFAR_R6_S2", "class": "amplification", "dataset": "cifar60k_k512", "arm": "caq_r6", "statistic": "R_arm(leading_native)-R_arm(native_s2_d128_b3)", "null": "<=", "value": 0.0},
+    {"id": "A_CIFAR_R6_WHOLE", "class": "amplification", "dataset": "cifar60k_k512", "arm": "caq_r6", "statistic": "R_arm(leading_native)-R_arm(whole_d384_b4)", "null": "<=", "value": 0.0},
+    {"id": "A_CIFAR_LOCAL_LEAD_B4", "class": "amplification", "dataset": "cifar60k_k512", "arm": "caq_local_fixed_point", "statistic": "R_arm(leading_native)-R_arm(leading_uniform_b4)", "null": "<=", "value": 0.0},
+    {"id": "A_CIFAR_LOCAL_S1", "class": "amplification", "dataset": "cifar60k_k512", "arm": "caq_local_fixed_point", "statistic": "R_arm(leading_native)-R_arm(native_s1_d192_b5)", "null": "<=", "value": 0.0},
+    {"id": "A_CIFAR_LOCAL_S2", "class": "amplification", "dataset": "cifar60k_k512", "arm": "caq_local_fixed_point", "statistic": "R_arm(leading_native)-R_arm(native_s2_d128_b3)", "null": "<=", "value": 0.0},
+    {"id": "A_CIFAR_LOCAL_WHOLE", "class": "amplification", "dataset": "cifar60k_k512", "arm": "caq_local_fixed_point", "statistic": "R_arm(leading_native)-R_arm(whole_d384_b4)", "null": "<=", "value": 0.0},
+
+    {"id": "E_GIST_NORM_IP", "class": "estimator", "dataset": "gist_sample50k_k512", "arm": "caq_r6_vs_corrected_exact", "statistic": "mean(normalized_abs_ip_error_r6-normalized_abs_ip_error_exact) on leading_native", "null": "<=", "value": 0.0},
+    {"id": "E_CIFAR_NORM_IP", "class": "estimator", "dataset": "cifar60k_k512", "arm": "caq_r6_vs_corrected_exact", "statistic": "mean(normalized_abs_ip_error_r6-normalized_abs_ip_error_exact) on leading_native", "null": "<=", "value": 0.0}
+  ]
+}

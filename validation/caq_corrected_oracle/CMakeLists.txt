@@ -12,6 +12,9 @@ add_executable(
 add_executable(
   caq_corrected_oracle_cost_study
   ../../src/caq_corrected_oracle_cost_study.cpp)
+add_executable(
+  caq_co0_v2_b0_rotation_inventory
+  ../../src/caq_co0_v2_b0_rotation_inventory.cpp)
 
 function(configure_corrected_oracle_target target)
   target_compile_features(${target} PRIVATE cxx_std_20)
@@ -30,6 +33,7 @@ endfunction()
 
 configure_corrected_oracle_target(caq_corrected_oracle_validation)
 configure_corrected_oracle_target(caq_corrected_oracle_cost_study)
+configure_corrected_oracle_target(caq_co0_v2_b0_rotation_inventory)
 
 add_test(
   NAME caq_corrected_oracle_validation

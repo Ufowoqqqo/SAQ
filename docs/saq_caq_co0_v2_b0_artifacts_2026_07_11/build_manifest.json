@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "date": "2026-07-11",
+  "base_commit": "0d83395ba5ca36ed18b1d0fec03d1006e0198771",
+  "compiler": "GCC 11.5.0 20240719 (Red Hat 11.5.0-14)",
+  "cmake": "4.0.3",
+  "python": "3.9.25",
+  "cpu": "Intel(R) Core(TM) i9-10920X CPU @ 3.50GHz",
+  "platform": "Linux 5.14.0-687.15.1.el9_8.x86_64 x86_64",
+  "release_flags": "-O3 -DNDEBUG -std=gnu++20 -Wall -Wextra -Wpedantic -fno-fast-math -ffp-contract=off",
+  "asan_flags": "-g -std=gnu++20 -Wall -Wextra -Wpedantic -fno-fast-math -ffp-contract=off -fsanitize=address -fno-omit-frame-pointer",
+  "asan_environment": "ASAN_OPTIONS=detect_leaks=0:halt_on_error=1",
+  "sha256": {
+    "saqlib/quantization/caq/exact_event_oracle.hpp": "9d7084f080d4789e517efda60418ff88e38b98824af5bf90588b07dc9c593705",
+    "src/caq_co0_v2_b0_rotation_inventory.cpp": "63f0efad99e73b63d388c263b4737dd4d49e8d5ba69bc8403161135bd99075bb",
+    "script/prepare_caq_co0_v2_b0_inventories.py": "505a311dbf21f097633224e4e7fd21fe366a6947a2a384e7111b2d473330a01f",
+    "validation/caq_corrected_oracle/CMakeLists.txt": "f615a21b4b407ade8cb3d29c1d886852f6e61a35eb722a9f09abf3df62c6f699",
+    "docs/saq_caq_co0_v2_b0_input_spec_2026_07_11.json": "044e965b9b7f7d78d999e8e16a900402dc0ad58f9a9e9d52b4d01102daebc88b",
+    "docs/saq_caq_co0_v2_b0_preparation_spec_2026_07_11.md": "f64d752943be6095f2ca1f7a84b4686e50774ea9aa82e3ee1f381a566373e291",
+    "docs/saq_caq_co0_v2_b0_hypotheses_2026_07_11.json": "a70d38f380f2b4efa29c536bdf2c015f1af314552e78eb906dfc24dc8e7c7f34",
+    "docs/saq_caq_co0_v2_b0_final_preregistration_2026_07_11.md": "39c1d591e22ac28de3041452f132c54c29f3b8831841863de055acc867039761",
+    "docs/saq_caq_co0_v2_b0_artifacts_2026_07_11/inventory_manifest.json": "38a24135876be6952208e2b9aaaaa6855843780c4bd96eb406a1f6a5e71d7952",
+    "docs/saq_caq_co0_v2_b0_artifacts_2026_07_11/gist_sample50k_k512_allocation.csv.gz": "7ec54e572889a4c6cfd3b2bf45ed9884383859717a886253211ae7cdcc6f9b4c",
+    "docs/saq_caq_co0_v2_b0_artifacts_2026_07_11/gist_sample50k_k512_sample.csv.gz": "f7393cc37a864ab4b4b383c16cbafeed8a9ce9125adef091c01236389de2f4cd",
+    "docs/saq_caq_co0_v2_b0_artifacts_2026_07_11/gist_sample50k_k512_pairs.csv.gz": "eaa22b17f657b0bb3616dd4e2ec27f03fa2f326c0641f82f2bd5c82e7e420f1e",
+    "docs/saq_caq_co0_v2_b0_artifacts_2026_07_11/cifar60k_k512_allocation.csv.gz": "6dd334d1f62deda206803f1de168e464a585aeb09f163db74714f28c97e88efb",
+    "docs/saq_caq_co0_v2_b0_artifacts_2026_07_11/cifar60k_k512_sample.csv.gz": "25b86da5aae26295d793430d44a91e1430274e04b1e8092792787e06f4540ad1",
+    "docs/saq_caq_co0_v2_b0_artifacts_2026_07_11/cifar60k_k512_pairs.csv.gz": "beb8d181ae11dc9f6cfb1aea19917f24f8573372366a715e087fae3f60fa203b",
+    "release_rotation_generator_binary": "93859f01d55577118997d0b42005822fdf24a72c4039347da6fe53cb567d27cc",
+    "asan_rotation_generator_binary": "30370c7606576a8844180136df3c5ce966b33a6d157409cbf5de2609d448dd05"
+  }
+}

@@ -46,7 +46,13 @@ The authoritative review and decision documents are:
 - `docs/saq_caq_co0_v2_a1_artifacts_2026_07_11/`;
 - `docs/saq_caq_co0_v2_a2_synthetic_cost_design_2026_07_11.md`;
 - `docs/saq_caq_co0_v2_a2_synthetic_cost_evidence_2026_07_11.md`;
-- `docs/saq_caq_co0_v2_a2_artifacts_2026_07_11/`.
+- `docs/saq_caq_co0_v2_a2_artifacts_2026_07_11/`;
+- `docs/saq_caq_co0_v2_b0_input_spec_2026_07_11.json`;
+- `docs/saq_caq_co0_v2_b0_preparation_spec_2026_07_11.md`;
+- `docs/saq_caq_co0_v2_b0_hypotheses_2026_07_11.json`;
+- `docs/saq_caq_co0_v2_b0_final_preregistration_2026_07_11.md`;
+- `docs/saq_caq_co0_v2_b0_preregistration_evidence_2026_07_11.md`;
+- `docs/saq_caq_co0_v2_b0_artifacts_2026_07_11/`.
 
 The completed sequence is:
 
@@ -55,16 +61,17 @@ v1 CO-0A  official source pinned and tested -> FAIL, preserved
 V2-A0     proof/specification review -> PASS
 V2-A1     synthetic exact-oracle validation -> PASS
 V2-A2     synthetic cost study -> PASS
-V2-B      dataset preregistration/run -> NOT AUTHORIZED
+V2-B0     provenance/preregistration only -> PASS
+V2-B1     frozen encoder execution -> NOT AUTHORIZED
 data      GIST/CIFAR outputs -> NOT INSPECTED
 ```
 
-The user explicitly authorized V2-A2 on 2026-07-11 after V2-A0/V2-A1 passed;
-V2-A2 passed with a 7.969 CPU-hour estimate under its 24-hour ceiling. The
-current authorization stops there. This is measurement infrastructure, not an
-active CAQ method. Do not design a certificate, repair, planner, or query
-policy. Do not read GIST, CIFAR, another dataset, benchmark queries, or ground
-truth.
+The user explicitly authorized V2-B0 on 2026-07-11; B0 passed without encoder
+execution. It read and hash-verified only the two frozen one-column
+cluster-assignment files needed to construct sample inventories. Base vectors,
+centroids, variances, benchmark queries, ground truth, indexes, and encoder
+outputs remain unread. The current authorization stops before B1. Do not run
+an encoder arm or inspect an objective/estimator gap.
 
 ## Frozen Architecture
 
@@ -132,7 +139,24 @@ CPU-day ceiling are experimental resource decisions, not method parameters.
 Passing V2-A2 establishes only that later exact labeling is computationally
 feasible. It gives no evidence that finite-round CAQ has regret.
 
-## V2-B Boundary (Not Authorized)
+## V2-B0 Structural-Read Reconciliation
+
+The parent protocol requires B0 to commit deterministic sample/pair
+inventories, but also states that B1 reads base/index artifacts. Resolve this
+narrowly: B0 may hash and parse only the frozen `D=1` IVF cluster-id files.
+Their contents are assignment labels, not vector magnitudes or encoder
+outputs. All float-vector artifact hashes come from pre-existing provenance
+and must be verified against bytes only in B1 before any encoding.
+
+The exact paths, expected hashes, hash-key serialization, rotation seed
+mapping, and allowed output files are frozen in:
+
+- `docs/saq_caq_co0_v2_b0_input_spec_2026_07_11.json`;
+- `docs/saq_caq_co0_v2_b0_preparation_spec_2026_07_11.md`.
+
+No other structural exception is implied.
+
+## V2-B Boundary
 
 The following boundary is retained for provenance only. V2-B remains
 unauthorized until V2-A0--A2 pass and a separate preregistration is committed.
@@ -236,9 +260,11 @@ ctest --test-dir /tmp/saq-oracle-asan --output-on-failure
 
 ## Do-Not Rules
 
-- Do not proceed beyond V2-A2 under the current authorization.
-- Do not read dataset artifacts, benchmark queries, or ground truth during
-  V2-A0--A2.
+- Do not proceed beyond V2-B0 under the current authorization.
+- During B0, do not read dataset float vectors, centroids, variances,
+  benchmark queries, ground truth, indexes, or prior encoder outputs.
+- B0 may read only the two frozen cluster-id files and pre-existing provenance
+  manifests, and may generate data-independent rotation matrices.
 - Do not write or execute the old CO-0B preregistration after the CO-0A
   failure.
 - Do not describe the independent full-event enumerator as the pinned official

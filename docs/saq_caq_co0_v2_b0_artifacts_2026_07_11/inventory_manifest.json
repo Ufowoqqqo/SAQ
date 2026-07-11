@@ -1,0 +1,387 @@
+{
+  "datasets": [
+    {
+      "allocation_file": {
+        "canonical_bytes": 18003,
+        "canonical_sha256": "9f71d513bdb3fb1313008a54958cf736886ff17467463cfc0402e38102dad45b",
+        "compressed_bytes": 3097,
+        "compressed_sha256": "7ec54e572889a4c6cfd3b2bf45ed9884383859717a886253211ae7cdcc6f9b4c",
+        "relative_path": "gist_sample50k_k512_allocation.csv.gz"
+      },
+      "assignment_sha256": "c466b5685dd4ef12f42f1d7fa304f42b2c9989df12190c84b8bb4c0a29618eb1",
+      "clusters": 512,
+      "dataset_id": "gist_sample50k_k512",
+      "empty_clusters": 0,
+      "pair_count": 24842,
+      "pair_file": {
+        "canonical_bytes": 953956,
+        "canonical_sha256": "e14f671a30c5a8d00d58dde95903bd1f2fcc48a45e055488be888015356b6be5",
+        "compressed_bytes": 212642,
+        "compressed_sha256": "eaa22b17f657b0bb3616dd4e2ec27f03fa2f326c0641f82f2bd5c82e7e420f1e",
+        "relative_path": "gist_sample50k_k512_pairs.csv.gz"
+      },
+      "population_max": 474,
+      "population_min": 1,
+      "rows": 50000,
+      "sample_count": 50000,
+      "sample_file": {
+        "canonical_bytes": 1648923,
+        "canonical_sha256": "9e369fa43ebadfc74e760660aaa06b60e56992ddc914c80fac4028bb773651a7",
+        "compressed_bytes": 278609,
+        "compressed_sha256": "f7393cc37a864ab4b4b383c16cbafeed8a9ce9125adef091c01236389de2f4cd",
+        "relative_path": "gist_sample50k_k512_sample.csv.gz"
+      },
+      "sampled_cells": 512,
+      "unpaired_count": 316
+    },
+    {
+      "allocation_file": {
+        "canonical_bytes": 17330,
+        "canonical_sha256": "e7c27cc562447e4563ad36291e6a3dd5eb1a36e800be6606b85177a82a06de9a",
+        "compressed_bytes": 3194,
+        "compressed_sha256": "6dd334d1f62deda206803f1de168e464a585aeb09f163db74714f28c97e88efb",
+        "relative_path": "cifar60k_k512_allocation.csv.gz"
+      },
+      "assignment_sha256": "3168f05171f74afb175c50a0ec9e584b0f666b157fbedba6d3841cc2e43107e9",
+      "clusters": 512,
+      "dataset_id": "cifar60k_k512",
+      "empty_clusters": 0,
+      "pair_count": 24884,
+      "pair_file": {
+        "canonical_bytes": 801654,
+        "canonical_sha256": "c8d9bcc2a1a53377c17ae2344e347f164e341072dc261211d26ad442ee61fa96",
+        "compressed_bytes": 212892,
+        "compressed_sha256": "beb8d181ae11dc9f6cfb1aea19917f24f8573372366a715e087fae3f60fa203b",
+        "relative_path": "cifar60k_k512_pairs.csv.gz"
+      },
+      "population_max": 324,
+      "population_min": 1,
+      "rows": 60000,
+      "sample_count": 50000,
+      "sample_file": {
+        "canonical_bytes": 1332119,
+        "canonical_sha256": "3235ff62f2f27bd0427a2534951b4683ee4b516b149a2a67a58b6e4d9a952a9d",
+        "compressed_bytes": 275372,
+        "compressed_sha256": "25b86da5aae26295d793430d44a91e1430274e04b1e8092792787e06f4540ad1",
+        "relative_path": "cifar60k_k512_sample.csv.gz"
+      },
+      "sampled_cells": 512,
+      "unpaired_count": 232
+    }
+  ],
+  "generator": {
+    "byteorder": "little",
+    "python": "3.9.25 (main, Apr 17 2026, 00:00:00) ",
+    "script": "script/prepare_caq_co0_v2_b0_inventories.py",
+    "script_sha256": "505a311dbf21f097633224e4e7fd21fe366a6947a2a384e7111b2d473330a01f"
+  },
+  "input_spec": {
+    "relative_path": "docs/saq_caq_co0_v2_b0_input_spec_2026_07_11.json",
+    "sha256": "044e965b9b7f7d78d999e8e16a900402dc0ad58f9a9e9d52b4d01102daebc88b"
+  },
+  "protocol_version": "saq-caq-co0-v2-b0-20260711-schema1",
+  "rotations": [
+    {
+      "c_rng_seed": 1,
+      "dataset_id": "gist_sample50k_k512",
+      "dimension": 64,
+      "logical_seed": 0,
+      "relative_path": "gist_sample50k_k512/logical_seed_0/segmented_s0_d64.f32",
+      "scope": "segmented",
+      "segment_index": 0,
+      "sha256": "71b3770a7994a390bc791e46989fd88a3ded623b7f2d6790920ff50c80224df7",
+      "size_bytes": 16384
+    },
+    {
+      "c_rng_seed": 1,
+      "dataset_id": "gist_sample50k_k512",
+      "dimension": 192,
+      "logical_seed": 0,
+      "relative_path": "gist_sample50k_k512/logical_seed_0/segmented_s1_d192.f32",
+      "scope": "segmented",
+      "segment_index": 1,
+      "sha256": "16f5b295180b34e9f39101ba0a3cf3d22ac7adb90678d65f152ba66f42eef7cb",
+      "size_bytes": 147456
+    },
+    {
+      "c_rng_seed": 1,
+      "dataset_id": "gist_sample50k_k512",
+      "dimension": 320,
+      "logical_seed": 0,
+      "relative_path": "gist_sample50k_k512/logical_seed_0/segmented_s2_d320.f32",
+      "scope": "segmented",
+      "segment_index": 2,
+      "sha256": "68a07048dba787f439dfb0105fd5fdbdc35b68659bbdda97bc5ea6190cdbb4cf",
+      "size_bytes": 409600
+    },
+    {
+      "c_rng_seed": 1,
+      "dataset_id": "gist_sample50k_k512",
+      "dimension": 256,
+      "logical_seed": 0,
+      "relative_path": "gist_sample50k_k512/logical_seed_0/segmented_s3_d256.f32",
+      "scope": "segmented",
+      "segment_index": 3,
+      "sha256": "99a31061b9cdd46dbca098fc27b44fb21dbb669fe4dd103d9cc356943ce172a0",
+      "size_bytes": 262144
+    },
+    {
+      "c_rng_seed": 1,
+      "dataset_id": "gist_sample50k_k512",
+      "dimension": 832,
+      "logical_seed": 0,
+      "relative_path": "gist_sample50k_k512/logical_seed_0/whole_d832.f32",
+      "scope": "whole",
+      "segment_index": null,
+      "sha256": "e558e11168b4aa1df3e7bc00561855e2da28513c453b14ab51a86b21438b99ee",
+      "size_bytes": 2768896
+    },
+    {
+      "c_rng_seed": 2,
+      "dataset_id": "gist_sample50k_k512",
+      "dimension": 64,
+      "logical_seed": 1,
+      "relative_path": "gist_sample50k_k512/logical_seed_1/segmented_s0_d64.f32",
+      "scope": "segmented",
+      "segment_index": 0,
+      "sha256": "fdcd87a3f0a02d51c20c59f403480fbd68bbd56a5f4c2020eaca3e899937e736",
+      "size_bytes": 16384
+    },
+    {
+      "c_rng_seed": 2,
+      "dataset_id": "gist_sample50k_k512",
+      "dimension": 192,
+      "logical_seed": 1,
+      "relative_path": "gist_sample50k_k512/logical_seed_1/segmented_s1_d192.f32",
+      "scope": "segmented",
+      "segment_index": 1,
+      "sha256": "2ecf354f482c306e706b2d3dde437ee8ff331a1d77a922a28db7df47537f1bac",
+      "size_bytes": 147456
+    },
+    {
+      "c_rng_seed": 2,
+      "dataset_id": "gist_sample50k_k512",
+      "dimension": 320,
+      "logical_seed": 1,
+      "relative_path": "gist_sample50k_k512/logical_seed_1/segmented_s2_d320.f32",
+      "scope": "segmented",
+      "segment_index": 2,
+      "sha256": "052d9c18b7c123eee5e576a96786ff83eea960b06a8ece3aef4ab704a8255a32",
+      "size_bytes": 409600
+    },
+    {
+      "c_rng_seed": 2,
+      "dataset_id": "gist_sample50k_k512",
+      "dimension": 256,
+      "logical_seed": 1,
+      "relative_path": "gist_sample50k_k512/logical_seed_1/segmented_s3_d256.f32",
+      "scope": "segmented",
+      "segment_index": 3,
+      "sha256": "fee8d41948c7fb445606cffac2c14b2f7818ef6cce51d07151d359eec70cdf27",
+      "size_bytes": 262144
+    },
+    {
+      "c_rng_seed": 2,
+      "dataset_id": "gist_sample50k_k512",
+      "dimension": 832,
+      "logical_seed": 1,
+      "relative_path": "gist_sample50k_k512/logical_seed_1/whole_d832.f32",
+      "scope": "whole",
+      "segment_index": null,
+      "sha256": "9d7917be0223c1c484d06d9ae55eada9af9df6a3eade4cf15dc34730fa57de29",
+      "size_bytes": 2768896
+    },
+    {
+      "c_rng_seed": 3,
+      "dataset_id": "gist_sample50k_k512",
+      "dimension": 64,
+      "logical_seed": 2,
+      "relative_path": "gist_sample50k_k512/logical_seed_2/segmented_s0_d64.f32",
+      "scope": "segmented",
+      "segment_index": 0,
+      "sha256": "199614a4d808cf38ccfc779d77de03dadfa9d195a6df30ae3a395c2424f5cc6a",
+      "size_bytes": 16384
+    },
+    {
+      "c_rng_seed": 3,
+      "dataset_id": "gist_sample50k_k512",
+      "dimension": 192,
+      "logical_seed": 2,
+      "relative_path": "gist_sample50k_k512/logical_seed_2/segmented_s1_d192.f32",
+      "scope": "segmented",
+      "segment_index": 1,
+      "sha256": "1860915c73165342b78f8fd01625501bdb8a4d8957553788eee35bebbf8b7bba",
+      "size_bytes": 147456
+    },
+    {
+      "c_rng_seed": 3,
+      "dataset_id": "gist_sample50k_k512",
+      "dimension": 320,
+      "logical_seed": 2,
+      "relative_path": "gist_sample50k_k512/logical_seed_2/segmented_s2_d320.f32",
+      "scope": "segmented",
+      "segment_index": 2,
+      "sha256": "86565e33b804a595cb1f01934f8a798fff26c07fd3816c1828bc21bf1c8d1551",
+      "size_bytes": 409600
+    },
+    {
+      "c_rng_seed": 3,
+      "dataset_id": "gist_sample50k_k512",
+      "dimension": 256,
+      "logical_seed": 2,
+      "relative_path": "gist_sample50k_k512/logical_seed_2/segmented_s3_d256.f32",
+      "scope": "segmented",
+      "segment_index": 3,
+      "sha256": "84004093cd060393eff34a526d3d242443b366a64544e191fc423378a675bfe9",
+      "size_bytes": 262144
+    },
+    {
+      "c_rng_seed": 3,
+      "dataset_id": "gist_sample50k_k512",
+      "dimension": 832,
+      "logical_seed": 2,
+      "relative_path": "gist_sample50k_k512/logical_seed_2/whole_d832.f32",
+      "scope": "whole",
+      "segment_index": null,
+      "sha256": "b418306a98bb7a6152b11af13c057a5c150f11839d4581c67ebb0f323abaf22b",
+      "size_bytes": 2768896
+    },
+    {
+      "c_rng_seed": 1,
+      "dataset_id": "cifar60k_k512",
+      "dimension": 64,
+      "logical_seed": 0,
+      "relative_path": "cifar60k_k512/logical_seed_0/segmented_s0_d64.f32",
+      "scope": "segmented",
+      "segment_index": 0,
+      "sha256": "71b3770a7994a390bc791e46989fd88a3ded623b7f2d6790920ff50c80224df7",
+      "size_bytes": 16384
+    },
+    {
+      "c_rng_seed": 1,
+      "dataset_id": "cifar60k_k512",
+      "dimension": 192,
+      "logical_seed": 0,
+      "relative_path": "cifar60k_k512/logical_seed_0/segmented_s1_d192.f32",
+      "scope": "segmented",
+      "segment_index": 1,
+      "sha256": "16f5b295180b34e9f39101ba0a3cf3d22ac7adb90678d65f152ba66f42eef7cb",
+      "size_bytes": 147456
+    },
+    {
+      "c_rng_seed": 1,
+      "dataset_id": "cifar60k_k512",
+      "dimension": 128,
+      "logical_seed": 0,
+      "relative_path": "cifar60k_k512/logical_seed_0/segmented_s2_d128.f32",
+      "scope": "segmented",
+      "segment_index": 2,
+      "sha256": "bfcf938e65da67b576c83aacc9e2d8f4ccd42cc9e5254ceb6a70ac1b9d79ff43",
+      "size_bytes": 65536
+    },
+    {
+      "c_rng_seed": 1,
+      "dataset_id": "cifar60k_k512",
+      "dimension": 384,
+      "logical_seed": 0,
+      "relative_path": "cifar60k_k512/logical_seed_0/whole_d384.f32",
+      "scope": "whole",
+      "segment_index": null,
+      "sha256": "100b08e026f2903b5cba7cf716468bd2b05241710a1c095b43fa4fe24d2ee99a",
+      "size_bytes": 589824
+    },
+    {
+      "c_rng_seed": 2,
+      "dataset_id": "cifar60k_k512",
+      "dimension": 64,
+      "logical_seed": 1,
+      "relative_path": "cifar60k_k512/logical_seed_1/segmented_s0_d64.f32",
+      "scope": "segmented",
+      "segment_index": 0,
+      "sha256": "fdcd87a3f0a02d51c20c59f403480fbd68bbd56a5f4c2020eaca3e899937e736",
+      "size_bytes": 16384
+    },
+    {
+      "c_rng_seed": 2,
+      "dataset_id": "cifar60k_k512",
+      "dimension": 192,
+      "logical_seed": 1,
+      "relative_path": "cifar60k_k512/logical_seed_1/segmented_s1_d192.f32",
+      "scope": "segmented",
+      "segment_index": 1,
+      "sha256": "2ecf354f482c306e706b2d3dde437ee8ff331a1d77a922a28db7df47537f1bac",
+      "size_bytes": 147456
+    },
+    {
+      "c_rng_seed": 2,
+      "dataset_id": "cifar60k_k512",
+      "dimension": 128,
+      "logical_seed": 1,
+      "relative_path": "cifar60k_k512/logical_seed_1/segmented_s2_d128.f32",
+      "scope": "segmented",
+      "segment_index": 2,
+      "sha256": "5251e8d7dd25ec04164dc0fa043a423f5ed4fa5aed330d9f743d08183fa5def9",
+      "size_bytes": 65536
+    },
+    {
+      "c_rng_seed": 2,
+      "dataset_id": "cifar60k_k512",
+      "dimension": 384,
+      "logical_seed": 1,
+      "relative_path": "cifar60k_k512/logical_seed_1/whole_d384.f32",
+      "scope": "whole",
+      "segment_index": null,
+      "sha256": "bae896f52d83db8c972c9d984a278a28894c9a5a15972dbabbbc96ee5be450fd",
+      "size_bytes": 589824
+    },
+    {
+      "c_rng_seed": 3,
+      "dataset_id": "cifar60k_k512",
+      "dimension": 64,
+      "logical_seed": 2,
+      "relative_path": "cifar60k_k512/logical_seed_2/segmented_s0_d64.f32",
+      "scope": "segmented",
+      "segment_index": 0,
+      "sha256": "199614a4d808cf38ccfc779d77de03dadfa9d195a6df30ae3a395c2424f5cc6a",
+      "size_bytes": 16384
+    },
+    {
+      "c_rng_seed": 3,
+      "dataset_id": "cifar60k_k512",
+      "dimension": 192,
+      "logical_seed": 2,
+      "relative_path": "cifar60k_k512/logical_seed_2/segmented_s1_d192.f32",
+      "scope": "segmented",
+      "segment_index": 1,
+      "sha256": "1860915c73165342b78f8fd01625501bdb8a4d8957553788eee35bebbf8b7bba",
+      "size_bytes": 147456
+    },
+    {
+      "c_rng_seed": 3,
+      "dataset_id": "cifar60k_k512",
+      "dimension": 128,
+      "logical_seed": 2,
+      "relative_path": "cifar60k_k512/logical_seed_2/segmented_s2_d128.f32",
+      "scope": "segmented",
+      "segment_index": 2,
+      "sha256": "c92901068149d130a27c27caaf5c48d48b4046374006bbaacf523045225a4214",
+      "size_bytes": 65536
+    },
+    {
+      "c_rng_seed": 3,
+      "dataset_id": "cifar60k_k512",
+      "dimension": 384,
+      "logical_seed": 2,
+      "relative_path": "cifar60k_k512/logical_seed_2/whole_d384.f32",
+      "scope": "whole",
+      "segment_index": null,
+      "sha256": "b3c7acb7a51190cb2afc8cf0f39c56e270dac0ee2bde78cefed0c250889f3b1e",
+      "size_bytes": 589824
+    }
+  ],
+  "sample_size_per_dataset": 50000,
+  "schema_version": 1,
+  "stage": "V2-B0",
+  "status": "PASS",
+  "structural_read_scope": "two frozen D=1 cluster-id files only"
+}

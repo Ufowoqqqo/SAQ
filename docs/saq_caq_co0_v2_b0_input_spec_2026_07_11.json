@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "protocol_version": "saq-caq-co0-v2-b0-20260711-schema1",
+  "sample_size_per_dataset": 50000,
+  "allowed_current_artifact_reads": [
+    "gist_sample50k_k512.cluster_ids",
+    "cifar60k_k512.cluster_ids"
+  ],
+  "forbidden_current_artifact_reads": [
+    "base_vectors",
+    "centroids",
+    "variance_vectors",
+    "queries",
+    "ground_truth",
+    "serialized_indexes",
+    "prior_encoder_outputs"
+  ],
+  "selection_key": {
+    "encoding": "UTF-8",
+    "serialization": "protocol_version|dataset_id|decimal_cell_id|decimal_vector_id",
+    "digest": "SHA-256",
+    "digest_order": "ascending raw digest bytes, then ascending vector_id"
+  },
+  "allocation": {
+    "method": "population-proportional largest remainder",
+    "base_quota": "floor(sample_size * cell_population / dataset_rows)",
+    "remainder_order": "descending integer remainder numerator, then ascending cell_id",
+    "within_cell_rank_origin": 0,
+    "vector_id_origin": 0
+  },
+  "pairing": {
+    "scope": "within IVF cell",
+    "method": "consecutive selected ranks without reuse",
+    "stored_side": "lower even selected rank",
+    "query_side": "following odd selected rank",
+    "odd_cell_rule": "leave final selected rank unpaired"
+  },
+  "rotation": {
+    "logical_seeds": [0, 1, 2],
+    "c_rng_seed_formula": "logical_seed + 1",
+    "reason": "glibc srand(0) and srand(1) produce the same stream",
+    "random_source": "Eigen::MatrixXf::Random using std::rand",
+    "orthogonalization": "Eigen::HouseholderQR<float>; P=householderQ().transpose()",
+    "storage": "row-major float32 raw bytes",
+    "segmented_scope": "reset C RNG once per dataset/logical seed, then generate positive segments in offset order",
+    "whole_view_scope": "reset C RNG independently for each dataset/logical seed, then generate one whole-positive-view matrix"
+  },
+  "datasets": [
+    {
+      "dataset_id": "gist_sample50k_k512",
+      "rows": 50000,
+      "dimension": 960,
+      "ivf_clusters": 512,
+      "positive_dimension": 832,
+      "plan": [
+        {"offset": 0, "dimensions": 64, "total_bits": 11},
+        {"offset": 64, "dimensions": 192, "total_bits": 6},
+        {"offset": 256, "dimensions": 320, "total_bits": 4},
+        {"offset": 576, "dimensions": 256, "total_bits": 2},
+        {"offset": 832, "dimensions": 128, "total_bits": 0}
+      ],
+      "provenance_source": {
+        "kind": "pre-existing local manifest generated before CO-0 v2 data access",
+        "path": "/tmp/saq-phase1-transform/views/gist_sample50k_phase1_current_pca/gist_sample50k_phase1_current_pca_manifest.json",
+        "sha256": "77caab078561dc58e3324ce41c4b3ce849db9bd6fa54e632346cfd8b1b972255"
+      },
+      "artifacts": {
+        "base": {
+          "path": "/rwproject/kdd-db/kluaq/saq/data/gist_sample50k/gist_sample50k_base_pca.fvecs",
+          "format": "fvecs",
+          "rows": 50000,
+          "dimension": 960,
+          "size_bytes": 192200000,
+          "expected_sha256": "a027be4e9942c7935ba4c7184eac09b4ad2d2c6fbe561ed9a598e66933b20671"
+        },
+        "centroids": {
+          "path": "/rwproject/kdd-db/kluaq/saq/data/gist_sample50k/gist_sample50k_centroid_512_pca.fvecs",
+          "format": "fvecs",
+          "rows": 512,
+          "dimension": 960,
+          "size_bytes": 1968128,
+          "expected_sha256": "48af2216744f9bb39fd7dccf2e0358aa705a4647227adb777796623c676674db"
+        },
+        "variance": {
+          "path": "/rwproject/kdd-db/kluaq/saq/data/gist_sample50k/gist_sample50k_base_pca.vars.fvecs",
+          "format": "fvecs",
+          "rows": 1,
+          "dimension": 960,
+          "size_bytes": 3844,
+          "expected_sha256": "20345de79dbd6ead9728c2c9abdbdb3f12e4f0ad449122f586d87ed3036b9c35"
+        },
+        "cluster_ids": {
+          "path": "/rwproject/kdd-db/kluaq/saq/data/gist_sample50k/gist_sample50k_cluster_id_512.ivecs",
+          "format": "ivecs",
+          "rows": 50000,
+          "dimension": 1,
+          "size_bytes": 400000,
+          "expected_sha256": "c466b5685dd4ef12f42f1d7fa304f42b2c9989df12190c84b8bb4c0a29618eb1"
+        }
+      }
+    },
+    {
+      "dataset_id": "cifar60k_k512",
+      "rows": 60000,
+      "dimension": 512,
+      "ivf_clusters": 512,
+      "positive_dimension": 384,
+      "plan": [
+        {"offset": 0, "dimensions": 64, "total_bits": 9},
+        {"offset": 64, "dimensions": 192, "total_bits": 5},
+        {"offset": 256, "dimensions": 128, "total_bits": 3},
+        {"offset": 384, "dimensions": 128, "total_bits": 0}
+      ],
+      "provenance_source": {
+        "kind": "committed input manifest",
+        "git_commit": "e5829744106f01467691887eada0166d56893d1f",
+        "git_path": "docs/saq_fixed_policy_input_manifest_2026_07_08.json",
+        "git_blob": "74ab55dcf6172bba8020dd19ba3922c8612438f4"
+      },
+      "artifacts": {
+        "base": {
+          "path": "/tmp/saq-run/data/cifar60k/cifar60k_base_pca.fvecs",
+          "format": "fvecs",
+          "rows": 60000,
+          "dimension": 512,
+          "size_bytes": 123120000,
+          "expected_sha256": "2019cfa391c5d10742a9963b6dc3d28d633097632b7bb1acde737caa6d314845"
+        },
+        "centroids": {
+          "path": "/tmp/saq-run/data/cifar60k/cifar60k_centroid_512_pca.fvecs",
+          "format": "fvecs",
+          "rows": 512,
+          "dimension": 512,
+          "size_bytes": 1050624,
+          "expected_sha256": "ad4498c3b67a1ab598eb47bee560133a3d6ca46a7867db29ffb55ce53b3c9827"
+        },
+        "variance": {
+          "path": "/tmp/saq-run/data/cifar60k/cifar60k_base_pca.vars.fvecs",
+          "format": "fvecs",
+          "rows": 1,
+          "dimension": 512,
+          "size_bytes": 2052,
+          "expected_sha256": "8ec4a1399e012c8d227e368968a1de588fa095b2d3516466152bf29335e0ba15"
+        },
+        "cluster_ids": {
+          "path": "/tmp/saq-run/data/cifar60k/cifar60k_cluster_id_512.ivecs",
+          "format": "ivecs",
+          "rows": 60000,
+          "dimension": 1,
+          "size_bytes": 480000,
+          "expected_sha256": "3168f05171f74afb175c50a0ec9e584b0f666b157fbedba6d3841cc2e43107e9"
+        }
+      }
+    }
+  ]
+}

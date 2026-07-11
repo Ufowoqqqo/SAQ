@@ -2,11 +2,11 @@
 
 ## Active Goal
 
-V2-A2 of the corrected `CO-0 v2` protocol is complete. The validated
-exact-integer complete-event oracle can label the later frozen base-only
-sample within the predeclared synthetic resource ceiling. Stop before V2-B
-until its preregistration is separately reviewed and authorized. The v1
-screen remains closed under its frozen official-source contract.
+V2-B0 of the corrected `CO-0 v2` protocol is complete. Provenance,
+deterministic sample/pair inventories, rotation hashes, encoder arms, metrics,
+statistics, output schema, and stop rules are frozen without encoder execution
+or vector/query/ground-truth reads. Stop before V2-B1. The v1 screen remains
+closed under its frozen official-source contract.
 
 Current status:
 
@@ -22,10 +22,16 @@ V2-A0/V2-A1 explicitly authorized
 V2-A0 proof/specification review completed: PASS
 V2-A1 synthetic exact-oracle validation completed: PASS
 V2-A2 synthetic cost feasibility completed: PASS
-V2-B not authorized
+V2-B0 final preregistration completed: PASS
+V2-B1 encoder execution not authorized
 no GIST/CIFAR CO-0 output inspected
 no method or contribution established
 ```
+
+The only newly permitted artifact read is each frozen one-column IVF
+cluster-id file. It is required to materialize the predeclared
+cluster-stratified inventories. Base/centroid/variance hashes are imported
+from prior provenance and verified against bytes only after B1 authorization.
 
 Authoritative documents:
 
@@ -40,7 +46,13 @@ Authoritative documents:
 - `docs/saq_caq_co0_v2_a1_artifacts_2026_07_11/`;
 - `docs/saq_caq_co0_v2_a2_synthetic_cost_design_2026_07_11.md`;
 - `docs/saq_caq_co0_v2_a2_synthetic_cost_evidence_2026_07_11.md`;
-- `docs/saq_caq_co0_v2_a2_artifacts_2026_07_11/`.
+- `docs/saq_caq_co0_v2_a2_artifacts_2026_07_11/`;
+- `docs/saq_caq_co0_v2_b0_input_spec_2026_07_11.json`;
+- `docs/saq_caq_co0_v2_b0_preparation_spec_2026_07_11.md`;
+- `docs/saq_caq_co0_v2_b0_hypotheses_2026_07_11.json`;
+- `docs/saq_caq_co0_v2_b0_final_preregistration_2026_07_11.md`;
+- `docs/saq_caq_co0_v2_b0_preregistration_evidence_2026_07_11.md`;
+- `docs/saq_caq_co0_v2_b0_artifacts_2026_07_11/`.
 
 ## Research Question
 
@@ -134,6 +146,26 @@ retain n=50,000 per dataset and the 24 CPU-hour exact-label ceiling
 do not reinterpret 7.969 CPU-hours as a query/index performance result
 stop before V2-B
 ```
+
+## V2-B0: Final Preregistration — Completed, PASS
+
+Complete and commit, without encoder execution:
+
+```text
+input provenance and expected hashes
+cluster-stratified n=50,000 sample inventories
+disjoint within-cell base-pair inventories
+logical seeds 0,1,2 -> distinct C RNG seeds 1,2,3
+production-compatible segmented/whole-view rotation hashes
+all arms, controls, estimands, bootstrap tests, output schema, and commands
+```
+
+Stop before V2-B1.
+
+The next stage requires separate authorization. Implement and synthetic-test
+the B1 runner against the frozen preregistration before permitting it to open
+any base vector. Runner implementation and real base execution must not be
+combined into one unreviewed step.
 
 Do not run V2-A2, inspect dataset artifacts, or design a CAQ repair in the same
 step.

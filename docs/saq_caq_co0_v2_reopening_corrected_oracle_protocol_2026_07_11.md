@@ -645,5 +645,19 @@ The evidence is:
 - `docs/saq_caq_co0_v2_a2_synthetic_cost_evidence_2026_07_11.md`;
 - `docs/saq_caq_co0_v2_a2_artifacts_2026_07_11/`.
 
-V2-B remains unauthorized. The V2-A2 result is resource feasibility, not
-evidence of CAQ regret or an SAQ-specific limitation.
+At that point V2-B remained unauthorized. The V2-A2 result was resource
+feasibility, not evidence of CAQ regret or an SAQ-specific limitation.
+
+After separate authorization, V2-B0 completed with `PASS` on 2026-07-11. It
+committed the final preregistration, 100,000 selected-vector rows, 49,726
+disjoint within-cell pairs, 27 production-compatible rotation hashes, and the
+fixed 24-hypothesis ledger. B0 read only the two one-column cluster-assignment
+files; no float vector, query, ground truth, index, encoder, oracle, or
+estimator output was read or executed. Evidence is recorded in:
+
+- `docs/saq_caq_co0_v2_b0_final_preregistration_2026_07_11.md`;
+- `docs/saq_caq_co0_v2_b0_preregistration_evidence_2026_07_11.md`;
+- `docs/saq_caq_co0_v2_b0_artifacts_2026_07_11/`.
+
+V2-B1 remains unauthorized. B0 contains no evidence about finite-round CAQ
+regret.
