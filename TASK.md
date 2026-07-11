@@ -2,8 +2,9 @@
 
 ## Active Goal
 
-Preserve the completed `CO-0A` falsification record. The bounded finite-round
-CAQ screen is closed under its frozen official-source oracle contract.
+Preserve the completed `CO-0A` falsification record and review, but do not yet
+execute, the independently corrected `CO-0 v2` reopening protocol. The v1
+screen remains closed under its frozen official-source oracle contract.
 
 Current status:
 
@@ -14,6 +15,8 @@ new-direction memo migrated
 official Extended-RaBitQ pinned at 52b9e6c7ba6c316036cdb04074732fe561966a53
 CO-0A source/codebook parity completed: FAIL
 CO-0B preregistration deliberately not written: gate did not authorize it
+CO-0 v2 corrected-oracle protocol written for review only
+no v2 implementation branch created
 no GIST/CIFAR CO-0 output inspected
 no method or contribution established
 ```
@@ -24,7 +27,8 @@ Authoritative documents:
 - `docs/saq_limitation_primary_sources_2026_07_11.json`;
 - `docs/saq_next_direction_go_no_go_memo_2026_07_11.md`;
 - `docs/saq_caq_co0a_official_source_parity_2026_07_11.md`;
-- `docs/saq_caq_co0a_artifacts_2026_07_11/source_parity_result.json`.
+- `docs/saq_caq_co0a_artifacts_2026_07_11/source_parity_result.json`;
+- `docs/saq_caq_co0_v2_reopening_corrected_oracle_protocol_2026_07_11.md`.
 
 ## Research Question
 
@@ -88,10 +92,12 @@ do not inspect GIST/CIFAR outputs
 do not write the failed-contract CO-0B preregistration
 ```
 
-Reopening requires an explicit decision to define a different, paper-corrected
-and widened exact oracle. That decision must produce a new protocol before any
-dataset residual is inspected and must not call the new oracle official-source
-parity.
+The v2 note now specifies a distinct exact-integer, complete-event oracle and
+ordered synthetic validation gates. Writing that note is not execution
+authorization. The next action requires explicit approval to create
+`saq-caq-corrected-oracle-v2` from `saq-correctness-base` and execute V2-A0 and
+V2-A1 only. Dataset access remains forbidden until V2-A0--A2 pass and a
+separate V2-B preregistration is committed.
 
 ## Stop Rules
 
@@ -101,3 +107,7 @@ also have stopped if the exact feasible codebook differed from SAQ's claimed
 mapping, or later if the registered limitation/amplification conditions
 failed. It would likewise stop as a research direction if ordinary extra CAQ
 rounds closed the gap or exact E-RaBitQ fallback were the only repair.
+
+The proposed v2 protocol does not retroactively relax this stop. It is a new
+contract with its own proof, exact-arithmetic, cost, preregistration, and stop
+requirements.

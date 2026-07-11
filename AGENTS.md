@@ -55,6 +55,15 @@ Reopening requires explicit authorization for a new protocol whose oracle is
 clearly named as a paper-corrected, widened independent implementation rather
 than official-source parity.
 
+The proposed reopening contract is recorded in
+`docs/saq_caq_co0_v2_reopening_corrected_oracle_protocol_2026_07_11.md`. It is
+a review artifact, not execution authorization. It permits no implementation,
+dataset access, or method claim on this stopped branch. After explicit
+approval, V2-A0/V2-A1 should start from `saq-correctness-base` on a new
+`saq-caq-corrected-oracle-v2` branch; later data access remains conditional on
+the protocol's synthetic exactness and cost gates plus a separately committed
+V2-B preregistration.
+
 ## Frozen Architecture
 
 Keep the comparison inside the existing SAQ representation:
@@ -203,6 +212,9 @@ the parity note.
 
 ## Do-Not Rules
 
+- Do not treat the CO-0 v2 protocol note as authorization to implement or read
+  dataset artifacts.
+- Do not create or execute the proposed v2 branch without explicit approval.
 - Do not write or execute the old CO-0B preregistration after the CO-0A
   failure.
 - Do not describe the independent full-event enumerator as the pinned official
