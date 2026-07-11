@@ -391,8 +391,9 @@ Use small commits in this order:
 3. `Add one-bit and partial-block regression coverage` (completed 2026-07-10)
 4. `Add source-aligned SymphonyQG scalar estimator` (completed 2026-07-10)
 5. `Validate SymphonyQG estimator parity` (completed 2026-07-10)
-6. `Record aligned local-replay decision`
-7. `Add complete graph-estimator work accounting` only if Phase 3 passes
+6. `Record aligned local-replay decision` (completed 2026-07-11)
+7. `Add complete graph-estimator work accounting` (next; Phase 3 supports only
+   this narrow continuation)
 8. `Add fixed-graph frontier replay` only if Phases 3 and 4 pass
 9. `Update graph related work and meeting synthesis`
 
@@ -401,7 +402,7 @@ aggregate output, interpretation, and explicit continue/stop decision.
 
 ## Actions Explicitly Deferred
 
-Until the Phase 3 gate passes, do not:
+Until the Phase 4 work gate passes, do not:
 
 - implement full HNSW or DiskANN integration;
 - add a learned or query-calibrated refinement policy;
@@ -410,7 +411,10 @@ Until the Phase 3 gate passes, do not:
 - add new SAQ candidate-plan families;
 - describe the current proxy result as a research contribution.
 
-The immediate executable work is Phase 3: run the predeclared fixed-seed local
-replay, aggregate at the query level, compare rank quality against complete
-logical work, and apply the documented stop gate before any method design or
-full graph integration.
+Phase 3 is complete and recorded in
+`docs/saq_graph_phase3_canonical_evidence_2026_07_11.md`. `saq_fast` is worse
+than aligned packed SymphonyQG across both subsets and every fixed rotation.
+The first accurate SAQ prefix is consistently more accurate but reads more
+code, so the result supports only Phase 4 complete work accounting. The
+immediate executable work is to compare complete bytes and isolated estimator
+runtime before any method design or full graph integration.

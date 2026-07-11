@@ -136,8 +136,10 @@ the C++ event schema, manifest, resume metadata, and all aggregate outputs. Its
 subset and sample size are intentionally noncanonical, so it is implementation
 evidence only and supplies no Phase 3 research conclusion.
 
-## Remaining Decision
+## Recorded Decision
 
-Run the canonical matrix and apply the predeclared stop/continue condition from
-`docs/saq_graph_direction_research_validity_plan_2026_07_10.md`. Do not design a
-traversal policy or implement a full graph index before that decision.
+The canonical matrix is complete. Results and the conditional Phase 4 decision
+are recorded in `docs/saq_graph_phase3_canonical_evidence_2026_07_11.md`. Do
+not design a traversal policy or implement a full graph index before complete
+work accounting determines whether the first accurate SAQ prefix remains a
+Pareto point.

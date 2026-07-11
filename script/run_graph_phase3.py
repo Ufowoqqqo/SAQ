@@ -708,7 +708,7 @@ def write_csv(path: Path, rows: Sequence[Mapping[str, object]]) -> None:
                 seen.add(field)
                 fieldnames.append(field)
     with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
 

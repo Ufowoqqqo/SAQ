@@ -123,22 +123,29 @@ implemented and documented in
 event-level values for exact-distance regret, aggregates nested roots within a
 query, averages fixed rotations within that query, reports query-level 95%
 confidence intervals and seed variation, and refuses resume when the command or
-event schema differs. A noncanonical two-query/two-seed smoke run verifies the
-complete output path but is not research evidence.
+event schema differs.
 
-Execute the canonical Phase 3 matrix next:
+The canonical Phase 3 matrix is complete and recorded in
+`docs/saq_graph_phase3_canonical_evidence_2026_07_11.md`. Across subsets 1024
+and 4096 and all ten fixed SymphonyQG rotations, `saq_fast` is consistently
+worse than `symqg_fht_fastscan`. `saq_prefix_acc1` is consistently more
+accurate, but it reads 1472 code bits per candidate versus SymphonyQG's 1024
+before complete factor and compute accounting. The result therefore supports
+only a narrow Phase 4 work evaluation, not a graph method claim.
 
-1. run the fixed GIST sample50k/K512/B4 replay at subsets 1024 and 4096;
-2. use every predeclared rotation seed `0..9`, without selecting favorable
-   seeds;
-3. aggregate roots at the query level and report confidence intervals;
-4. compare SAQ progressive stages with packed SymphonyQG under complete logical
-   work;
-5. apply the documented continue/stop condition before any traversal policy or
-   full graph integration.
+Execute Phase 4 next:
+
+1. derive complete logical bytes requested by `symqg_fht_fastscan`, `saq_fast`,
+   and `saq_prefix_acc1`, including factors, query tables, padding, and
+   amortization assumptions;
+2. add isolated estimator microbenchmarks without adjacency construction,
+   combined-profiler work, or file output;
+3. compare quality against complete bytes and estimator time;
+4. stop the graph-local-ranking direction if the first SAQ prefix no longer
+   supplies a stable Pareto point.
 
 Do not implement full HNSW/DiskANN integration, broaden the dataset matrix, or
-design a refinement policy until this gate passes.
+design a refinement policy before this work gate passes.
 
 ## Constraints
 
