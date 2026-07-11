@@ -1,0 +1,379 @@
+{
+  "topic": "bounded primary-source review of unresolved SAQ limitations after the LP-0 Gate-A failure",
+  "retrieved_on": "2026-07-11",
+  "cutoff": "2026-07-11",
+  "review_contract": {
+    "primary_sources_only": true,
+    "maximum_unique_sources": 36,
+    "candidate_families": [
+      "C1 certified progressive distance bounds",
+      "C2 streaming updates and representation drift",
+      "C3 filtered and hybrid vector search",
+      "C4 physical layout, SIMD, and tiered storage",
+      "C5 arbitrary multi-bit prefix consistency",
+      "C6 finite-round CAQ encoding optimality"
+    ],
+    "inclusion_rule": "Include the SAQ paper/source and a primary paper or official artifact only when it directly occupies a proposed mechanism, supplies a mandatory baseline, or states the unresolved SAQ premise.",
+    "exclusion_rule": "Exclude surveys, blogs, vendor summaries, generic ANN papers without a quantization/progressive-distance connection, and neural-model quantization not used for vector search.",
+    "search_methods": [
+      "local full-text review of paper_src/2509.12086/main.tex and current SAQ source",
+      "exact-title and exact-arXiv-id metadata queries",
+      "publisher-paper and official-artifact review",
+      "cross-branch primary-source notes used only as pointers; claims were checked against the cited primary work"
+    ]
+  },
+  "sources": [
+    {
+      "id": "saq",
+      "title": "SAQ: Pushing the Limits of Vector Quantization through Code Adjustment and Dimension Segmentation",
+      "year": 2026,
+      "venue": "PACMMOD / SIGMOD 2026",
+      "doi": "10.1145/3769824",
+      "url": "https://arxiv.org/abs/2509.12086",
+      "local_path": "paper_src/2509.12086/main.tex",
+      "review_depth": "local full text and implementation",
+      "candidate_ids": ["C1", "C2", "C3", "C5", "C6"],
+      "finding": "SAQ is static and IVF-only; its segment-tail bound uses a configured m; arbitrary CAQ prefixes are supported empirically; and the RaBitQ-equivalent guarantee is conditional on solving a cosine objective that finite-round code adjustment need not solve optimally."
+    },
+    {
+      "id": "rabitq",
+      "title": "RaBitQ: Quantizing High-Dimensional Vectors with a Theoretical Error Bound for Approximate Nearest Neighbor Search",
+      "year": 2024,
+      "venue": "PACMMOD / SIGMOD 2024",
+      "doi": "10.1145/3654970",
+      "url": "https://arxiv.org/abs/2405.12497",
+      "review_depth": "primary paper and exact arXiv metadata",
+      "candidate_ids": ["C1", "C6"],
+      "finding": "Provides an unbiased one-bit estimator and a sharp randomized error bound; it is the source of the guarantee CAQ seeks to inherit."
+    },
+    {
+      "id": "erabitq",
+      "title": "Practical and Asymptotically Optimal Quantization of High-Dimensional Vectors in Euclidean Space for Approximate Nearest Neighbor Search",
+      "year": 2025,
+      "venue": "SIGMOD 2025",
+      "doi": "10.1145/3725413",
+      "url": "https://arxiv.org/abs/2409.09913",
+      "artifact_url": "https://github.com/VectorDB-NTU/Extended-RaBitQ",
+      "artifact_commit": "52b9e6c7ba6c316036cdb04074732fe561966a53",
+      "artifact_license": "Apache-2.0",
+      "artifact_parity_status": "FAIL",
+      "artifact_parity_evidence": "docs/saq_caq_co0a_official_source_parity_2026_07_11.md",
+      "review_depth": "primary metadata, the formulation reproduced and analyzed in the SAQ primary paper, and the pinned official encoder source",
+      "candidate_ids": ["C1", "C5", "C6"],
+      "finding": "Extends RaBitQ to multiple bits with theoretical guarantees and an exact/pruned codeword search; only its most-significant bit is guaranteed to recover a valid RaBitQ code, so arbitrary intermediate prefixes are not its mechanism. The pinned official fast_quantize artifact failed the separate CO-0A exact-oracle parity gate and cannot instantiate that frozen oracle contract."
+    },
+    {
+      "id": "adsampling",
+      "title": "High-Dimensional Approximate Nearest Neighbor Search: with Reliable and Efficient Distance Comparison Operations",
+      "year": 2023,
+      "venue": "SIGMOD 2023",
+      "doi": "10.1145/3589282",
+      "url": "https://arxiv.org/abs/2303.09855",
+      "review_depth": "primary paper and exact arXiv metadata",
+      "candidate_ids": ["C1", "C3"],
+      "finding": "ADSampling already supplies high-probability, progressively sampled distance comparisons and generic ANN-index plugins."
+    },
+    {
+      "id": "dade",
+      "title": "Efficient Data-aware Distance Comparison Operations for High-Dimensional Approximate Nearest Neighbor Search",
+      "year": 2024,
+      "venue": "PVLDB 18(3)",
+      "doi": "10.14778/3712221.3712244",
+      "url": "https://www.vldb.org/pvldb/vol18/p812-zheng.pdf",
+      "artifact_url": "https://github.com/Ur-Eine/DADE",
+      "review_depth": "publisher paper and official artifact",
+      "candidate_ids": ["C1", "C3"],
+      "finding": "Uses PCA prefixes and hypothesis tests to adapt distance-computation depth per candidate in IVF and HNSW."
+    },
+    {
+      "id": "mrq",
+      "title": "Quantization Meets Projection: A Happy Marriage for Approximate k-Nearest Neighbor Search",
+      "year": 2026,
+      "venue": "PVLDB 19(6)",
+      "doi": "10.14778/3797919.3797931",
+      "url": "https://www.vldb.org/pvldb/vol19/p1240-yang.pdf",
+      "artifact_url": "https://github.com/mingyu-hkustgz/RESQ",
+      "review_depth": "publisher paper and official artifact",
+      "candidate_ids": ["C1", "C3"],
+      "finding": "Directly combines a quantized PCA head, residual-tail statistics, probabilistic bounds, and multi-stage IVF refinement."
+    },
+    {
+      "id": "symphonyqg",
+      "title": "SymphonyQG: Towards Symphonious Integration of Quantization and Graph",
+      "year": 2025,
+      "venue": "SIGMOD 2025",
+      "doi": "10.1145/3709730",
+      "url": "https://arxiv.org/abs/2411.12229",
+      "review_depth": "primary paper and pinned official-source parity from the graph branch",
+      "candidate_ids": ["C1", "C4"],
+      "finding": "Integrates RaBitQ/FastScan estimates and graph-side sequential code layout into traversal, occupying graph-aware certified-quantizer integration and layout."
+    },
+    {
+      "id": "online_pq",
+      "title": "Online Product Quantization",
+      "year": 2018,
+      "venue": "IEEE TKDE",
+      "doi": "10.1109/TKDE.2018.2817526",
+      "url": "https://arxiv.org/abs/1711.10775",
+      "review_depth": "primary paper",
+      "candidate_ids": ["C2"],
+      "finding": "Incrementally updates PQ codebooks for insertion, deletion, and sliding-window streams with update cost independent of database size."
+    },
+    {
+      "id": "online_opq",
+      "title": "Online Optimized Product Quantization",
+      "year": 2020,
+      "venue": "ICDM 2020",
+      "doi": "10.1109/ICDM50108.2020.00045",
+      "url": "https://doi.org/10.1109/ICDM50108.2020.00045",
+      "review_depth": "publisher primary paper",
+      "candidate_ids": ["C2"],
+      "finding": "Updates both product codebooks and an orthonormal rotation online, colliding with a generic online-PCA/rotation extension."
+    },
+    {
+      "id": "dedrift",
+      "title": "DeDrift: Robust Similarity Search under Content Drift",
+      "year": 2023,
+      "venue": "ICCV 2023",
+      "url": "https://openaccess.thecvf.com/content/ICCV2023/html/Baranchuk_DEDRIFT_Robust_Similarity_Search_under_Content_Drift_ICCV_2023_paper.html",
+      "review_depth": "publisher primary paper",
+      "candidate_ids": ["C2"],
+      "finding": "Shows that coarse-IVF and residual-code drift is a major confound and provides split, lazy, and hybrid local repair mechanisms."
+    },
+    {
+      "id": "spfresh",
+      "title": "SPFresh: Incremental In-Place Update for Billion-Scale Vector Search",
+      "year": 2023,
+      "venue": "SOSP 2023",
+      "url": "https://arxiv.org/abs/2410.14452",
+      "review_depth": "primary paper",
+      "candidate_ids": ["C2"],
+      "finding": "Uses local posting split/merge and reassignment to repair dynamic partition imbalance without global rebuild."
+    },
+    {
+      "id": "streaming_lvq",
+      "title": "Locally-Adaptive Quantization for Streaming Vector Search",
+      "year": 2024,
+      "url": "https://arxiv.org/abs/2402.02044",
+      "artifact_url": "https://github.com/IntelLabs/ScalableVectorSearch",
+      "review_depth": "primary preprint and official artifact",
+      "candidate_ids": ["C2"],
+      "finding": "Finds that frozen LVQ statistics can match repeatedly rebuilt controls under tested drift, so stale global state does not itself establish a search limitation."
+    },
+    {
+      "id": "ada_ivf",
+      "title": "Incremental IVF Index Maintenance for Streaming Vector Search",
+      "year": 2024,
+      "url": "https://arxiv.org/abs/2411.00970",
+      "review_depth": "primary preprint",
+      "candidate_ids": ["C2"],
+      "finding": "Uses reconstruction error, imbalance, and query temperature to trigger local IVF reconstruction; its query-aware component conflicts with the current branch contract."
+    },
+    {
+      "id": "codeq",
+      "title": "Quantization for Vector Search under Streaming Updates",
+      "year": 2025,
+      "url": "https://arxiv.org/abs/2512.18335",
+      "review_depth": "primary preprint",
+      "candidate_ids": ["C2"],
+      "finding": "CoDEQ targets dynamically consistent data-dependent product-style quantization with bounded dependent disk I/O per update, creating the strongest collision for a generic dynamic-SAQ proposal."
+    },
+    {
+      "id": "analyticdb_v",
+      "title": "AnalyticDB-V: A Hybrid Analytical Engine Towards Query Fusion for Structured and Unstructured Data",
+      "year": 2020,
+      "venue": "PVLDB 13",
+      "url": "https://www.vldb.org/pvldb/vol13/p3152-wei.pdf",
+      "review_depth": "publisher primary paper",
+      "candidate_ids": ["C3"],
+      "finding": "Already treats predicate selectivity, PQ distance cost, and pre/post-filter execution as a physical-plan decision."
+    },
+    {
+      "id": "vbase",
+      "title": "VBASE: Unifying Online Vector Similarity Search and Relational Queries via Relaxed Monotonicity",
+      "year": 2023,
+      "venue": "OSDI 2023",
+      "url": "https://www.usenix.org/conference/osdi23/presentation/zhang-qianxi",
+      "review_depth": "publisher primary paper",
+      "candidate_ids": ["C3"],
+      "finding": "Provides generic iterator exposure, dynamic termination, and selectivity-based scalar/vector execution for filtered vector queries."
+    },
+    {
+      "id": "filtered_diskann",
+      "title": "Filtered-DiskANN: Graph Algorithms for Approximate Nearest Neighbor Search with Filters",
+      "year": 2023,
+      "venue": "The Web Conference 2023",
+      "doi": "10.1145/3543507.3583552",
+      "url": "https://harsha-simhadri.org/pubs/Filtered-DiskANN23.pdf",
+      "artifact_url": "https://github.com/microsoft/DiskANN",
+      "review_depth": "author primary paper and official artifact",
+      "candidate_ids": ["C3"],
+      "finding": "Shows that filtered search primarily creates a label-aware graph-connectivity and candidate-generation problem."
+    },
+    {
+      "id": "acorn",
+      "title": "ACORN: Performant and Predicate-Agnostic Search over Vector Embeddings and Structured Data",
+      "year": 2024,
+      "venue": "PACMMOD / SIGMOD 2024",
+      "doi": "10.1145/3654923",
+      "url": "https://doi.org/10.1145/3654923",
+      "artifact_url": "https://github.com/stanford-futuredata/ACORN",
+      "review_depth": "publisher primary paper and official artifact",
+      "candidate_ids": ["C3"],
+      "finding": "Makes graph traversal and fallback explicitly selectivity-dependent for arbitrary predicates."
+    },
+    {
+      "id": "e2e_filtered",
+      "title": "E2E: Adaptive Early Termination for Filtered Vector Search",
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2602.06721",
+      "artifact_url": "https://github.com/gegeji/E2E",
+      "review_depth": "primary preprint and official artifact",
+      "candidate_ids": ["C3"],
+      "finding": "Learns per-query termination from early filter and distance signals; it directly collides with selectivity-dependent staging and is query-supervised."
+    },
+    {
+      "id": "hybrid_ann_eval",
+      "title": "An Experimental Evaluation of Hybrid Querying on Vectors",
+      "year": 2025,
+      "venue": "PVLDB 19",
+      "url": "https://www.vldb.org/pvldb/vol19/p183-zheng.pdf",
+      "artifact_url": "https://github.com/zhujx001/Hybrid-ANNS-Experiment",
+      "review_depth": "publisher primary paper and official artifact",
+      "candidate_ids": ["C3"],
+      "finding": "Establishes pass rate, attribute correlation, and pre/post-filter strategy as mandatory controlled factors."
+    },
+    {
+      "id": "pq_fast_scan",
+      "title": "Cache Locality is Not Enough: High-Performance Nearest Neighbor Search with Product Quantization Fast Scan",
+      "year": 2015,
+      "venue": "PVLDB 9(4)",
+      "url": "https://www.vldb.org/pvldb/vol9/p288-andre.pdf",
+      "review_depth": "publisher primary paper",
+      "candidate_ids": ["C4"],
+      "finding": "Establishes register-resident lookup tables, SIMD-friendly code grouping, and layout changes as first-class quantized-scan mechanisms."
+    },
+    {
+      "id": "quick_adc",
+      "title": "Accelerated Nearest Neighbor Search with Quick ADC",
+      "year": 2017,
+      "url": "https://arxiv.org/abs/1704.07355",
+      "review_depth": "primary paper and exact arXiv metadata",
+      "candidate_ids": ["C4"],
+      "finding": "Uses four-bit subquantizers and quantized lookup tables to unlock register SIMD and reports three-to-six-fold ADC speedups."
+    },
+    {
+      "id": "quicker_adc",
+      "title": "Quicker ADC: Unlocking the Hidden Potential of Product Quantization with SIMD",
+      "year": 2019,
+      "url": "https://arxiv.org/abs/1812.09162",
+      "artifact_url": "https://github.com/nlescoua/faiss-quickeradc",
+      "review_depth": "primary paper, exact arXiv metadata, and official artifact",
+      "candidate_ids": ["C4"],
+      "finding": "Generalizes register lookup to irregular five-, six-, and seven-bit codes and AVX-512 split tables across several ANN indexes."
+    },
+    {
+      "id": "bolt",
+      "title": "Bolt: Accelerated Data Mining with Fast Vector Compression",
+      "year": 2017,
+      "venue": "KDD 2017",
+      "url": "https://arxiv.org/abs/1706.10283",
+      "review_depth": "primary paper and exact arXiv metadata",
+      "candidate_ids": ["C4"],
+      "finding": "Jointly optimizes fast encoding, compressed-vector operations, and hardware-friendly lookup rather than treating code layout as an SAQ-specific gap."
+    },
+    {
+      "id": "aisaq",
+      "title": "AiSAQ: All-in-Storage ANNS with Product Quantization for DRAM-free Information Retrieval",
+      "year": 2025,
+      "url": "https://arxiv.org/abs/2404.06004",
+      "review_depth": "primary paper and exact arXiv metadata",
+      "candidate_ids": ["C4"],
+      "finding": "Moves compressed graph-search state into SSD and demonstrates billion-scale search with about ten megabytes of DRAM."
+    },
+    {
+      "id": "fatrq",
+      "title": "FaTRQ: Tiered Residual Quantization for LLM Vector Search in Far-Memory-Aware ANNS Systems",
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2601.09985",
+      "review_depth": "primary preprint and exact arXiv metadata",
+      "candidate_ids": ["C4"],
+      "finding": "Already makes progressive residual refinement a tiered-memory mechanism with a provable early-stop rule and a CXL-side accelerator."
+    },
+    {
+      "id": "lvq",
+      "title": "Similarity Search in the Blink of an Eye with Compressed Indices",
+      "year": 2023,
+      "venue": "PVLDB 16",
+      "url": "https://www.vldb.org/pvldb/vol16/p3433-aguerrebere.pdf",
+      "review_depth": "publisher primary paper",
+      "candidate_ids": ["C4", "C6"],
+      "finding": "Supplies the per-vector scalar-quantization initialization used by CAQ and an optimized compressed-index systems baseline."
+    },
+    {
+      "id": "nested_quant",
+      "title": "NestQuant: Nested Lattice Quantization for Matrix Products and LLMs",
+      "year": 2025,
+      "venue": "ICML 2025",
+      "url": "https://proceedings.mlr.press/v267/savkin25a.html",
+      "review_depth": "publisher primary paper",
+      "candidate_ids": ["C5"],
+      "finding": "Shows that nested precision quantization is a broader established design, although its workload is not ANN search."
+    },
+    {
+      "id": "successive_refinement_lattice_vq",
+      "title": "Successive Refinement Lattice Vector Quantization",
+      "year": 2002,
+      "venue": "IEEE Transactions on Image Processing",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/18249702/",
+      "review_depth": "publisher-indexed primary paper",
+      "candidate_ids": ["C5"],
+      "finding": "Bitplane-like successive-refinement vector quantization predates SAQ, so nested-prefix quantization alone is not novel."
+    },
+    {
+      "id": "multiresolution_vq",
+      "title": "Multiresolution Vector Quantization",
+      "year": 2004,
+      "url": "https://authors.library.caltech.edu/records/5nb6q-52904",
+      "review_depth": "author-repository primary paper",
+      "candidate_ids": ["C5"],
+      "finding": "Studies embedded source descriptions and supplies a classical collision for generic prefix-consistent vector codes."
+    },
+    {
+      "id": "opq",
+      "title": "Optimized Product Quantization",
+      "year": 2013,
+      "venue": "CVPR 2013",
+      "url": "https://openaccess.thecvf.com/content_cvpr_2013/html/Ge_Optimized_Product_Quantization_2013_CVPR_paper.html",
+      "review_depth": "publisher primary paper",
+      "candidate_ids": ["C6"],
+      "finding": "A mandatory learned-rotation/quantization objective control, but it does not solve CAQ's per-vector discrete cosine codeword problem."
+    },
+    {
+      "id": "lsq_plus_plus",
+      "title": "LSQ++: Lower Running Time and Higher Recall in Multi-Codebook Quantization",
+      "year": 2018,
+      "venue": "ECCV 2018",
+      "url": "https://openaccess.thecvf.com/content_ECCV_2018/html/Julieta_Martinez_LSQ_Lower_Running_ECCV_2018_paper.html",
+      "review_depth": "publisher primary paper",
+      "candidate_ids": ["C6"],
+      "finding": "Optimizes multi-codebook assignments and encoding time, but does not remove the exact E-RaBitQ versus finite-round CAQ objective comparison."
+    },
+    {
+      "id": "turboquant",
+      "title": "TurboQuant: Online Vector Quantization with Near-optimal Distortion Rate",
+      "year": 2026,
+      "venue": "ICLR 2026",
+      "url": "https://openreview.net/forum?id=tO3ASKZlok",
+      "preprint_url": "https://arxiv.org/abs/2504.19874",
+      "review_depth": "OpenReview primary paper",
+      "candidate_ids": ["C6"],
+      "finding": "Provides a modern random-rotation scalar-quantizer control; it targets distortion rate rather than certification of CAQ's discrete cosine optimum."
+    }
+  ],
+  "review_limits": [
+    "Recent 2025-2026 preprints were used as novelty collisions, not treated as established peer-reviewed results unless a venue is listed.",
+    "The review establishes whether a bounded falsification gate is defensible; it does not establish a new method or a universal SAQ limitation.",
+        "E-RaBitQ full-text retrieval was unavailable in the initial network session; its metadata and the exact formulation reproduced in the local SAQ primary source were used for this bounded review. A later review pinned the official encoder source and recorded a CO-0A parity failure."
+  ]
+}

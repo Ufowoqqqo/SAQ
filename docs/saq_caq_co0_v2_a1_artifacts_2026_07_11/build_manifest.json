@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-07-11",
+  "compiler": "GCC 11.5.0 20240719 (Red Hat 11.5.0-14)",
+  "cmake": "4.0.3",
+  "platform": "Linux 5.14.0-687.15.1.el9_8.x86_64 x86_64",
+  "release_flags": "-O3 -DNDEBUG -std=gnu++20 -Wall -Wextra -Wpedantic -fno-fast-math -ffp-contract=off",
+  "asan_flags": "-g -std=gnu++20 -Wall -Wextra -Wpedantic -fno-fast-math -ffp-contract=off -fsanitize=address -fno-omit-frame-pointer",
+  "asan_environment": "ASAN_OPTIONS=detect_leaks=0:halt_on_error=1",
+  "sha256": {
+    "saqlib/quantization/caq/exact_event_oracle.hpp": "9d7084f080d4789e517efda60418ff88e38b98824af5bf90588b07dc9c593705",
+    "src/caq_corrected_oracle_validation.cpp": "ad143111025b77e67913b29e6dbe5f7bbe3d4cfee61c5b2d82e4a6ee901be1d9",
+    "docs/saq_caq_co0_v2_oracle_specification_2026_07_11.md": "650935b60bbd179629317581a035c80519d0cbede185ed4e74ad522cedc32e08",
+    "release_binary": "6b32ff814384083eef13a0511cb13fca4ac34eed1f3ed85a083b238289f1d8ff",
+    "asan_binary": "f3bac020377f7301ae08f5a1592642f9c5d60b804c53f7b1ca88aa00dc16da52"
+  }
+}

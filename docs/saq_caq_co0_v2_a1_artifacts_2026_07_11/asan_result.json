@@ -1,0 +1,35 @@
+{
+  "schema_version": 2,
+  "stage": "V2-A1",
+  "status": "PASS",
+  "oracle": {
+    "name": "independent_exact_integer_complete_event",
+    "official_source": false,
+    "persistent_bytes": 0
+  },
+  "tests": {
+    "bruteforce_cases": 128,
+    "prior_fixture_cases": 109,
+    "initial_state_cases": 2,
+    "zero_cases": 7,
+    "tie_cases": 9,
+    "padding_cases": 1,
+    "subnormal_cases": 3,
+    "largest_finite_cases": 3,
+    "b11_cases": 1,
+    "mapping_cases": 130,
+    "invalid_input_cases": 5
+  },
+  "work": {
+    "first_pass_events": 67072,
+    "replay_events": 1523,
+    "heap_comparisons": 478008,
+    "objective_comparisons": 67072,
+    "max_integer_bits": 563
+  },
+  "execution": {
+    "wall_time_ms": 528.405,
+    "cpu_time_ms": 527.440,
+    "peak_rss_bytes": 18481152
+  }
+}
