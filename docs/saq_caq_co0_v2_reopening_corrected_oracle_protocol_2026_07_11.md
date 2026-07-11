@@ -634,3 +634,16 @@ evidence is:
 No dataset artifact was read. V2-A2 and V2-B remain unauthorized; V2-A1
 establishes a validated measurement instrument, not a finite-round CAQ
 limitation or method contribution.
+
+After a separate user authorization on 2026-07-11, V2-A2 completed with
+`PASS`. Its deterministic synthetic matrix retained all nine frozen cells and
+estimated 7.969 CPU-hours for 50,000 vectors per dataset under the
+worst-replay-corrected cost equation, below the frozen 24 CPU-hour ceiling.
+The evidence is:
+
+- `docs/saq_caq_co0_v2_a2_synthetic_cost_design_2026_07_11.md`;
+- `docs/saq_caq_co0_v2_a2_synthetic_cost_evidence_2026_07_11.md`;
+- `docs/saq_caq_co0_v2_a2_artifacts_2026_07_11/`.
+
+V2-B remains unauthorized. The V2-A2 result is resource feasibility, not
+evidence of CAQ regret or an SAQ-specific limitation.

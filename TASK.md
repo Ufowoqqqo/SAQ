@@ -2,10 +2,11 @@
 
 ## Active Goal
 
-Execute V2-A0/V2-A1 of the corrected `CO-0 v2` protocol: complete the
-proof/specification review and validate an independent exact-integer
-complete-event oracle using synthetic inputs only. The v1 screen remains
-closed under its frozen official-source contract.
+V2-A2 of the corrected `CO-0 v2` protocol is complete. The validated
+exact-integer complete-event oracle can label the later frozen base-only
+sample within the predeclared synthetic resource ceiling. Stop before V2-B
+until its preregistration is separately reviewed and authorized. The v1
+screen remains closed under its frozen official-source contract.
 
 Current status:
 
@@ -20,7 +21,8 @@ CO-0 v2 corrected-oracle protocol migrated
 V2-A0/V2-A1 explicitly authorized
 V2-A0 proof/specification review completed: PASS
 V2-A1 synthetic exact-oracle validation completed: PASS
-V2-A2 and V2-B not authorized
+V2-A2 synthetic cost feasibility completed: PASS
+V2-B not authorized
 no GIST/CIFAR CO-0 output inspected
 no method or contribution established
 ```
@@ -35,7 +37,10 @@ Authoritative documents:
 - `docs/saq_caq_co0_v2_reopening_corrected_oracle_protocol_2026_07_11.md`;
 - `docs/saq_caq_co0_v2_oracle_specification_2026_07_11.md`;
 - `docs/saq_caq_co0_v2_a1_synthetic_validation_2026_07_11.md`;
-- `docs/saq_caq_co0_v2_a1_artifacts_2026_07_11/`.
+- `docs/saq_caq_co0_v2_a1_artifacts_2026_07_11/`;
+- `docs/saq_caq_co0_v2_a2_synthetic_cost_design_2026_07_11.md`;
+- `docs/saq_caq_co0_v2_a2_synthetic_cost_evidence_2026_07_11.md`;
+- `docs/saq_caq_co0_v2_a2_artifacts_2026_07_11/`.
 
 ## Research Question
 
@@ -117,16 +122,17 @@ Sample size may be chosen only by a synthetic-vector cost dry run. No dataset
 gap, held-out query result, alternative bit width, or post-hoc segment may
 select the design.
 
-## Immediate Next Action
+## V2-A2: Synthetic Cost Feasibility — Completed, PASS
 
-Stop at the completed V2-A1 boundary. A later user decision may authorize
-V2-A2, whose scope is synthetic cost feasibility only:
+Stop at the completed V2-A2 boundary:
 
 ```text
 do not access dataset artifacts
 do not design a method
 do not infer finite-round CAQ regret from validator correctness
-review V2-A1 evidence before deciding whether V2-A2 is justified
+retain n=50,000 per dataset and the 24 CPU-hour exact-label ceiling
+do not reinterpret 7.969 CPU-hours as a query/index performance result
+stop before V2-B
 ```
 
 Do not run V2-A2, inspect dataset artifacts, or design a CAQ repair in the same
@@ -137,6 +143,9 @@ step.
 The v1 official-source stop remains final and is not retroactively relaxed.
 V2 stops at A0/A1 if the exactness proof is incomplete, any brute-force or
 boundary fixture disagrees, binary32/tie semantics remain ambiguous, a frozen
-bit width narrows, or sanitizer validation fails. Passing V2-A1 authorizes
-only a later decision about V2-A2; it does not authorize dataset access or a
-method claim.
+bit width narrows, or sanitizer validation fails. V2-A2 stops if the frozen
+sample requires more than one CPU-day under its conservative cost equation,
+or if feasibility requires removing a cell, dropping `B=11`, using
+dataset-derived synthetic inputs, or shrinking the sample post hoc. Passing
+V2-A2 authorizes only a later decision about V2-B; it does not authorize
+dataset access or a method claim.

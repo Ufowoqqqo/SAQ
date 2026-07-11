@@ -19,7 +19,10 @@ add_executable(test_ivf test_ivf.cpp)
 target_link_libraries(test_ivf PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
 
 add_executable(caq_corrected_oracle_validation caq_corrected_oracle_validation.cpp)
+add_executable(caq_corrected_oracle_cost_study caq_corrected_oracle_cost_study.cpp)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_compile_options(
     caq_corrected_oracle_validation PRIVATE -fno-fast-math -ffp-contract=off)
+  target_compile_options(
+    caq_corrected_oracle_cost_study PRIVATE -fno-fast-math -ffp-contract=off)
 endif()

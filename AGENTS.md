@@ -43,7 +43,10 @@ The authoritative review and decision documents are:
 - `docs/saq_caq_co0_v2_reopening_corrected_oracle_protocol_2026_07_11.md`;
 - `docs/saq_caq_co0_v2_oracle_specification_2026_07_11.md`;
 - `docs/saq_caq_co0_v2_a1_synthetic_validation_2026_07_11.md`;
-- `docs/saq_caq_co0_v2_a1_artifacts_2026_07_11/`.
+- `docs/saq_caq_co0_v2_a1_artifacts_2026_07_11/`;
+- `docs/saq_caq_co0_v2_a2_synthetic_cost_design_2026_07_11.md`;
+- `docs/saq_caq_co0_v2_a2_synthetic_cost_evidence_2026_07_11.md`;
+- `docs/saq_caq_co0_v2_a2_artifacts_2026_07_11/`.
 
 The completed sequence is:
 
@@ -51,16 +54,17 @@ The completed sequence is:
 v1 CO-0A  official source pinned and tested -> FAIL, preserved
 V2-A0     proof/specification review -> PASS
 V2-A1     synthetic exact-oracle validation -> PASS
-V2-A2     synthetic cost study -> NOT YET AUTHORIZED
+V2-A2     synthetic cost study -> PASS
 V2-B      dataset preregistration/run -> NOT AUTHORIZED
 data      GIST/CIFAR outputs -> NOT INSPECTED
 ```
 
-The user explicitly authorized V2-A0/V2-A1 on 2026-07-11; both stages passed.
-The current authorization now stops at that boundary. This is measurement
-infrastructure, not an active CAQ method. Do not design a certificate, repair,
-planner, or query policy. Do not read GIST, CIFAR, another dataset, benchmark
-queries, or ground truth before a later stage is explicitly authorized.
+The user explicitly authorized V2-A2 on 2026-07-11 after V2-A0/V2-A1 passed;
+V2-A2 passed with a 7.969 CPU-hour estimate under its 24-hour ceiling. The
+current authorization stops there. This is measurement infrastructure, not an
+active CAQ method. Do not design a certificate, repair, planner, or query
+policy. Do not read GIST, CIFAR, another dataset, benchmark queries, or ground
+truth.
 
 ## Frozen Architecture
 
@@ -115,6 +119,18 @@ parity check stops V2 before any cost or dataset stage.
 
 Treat any correctness issue found during parity as a separate implementation
 finding, never as the research contribution.
+
+## V2-A2 Cost Boundary
+
+V2-A2 measures only the nine positive-bit `(D,B)` cells frozen in the parent
+protocol. Use the three deterministic profiles and the feasibility equation
+in `docs/saq_caq_co0_v2_a2_synthetic_cost_design_2026_07_11.md`. Do not add a
+random distribution, seed sweep, repetition threshold, dataset-derived
+profile, or easier replacement cell. The target sample-size rule and one
+CPU-day ceiling are experimental resource decisions, not method parameters.
+
+Passing V2-A2 establishes only that later exact labeling is computationally
+feasible. It gives no evidence that finite-round CAQ has regret.
 
 ## V2-B Boundary (Not Authorized)
 
@@ -220,9 +236,9 @@ ctest --test-dir /tmp/saq-oracle-asan --output-on-failure
 
 ## Do-Not Rules
 
-- Do not proceed beyond V2-A1 under the current authorization.
+- Do not proceed beyond V2-A2 under the current authorization.
 - Do not read dataset artifacts, benchmark queries, or ground truth during
-  V2-A0/V2-A1.
+  V2-A0--A2.
 - Do not write or execute the old CO-0B preregistration after the CO-0A
   failure.
 - Do not describe the independent full-event enumerator as the pinned official

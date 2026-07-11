@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "date": "2026-07-11",
+  "base_commit": "1ba6952e294dd6fbf1a9892a8a1e9cc44ccb970d",
+  "compiler": "GCC 11.5.0 20240719 (Red Hat 11.5.0-14)",
+  "cmake": "4.0.3",
+  "cpu": "Intel(R) Core(TM) i9-10920X CPU @ 3.50GHz",
+  "platform": "Linux 5.14.0-687.15.1.el9_8.x86_64 x86_64",
+  "release_flags": "-O3 -DNDEBUG -std=gnu++20 -Wall -Wextra -Wpedantic -fno-fast-math -ffp-contract=off",
+  "asan_flags": "-g -std=gnu++20 -Wall -Wextra -Wpedantic -fno-fast-math -ffp-contract=off -fsanitize=address -fno-omit-frame-pointer",
+  "asan_environment": "ASAN_OPTIONS=detect_leaks=0:halt_on_error=1",
+  "sha256": {
+    "saqlib/quantization/caq/exact_event_oracle.hpp": "9d7084f080d4789e517efda60418ff88e38b98824af5bf90588b07dc9c593705",
+    "src/caq_corrected_oracle_cost_study.cpp": "0c07c3d4cdcaf401c05c782dcec1b54812b3dda6711721295571221dd4b93f06",
+    "validation/caq_corrected_oracle/CMakeLists.txt": "f939bd89aa90433f638bd5e0826ce62e08a0b6766e51a60d3b2c73e97c7f2f1d",
+    "docs/saq_caq_co0_v2_a2_synthetic_cost_design_2026_07_11.md": "6a57efdafebc17ffa555540e8074742a291703406f77c641dcc8344eff39db2a",
+    "docs/saq_caq_co0_v2_a2_artifacts_2026_07_11/cost_result.json": "8bdb41adb1575d371f2c306d68fe793929b049952a6b4d5243815187dbf55b63",
+    "release_binary": "9adf569c1df7394281e745b9a826f72b08d84a1a1b065d49e55f7c77fd782feb",
+    "asan_binary": "11aa6b046308449b77f5a67cce1d648d84fdaa6507b97b6873124c152505cc8a"
+  }
+}
