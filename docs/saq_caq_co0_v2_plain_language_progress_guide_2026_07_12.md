@@ -4,7 +4,7 @@
 
 ## 一句话版本
 
-我们目前还没有在发明一个新的 CAQ 算法。我们正在先验证一个更基础的
+我们目前还没有在发明一个新的 CAQ 算法。我们先验证了一个更基础的
 研究前提：
 
 > SAQ 生产实现只做六轮 CAQ adjustment。它距离同一码本中的真正最优
@@ -20,8 +20,8 @@
 尺子已经造好并验证通过
 实验成本已经确认可承受
 真实实验规则已经预注册
-B1 真实 base-only limitation screen 正在由另一会话执行
-尚无最终科学结论
+B1 真实 base-only limitation screen 已完整执行
+冻结分析返回 CONDITIONAL PASS
 尚无新方法或论文贡献
 ```
 
@@ -218,7 +218,7 @@ encoder，也没有读取 objective 或 estimator gap。B0 PASS 不表示 SAQ
 
 ## 8. V2-B1：真正回答研究问题
 
-B1 才第一次在真实 GIST/CIFAR base residual 上比较四个 encoder arms。
+B1 已经在真实 GIST/CIFAR base residual 上比较四个 encoder arms。
 
 ### 8.1 差距是否足够大
 
@@ -261,12 +261,26 @@ local-fixed-point 剩余比例的 95% lower confidence bound >= 0.10
 当前 search path 不消费存储的 `fac_error` 字段。因此 theoretical error
 factor 变小不能单独通过 gate。
 
-B1 还会把 code/factors 送入当前不变的 full-code estimator，检查把 leading
+B1 还把 code/factors 送入当前不变的 full-code estimator，检查把 leading
 segment 从 `caq_r6` 换成 `corrected_exact` 后，是否在两个数据集都降低
 normalized absolute inner-product error。Unscaled error 也必须方向一致。
 
 三个 rotation seeds 都必须支持相同方向。一个 seed 很好、其余 seeds
 反向，也会返回 NO-GO。
+
+### 8.4 实际结果
+
+冻结分析得到：
+
+| Leading segment | `R_r6` | `R_local` | Exact 对 normalized pair error 的相对降低 |
+|---|---:|---:|---:|
+| GIST `64@11` | 0.944994 | 0.944982 | 13.42% |
+| CIFAR `64@9` | 0.790078 | 0.789792 | 8.28% |
+
+这里高 `R` 表示大部分 initialization-to-exact opportunity 仍然存在，不是
+表示 CAQ 已经接近 exact。所有 24 个预注册 hypotheses 都通过 Holm
+correction，三个 rotation seeds 的方向也一致，因此正式决策是
+`CONDITIONAL_PASS`。
 
 ## 9. 第一次 B1 为什么在编码前停止
 
@@ -306,7 +320,8 @@ ASAN validation PASS
 
 ```text
 canonical branch：saq-caq-corrected-oracle-v2
-last committed revision：2da5e9f
+registered runner revision：2da5e9f
+result evidence revision：c5596ad
 V2-A0：PASS
 V2-A1：PASS
 V2-A2：PASS
@@ -314,27 +329,25 @@ V2-B0：PASS
 V2-B1 instrument validation：PASS
 V2-B1 first preflight：STOPPED before encoding
 V2-B1 rotation correction：PASS
-corrected registered B1 execution：正在另一个 Codex 会话中运行
-final scientific decision：尚不可用
+corrected registered B1 execution：COMPLETE
+frozen 24-hypothesis analysis：CONDITIONAL PASS
 method contribution：尚未建立
 ```
 
 运行时输出目录是：
 
 ```text
-/tmp/saq-caq-co0-v2-b1-registered-2da5e9f
+/rwproject/kdd-db/kluaq/saq/results/caq_co0_v2_b1_registered_2da5e9f
 ```
 
-这个 runtime state 已经领先于 commit `2da5e9f` 中的 `TASK.md`；该文件仍
-记录“rerun not authorized”，因为它是在 corrected run 启动前提交的。
-运行结束以后，需要单独验证 output manifest、shards、资源上限和 frozen
-hypotheses，然后才能生成并提交科学判定。
+完整运行生成 9,600,000 个 encoding rows 和 4,773,192 个 pair rows，耗时
+约 1.90 小时。2.8 GiB raw outputs 已复制到上面的持久目录并通过完整 tree
+digest 校验。git 只保存 run manifest、冻结 summary 和 aggregate evidence。
 
-不要因为看到 runner 正在运行就假定 limitation 已经成立；在结果文件
-完成并通过 preregistered summarizer 之前，没有可报告的 objective 或
-estimator conclusion。
+## 11. B1 结果怎样解释
 
-## 11. B1 最终结果可能怎样解释
+实际结果落在下面的情况四。前三种情况仍保留在这里，用来说明 frozen gate
+原本如何避免把一般 CAQ gap 或多跑几轮包装成贡献。
 
 ### 情况一：`r6` 几乎等于 exact
 
@@ -353,7 +366,7 @@ estimator conclusion。
 ### 情况四：两个数据集的 leading high-bit segment 都出现稳定、显著且
 estimator-visible 的额外差距
 
-返回 CONDITIONAL PASS。这只证明一个 SAQ-specific limitation 存在，随后
+本次返回 CONDITIONAL PASS。这只证明一个 SAQ-specific limitation 存在，随后
 才允许开展低成本 certificate 或 deterministic repair 的 primary-source/
 theory review。
 
@@ -374,7 +387,9 @@ global plan 和 query-time work。
 6. `docs/saq_caq_co0_v2_a2_synthetic_cost_evidence_2026_07_11.md`：成本 gate；
 7. `docs/saq_caq_co0_v2_b0_final_preregistration_2026_07_11.md`：最终实验规则；
 8. `docs/saq_caq_co0_v2_b1_rotation_build_correction_2026_07_12.md`：第一次
-   B1 停止及 instrument correction。
+   B1 停止及 instrument correction；
+9. `docs/saq_caq_co0_v2_b1_registered_evidence_2026_07_12.md`：正式执行、
+   统计结果、复杂度与 claim boundary。
 
-在 B1 完成后，还应新增最终 execution evidence 和 go/no-go memo；在那之前，
-本文只是一份进度说明，不是实验结果报告。
+下一份文档应是低成本 deterministic repair 的 bounded related-work/theory
+review，而不是直接开始 method sweep。
