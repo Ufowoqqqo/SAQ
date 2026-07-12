@@ -8,13 +8,19 @@ fraction of the exact alignment opportunity on the frozen leading high-bit
 SAQ segments; all registered controls and unchanged-estimator tests pass the
 shared 24-hypothesis Holm gate. This establishes a limitation, not a method.
 
-The bounded low-cost repair review is now complete and returns
+The bounded low-cost repair review returned
 `CONDITIONAL_GO_FOR_SYNTHETIC_PROTOTYPE` for exactly one candidate: an exact
-radius-one Cartesian shell optimizer around the CAQ code. The next active
-stage is synthetic implementation and brute-force/cost falsification only.
-Do not read base artifacts, B1 per-vector output, benchmark queries, ground
-truth, or indexes. Do not add a second shell pass, a larger radius, restarts,
-or acceptance thresholds. The v1 official-source result remains closed.
+radius-one Cartesian shell optimizer around the CAQ code. That synthetic
+stage is now complete. Correctness passes, but the fixed-width implementation
+requires `4.579x` to `8.169x` total `CAQ + shell` CPU across the four frozen
+cost rows, failing the `2.0x` gate. The decision is
+`NO_GO_ON_COMPLEXITY`.
+
+This candidate is closed as negative evidence. Do not read base artifacts,
+B1 per-vector output, benchmark queries, ground truth, or indexes for it. Do
+not add a second shell pass, a larger radius, restarts, acceptance thresholds,
+or implementation-level rescue variants. No low-cost repair method has been
+established. The v1 official-source result remains closed.
 
 Current status:
 
@@ -41,6 +47,11 @@ all 24 Holm tests and seed-consistency checks: PASS
 benchmark queries / ground truth / indexes: NOT READ
 no method or contribution established
 bounded repair review: CONDITIONAL GO for one-shell synthetic prototype only
+one-shell synthetic exact/brute-force parity: PASS
+one-shell Release and ASAN standalone suites: PASS
+one-shell frozen total-cost gate: FAIL (best 4.579x vs maximum 2.0x)
+one-shell decision: NO_GO_ON_COMPLEXITY
+base/query/index evaluation for one-shell: NOT RUN
 ```
 
 The completed run contains 9,600,000 encoding rows and 4,773,192 pair rows.
@@ -76,7 +87,9 @@ Authoritative documents:
 - `docs/saq_caq_co0_v2_b1_registered_evidence_2026_07_12.md`;
 - `docs/saq_caq_co0_v2_b1_registered_artifacts_2026_07_12/`;
 - `docs/saq_caq_low_cost_repair_theory_review_2026_07_12.md`;
-- `docs/saq_caq_low_cost_repair_sources_2026_07_12.json`.
+- `docs/saq_caq_low_cost_repair_sources_2026_07_12.json`;
+- `docs/saq_caq_one_shell_synthetic_falsification_2026_07_12.md`;
+- `docs/saq_caq_one_shell_synthetic_artifacts_2026_07_12/validation_result.json`.
 
 ## Research Question
 
@@ -231,6 +244,28 @@ This result establishes only the preregistered limitation. Do not implement a
 repair until a bounded related-work/theory review identifies a mechanism that
 is novel relative to SAQ/CAQ and can plausibly avoid exact-oracle cost.
 
+## One-Shell Repair Review And Synthetic Test — Completed, NO-GO
+
+The bounded review rejected extra CAQ rounds, alternating scale/assignment,
+fixed event windows, complete exact enumeration, and generic branch-and-bound.
+It conditionally admitted one exact radius-one Cartesian shell because this is
+the minimal product closure of CAQ's unit coordinate move and has at most
+`2D` events independent of native bit width.
+
+The implementation matches direct shell enumeration on 6,060 exhaustive
+input/code cases covering 110,230 shell codes. The fixed-width implementation
+matches the exact integer implementation on 6,066 supported cases and
+deterministically abstains on two extreme exponent-span fixtures. Release and
+ASAN standalone suites pass.
+
+The complexity gate fails before data access. On deterministic `D=64`,
+`B in {9,11}` profiles, the fixed-width shell alone costs `3.579x` to
+`7.169x` CAQ; total cost is `4.579x` to `8.169x`, versus the frozen `2.0x`
+maximum. The measured path has zero exact-objective fallbacks and 972-1,031
+event-order comparisons per encoding, so arbitrary-precision fallback is not
+the cause. Do not run its exact-gap-recovery half or attempt to rescue it by
+tuning.
+
 ## Stop Rules
 
 The v1 official-source stop remains final and is not retroactively relaxed.
@@ -242,3 +277,9 @@ or if feasibility requires removing a cell, dropping `B=11`, using
 dataset-derived synthetic inputs, or shrinking the sample post hoc. Passing
 V2-A2 authorizes only a later decision about V2-B; it does not authorize
 dataset access or a method claim.
+
+The one-shell candidate stops permanently at synthetic complexity because
+any frozen cost row above `2.0x` fails the conjunctive method gate. Correctness
+does not override this stop. A later direction must begin with a new bounded
+primary-source novelty and complexity review; it may cite this result only as
+negative evidence.

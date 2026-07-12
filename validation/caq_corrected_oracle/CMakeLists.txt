@@ -22,6 +22,9 @@ add_executable(
   caq_co0_v2_b1_synthetic_validation
   ../../src/caq_co0_v2_b1_synthetic_validation.cpp)
 add_executable(
+  caq_one_shell_synthetic_validation
+  ../../src/caq_one_shell_synthetic_validation.cpp)
+add_executable(
   caq_co0_v2_b1_runner
   ../../src/caq_co0_v2_b1_runner.cpp)
 add_library(
@@ -47,6 +50,7 @@ configure_corrected_oracle_target(caq_corrected_oracle_validation)
 configure_corrected_oracle_target(caq_corrected_oracle_cost_study)
 configure_corrected_oracle_target(caq_co0_v2_b0_rotation_inventory)
 configure_corrected_oracle_target(caq_co0_v2_b1_synthetic_validation)
+configure_corrected_oracle_target(caq_one_shell_synthetic_validation)
 configure_corrected_oracle_target(caq_co0_v2_b1_runner)
 configure_corrected_oracle_target(caq_co0_v2_frozen_rotation)
 
@@ -69,6 +73,15 @@ target_link_libraries(
   caq_co0_v2_b1_synthetic_validation
   PRIVATE caq_co0_v2_frozen_rotation OpenSSL::Crypto ZLIB::ZLIB)
 target_compile_options(
+  caq_one_shell_synthetic_validation
+  PRIVATE -mavx2 -mfma -mavx512f -mavx512dq -mavx512bw -mavx512vl)
+target_include_directories(
+  caq_one_shell_synthetic_validation
+  BEFORE PRIVATE stubs)
+target_link_libraries(
+  caq_one_shell_synthetic_validation
+  PRIVATE caq_co0_v2_frozen_rotation OpenSSL::Crypto ZLIB::ZLIB)
+target_compile_options(
   caq_co0_v2_b1_runner
   PRIVATE -mavx2 -mfma -mavx512f -mavx512dq -mavx512bw -mavx512vl)
 target_include_directories(
@@ -88,6 +101,9 @@ add_test(
   NAME caq_co0_v2_b1_synthetic_validation
   COMMAND caq_co0_v2_b1_synthetic_validation)
 add_test(
+  NAME caq_one_shell_synthetic_validation
+  COMMAND caq_one_shell_synthetic_validation)
+add_test(
   NAME caq_co0_v2_b1_runner_rejects_incomplete_cli
   COMMAND caq_co0_v2_b1_runner)
 set_tests_properties(
@@ -96,6 +112,6 @@ set_tests_properties(
 if(CAQ_CORRECTED_ORACLE_ENABLE_ASAN)
   set_tests_properties(
     caq_corrected_oracle_validation caq_corrected_oracle_cost_study
-    caq_co0_v2_b1_synthetic_validation
+    caq_co0_v2_b1_synthetic_validation caq_one_shell_synthetic_validation
     PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0:halt_on_error=1")
 endif()

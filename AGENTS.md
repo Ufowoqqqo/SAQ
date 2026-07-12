@@ -72,8 +72,10 @@ V2-B1-E0  registered preflight -> STOPPED before encoding
 V2-B1-R   rotation build correction validation -> PASS
 V2-B1-E1  registered rerun -> COMPLETE
 V2-B1-S   frozen 24-hypothesis analysis -> CONDITIONAL_PASS
-method    low-cost repair -> NOT ESTABLISHED
 review    one-shell repair -> CONDITIONAL_GO_FOR_SYNTHETIC_PROTOTYPE
+synthetic one-shell correctness -> PASS
+synthetic one-shell complexity -> NO_GO_ON_COMPLEXITY
+method    low-cost repair -> NOT ESTABLISHED
 ```
 
 The user explicitly authorized V2-B0 on 2026-07-11; B0 passed without encoder
@@ -108,18 +110,24 @@ bounded related-work/theory review of low-cost deterministic mechanisms. Do
 not implement a repair, open benchmark queries, or add a sweep before that
 novelty/complexity review is written.
 
-That review is now written in
+That review is written in
 `docs/saq_caq_low_cost_repair_theory_review_2026_07_12.md`, with its source
 ledger in `docs/saq_caq_low_cost_repair_sources_2026_07_12.json`. It
-conditionally authorizes a synthetic-only exact radius-one Cartesian shell
+conditionally authorized a synthetic-only exact radius-one Cartesian shell
 prototype. The shell is the product of each incumbent magnitude code and its
-immediate legal neighbors, solved with at most `2D` shared-scale events. It is
-not a global certificate or a method contribution.
+immediate legal neighbors, solved with at most `2D` shared-scale events. The
+prototype passes exact/brute-force parity, but its fixed-width realization
+requires `4.579x` to `8.169x` total `CAQ + shell` CPU across the four frozen
+synthetic rows. It therefore fails the `2x` gate and is closed as
+`NO_GO_ON_COMPLEXITY` before any base-data evaluation.
 
+The authoritative negative-evidence note is
+`docs/saq_caq_one_shell_synthetic_falsification_2026_07_12.md`, with canonical
+output in
+`docs/saq_caq_one_shell_synthetic_artifacts_2026_07_12/validation_result.json`.
 Do not increase the shell radius, repeat the shell to convergence, add scale
-or random restarts, or introduce an acceptance threshold. If the one-shell
-candidate cannot later recover at least half of the exact gap with total work
-at most `2x` production CAQ, stop the direction rather than tune it.
+or random restarts, introduce an acceptance threshold, optimize it into the
+production encoder, or read dataset artifacts to rescue the failed gate.
 
 ## Frozen Architecture
 
@@ -339,6 +347,8 @@ python -m unittest script.test_summarize_caq_co0_v2_b1
 - Do not pass the gate on `fac_error` alone; the field is unused by search.
 - Do not change `r` and present it as a method.
 - Do not use ordinary exact E-RaBitQ fallback as the proposed contribution.
+- Do not continue the radius-one shell after its frozen synthetic complexity
+  gate failed; preserve it only as a diagnostic and negative result.
 - Do not sweep datasets, bits, dimensions, segment boundaries, rotations, or
   thresholds to rescue a failed gate.
 - Do not change the global SAQ plan, index format, or query estimator in CO-0.
