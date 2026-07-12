@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "stage": "V2-B1",
+  "status": "COMPLETE",
+  "git_commit": "2da5e9f6ada62a4c283a3beee463280b347369b5",
+  "runner_sha256": "ac34868925e8150da07b4bc7f808f91b43ed894a741c2e1f5eca4478a17d6fe7",
+  "raw_output_root": "/tmp/saq-caq-co0-v2-b1-registered-2da5e9f",
+  "persistent_copy_root": "/rwproject/kdd-db/kluaq/saq/results/caq_co0_v2_b1_registered_2da5e9f",
+  "persistent_copy_tree_verified": true,
+  "raw_output_tree": {
+    "record_encoding": "relative_path + NUL + decimal_size + NUL + sha256_hex + newline",
+    "order": "ascending relative POSIX path",
+    "file_count": 578,
+    "total_bytes": 2944176277,
+    "sha256": "b4f6425719615c740cbc5ef86387f8201179095a681eb3d5eded7d91ac383fa6"
+  },
+  "committed_aggregates": {
+    "run_manifest.json": "e3640f041e1f4053ab78ea7ddbcad5b7a0848a558db5ca2c826da23c62561247",
+    "frozen_summary.json": "db31fe6c3599dc00854431deb37d3b989da910fd06776aead0aa749d56a09ac4"
+  }
+}

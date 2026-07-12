@@ -2,13 +2,14 @@
 
 ## Active Goal
 
-V2-B0 of the corrected `CO-0 v2` protocol is complete. The first authorized
-B1 command hash-verified the registered artifacts, then stopped before the
-first encoder call because the SIMD-compiled runner did not reproduce the B0
-rotation bytes. The authorized instrument-only correction now passes Release
-and ASAN validation, including the runner-linked 27/27 rotation hashes. Stop
-before a second registered execution. The v1 screen remains closed under its
-frozen official-source contract.
+The corrected `CO-0 v2` V2-B1 limitation screen is complete and returns
+`CONDITIONAL_PASS`. Production `r=6` and local-fixed-point CAQ retain a large
+fraction of the exact alignment opportunity on the frozen leading high-bit
+SAQ segments; all registered controls and unchanged-estimator tests pass the
+shared 24-hypothesis Holm gate. This establishes a limitation, not a method.
+The next active stage is a bounded primary-source/theory review of low-cost
+deterministic certificates or repair rules. Stop before implementation or a
+rescue sweep. The v1 official-source result remains closed.
 
 Current status:
 
@@ -29,16 +30,19 @@ V2-B1 runner/summarizer synthetic validation completed: PASS
 V2-B1 first registered preflight: STOPPED before encoding
 V2-B1 rotation build-profile cause reproduced: PASS
 V2-B1 instrument-only correction synthetic validation: PASS
-V2-B1 registered rerun not authorized
-no GIST/CIFAR CO-0 output inspected
+V2-B1 registered rerun: COMPLETE
+V2-B1 frozen 24-hypothesis analysis: CONDITIONAL_PASS
+all 24 Holm tests and seed-consistency checks: PASS
+benchmark queries / ground truth / indexes: NOT READ
 no method or contribution established
 ```
 
-The stopped B1 preflight read and hash-verified the registered base, centroid,
-variance, assignment, and inventory artifacts. It recorded zero encoding and
-pair rows and did not prepare residuals or inspect an objective/estimator gap.
-Synthetic correction validation used only generated fixtures and frozen
-rotation hashes.
+The completed run contains 9,600,000 encoding rows and 4,773,192 pair rows.
+The frozen analysis finds leading-segment `R_r6=0.944994` on GIST and
+`0.790078` on CIFAR; local convergence leaves `0.944982` and `0.789792`.
+Replacing `r=6` with the exact oracle reduces the unchanged normalized
+base-pair error by 13.42% and 8.28%, respectively. Exact labeling costs
+272.9x the measured `r=6` CPU and is not a deployable repair.
 
 Authoritative documents:
 
@@ -62,7 +66,9 @@ Authoritative documents:
 - `docs/saq_caq_co0_v2_b0_artifacts_2026_07_11/`;
 - `docs/saq_caq_co0_v2_b1_synthetic_runner_validation_2026_07_11.md`;
 - `docs/saq_caq_co0_v2_b1_rotation_build_correction_2026_07_12.md`;
-- `docs/saq_caq_co0_v2_b1_rotation_build_correction_artifacts_2026_07_12/`.
+- `docs/saq_caq_co0_v2_b1_rotation_build_correction_artifacts_2026_07_12/`;
+- `docs/saq_caq_co0_v2_b1_registered_evidence_2026_07_12.md`;
+- `docs/saq_caq_co0_v2_b1_registered_artifacts_2026_07_12/`.
 
 ## Research Question
 
@@ -204,7 +210,18 @@ The separately authorized correction isolates rotation generation under the
 recorded B0 Release profile and leaves the CAQ path SIMD-enabled. Release and
 ASAN validation pass, including 27/27 runner-linked frozen rotation hashes.
 This is an instrument correction, not a protocol change or scientific result.
-A second registered execution requires separate authorization.
+
+## V2-B1 Registered Execution — Completed, CONDITIONAL PASS
+
+The separately authorized rerun completed all 48 views on one CPU thread and
+the frozen summarizer returned `CONDITIONAL_PASS`. All 24 Holm-corrected tests,
+materiality bounds, seed checks, and estimator-direction checks pass. The raw
+run used 1.90 wall hours and 2.94 GB of serialized output. The exact oracle is
+an offline labeler with 272.9x the measured `r=6` CPU cost.
+
+This result establishes only the preregistered limitation. Do not implement a
+repair until a bounded related-work/theory review identifies a mechanism that
+is novel relative to SAQ/CAQ and can plausibly avoid exact-oracle cost.
 
 ## Stop Rules
 

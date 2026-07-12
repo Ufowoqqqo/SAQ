@@ -55,7 +55,9 @@ The authoritative review and decision documents are:
 - `docs/saq_caq_co0_v2_b0_artifacts_2026_07_11/`;
 - `docs/saq_caq_co0_v2_b1_synthetic_runner_validation_2026_07_11.md`;
 - `docs/saq_caq_co0_v2_b1_rotation_build_correction_2026_07_12.md`;
-- `docs/saq_caq_co0_v2_b1_rotation_build_correction_artifacts_2026_07_12/`.
+- `docs/saq_caq_co0_v2_b1_rotation_build_correction_artifacts_2026_07_12/`;
+- `docs/saq_caq_co0_v2_b1_registered_evidence_2026_07_12.md`;
+- `docs/saq_caq_co0_v2_b1_registered_artifacts_2026_07_12/`.
 
 The completed sequence is:
 
@@ -68,8 +70,9 @@ V2-B0     provenance/preregistration only -> PASS
 V2-B1-I   runner/summarizer synthetic validation -> PASS
 V2-B1-E0  registered preflight -> STOPPED before encoding
 V2-B1-R   rotation build correction validation -> PASS
-V2-B1-E1  registered rerun -> NOT AUTHORIZED
-data      GIST/CIFAR outputs -> NOT INSPECTED
+V2-B1-E1  registered rerun -> COMPLETE
+V2-B1-S   frozen 24-hypothesis analysis -> CONDITIONAL_PASS
+method    low-cost repair -> NOT ESTABLISHED
 ```
 
 The user explicitly authorized V2-B0 on 2026-07-11; B0 passed without encoder
@@ -78,11 +81,31 @@ cluster-assignment files needed to construct sample inventories. The first B1
 command was later authorized and hash-verified the registered base, centroid,
 variance, assignment, and inventory artifacts. It stopped on a rotation hash
 mismatch with zero encoder rows and zero pair rows. Benchmark queries, ground
-truth, indexes, prior encoder outputs, and objective/estimator results remain
-unread. The instrument-only correction was separately authorized and passes
-synthetic Release/ASAN validation. The current authorization stops before a
-registered rerun. Do not run an encoder arm on GIST/CIFAR or inspect an
-objective/estimator gap.
+truth, indexes, and prior encoder outputs remained unread. The instrument-only
+correction was separately authorized and passed synthetic Release/ASAN
+validation. The registered rerun then completed and its frozen summarizer
+returned `CONDITIONAL_PASS`: all 24 Holm tests and all seed checks pass.
+Benchmark queries, ground truth, and indexes remain unread. The result
+establishes a limitation only; it does not authorize post-hoc rescue sweeps or
+constitute a method contribution.
+
+## Frozen B1 Finding
+
+For
+`R_arm = sum(f_arm-f_exact) / sum(f_init-f_exact)`, the leading SAQ segments
+give `R_r6=0.944994` (GIST `64@11`) and `0.790078` (CIFAR `64@9`). Continuing
+the identical coordinate rule to a local fixed point gives `0.944982` and
+`0.789792`. All 18 low-bit/whole-view amplification controls and both
+unchanged-estimator tests pass the shared 24-hypothesis Holm gate. Exact codes
+reduce the normalized base-pair estimator error by 13.42% and 8.28%, but exact
+labeling costs 272.9x the measured `r=6` CPU.
+
+Interpret high `R` correctly: most initialization-to-exact error-factor
+opportunity remains; it does not mean CAQ is close to exact. The result is
+base-only and makes no recall/QPS claim. `CONDITIONAL_PASS` authorizes only a
+bounded related-work/theory review of low-cost deterministic mechanisms. Do
+not implement a repair, open benchmark queries, or add a sweep before that
+novelty/complexity review is written.
 
 ## Frozen Architecture
 
@@ -184,8 +207,7 @@ No other structural exception is implied.
 
 ## V2-B Boundary
 
-V2-B0 is frozen. The corrected B1 instrument has passed synthetic validation,
-but the registered rerun remains unauthorized. The registered regimes are:
+V2-B0 and the completed B1 result are frozen. The registered regimes were:
 
 ```text
 GIST sample50k, K=512, B=4:
@@ -287,9 +309,10 @@ python -m unittest script.test_summarize_caq_co0_v2_b1
 
 ## Do-Not Rules
 
-- Do not rerun the registered V2-B1 runner under the current authorization.
-- Synthetic runner/summarizer tests may use only generated fixtures under
-  `/tmp`; they must not read registered float artifacts or encoder outputs.
+- Do not rerun or replace the completed registered V2-B1 result.
+- Do not reopen per-vector outputs to invent exclusions, thresholds, controls,
+  or rescue hypotheses. Use the frozen summary for the decision and label any
+  later aggregate as descriptive.
 - Do not read benchmark queries, ground truth, indexes, or prior encoder
   outputs in CO-0 v2.
 - Do not write or execute the old CO-0B preregistration after the CO-0A

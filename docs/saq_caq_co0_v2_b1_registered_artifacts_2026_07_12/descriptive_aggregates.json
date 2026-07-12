@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "stage": "V2-B1",
+  "decision_role": "descriptive only; not part of the frozen gate",
+  "leading_view_pair_error": {
+    "gist_sample50k_k512": {
+      "valid_pair_seed_rows": 74526,
+      "caq_r6_mean_normalized_error": 0.00007220140181930054,
+      "corrected_exact_mean_normalized_error": 0.00006251519828919364,
+      "normalized_error_difference": 0.0000096862035301069,
+      "normalized_relative_reduction": 0.1341553388997723,
+      "caq_r6_mean_absolute_error": 0.0000502951045649913,
+      "corrected_exact_mean_absolute_error": 0.00004359342959756074,
+      "absolute_relative_reduction": 0.13324706301724976
+    },
+    "cifar60k_k512": {
+      "valid_pair_seed_rows": 74652,
+      "caq_r6_mean_normalized_error": 0.00028469592368508,
+      "corrected_exact_mean_normalized_error": 0.000261114481640247,
+      "normalized_error_difference": 0.00002358144204483298,
+      "normalized_relative_reduction": 0.08283027638610622,
+      "caq_r6_mean_absolute_error": 0.00006488558227467813,
+      "corrected_exact_mean_absolute_error": 0.00005945661556068417,
+      "absolute_relative_reduction": 0.08366984657718993
+    }
+  },
+  "leading_view_convergence": {
+    "gist_sample50k_k512": {
+      "valid_encoding_seed_rows": 150000,
+      "caq_r6_code_equal_exact_rate": 0.00588,
+      "local_fixed_point_code_equal_exact_rate": 0.00588,
+      "caq_r6_mean_accepted_moves": 0.33382,
+      "local_fixed_point_mean_accepted_moves": 0.3339066666666667,
+      "caq_r6_mean_completed_rounds": 1.1907333333333334,
+      "local_fixed_point_mean_completed_rounds": 1.1909666666666667
+    },
+    "cifar60k_k512": {
+      "valid_encoding_seed_rows": 149997,
+      "caq_r6_code_equal_exact_rate": 0.05673446802269379,
+      "local_fixed_point_code_equal_exact_rate": 0.05696780602278712,
+      "caq_r6_mean_accepted_moves": 2.331833303332733,
+      "local_fixed_point_mean_accepted_moves": 2.3348866977339546,
+      "caq_r6_mean_completed_rounds": 2.003966746001587,
+      "local_fixed_point_mean_completed_rounds": 2.0093935212037572
+    }
+  },
+  "arm_work": {
+    "encodings_per_arm": 2400000,
+    "lvq_init_cpu_seconds": 2.321860006,
+    "caq_r6_cpu_seconds": 22.261089827,
+    "local_fixed_point_cpu_seconds": 44.529692175,
+    "corrected_exact_cpu_seconds": 6075.602136543,
+    "caq_r6_cpu_microseconds_per_encoding": 9.275454094583335,
+    "local_fixed_point_cpu_microseconds_per_encoding": 18.55403840625,
+    "corrected_exact_cpu_microseconds_per_encoding": 2531.5008902262502,
+    "local_over_r6_cpu_ratio": 2.000337473190144,
+    "corrected_exact_over_r6_cpu_ratio": 272.92473925396195
+  },
+  "corrected_exact_work": {
+    "rows": 2400000,
+    "zero_segments": 21,
+    "first_pass_events": 16579125120,
+    "replay_events": 4932760495,
+    "heap_comparisons": 161799839136,
+    "objective_comparisons": 16579125120,
+    "max_integer_bits": 154,
+    "peak_transient_bytes": 80144
+  }
+}
