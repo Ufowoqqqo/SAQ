@@ -21,6 +21,14 @@ target_link_libraries(test_ivf PRIVATE glog::glog fmt::fmt ${GFLAGS_LIBRARIES})
 add_executable(caq_corrected_oracle_validation caq_corrected_oracle_validation.cpp)
 add_executable(caq_corrected_oracle_cost_study caq_corrected_oracle_cost_study.cpp)
 add_executable(caq_co0_v2_b0_rotation_inventory caq_co0_v2_b0_rotation_inventory.cpp)
+add_executable(caq_co0_v2_b1_synthetic_validation caq_co0_v2_b1_synthetic_validation.cpp)
+target_link_libraries(
+  caq_co0_v2_b1_synthetic_validation
+  PRIVATE glog::glog ${GFLAGS_LIBRARIES} OpenSSL::Crypto ZLIB::ZLIB)
+add_executable(caq_co0_v2_b1_runner caq_co0_v2_b1_runner.cpp)
+target_link_libraries(
+  caq_co0_v2_b1_runner
+  PRIVATE glog::glog ${GFLAGS_LIBRARIES} OpenSSL::Crypto ZLIB::ZLIB)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_compile_options(
     caq_corrected_oracle_validation PRIVATE -fno-fast-math -ffp-contract=off)
@@ -28,4 +36,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     caq_corrected_oracle_cost_study PRIVATE -fno-fast-math -ffp-contract=off)
   target_compile_options(
     caq_co0_v2_b0_rotation_inventory PRIVATE -fno-fast-math -ffp-contract=off)
+  target_compile_options(
+    caq_co0_v2_b1_synthetic_validation PRIVATE -fno-fast-math -ffp-contract=off)
+  target_compile_options(
+    caq_co0_v2_b1_runner PRIVATE -fno-fast-math -ffp-contract=off)
 endif()

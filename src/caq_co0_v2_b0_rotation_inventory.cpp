@@ -11,11 +11,13 @@
 #include <string_view>
 #include <vector>
 
-#include "defines.hpp"
+#include "quantization/caq/co0_v2_rotation.hpp"
 
 namespace {
 
 using saqlib::FloatRowMat;
+using saqlib::caq_validation::co0_v2_segmented_rotations;
+using saqlib::caq_validation::co0_v2_whole_rotation;
 
 struct DatasetRotationSpec {
     std::string_view dataset_id;
@@ -31,15 +33,6 @@ void require(bool condition, const std::string &message) {
     if (!condition) {
         fail(message);
     }
-}
-
-FloatRowMat production_rotation(size_t dimension) {
-    FloatRowMat random(FloatRowMat::Random(dimension, dimension));
-    Eigen::HouseholderQR<FloatRowMat> qr(random);
-    FloatRowMat q = qr.householderQ();
-    FloatRowMat rotation = q.transpose();
-    require(rotation.allFinite(), "rotation contains a non-finite value");
-    return rotation;
 }
 
 void write_rotation(const std::filesystem::path &path, const FloatRowMat &rotation) {
@@ -90,20 +83,19 @@ size_t generate_dataset(
 {
     size_t matrices = 0;
     for (int logical_seed = 0; logical_seed < 3; ++logical_seed) {
-        const unsigned int c_rng_seed = static_cast<unsigned int>(logical_seed) + 1U;
-        std::srand(c_rng_seed);
+        std::vector<FloatRowMat> segmented =
+            co0_v2_segmented_rotations(dataset.segment_dimensions, logical_seed);
         for (size_t segment = 0; segment < dataset.segment_dimensions.size(); ++segment) {
             const size_t dimension = dataset.segment_dimensions[segment];
             write_rotation(
                 segmented_path(root, dataset.dataset_id, logical_seed, segment, dimension),
-                production_rotation(dimension));
+                segmented[segment]);
             ++matrices;
         }
 
-        std::srand(c_rng_seed);
         write_rotation(
             whole_path(root, dataset.dataset_id, logical_seed, dataset.whole_dimension),
-            production_rotation(dataset.whole_dimension));
+            co0_v2_whole_rotation(dataset.whole_dimension, logical_seed));
         ++matrices;
     }
     return matrices;

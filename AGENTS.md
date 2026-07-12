@@ -52,7 +52,8 @@ The authoritative review and decision documents are:
 - `docs/saq_caq_co0_v2_b0_hypotheses_2026_07_11.json`;
 - `docs/saq_caq_co0_v2_b0_final_preregistration_2026_07_11.md`;
 - `docs/saq_caq_co0_v2_b0_preregistration_evidence_2026_07_11.md`;
-- `docs/saq_caq_co0_v2_b0_artifacts_2026_07_11/`.
+- `docs/saq_caq_co0_v2_b0_artifacts_2026_07_11/`;
+- `docs/saq_caq_co0_v2_b1_synthetic_runner_validation_2026_07_11.md`.
 
 The completed sequence is:
 
@@ -62,7 +63,8 @@ V2-A0     proof/specification review -> PASS
 V2-A1     synthetic exact-oracle validation -> PASS
 V2-A2     synthetic cost study -> PASS
 V2-B0     provenance/preregistration only -> PASS
-V2-B1     frozen encoder execution -> NOT AUTHORIZED
+V2-B1-I   runner/summarizer synthetic validation -> PASS
+V2-B1-E   frozen encoder execution -> NOT AUTHORIZED
 data      GIST/CIFAR outputs -> NOT INSPECTED
 ```
 
@@ -70,8 +72,10 @@ The user explicitly authorized V2-B0 on 2026-07-11; B0 passed without encoder
 execution. It read and hash-verified only the two frozen one-column
 cluster-assignment files needed to construct sample inventories. Base vectors,
 centroids, variances, benchmark queries, ground truth, indexes, and encoder
-outputs remain unread. The current authorization stops before B1. Do not run
-an encoder arm or inspect an objective/estimator gap.
+outputs remain unread. The user separately authorized implementation and
+synthetic validation of the B1 instrument on 2026-07-11; that stage passed.
+The current authorization still stops before registered B1 execution. Do not
+run an encoder arm on GIST/CIFAR or inspect an objective/estimator gap.
 
 ## Frozen Architecture
 
@@ -158,9 +162,8 @@ No other structural exception is implied.
 
 ## V2-B Boundary
 
-The following boundary is retained for provenance only. V2-B remains
-unauthorized until V2-A0--A2 pass and a separate preregistration is committed.
-The planned regimes are:
+V2-B0 is frozen and the B1 instrument has passed synthetic validation. Real
+B1 execution remains unauthorized. The registered regimes are:
 
 ```text
 GIST sample50k, K=512, B=4:
@@ -175,7 +178,7 @@ Choose sample size only through a synthetic-vector oracle-cost dry run. Do not
 inspect dataset objective gaps to select samples, cells, seeds, thresholds, or
 controls.
 
-Required encoder arms would be LVQ initialization, production `r=6`, the
+Required encoder arms are LVQ initialization, production `r=6`, the
 identical coordinate rule to local fixed point, and the independently
 validated corrected oracle. Required attribution controls would be
 same-segment uniform `B=4` and the whole positive-dimensional residual view at
@@ -242,9 +245,9 @@ cmake --build build -j
 git status --short --branch
 ```
 
-For corrected-oracle code, run the synthetic validator in Release and a
-sanitizer/debug build. Record exact commands, compiler flags, output counters,
-and outcomes in the V2-A1 evidence note.
+For corrected-oracle or B1-instrument code, run the standalone suite in
+Release and a sanitizer/debug build. Record exact commands, compiler flags,
+output counters, and outcomes in the stage evidence note.
 
 ```bash
 cmake -S validation/caq_corrected_oracle -B /tmp/saq-oracle-release \
@@ -256,15 +259,17 @@ cmake -S validation/caq_corrected_oracle -B /tmp/saq-oracle-asan \
   -DCMAKE_BUILD_TYPE=Debug -DCAQ_CORRECTED_ORACLE_ENABLE_ASAN=ON
 cmake --build /tmp/saq-oracle-asan --parallel
 ctest --test-dir /tmp/saq-oracle-asan --output-on-failure
+
+python -m unittest script.test_summarize_caq_co0_v2_b1
 ```
 
 ## Do-Not Rules
 
-- Do not proceed beyond V2-B0 under the current authorization.
-- During B0, do not read dataset float vectors, centroids, variances,
-  benchmark queries, ground truth, indexes, or prior encoder outputs.
-- B0 may read only the two frozen cluster-id files and pre-existing provenance
-  manifests, and may generate data-independent rotation matrices.
+- Do not execute the registered V2-B1 runner under the current authorization.
+- Synthetic runner/summarizer tests may use only generated fixtures under
+  `/tmp`; they must not read registered float artifacts or encoder outputs.
+- Do not read benchmark queries, ground truth, indexes, or prior encoder
+  outputs in CO-0 v2.
 - Do not write or execute the old CO-0B preregistration after the CO-0A
   failure.
 - Do not describe the independent full-event enumerator as the pinned official

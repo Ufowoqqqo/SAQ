@@ -30,6 +30,9 @@ struct ExactEventOracleWork {
     uint64_t heap_comparisons = 0;
     uint64_t objective_comparisons = 0;
     size_t max_integer_bits = 0;
+    size_t peak_event_heap_capacity = 0;
+    uint64_t magnitude_limb_capacity_bytes = 0;
+    uint64_t peak_live_cpp_int_limb_bytes = 0;
 };
 
 struct ExactEventOracleResult {
@@ -77,7 +80,18 @@ class ExactEventOracle {
         }
     };
 
-    using EventHeap = std::priority_queue<Event, std::vector<Event>, EventLater>;
+    class EventHeap : public std::priority_queue<Event, std::vector<Event>, EventLater> {
+        using Base = std::priority_queue<Event, std::vector<Event>, EventLater>;
+
+      public:
+        explicit EventHeap(EventLater compare)
+            : Base(compare) {
+        }
+
+        size_t storage_capacity() const {
+            return this->c.capacity();
+        }
+    };
 
     static void increment(uint64_t &value, const char *message) {
         if (value == std::numeric_limits<uint64_t>::max()) {
@@ -98,6 +112,38 @@ class ExactEventOracle {
 
     static void update_bits(const cpp_int &value, ExactEventOracleWork &work) {
         work.max_integer_bits = std::max(work.max_integer_bits, bit_width(value));
+    }
+
+    static uint64_t limb_capacity_bytes(const cpp_int &value) {
+        const size_t capacity = value.backend().capacity();
+        const size_t limb_bytes = sizeof(*value.backend().limbs());
+        if (capacity > std::numeric_limits<uint64_t>::max() / limb_bytes) {
+            throw std::overflow_error("cpp_int limb-capacity byte count overflow");
+        }
+        return static_cast<uint64_t>(capacity * limb_bytes);
+    }
+
+    template <typename... Integers>
+    static void update_live_limb_bytes(
+        ExactEventOracleWork &work,
+        const Integers &...integers)
+    {
+        uint64_t bytes = work.magnitude_limb_capacity_bytes;
+        const auto add = [&bytes](const cpp_int &value) {
+            const uint64_t value_bytes = limb_capacity_bytes(value);
+            if (value_bytes > std::numeric_limits<uint64_t>::max() - bytes) {
+                throw std::overflow_error("live cpp_int limb-capacity byte count overflow");
+            }
+            bytes += value_bytes;
+        };
+        (add(integers), ...);
+        work.peak_live_cpp_int_limb_bytes =
+            std::max(work.peak_live_cpp_int_limb_bytes, bytes);
+    }
+
+    static void update_heap_capacity(const EventHeap &heap, ExactEventOracleWork &work) {
+        work.peak_event_heap_capacity =
+            std::max(work.peak_event_heap_capacity, heap.storage_capacity());
     }
 
     static BinaryComponent decompose(float value) {
@@ -131,12 +177,14 @@ class ExactEventOracle {
         ExactEventOracleWork &work)
     {
         EventHeap heap(EventLater{&magnitudes, &work});
+        update_heap_capacity(heap, work);
         if (levels == 1) {
             return heap;
         }
         for (size_t i = 0; i < magnitudes.size(); ++i) {
             if (magnitudes[i] != 0) {
                 heap.push(Event{1, i});
+                update_heap_capacity(heap, work);
             }
         }
         return heap;
@@ -158,10 +206,32 @@ class ExactEventOracle {
         update_bits(best_dot_squared, work);
         update_bits(left, work);
         update_bits(right, work);
+        update_live_limb_bytes(
+            work,
+            dot,
+            norm,
+            best_dot,
+            best_norm,
+            dot_squared,
+            best_dot_squared,
+            left,
+            right);
         return left > right;
     }
 
   public:
+    static constexpr size_t component_storage_bytes_per_dimension() {
+        return sizeof(BinaryComponent);
+    }
+
+    static constexpr size_t event_storage_bytes() {
+        return sizeof(Event);
+    }
+
+    static constexpr size_t integer_object_bytes() {
+        return sizeof(cpp_int);
+    }
+
     static ExactEventOracleResult encode(std::span<const float> input, uint32_t total_bits) {
         if (input.empty()) {
             throw std::invalid_argument("exact oracle requires a positive dimension");
@@ -208,6 +278,12 @@ class ExactEventOracle {
             }
             magnitudes[i] = cpp_int(components[i].mantissa) << shift;
             update_bits(magnitudes[i], result.work);
+            const uint64_t limb_bytes = limb_capacity_bytes(magnitudes[i]);
+            if (limb_bytes > std::numeric_limits<uint64_t>::max() -
+                    result.work.magnitude_limb_capacity_bytes) {
+                throw std::overflow_error("magnitude limb-capacity byte count overflow");
+            }
+            result.work.magnitude_limb_capacity_bytes += limb_bytes;
         }
 
         cpp_int dot = 0;
@@ -219,6 +295,7 @@ class ExactEventOracle {
         cpp_int best_norm = norm;
         update_bits(dot, result.work);
         update_bits(norm, result.work);
+        update_live_limb_bytes(result.work, dot, norm, best_dot, best_norm);
 
         std::vector<uint32_t> current_code(input.size(), 0);
         EventHeap heap = make_heap(magnitudes, levels, result.work);
@@ -240,6 +317,7 @@ class ExactEventOracle {
             norm += UINT64_C(4) * old_grid + UINT64_C(4);
             update_bits(dot, result.work);
             update_bits(norm, result.work);
+            update_live_limb_bytes(result.work, dot, norm, best_dot, best_norm);
 
             if (score_is_better(dot, norm, best_dot, best_norm, result.work)) {
                 best_dot = dot;
@@ -248,6 +326,7 @@ class ExactEventOracle {
             }
             if (event.level + 1 < levels) {
                 heap.push(Event{event.level + 1, event.coordinate});
+                update_heap_capacity(heap, result.work);
             }
         }
 
@@ -267,6 +346,7 @@ class ExactEventOracle {
             increment(result.work.replay_events, "replay event counter overflow");
             if (event.level + 1 < levels) {
                 replay.push(Event{event.level + 1, event.coordinate});
+                update_heap_capacity(replay, result.work);
             }
         }
 

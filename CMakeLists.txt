@@ -45,6 +45,8 @@ endif()
 find_package(Glog)
 find_package(Fmt)
 find_package(GFlags)
+find_package(OpenSSL REQUIRED)
+find_package(ZLIB REQUIRED)
 
 # ==== dependencies ====
 if(NOT Glog_FOUND)

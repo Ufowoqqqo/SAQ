@@ -2,11 +2,11 @@
 
 ## Active Goal
 
-V2-B0 of the corrected `CO-0 v2` protocol is complete. Provenance,
-deterministic sample/pair inventories, rotation hashes, encoder arms, metrics,
-statistics, output schema, and stop rules are frozen without encoder execution
-or vector/query/ground-truth reads. Stop before V2-B1. The v1 screen remains
-closed under its frozen official-source contract.
+V2-B0 of the corrected `CO-0 v2` protocol is complete, and the frozen B1
+runner/summarizer has passed pure synthetic implementation validation. No
+registered encoder arm or float artifact has been opened. Stop before real
+V2-B1 execution. The v1 screen remains closed under its frozen official-source
+contract.
 
 Current status:
 
@@ -23,15 +23,16 @@ V2-A0 proof/specification review completed: PASS
 V2-A1 synthetic exact-oracle validation completed: PASS
 V2-A2 synthetic cost feasibility completed: PASS
 V2-B0 final preregistration completed: PASS
-V2-B1 encoder execution not authorized
+V2-B1 runner/summarizer synthetic validation completed: PASS
+V2-B1 registered encoder execution not authorized
 no GIST/CIFAR CO-0 output inspected
 no method or contribution established
 ```
 
-The only newly permitted artifact read is each frozen one-column IVF
-cluster-id file. It is required to materialize the predeclared
-cluster-stratified inventories. Base/centroid/variance hashes are imported
-from prior provenance and verified against bytes only after B1 authorization.
+Synthetic validation may read generated fixtures under `/tmp`. For registered
+artifacts, the only completed read remains each frozen one-column IVF
+cluster-id file used by B0. Base/centroid/variance hashes remain expected
+values until separately authorized B1 execution verifies their current bytes.
 
 Authoritative documents:
 
@@ -52,7 +53,8 @@ Authoritative documents:
 - `docs/saq_caq_co0_v2_b0_hypotheses_2026_07_11.json`;
 - `docs/saq_caq_co0_v2_b0_final_preregistration_2026_07_11.md`;
 - `docs/saq_caq_co0_v2_b0_preregistration_evidence_2026_07_11.md`;
-- `docs/saq_caq_co0_v2_b0_artifacts_2026_07_11/`.
+- `docs/saq_caq_co0_v2_b0_artifacts_2026_07_11/`;
+- `docs/saq_caq_co0_v2_b1_synthetic_runner_validation_2026_07_11.md`.
 
 ## Research Question
 
@@ -160,7 +162,7 @@ production-compatible segmented/whole-view rotation hashes
 all arms, controls, estimands, bootstrap tests, output schema, and commands
 ```
 
-Stop before V2-B1.
+Stop before registered V2-B1 execution.
 
 The next stage requires separate authorization. Implement and synthetic-test
 the B1 runner against the frozen preregistration before permitting it to open
@@ -169,6 +171,18 @@ combined into one unreviewed step.
 
 Do not run V2-A2, inspect dataset artifacts, or design a CAQ repair in the same
 step.
+
+## V2-B1 Instrument Validation — Completed, PASS
+
+The frozen-interface C++ runner, source-aligned arm measurements, current
+full-code estimator path, code/CSV shards, complete preflight, resource
+accounting, and Python 24-hypothesis summarizer are implemented. Release,
+ASAN, deterministic PASS/NO-GO, Holm, packing, estimator, zero, and synthetic
+I/O tests pass.
+
+This stage did not read registered float artifacts or produce a scientific
+result. Real B1 execution requires a separate explicit authorization and must
+not be combined with method design.
 
 ## Stop Rules
 
