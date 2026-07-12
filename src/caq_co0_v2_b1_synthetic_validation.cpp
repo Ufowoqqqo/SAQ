@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <bit>
 #include <cmath>
 #include <cstddef>
@@ -18,12 +19,16 @@
 #include <unistd.h>
 
 #include "quantization/caq/co0_v2_b1_io.hpp"
+#include "quantization/caq/co0_v2_frozen_rotation.hpp"
 #include "quantization/caq/co0_v2_measurement.hpp"
 #include "quantization/quantizer.hpp"
 
 namespace {
 
+using saqlib::FloatRowMat;
 using saqlib::FloatVec;
+using saqlib::caq_validation::co0_v2_frozen_segmented_rotation_values;
+using saqlib::caq_validation::co0_v2_frozen_whole_rotation_values;
 using saqlib::caq_validation::co0_v2_measure_all_arms;
 using saqlib::caq_validation::co0_v2_measure_pair;
 using saqlib::caq_validation::co0_v2_measure_pairs;
@@ -56,6 +61,7 @@ struct Counters {
     uint64_t memory_checks = 0;
     uint64_t zero_checks = 0;
     uint64_t io_checks = 0;
+    uint64_t rotation_hash_checks = 0;
 };
 
 [[noreturn]] void fail(const std::string &message) {
@@ -398,6 +404,115 @@ void validate_io_contract(Counters &counters) {
     }
 }
 
+void validate_dataset_rotations(
+    std::string_view dataset,
+    const std::vector<size_t> &dimensions,
+    size_t whole_dimension,
+    const std::array<std::vector<std::string_view>, 3> &segmented_hashes,
+    const std::array<std::string_view, 3> &whole_hashes,
+    Counters &counters) {
+    for (int logical_seed = 0; logical_seed < 3; ++logical_seed) {
+        std::vector<FloatRowMat> rotations;
+        rotations.reserve(dimensions.size());
+        for (size_t dimension : dimensions) {
+            rotations.emplace_back(
+                static_cast<Eigen::Index>(dimension),
+                static_cast<Eigen::Index>(dimension));
+        }
+        std::vector<std::span<float>> outputs;
+        outputs.reserve(rotations.size());
+        for (FloatRowMat &rotation : rotations) {
+            outputs.emplace_back(rotation.data(), static_cast<size_t>(rotation.size()));
+        }
+        co0_v2_frozen_segmented_rotation_values(dimensions, logical_seed, outputs);
+        require(
+            segmented_hashes[static_cast<size_t>(logical_seed)].size() == rotations.size(),
+            "frozen segmented hash fixture count mismatch");
+        for (size_t segment = 0; segment < rotations.size(); ++segment) {
+            require(
+                saqlib::caq_validation::co0_v2_sha256_matrix(rotations[segment]) ==
+                    segmented_hashes[static_cast<size_t>(logical_seed)][segment],
+                std::string(dataset) + " frozen segmented rotation hash mismatch");
+            ++counters.rotation_hash_checks;
+        }
+
+        FloatRowMat whole(
+            static_cast<Eigen::Index>(whole_dimension),
+            static_cast<Eigen::Index>(whole_dimension));
+        co0_v2_frozen_whole_rotation_values(
+            whole_dimension,
+            logical_seed,
+            std::span<float>(whole.data(), static_cast<size_t>(whole.size())));
+        require(
+            saqlib::caq_validation::co0_v2_sha256_matrix(whole) ==
+                whole_hashes[static_cast<size_t>(logical_seed)],
+            std::string(dataset) + " frozen whole rotation hash mismatch");
+        ++counters.rotation_hash_checks;
+    }
+}
+
+void validate_frozen_rotations(Counters &counters) {
+    validate_dataset_rotations(
+        "GIST",
+        {64, 192, 320, 256},
+        832,
+        {{
+            {
+                "71b3770a7994a390bc791e46989fd88a3ded623b7f2d6790920ff50c80224df7",
+                "16f5b295180b34e9f39101ba0a3cf3d22ac7adb90678d65f152ba66f42eef7cb",
+                "68a07048dba787f439dfb0105fd5fdbdc35b68659bbdda97bc5ea6190cdbb4cf",
+                "99a31061b9cdd46dbca098fc27b44fb21dbb669fe4dd103d9cc356943ce172a0",
+            },
+            {
+                "fdcd87a3f0a02d51c20c59f403480fbd68bbd56a5f4c2020eaca3e899937e736",
+                "2ecf354f482c306e706b2d3dde437ee8ff331a1d77a922a28db7df47537f1bac",
+                "052d9c18b7c123eee5e576a96786ff83eea960b06a8ece3aef4ab704a8255a32",
+                "fee8d41948c7fb445606cffac2c14b2f7818ef6cce51d07151d359eec70cdf27",
+            },
+            {
+                "199614a4d808cf38ccfc779d77de03dadfa9d195a6df30ae3a395c2424f5cc6a",
+                "1860915c73165342b78f8fd01625501bdb8a4d8957553788eee35bebbf8b7bba",
+                "86565e33b804a595cb1f01934f8a798fff26c07fd3816c1828bc21bf1c8d1551",
+                "84004093cd060393eff34a526d3d242443b366a64544e191fc423378a675bfe9",
+            },
+        }},
+        {
+            "e558e11168b4aa1df3e7bc00561855e2da28513c453b14ab51a86b21438b99ee",
+            "9d7917be0223c1c484d06d9ae55eada9af9df6a3eade4cf15dc34730fa57de29",
+            "b418306a98bb7a6152b11af13c057a5c150f11839d4581c67ebb0f323abaf22b",
+        },
+        counters);
+
+    validate_dataset_rotations(
+        "CIFAR",
+        {64, 192, 128},
+        384,
+        {{
+            {
+                "71b3770a7994a390bc791e46989fd88a3ded623b7f2d6790920ff50c80224df7",
+                "16f5b295180b34e9f39101ba0a3cf3d22ac7adb90678d65f152ba66f42eef7cb",
+                "bfcf938e65da67b576c83aacc9e2d8f4ccd42cc9e5254ceb6a70ac1b9d79ff43",
+            },
+            {
+                "fdcd87a3f0a02d51c20c59f403480fbd68bbd56a5f4c2020eaca3e899937e736",
+                "2ecf354f482c306e706b2d3dde437ee8ff331a1d77a922a28db7df47537f1bac",
+                "5251e8d7dd25ec04164dc0fa043a423f5ed4fa5aed330d9f743d08183fa5def9",
+            },
+            {
+                "199614a4d808cf38ccfc779d77de03dadfa9d195a6df30ae3a395c2424f5cc6a",
+                "1860915c73165342b78f8fd01625501bdb8a4d8957553788eee35bebbf8b7bba",
+                "c92901068149d130a27c27caaf5c48d48b4046374006bbaacf523045225a4214",
+            },
+        }},
+        {
+            "100b08e026f2903b5cba7cf716468bd2b05241710a1c095b43fa4fe24d2ee99a",
+            "bae896f52d83db8c972c9d984a278a28894c9a5a15972dbabbbc96ee5be450fd",
+            "b3c7acb7a51190cb2afc8cf0f39c56e270dac0ee2bde78cefed0c250889f3b1e",
+        },
+        counters);
+    require(counters.rotation_hash_checks == 27, "frozen rotation check count mismatch");
+}
+
 } // namespace
 
 int main() {
@@ -423,6 +538,7 @@ int main() {
         };
 
         Counters counters;
+        validate_frozen_rotations(counters);
         for (const Cell &cell : cells) {
             for (Profile profile : profiles) {
                 validate_cell(cell, profile, counters);
@@ -444,7 +560,8 @@ int main() {
                   << "  \"estimator_reuse_checks\": " << counters.estimator_reuse_checks << ",\n"
                   << "  \"memory_checks\": " << counters.memory_checks << ",\n"
                   << "  \"zero_checks\": " << counters.zero_checks << ",\n"
-                  << "  \"io_checks\": " << counters.io_checks << "\n"
+                  << "  \"io_checks\": " << counters.io_checks << ",\n"
+                  << "  \"rotation_hash_checks\": " << counters.rotation_hash_checks << "\n"
                   << "}\n";
         return 0;
     } catch (const std::exception &error) {

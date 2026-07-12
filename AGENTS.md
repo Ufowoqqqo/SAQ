@@ -53,7 +53,9 @@ The authoritative review and decision documents are:
 - `docs/saq_caq_co0_v2_b0_final_preregistration_2026_07_11.md`;
 - `docs/saq_caq_co0_v2_b0_preregistration_evidence_2026_07_11.md`;
 - `docs/saq_caq_co0_v2_b0_artifacts_2026_07_11/`;
-- `docs/saq_caq_co0_v2_b1_synthetic_runner_validation_2026_07_11.md`.
+- `docs/saq_caq_co0_v2_b1_synthetic_runner_validation_2026_07_11.md`;
+- `docs/saq_caq_co0_v2_b1_rotation_build_correction_2026_07_12.md`;
+- `docs/saq_caq_co0_v2_b1_rotation_build_correction_artifacts_2026_07_12/`.
 
 The completed sequence is:
 
@@ -64,18 +66,23 @@ V2-A1     synthetic exact-oracle validation -> PASS
 V2-A2     synthetic cost study -> PASS
 V2-B0     provenance/preregistration only -> PASS
 V2-B1-I   runner/summarizer synthetic validation -> PASS
-V2-B1-E   frozen encoder execution -> NOT AUTHORIZED
+V2-B1-E0  registered preflight -> STOPPED before encoding
+V2-B1-R   rotation build correction validation -> PASS
+V2-B1-E1  registered rerun -> NOT AUTHORIZED
 data      GIST/CIFAR outputs -> NOT INSPECTED
 ```
 
 The user explicitly authorized V2-B0 on 2026-07-11; B0 passed without encoder
 execution. It read and hash-verified only the two frozen one-column
-cluster-assignment files needed to construct sample inventories. Base vectors,
-centroids, variances, benchmark queries, ground truth, indexes, and encoder
-outputs remain unread. The user separately authorized implementation and
-synthetic validation of the B1 instrument on 2026-07-11; that stage passed.
-The current authorization still stops before registered B1 execution. Do not
-run an encoder arm on GIST/CIFAR or inspect an objective/estimator gap.
+cluster-assignment files needed to construct sample inventories. The first B1
+command was later authorized and hash-verified the registered base, centroid,
+variance, assignment, and inventory artifacts. It stopped on a rotation hash
+mismatch with zero encoder rows and zero pair rows. Benchmark queries, ground
+truth, indexes, prior encoder outputs, and objective/estimator results remain
+unread. The instrument-only correction was separately authorized and passes
+synthetic Release/ASAN validation. The current authorization stops before a
+registered rerun. Do not run an encoder arm on GIST/CIFAR or inspect an
+objective/estimator gap.
 
 ## Frozen Architecture
 
@@ -95,6 +102,21 @@ no benchmark-query tuning
 
 The independent variable is the per-segment encoder only. Do not change the
 plan, transform, candidate generation, index format, or search schedule.
+
+## Frozen Rotation Build
+
+The registered rotation bytes were generated with GCC 11.5.0 under the B0
+Release profile `-O3 -DNDEBUG -fno-fast-math -ffp-contract=off` and without
+AVX/FMA. Eigen Householder QR is byte-sensitive to both optimization level and
+SIMD flags. Keep rotation generation in
+`src/caq_co0_v2_frozen_rotation.cpp`; do not move it back into the
+SIMD-compiled runner.
+
+The frozen unit must write into caller-owned row-major float buffers so Eigen
+objects do not cross build profiles. The CAQ encoder, packer, and estimator
+must retain their AVX2/FMA/AVX512 flags. Every Release and ASAN review must
+report `rotation_hash_checks = 27`; a mismatch stops execution before an
+encoder call and cannot be relaxed with numerical tolerance.
 
 ## Corrected-Oracle Requirement
 
@@ -162,8 +184,8 @@ No other structural exception is implied.
 
 ## V2-B Boundary
 
-V2-B0 is frozen and the B1 instrument has passed synthetic validation. Real
-B1 execution remains unauthorized. The registered regimes are:
+V2-B0 is frozen. The corrected B1 instrument has passed synthetic validation,
+but the registered rerun remains unauthorized. The registered regimes are:
 
 ```text
 GIST sample50k, K=512, B=4:
@@ -265,7 +287,7 @@ python -m unittest script.test_summarize_caq_co0_v2_b1
 
 ## Do-Not Rules
 
-- Do not execute the registered V2-B1 runner under the current authorization.
+- Do not rerun the registered V2-B1 runner under the current authorization.
 - Synthetic runner/summarizer tests may use only generated fixtures under
   `/tmp`; they must not read registered float artifacts or encoder outputs.
 - Do not read benchmark queries, ground truth, indexes, or prior encoder

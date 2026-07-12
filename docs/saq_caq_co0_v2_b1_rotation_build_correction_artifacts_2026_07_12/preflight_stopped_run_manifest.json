@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "stage": "V2-B1",
+  "status": "STOPPED",
+  "protocol_version": "saq-caq-co0-v2-b0-20260711-schema1",
+  "threads": 1,
+  "encoding_rows": 0,
+  "pair_rows": 0,
+  "exact_cpu_ns": 0,
+  "duplicate_checks": 0,
+  "code_bytes": 0,
+  "serialized_output_bytes": 0,
+  "peak_rss_bytes": 18677760,
+  "work_accounting_ns": {
+    "preflight_wall": 777541992,
+    "preflight_cpu": 767825298,
+    "rotation_wall": 0,
+    "rotation_cpu": 0,
+    "input_io_wall": 0,
+    "input_io_cpu": 0,
+    "residual_wall": 0,
+    "residual_cpu": 0,
+    "pair_estimator_wall": 0,
+    "pair_estimator_cpu": 0,
+    "source_parity_wall": 0,
+    "source_parity_cpu": 0,
+    "output_io_wall": 0,
+    "output_io_cpu": 0,
+    "total_wall": 786015538,
+    "total_cpu": 776265703,
+    "arms": {
+      "lvq_init": {"wall": 0, "cpu": 0},
+      "caq_r6": {"wall": 0, "cpu": 0},
+      "caq_local_fixed_point": {"wall": 0, "cpu": 0},
+      "corrected_exact": {"wall": 0, "cpu": 0}
+    }
+  },
+  "shards": [],
+  "message": "rotation hash mismatch"
+}

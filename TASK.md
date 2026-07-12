@@ -2,11 +2,13 @@
 
 ## Active Goal
 
-V2-B0 of the corrected `CO-0 v2` protocol is complete, and the frozen B1
-runner/summarizer has passed pure synthetic implementation validation. No
-registered encoder arm or float artifact has been opened. Stop before real
-V2-B1 execution. The v1 screen remains closed under its frozen official-source
-contract.
+V2-B0 of the corrected `CO-0 v2` protocol is complete. The first authorized
+B1 command hash-verified the registered artifacts, then stopped before the
+first encoder call because the SIMD-compiled runner did not reproduce the B0
+rotation bytes. The authorized instrument-only correction now passes Release
+and ASAN validation, including the runner-linked 27/27 rotation hashes. Stop
+before a second registered execution. The v1 screen remains closed under its
+frozen official-source contract.
 
 Current status:
 
@@ -24,15 +26,19 @@ V2-A1 synthetic exact-oracle validation completed: PASS
 V2-A2 synthetic cost feasibility completed: PASS
 V2-B0 final preregistration completed: PASS
 V2-B1 runner/summarizer synthetic validation completed: PASS
-V2-B1 registered encoder execution not authorized
+V2-B1 first registered preflight: STOPPED before encoding
+V2-B1 rotation build-profile cause reproduced: PASS
+V2-B1 instrument-only correction synthetic validation: PASS
+V2-B1 registered rerun not authorized
 no GIST/CIFAR CO-0 output inspected
 no method or contribution established
 ```
 
-Synthetic validation may read generated fixtures under `/tmp`. For registered
-artifacts, the only completed read remains each frozen one-column IVF
-cluster-id file used by B0. Base/centroid/variance hashes remain expected
-values until separately authorized B1 execution verifies their current bytes.
+The stopped B1 preflight read and hash-verified the registered base, centroid,
+variance, assignment, and inventory artifacts. It recorded zero encoding and
+pair rows and did not prepare residuals or inspect an objective/estimator gap.
+Synthetic correction validation used only generated fixtures and frozen
+rotation hashes.
 
 Authoritative documents:
 
@@ -54,7 +60,9 @@ Authoritative documents:
 - `docs/saq_caq_co0_v2_b0_final_preregistration_2026_07_11.md`;
 - `docs/saq_caq_co0_v2_b0_preregistration_evidence_2026_07_11.md`;
 - `docs/saq_caq_co0_v2_b0_artifacts_2026_07_11/`;
-- `docs/saq_caq_co0_v2_b1_synthetic_runner_validation_2026_07_11.md`.
+- `docs/saq_caq_co0_v2_b1_synthetic_runner_validation_2026_07_11.md`;
+- `docs/saq_caq_co0_v2_b1_rotation_build_correction_2026_07_12.md`;
+- `docs/saq_caq_co0_v2_b1_rotation_build_correction_artifacts_2026_07_12/`.
 
 ## Research Question
 
@@ -183,6 +191,20 @@ I/O tests pass.
 This stage did not read registered float artifacts or produce a scientific
 result. Real B1 execution requires a separate explicit authorization and must
 not be combined with method design.
+
+## V2-B1 First Execution And Rotation Correction — STOPPED / PASS
+
+The first authorized command completed registered artifact hash/shape
+preflight and then stopped with `rotation hash mismatch`. It produced zero
+encoder rows, pair rows, exact-oracle CPU, and code bytes. The cause was a
+build-profile mismatch: B0 rotation hashes used non-AVX Release QR, whereas
+the runner generated QR in its AVX/FMA translation unit.
+
+The separately authorized correction isolates rotation generation under the
+recorded B0 Release profile and leaves the CAQ path SIMD-enabled. Release and
+ASAN validation pass, including 27/27 runner-linked frozen rotation hashes.
+This is an instrument correction, not a protocol change or scientific result.
+A second registered execution requires separate authorization.
 
 ## Stop Rules
 

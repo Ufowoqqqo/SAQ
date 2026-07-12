@@ -16,6 +16,7 @@
 #include <memory>
 #include <optional>
 #include <set>
+#include <span>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -31,8 +32,8 @@
 #include <boost/property_tree/ptree.hpp>
 
 #include "quantization/caq/co0_v2_b1_io.hpp"
+#include "quantization/caq/co0_v2_frozen_rotation.hpp"
 #include "quantization/caq/co0_v2_measurement.hpp"
-#include "quantization/caq/co0_v2_rotation.hpp"
 
 namespace {
 
@@ -40,16 +41,16 @@ using boost::property_tree::ptree;
 using saqlib::FloatRowMat;
 using saqlib::FloatVec;
 using saqlib::caq_validation::co0_v2_arm_name;
+using saqlib::caq_validation::co0_v2_frozen_segmented_rotation_values;
+using saqlib::caq_validation::co0_v2_frozen_whole_rotation_values;
 using saqlib::caq_validation::co0_v2_measure_arm;
 using saqlib::caq_validation::co0_v2_measure_pairs;
 using saqlib::caq_validation::co0_v2_peak_rss_bytes;
 using saqlib::caq_validation::co0_v2_read_pair_inventory;
 using saqlib::caq_validation::co0_v2_read_sample_inventory;
-using saqlib::caq_validation::co0_v2_segmented_rotations;
 using saqlib::caq_validation::co0_v2_sha256_file;
 using saqlib::caq_validation::co0_v2_sha256_matrix;
 using saqlib::caq_validation::co0_v2_validate_vector_file;
-using saqlib::caq_validation::co0_v2_whole_rotation;
 using saqlib::caq_validation::Co0V2Arm;
 using saqlib::caq_validation::Co0V2CodeLocation;
 using saqlib::caq_validation::Co0V2CodeShardWriter;
@@ -478,7 +479,19 @@ std::vector<FloatRowMat> verified_segmented_rotations(
             dimensions.push_back(segment.dimension);
         }
     }
-    std::vector<FloatRowMat> rotations = co0_v2_segmented_rotations(dimensions, logical_seed);
+    std::vector<FloatRowMat> rotations;
+    rotations.reserve(dimensions.size());
+    for (size_t dimension : dimensions) {
+        rotations.emplace_back(
+            static_cast<Eigen::Index>(dimension),
+            static_cast<Eigen::Index>(dimension));
+    }
+    std::vector<std::span<float>> outputs;
+    outputs.reserve(rotations.size());
+    for (FloatRowMat &rotation : rotations) {
+        outputs.emplace_back(rotation.data(), static_cast<size_t>(rotation.size()));
+    }
+    co0_v2_frozen_segmented_rotation_values(dimensions, logical_seed, outputs);
     for (size_t index = 0; index < rotations.size(); ++index) {
         const RotationExpected &frozen = find_rotation(
             expected,
@@ -496,7 +509,13 @@ FloatRowMat verified_whole_rotation(
     const DatasetSpec &dataset,
     int logical_seed,
     const std::vector<RotationExpected> &expected) {
-    FloatRowMat rotation = co0_v2_whole_rotation(dataset.positive_dimension, logical_seed);
+    FloatRowMat rotation(
+        static_cast<Eigen::Index>(dataset.positive_dimension),
+        static_cast<Eigen::Index>(dataset.positive_dimension));
+    co0_v2_frozen_whole_rotation_values(
+        dataset.positive_dimension,
+        logical_seed,
+        std::span<float>(rotation.data(), static_cast<size_t>(rotation.size())));
     const RotationExpected &frozen = find_rotation(
         expected,
         dataset.dataset_id,

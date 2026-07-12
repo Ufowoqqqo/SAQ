@@ -24,6 +24,9 @@ add_executable(
 add_executable(
   caq_co0_v2_b1_runner
   ../../src/caq_co0_v2_b1_runner.cpp)
+add_library(
+  caq_co0_v2_frozen_rotation STATIC
+  ../../src/caq_co0_v2_frozen_rotation.cpp)
 
 function(configure_corrected_oracle_target target)
   target_compile_features(${target} PRIVATE cxx_std_20)
@@ -45,6 +48,16 @@ configure_corrected_oracle_target(caq_corrected_oracle_cost_study)
 configure_corrected_oracle_target(caq_co0_v2_b0_rotation_inventory)
 configure_corrected_oracle_target(caq_co0_v2_b1_synthetic_validation)
 configure_corrected_oracle_target(caq_co0_v2_b1_runner)
+configure_corrected_oracle_target(caq_co0_v2_frozen_rotation)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  target_compile_options(
+    caq_co0_v2_frozen_rotation
+    PRIVATE -O3 -fno-fast-math -ffp-contract=off
+    -mno-avx512f -mno-avx512dq -mno-avx512bw -mno-avx512vl
+    -mno-avx2 -mno-avx -mno-fma)
+  target_compile_definitions(caq_co0_v2_frozen_rotation PRIVATE NDEBUG)
+endif()
 
 target_compile_options(
   caq_co0_v2_b1_synthetic_validation
@@ -54,7 +67,7 @@ target_include_directories(
   BEFORE PRIVATE stubs)
 target_link_libraries(
   caq_co0_v2_b1_synthetic_validation
-  PRIVATE OpenSSL::Crypto ZLIB::ZLIB)
+  PRIVATE caq_co0_v2_frozen_rotation OpenSSL::Crypto ZLIB::ZLIB)
 target_compile_options(
   caq_co0_v2_b1_runner
   PRIVATE -mavx2 -mfma -mavx512f -mavx512dq -mavx512bw -mavx512vl)
@@ -63,7 +76,7 @@ target_include_directories(
   BEFORE PRIVATE stubs)
 target_link_libraries(
   caq_co0_v2_b1_runner
-  PRIVATE OpenSSL::Crypto ZLIB::ZLIB)
+  PRIVATE caq_co0_v2_frozen_rotation OpenSSL::Crypto ZLIB::ZLIB)
 
 add_test(
   NAME caq_corrected_oracle_validation
