@@ -7,9 +7,14 @@ The corrected `CO-0 v2` V2-B1 limitation screen is complete and returns
 fraction of the exact alignment opportunity on the frozen leading high-bit
 SAQ segments; all registered controls and unchanged-estimator tests pass the
 shared 24-hypothesis Holm gate. This establishes a limitation, not a method.
-The next active stage is a bounded primary-source/theory review of low-cost
-deterministic certificates or repair rules. Stop before implementation or a
-rescue sweep. The v1 official-source result remains closed.
+
+The bounded low-cost repair review is now complete and returns
+`CONDITIONAL_GO_FOR_SYNTHETIC_PROTOTYPE` for exactly one candidate: an exact
+radius-one Cartesian shell optimizer around the CAQ code. The next active
+stage is synthetic implementation and brute-force/cost falsification only.
+Do not read base artifacts, B1 per-vector output, benchmark queries, ground
+truth, or indexes. Do not add a second shell pass, a larger radius, restarts,
+or acceptance thresholds. The v1 official-source result remains closed.
 
 Current status:
 
@@ -35,6 +40,7 @@ V2-B1 frozen 24-hypothesis analysis: CONDITIONAL_PASS
 all 24 Holm tests and seed-consistency checks: PASS
 benchmark queries / ground truth / indexes: NOT READ
 no method or contribution established
+bounded repair review: CONDITIONAL GO for one-shell synthetic prototype only
 ```
 
 The completed run contains 9,600,000 encoding rows and 4,773,192 pair rows.
@@ -68,7 +74,9 @@ Authoritative documents:
 - `docs/saq_caq_co0_v2_b1_rotation_build_correction_2026_07_12.md`;
 - `docs/saq_caq_co0_v2_b1_rotation_build_correction_artifacts_2026_07_12/`;
 - `docs/saq_caq_co0_v2_b1_registered_evidence_2026_07_12.md`;
-- `docs/saq_caq_co0_v2_b1_registered_artifacts_2026_07_12/`.
+- `docs/saq_caq_co0_v2_b1_registered_artifacts_2026_07_12/`;
+- `docs/saq_caq_low_cost_repair_theory_review_2026_07_12.md`;
+- `docs/saq_caq_low_cost_repair_sources_2026_07_12.json`.
 
 ## Research Question
 

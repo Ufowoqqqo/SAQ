@@ -73,6 +73,7 @@ V2-B1-R   rotation build correction validation -> PASS
 V2-B1-E1  registered rerun -> COMPLETE
 V2-B1-S   frozen 24-hypothesis analysis -> CONDITIONAL_PASS
 method    low-cost repair -> NOT ESTABLISHED
+review    one-shell repair -> CONDITIONAL_GO_FOR_SYNTHETIC_PROTOTYPE
 ```
 
 The user explicitly authorized V2-B0 on 2026-07-11; B0 passed without encoder
@@ -106,6 +107,19 @@ base-only and makes no recall/QPS claim. `CONDITIONAL_PASS` authorizes only a
 bounded related-work/theory review of low-cost deterministic mechanisms. Do
 not implement a repair, open benchmark queries, or add a sweep before that
 novelty/complexity review is written.
+
+That review is now written in
+`docs/saq_caq_low_cost_repair_theory_review_2026_07_12.md`, with its source
+ledger in `docs/saq_caq_low_cost_repair_sources_2026_07_12.json`. It
+conditionally authorizes a synthetic-only exact radius-one Cartesian shell
+prototype. The shell is the product of each incumbent magnitude code and its
+immediate legal neighbors, solved with at most `2D` shared-scale events. It is
+not a global certificate or a method contribution.
+
+Do not increase the shell radius, repeat the shell to convergence, add scale
+or random restarts, or introduce an acceptance threshold. If the one-shell
+candidate cannot later recover at least half of the exact gap with total work
+at most `2x` production CAQ, stop the direction rather than tune it.
 
 ## Frozen Architecture
 

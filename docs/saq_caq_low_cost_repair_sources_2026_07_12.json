@@ -1,0 +1,103 @@
+{
+  "topic": "bounded primary-source and theory review of low-cost deterministic CAQ repair or certification",
+  "retrieved_on": "2026-07-12",
+  "decision": "CONDITIONAL_GO_FOR_SYNTHETIC_PROTOTYPE",
+  "review_contract": {
+    "primary_sources_only": true,
+    "query_unaware": true,
+    "implementation_before_decision": false,
+    "maximum_unique_sources": 8,
+    "inclusion_rule": "Include a source only when it directly defines the CAQ objective, solves the equivalent scaled-codebook problem, supplies the exact event baseline, or occupies coordinated local direction rounding.",
+    "excluded": [
+      "generic neural-network quantization without a scale or directional rounding connection",
+      "generic fractional programming not needed for the specialized proof",
+      "blogs, surveys, and secondary summaries",
+      "query-time ANNS methods that do not change encoding"
+    ]
+  },
+  "sources": [
+    {
+      "id": "saq",
+      "title": "SAQ: Pushing the Limits of Vector Quantization through Code Adjustment and Dimension Segmentation",
+      "year": 2026,
+      "venue": "PACMMOD / SIGMOD 2026",
+      "doi": "10.1145/3769824",
+      "url": "https://arxiv.org/abs/2509.12086",
+      "local_source": "/rwproject/kdd-db/kluaq/saq/paper_src/2509.12086/main.tex",
+      "local_code": "saqlib/quantization/caq/caq_encoder.hpp",
+      "review_depth": "full TeX and checked-in implementation",
+      "finding": "CAQ uses finite cyclic single-coordinate code adjustment for the cosine objective; the paper states that this procedure need not reach the global codeword."
+    },
+    {
+      "id": "erabitq",
+      "title": "Practical and Asymptotically Optimal Quantization of High-Dimensional Vectors in Euclidean Space for Approximate Nearest Neighbor Search",
+      "year": 2025,
+      "venue": "SIGMOD 2025",
+      "doi": "10.1145/3725413",
+      "url": "https://arxiv.org/abs/2409.09913",
+      "artifact_url": "https://github.com/VectorDB-NTU/Extended-RaBitQ",
+      "artifact_commit": "52b9e6c7ba6c316036cdb04074732fe561966a53",
+      "review_depth": "full arXiv HTML, proof appendix, and pinned official encoder source",
+      "finding": "Its scale-rounding lemma and critical-event enumeration already solve the complete normalized-grid direction problem in O(D 2^B log D). The official fast implementation uses a bounded n_enum=10 window and failed this repository's separate exact-parity contract."
+    },
+    {
+      "id": "rabitq",
+      "title": "RaBitQ: Quantizing High-Dimensional Vectors with a Theoretical Error Bound for Approximate Nearest Neighbor Search",
+      "year": 2024,
+      "venue": "PACMMOD / SIGMOD 2024",
+      "doi": "10.1145/3654970",
+      "url": "https://arxiv.org/abs/2405.12497",
+      "review_depth": "primary paper",
+      "finding": "Supplies the nearest-codeword-based estimator guarantee inherited by E-RaBitQ and conditionally claimed by CAQ."
+    },
+    {
+      "id": "scaled_codebook",
+      "title": "Optimal Quantization Using Scaled Codebook",
+      "year": 2021,
+      "venue": "CVPR 2021",
+      "url": "https://openaccess.thecvf.com/content/CVPR2021/html/Idelbayev_Optimal_Quantization_Using_Scaled_Codebook_CVPR_2021_paper.html",
+      "pdf": "https://openaccess.thecvf.com/content/CVPR2021/papers/Idelbayev_Optimal_Quantization_Using_Scaled_Codebook_CVPR_2021_paper.pdf",
+      "review_depth": "full primary paper",
+      "finding": "Directly solves the equivalent joint scale and scalar-code assignment MSE problem, characterizes local fixed points, explains alternating-optimization failure, and gives a globally exact O(NK log K) event algorithm."
+    },
+    {
+      "id": "coordinate_descent",
+      "title": "Coordinate Descent Algorithms",
+      "year": 2015,
+      "venue": "Mathematical Programming 151(1)",
+      "doi": "10.1007/s10107-015-0892-3",
+      "url": "https://arxiv.org/abs/1502.04759",
+      "review_depth": "primary paper",
+      "finding": "Establishes coordinate and block-coordinate optimization as mature primitives; generic coordinated local search is not a novelty claim."
+    },
+    {
+      "id": "lsqpp",
+      "title": "LSQ++: Lower Running Time and Higher Recall in Multi-Codebook Quantization",
+      "year": 2018,
+      "venue": "ECCV 2018",
+      "url": "https://openaccess.thecvf.com/content_ECCV_2018/html/Julieta_Martinez_LSQ_lower_runtime_ECCV_2018_paper.html",
+      "pdf": "https://openaccess.thecvf.com/content_ECCV_2018/papers/Julieta_Martinez_LSQ_lower_runtime_ECCV_2018_paper.pdf",
+      "review_depth": "primary paper",
+      "finding": "Makes local-search encoding and explicit accuracy-versus-encoding-runtime comparison established practice in vector quantization."
+    },
+    {
+      "id": "diaq",
+      "title": "DiaQ: Direction-aware Activation Quantization for Fast and Accurate Model Inference",
+      "year": 2025,
+      "status": "withdrawn ICLR 2026 submission",
+      "url": "https://openreview.net/forum?id=akKL87xV9l",
+      "pdf_snapshot": "https://openreview.net/pdf/b0011050c00df99455ff204ddceebe4d2fe9bd51.pdf",
+      "review_depth": "full withdrawn primary submission",
+      "finding": "Explicitly formulates cosine-aware choice over a floor/ceil hypercube but uses per-coordinate angular and positional scores with extension and balancing hyperparameters rather than an exact shared-scale Cartesian-shell optimizer."
+    },
+    {
+      "id": "b1_evidence",
+      "title": "CO-0 v2 B1 Registered Limitation Evidence",
+      "year": 2026,
+      "type": "local preregistered evidence",
+      "path": "docs/saq_caq_co0_v2_b1_registered_evidence_2026_07_12.md",
+      "review_depth": "frozen summary and aggregate artifacts",
+      "finding": "Establishes an SAQ-amplified coordinate-local optimization limitation and a 272.9x exact-label cost, while leaving benchmark queries unread."
+    }
+  ]
+}
