@@ -5,14 +5,16 @@ Durable guidance for Codex sessions on the `saq-meeting-summary` branch.
 ## Branch Purpose
 
 This is the canonical cross-attempt meeting-summary branch. It preserves
-historical decks and maintains the current project-level deck across research
-branches. It is not an experiment-execution branch, a source-code integration
-branch, or a replacement for the authoritative protocol and evidence files on
-the source branches.
+historical decks and maintains both the research-direction registry and the
+current project-level deck across research branches. It is not an experiment-
+execution branch, a source-code integration branch, or a replacement for the
+authoritative protocol and evidence files on the source branches.
 
 Do not run research experiments, read newly authorized datasets, or develop
-methods here. Preserve completed decks as immutable historical snapshots. When
-a new attempt or material milestone must be presented, create or update the
+methods here. Preserve completed decks as immutable historical snapshots.
+Maintain `docs/saq_research_direction_registry.md` as the single source of
+truth for direction, branch, scientific-snapshot, and reporting state. When a
+new attempt or material milestone must be presented, create or update the
 current successor deck without rewriting the older deck's history.
 
 ## Source And Claim Discipline
@@ -31,8 +33,8 @@ provisional outcomes are not evidence and must not appear as results. A frozen
 protocol is not an execution result; authorization is not completion; a
 synthetic witness is not natural-data or ANN evidence.
 
-The deck records authorization; it never grants authorization to a source
-branch.
+The registry and deck record authorization; neither grants authorization to a
+source branch.
 
 ## Meeting Summary Handoff
 
@@ -40,18 +42,51 @@ The session producing a committed and reviewed protocol, gate result, or
 terminal decision owns the handoff to this branch. Locate this linked worktree
 with `git worktree list`; do not rely on a hard-coded `/tmp` path.
 
-Before editing, require a clean summary worktree and confirm that no other
-session is known to own an in-progress edit. If either condition is unknown,
-do not edit; report the source branch, commit, status, claim ceiling, evidence
-paths, and next authorized step to the user instead.
+Before editing, re-read this file and
+`docs/saq_research_direction_registry.md`, fetch, require a clean summary
+worktree whose HEAD equals `origin/saq-meeting-summary`, and record that exact
+starting commit. One summary writer is mandatory: atomically acquire a lock
+directory named `saq-meeting-summary-edit.lock` under the Git common directory
+before the first edit. If the lock cannot be acquired, or cleanliness and
+remote equality cannot be established, do not edit; report the source branch,
+commit, status, claim ceiling, evidence paths, and next authorized step to the
+user instead.
 
-Update summary documents from the named committed sources only. Do not copy
-experiment code, generated artifacts, or unrelated branch files. Do not merge
-or cherry-pick an experiment branch merely to update the deck, and never merge
-this summary branch back into an experiment branch. Verify the focused diff,
-commit the summary update separately, and push `saq-meeting-summary`.
+Update the registry first from the named committed sources. Update the current
+deck only when the direction is selected for that meeting or an already-
+selected direction has a newer material milestone. Do not copy experiment
+code, generated artifacts, or unrelated branch files. Do not merge or cherry-
+pick an experiment branch merely to update summary documents, and never merge
+this summary branch back into an experiment branch. Re-fetch before push,
+verify the focused diff, and compare the remote with the recorded starting
+commit. If it moved, stop and integrate deliberately while retaining the lock.
+Commit the summary update separately, never force-push
+`saq-meeting-summary`, and release the lock after a successful push or a clean
+abort.
 
-## Deck Inventory
+## Reporting State
+
+Use the exact definitions and rollover procedure in
+`docs/saq_research_direction_registry.md`.
+
+- New directions start `UNREPORTED`.
+- A new branch enters the branch crosswalk as `PENDING_REVIEW` without a
+  scientific claim; create its direction row only after a committed and
+  independently reviewed milestone.
+- Draft-deck inclusion does not mean a meeting occurred and does not change
+  reporting state.
+- A material committed milestone after a reported snapshot changes the state
+  to `UPDATE_PENDING`; wording or handoff-only commits do not.
+- Change a snapshot to `REPORTED` only after the user confirms the completed
+  meeting and the exact deck commit. Record `reported_through` and the report
+  source at the same time.
+- A bare mention, baseline use, or “do not reopen” reference is not substantive
+  reporting.
+
+## Summary Inventory
+
+- `docs/saq_research_direction_registry.md` is the living canonical direction,
+  branch, evidence-boundary, and reporting-state registry.
 
 - `docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md` is the immutable
   historical snapshot for completed Attempts 1--3.
@@ -73,7 +108,7 @@ post-hoc datasets, thresholds, seeds, or variants to rescue a failed gate.
 
 ## Verification
 
-Before committing a deck update:
+Before committing a registry or deck update:
 
 ```bash
 git diff --cached --check
