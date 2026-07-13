@@ -22,6 +22,14 @@ not add a second shell pass, a larger radius, restarts, acceptance thresholds,
 or implementation-level rescue variants. No low-cost repair method has been
 established. The v1 official-source result remains closed.
 
+The project-level closure synthesis is now complete. The selected decision is
+`STOP_SAQ_CENTRIC_INCREMENTAL_METHOD_SEARCH`. Retain SAQ as a baseline and
+limitation case, but do not begin another SAQ-specific planner, encoder,
+transform, layout, or search-policy implementation. The next authorized stage
+is a problem-first primary-source selection review only. It must identify a
+question and mechanism that remain meaningful across at least two independent
+strong baselines before a new clean branch is opened.
+
 Current status:
 
 ```text
@@ -52,6 +60,8 @@ one-shell Release and ASAN standalone suites: PASS
 one-shell frozen total-cost gate: FAIL (best 4.579x vs maximum 2.0x)
 one-shell decision: NO_GO_ON_COMPLEXITY
 base/query/index evaluation for one-shell: NOT RUN
+project-level SAQ-centric method search: STOP
+next stage: problem-selection related-work review only
 ```
 
 The completed run contains 9,600,000 encoding rows and 4,773,192 pair rows.
@@ -89,7 +99,8 @@ Authoritative documents:
 - `docs/saq_caq_low_cost_repair_theory_review_2026_07_12.md`;
 - `docs/saq_caq_low_cost_repair_sources_2026_07_12.json`;
 - `docs/saq_caq_one_shell_synthetic_falsification_2026_07_12.md`;
-- `docs/saq_caq_one_shell_synthetic_artifacts_2026_07_12/validation_result.json`.
+- `docs/saq_caq_one_shell_synthetic_artifacts_2026_07_12/validation_result.json`;
+- `docs/saq_caq_limitation_repair_closure_and_project_pivot_2026_07_13.md`.
 
 ## Research Question
 
@@ -266,6 +277,18 @@ event-order comparisons per encoding, so arbitrary-precision fallback is not
 the cause. Do not run its exact-gap-recovery half or attempt to rescue it by
 tuning.
 
+## Project-Level Closure — Completed, PIVOT
+
+The project-wide synthesis compares the empirical fixed policy, mixed shared
+plans, single-global cost DP, measured planner objective, search scheduling,
+graph traversal, transform replacement, lossy projection, and CAQ repair.
+None supplies a distinct, overhead-controlled, cross-regime end-to-end method.
+
+The project therefore stops SAQ-centric incremental method development. Keep
+the branches as research records and SAQ as a competitive baseline. The next
+stage may review broader vector-search problems, but it may not implement one
+until a primary-source novelty, complexity, and falsifiability gate passes.
+
 ## Stop Rules
 
 The v1 official-source stop remains final and is not retroactively relaxed.
@@ -283,3 +306,8 @@ any frozen cost row above `2.0x` fails the conjunctive method gate. Correctness
 does not override this stop. A later direction must begin with a new bounded
 primary-source novelty and complexity review; it may cite this result only as
 negative evidence.
+
+At project level, do not open another branch whose question is merely how to
+modify one SAQ component. A future branch must follow the problem-selection
+protocol in the closure synthesis and start clean from `saq-correctness-base`
+only after that protocol returns `GO`.

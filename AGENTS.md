@@ -129,6 +129,25 @@ Do not increase the shell radius, repeat the shell to convergence, add scale
 or random restarts, introduce an acceptance threshold, optimize it into the
 production encoder, or read dataset artifacts to rescue the failed gate.
 
+## Project-Level Pivot
+
+The project-wide decision is
+`STOP_SAQ_CENTRIC_INCREMENTAL_METHOD_SEARCH`. Its authoritative rationale is
+`docs/saq_caq_limitation_repair_closure_and_project_pivot_2026_07_13.md`.
+
+Retain SAQ as a strong baseline and the completed branches as limitation
+evidence. Do not default to another SAQ-specific planner objective, candidate
+family, local plan, encoder move, transform, layout, bound, or search schedule.
+The next authorized work is a problem-first primary-source selection review,
+not implementation.
+
+A future direction must remain meaningful across at least two independent
+competitive baselines, identify a mechanism-level gap not occupied by the
+closest work, account for build/storage/query overhead from the start, and
+define a small falsification study. Open a clean branch from
+`saq-correctness-base` only after that review returns `GO`; otherwise keep this
+branch closed.
+
 ## Frozen Architecture
 
 Keep the comparison inside the existing SAQ representation:
@@ -349,6 +368,8 @@ python -m unittest script.test_summarize_caq_co0_v2_b1
 - Do not use ordinary exact E-RaBitQ fallback as the proposed contribution.
 - Do not continue the radius-one shell after its frozen synthetic complexity
   gate failed; preserve it only as a diagnostic and negative result.
+- Do not begin another SAQ-centric incremental method after the project-level
+  pivot decision. Complete a problem-first related-work gate before coding.
 - Do not sweep datasets, bits, dimensions, segment boundaries, rotations, or
   thresholds to rescue a failed gate.
 - Do not change the global SAQ plan, index format, or query estimator in CO-0.
