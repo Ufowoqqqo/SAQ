@@ -1311,7 +1311,7 @@ def _run_compatibility_tests() -> dict[str, Any]:
     return {
         "command": command,
         "a4_0_test_count": 7,
-        "a4_1s_nonrandom_test_count": 14,
+        "a4_1s_nonrandom_test_count": 15,
         "returncode": process.returncode,
         "passed": True,
     }
@@ -1874,6 +1874,98 @@ def _paired_lookup_case(
             and all(entry["parity"] for entry in paired_entries)
         ),
     }
+
+
+def _validate_block_selected_distinctness(case: dict[str, Any]) -> None:
+    """Apply the frozen binary32-distinctness rule only to the winner.
+
+    A nonselected Lloyd start may converge with colliding serialized centers;
+    Section 2.6 gates the codebook selected by best-of-eight.  Conversely, a
+    valid BEST must be fully distinct, and the registered collision control
+    must identify an actually colliding selected start.
+    """
+
+    capacity = int(case["capacity"])
+    starts = case["starts"]
+    valid_best = case["best"].get("control_valid") is True
+    collision_control = case.get("failure") == "SERIALIZED_CENTER_COLLISION"
+    if not valid_best and not collision_control:
+        # Other registered block-control failures may intentionally carry a
+        # nonfinite or incomplete trace for which best-of-eight is undefined.
+        # Their CONTROL_INVALID status must not be rewritten as an
+        # implementation defect by the selected-codebook-only rule.
+        case["validation_best_start_sse_comparison_count"] = 0
+        return
+    ordered_start_ids = sorted(starts)
+    if not ordered_start_ids:
+        raise GateFailure("IMPLEMENTATION_INVALID", "block start inventory is empty")
+    best_start_id = ordered_start_ids[0]
+    best_sse = reference.bits_to_float64(
+        int(starts[best_start_id]["final_sse_bits"], 16)
+    )
+    if not math.isfinite(best_sse) or best_sse < 0.0:
+        raise GateFailure("IMPLEMENTATION_INVALID", "block best replay SSE is invalid")
+    comparison_count = 0
+    for candidate_start_id in ordered_start_ids[1:]:
+        candidate_sse = reference.bits_to_float64(
+            int(starts[candidate_start_id]["final_sse_bits"], 16)
+        )
+        if not math.isfinite(candidate_sse) or candidate_sse < 0.0:
+            raise GateFailure(
+                "IMPLEMENTATION_INVALID", "block best replay SSE is invalid"
+            )
+        comparison_count += 1
+        if candidate_sse < best_sse:
+            best_start_id = candidate_start_id
+            best_sse = candidate_sse
+    case["validation_best_start_sse_comparison_count"] = comparison_count
+
+    if valid_best:
+        declared_start_id = int(case["best"]["start_id"])
+        if declared_start_id != best_start_id:
+            raise GateFailure(
+                "IMPLEMENTATION_INVALID", "block BEST tie/order mismatch"
+            )
+        selected = starts[declared_start_id]
+        if int(selected["distinct_serialized_center_count"]) != capacity:
+            raise GateFailure(
+                "IMPLEMENTATION_INVALID",
+                "valid block BEST selected colliding centers",
+            )
+    elif collision_control:
+        failed_start_id = int(case["failed_start_id"])
+        if failed_start_id != best_start_id:
+            raise GateFailure(
+                "IMPLEMENTATION_INVALID",
+                "block collision failure does not identify the winning start",
+            )
+        for start_id in ordered_start_ids:
+            start = starts[start_id]
+            expected_failure = (
+                "SERIALIZED_CENTER_COLLISION"
+                if start_id == best_start_id
+                else "NONE"
+            )
+            if not start["converged"] or start["failure"] != expected_failure:
+                raise GateFailure(
+                    "IMPLEMENTATION_INVALID",
+                    "block collision control has an invalid Lloyd-start state",
+                )
+        failed = starts[failed_start_id]
+        if (
+            int(failed["final_assignment_count"]) != int(case["point_count"])
+            or int(failed["final_center_count"]) != capacity
+            or int(failed["serialized_center_count"]) != capacity
+        ):
+            raise GateFailure(
+                "IMPLEMENTATION_INVALID",
+                "block collision winner has an invalid completed shape",
+            )
+        if int(failed["distinct_serialized_center_count"]) >= capacity:
+            raise GateFailure(
+                "IMPLEMENTATION_INVALID",
+                "block collision failure has no selected-center collision",
+            )
 
 
 def _parse_native_smoke(
@@ -2972,7 +3064,6 @@ def _parse_block_output_unchecked(
                 start["final_assignment_count"] != case["point_count"]
                 or start["final_center_count"] != case["capacity"]
                 or start["serialized_center_count"] != case["capacity"]
-                or start["distinct_serialized_center_count"] != case["capacity"]
             ):
                 raise GateFailure("IMPLEMENTATION_INVALID", "successful block start shape mismatch")
             start["ended"] = True
@@ -3076,6 +3167,7 @@ def _parse_block_output_unchecked(
                 failed_start = case["starts"][case["failed_start_id"]]
                 if failed_start["failure"] not in {"NONE", case["failure"]}:
                     raise GateFailure("IMPLEMENTATION_INVALID", "block CASE/start failure enum mismatch")
+            _validate_block_selected_distinctness(case)
             if case["best"]["control_valid"]:
                 if len(case["best"]["centers"]) != case["best"]["center_count"]:
                     raise GateFailure("IMPLEMENTATION_INVALID", "block best-center count mismatch")
@@ -3100,18 +3192,6 @@ def _parse_block_output_unchecked(
                     != selected["final_assignment_count"]
                 ):
                     raise GateFailure("IMPLEMENTATION_INVALID", "block BEST does not equal selected start")
-                ordered_start_ids = sorted(case["starts"])
-                expected_best_id = ordered_start_ids[0]
-                for candidate_start_id in ordered_start_ids[1:]:
-                    case["validation_best_start_sse_comparison_count"] += 1
-                    if int(
-                        case["starts"][candidate_start_id]["final_sse_bits"], 16
-                    ) < int(
-                        case["starts"][expected_best_id]["final_sse_bits"], 16
-                    ):
-                        expected_best_id = candidate_start_id
-                if case["best"]["start_id"] != expected_best_id:
-                    raise GateFailure("IMPLEMENTATION_INVALID", "block BEST tie/order mismatch")
             elif case["best"]["centers"] or case["best"]["assignments"]:
                 raise GateFailure("IMPLEMENTATION_INVALID", "invalid block BEST has payload records")
             ended_cases.add(case_id)

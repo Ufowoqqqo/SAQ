@@ -168,6 +168,67 @@ class ExactReferenceTests(unittest.TestCase):
 
 
 class RepresentationReferenceTests(unittest.TestCase):
+    def test_block_distinctness_applies_only_to_selected_start(self) -> None:
+        case = {
+            "capacity": 3,
+            "point_count": 3,
+            "failure": "NONE",
+            "failed_start_id": 0,
+            "best": {"control_valid": True, "start_id": 0},
+            "validation_best_start_sse_comparison_count": 0,
+            "starts": {
+                0: {
+                    "converged": True,
+                    "distinct_serialized_center_count": 3,
+                    "failure": "NONE",
+                    "final_assignment_count": 3,
+                    "final_center_count": 3,
+                    "final_sse_bits": "0x0000000000000000",
+                    "serialized_center_count": 3,
+                },
+                1: {
+                    "converged": True,
+                    "distinct_serialized_center_count": 2,
+                    "failure": "NONE",
+                    "final_assignment_count": 3,
+                    "final_center_count": 3,
+                    "final_sse_bits": "0x3ff0000000000000",
+                    "serialized_center_count": 3,
+                },
+            },
+        }
+        runner._validate_block_selected_distinctness(case)
+
+        case["starts"][0]["distinct_serialized_center_count"] = 2
+        with self.assertRaisesRegex(
+            runner.GateFailure, "valid block BEST selected colliding centers"
+        ):
+            runner._validate_block_selected_distinctness(case)
+
+        case["starts"][0]["failure"] = "SERIALIZED_CENTER_COLLISION"
+        case["best"] = {"control_valid": False}
+        case["failure"] = "SERIALIZED_CENTER_COLLISION"
+        case["failed_start_id"] = 0
+        runner._validate_block_selected_distinctness(case)
+
+        case["failed_start_id"] = 1
+        with self.assertRaisesRegex(
+            runner.GateFailure, "does not identify the winning start"
+        ):
+            runner._validate_block_selected_distinctness(case)
+
+        case["failed_start_id"] = 0
+        case["starts"][0]["distinct_serialized_center_count"] = 3
+        with self.assertRaisesRegex(
+            runner.GateFailure, "collision failure has no selected-center collision"
+        ):
+            runner._validate_block_selected_distinctness(case)
+
+        case["failure"] = "NONFINITE_CONTROL"
+        case["starts"][0]["final_sse_bits"] = "0x7ff0000000000000"
+        runner._validate_block_selected_distinctness(case)
+        self.assertEqual(case["validation_best_start_sse_comparison_count"], 0)
+
     def test_frozen_terminal_status_precedence_matrix(self) -> None:
         fixture = runner._status_precedence_fixture()
         self.assertTrue(fixture["passed"])

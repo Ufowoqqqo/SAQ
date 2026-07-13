@@ -18,7 +18,7 @@ change random access, SIMD scan, and worst-case storage.
 
 ## Current Decision
 
-`A4_1S_IMPLEMENTED_NOT_EXECUTED`.
+`A4_1S_IMPLEMENTATION_CORRECTED_PARITY_PENDING`.
 
 A4-0 is complete with `PASS_INSTRUMENT_ONLY`. All seven deterministic tests
 and all frozen witness checks pass. The A4-1 base-data-only feasibility
@@ -40,10 +40,17 @@ status precedence are frozen in:
 
 The branch-local A4-1S native solver, independent references, synthetic-only
 runner, artifact writer, and deterministic tests are now implemented. The 7
-A4-0 and 14 A4-1S nonrandom tests pass as pre-execution diagnostics, but no
-PCG64 fixture, parity artifact, cost projection, or gate decision has yet been
-produced. Those diagnostics are not a substitute for the committed and
-independently reviewed parity checkpoint required below.
+A4-0 and 15 A4-1S nonrandom tests pass as pre-execution diagnostics. The first
+exact-parity attempt from implementation commit `9e65159` stopped before the
+frozen 64-case block RNG suite with `IMPLEMENTATION_INVALID`: the strict
+parser incorrectly required every converged, nonselected block start to have
+`S` distinct binary32 centers, while the frozen protocol applies that rule
+only to the selected winner. The corrected parser preserves all per-start
+shape checks and validates selected-winner distinctness plus the registered
+collision control. The failed attempt's synthetic files are WIP, are not
+committed evidence, and carry no scientific decision. No cost projection has
+run. The correction must be committed and the exact parity command rerun from
+an empty output directory.
 
 Real base/centroid/cluster-id access, a natural-data adapter, the atomic base
 gate, benchmark queries, SAQ integration, and systems claims remain
