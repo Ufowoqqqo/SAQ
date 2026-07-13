@@ -1,0 +1,70 @@
+{
+  "review_date": "2026-07-13",
+  "scope": "arbitrary-cardinality, entropy-constrained, and fixed-address quantization relevant to ANN",
+  "sources": [
+    {
+      "title": "Entropy-Constrained Vector Quantization",
+      "authors": ["Philip A. Chou", "Tom Lookabaugh", "Robert M. Gray"],
+      "year": 1989,
+      "venue": "IEEE Transactions on Acoustics, Speech, and Signal Processing",
+      "url": "https://doi.org/10.1109/29.17498",
+      "primary_relevance": "Distortion-rate Lagrangian and variable-rate lossless coding already cover entropy-constrained nonuniform codeword probabilities."
+    },
+    {
+      "title": "Quantization as Histogram Segmentation: Globally Optimal Scalar Quantizer Design in Network Systems",
+      "authors": ["Dan Muresan", "Michelle Effros"],
+      "year": 2002,
+      "venue": "Data Compression Conference",
+      "url": "https://authors.library.caltech.edu/records/vc0j1-srm04",
+      "primary_relevance": "Polynomial-time globally optimal fixed-rate and entropy-constrained scalar quantization on discrete sources."
+    },
+    {
+      "title": "Transform Coding for Fast Approximate Nearest Neighbor Search in High Dimensions",
+      "authors": ["Jonathan Brandt"],
+      "year": 2010,
+      "venue": "CVPR",
+      "url": "https://iacl.ece.jhu.edu/proceedings/cvpr2010/papers/0557.pdf",
+      "primary_relevance": "PCA, data-driven integer bit allocation, scalar quantizers, packed bytes, and 256-entry ANN distance tables."
+    },
+    {
+      "title": "Adaptive Bit Allocation Product Quantization",
+      "authors": ["Qin-Zhen Guo", "et al."],
+      "year": 2016,
+      "venue": "Neurocomputing",
+      "url": "https://doi.org/10.1016/j.neucom.2015.07.062",
+      "primary_relevance": "Allocates unequal codeword counts/bits among product subspaces to reduce ANN quantization distortion."
+    },
+    {
+      "title": "Quicker ADC: Unlocking the Hidden Potential of Product Quantization with SIMD",
+      "authors": ["Fabien Andre", "Anne-Marie Kermarrec", "Nicolas Le Scouarnec"],
+      "year": 2021,
+      "venue": "IEEE Transactions on Pattern Analysis and Machine Intelligence",
+      "url": "https://arxiv.org/abs/1812.09162",
+      "primary_relevance": "Irregular product-quantizer granularities and hardware costs of nonstandard lookup widths."
+    },
+    {
+      "title": "Finite Scalar Quantization: VQ-VAE Made Simple",
+      "authors": ["Fabian Mentzer", "David Minnen", "Eirikur Agustsson", "Michael Tschannen"],
+      "year": 2024,
+      "venue": "ICLR",
+      "url": "https://arxiv.org/abs/2309.15505",
+      "primary_relevance": "Implicit codebooks formed as products of small scalar level sets; arbitrary level products are not a novel primitive."
+    },
+    {
+      "title": "Q-Palette: Fractional-Bit Quantizers Toward Optimal Bit Allocation for Efficient LLM Deployment",
+      "authors": ["Deokjae Lee", "Hyun Oh Song"],
+      "year": 2025,
+      "venue": "arXiv",
+      "url": "https://arxiv.org/abs/2509.20214",
+      "primary_relevance": "Fractional-bit scalar/vector/trellis quantizers and mixed-scheme allocation in a different systems domain."
+    },
+    {
+      "title": "FibQuant: Universal Vector Quantization for Random-Access KV-Cache Compression",
+      "authors": ["Namyoon Lee", "Yongjune Kim"],
+      "year": 2026,
+      "venue": "arXiv",
+      "url": "https://arxiv.org/abs/2605.11478",
+      "primary_relevance": "Dense fixed-rate axis with random access and an explicit unrestricted-vector advantage over scalar product codes."
+    }
+  ]
+}
