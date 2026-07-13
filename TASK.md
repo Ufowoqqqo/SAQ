@@ -74,6 +74,20 @@ Execute in this mandatory order:
 6. Commit and independently review the cost manifest, summary, and full-detail
    hash ledger.
 
+Before any RNG execution, the A4-1S protocol mechanically clarifies two
+implementation-evidence details without changing the scientific gate:
+
+- exhaustive allocation parity still executes all 2,433,600 ordered
+  decisions, but the full inventory may be persisted as the frozen ordered
+  canonical-record SHA-256; the artifact must also retain explicit
+  support-class winners and candidate counts, mixed-radix/address fixtures,
+  B4/B8/global payload round trips, and binary64/binary32 LUT entries including
+  invalid `0x7f800000` entries;
+- the command entry is a bootstrap whose first gate action captures the
+  integer CPU/wall snapshots before importing the scientific runner,
+  reference, artifact helpers, or NumPy. Runner-module import time therefore
+  belongs to `preflight` and the snapshots are passed through unchanged.
+
 The frozen projection decision is:
 
 ```text
