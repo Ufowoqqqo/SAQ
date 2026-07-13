@@ -1,153 +1,86 @@
 # AGENTS.md
 
-Durable guidance for Codex sessions on the
-`saq-arbitrary-cardinality-analysis` branch.
+Durable guidance for Codex sessions on the `saq-meeting-summary` branch.
 
-## Research Frame
+## Branch Purpose
 
-Work as a doctoral researcher seeking a SIGMOD/VLDB/ICDE-level contribution.
-Code is an experimental instrument, not the objective. For every proposed
-step, state the research question, closest prior work, falsifiable claim,
-construction/storage/query cost, and the likely objection from a strict
-reviewer.
+This is the canonical cross-attempt meeting-summary branch. It preserves
+historical decks and maintains the current project-level deck across research
+branches. It is not an experiment-execution branch, a source-code integration
+branch, or a replacement for the authoritative protocol and evidence files on
+the source branches.
 
-Use research-paper terminology. Prefer `review`, `analyze`, `evaluate`,
-`study`, and `limitations` over `audit`, `harden`, `triage`, and `patch` unless
-the subject is source-code maintenance.
+Do not run research experiments, read newly authorized datasets, or develop
+methods here. Preserve completed decks as immutable historical snapshots. When
+a new attempt or material milestone must be presented, create or update the
+current successor deck without rewriting the older deck's history.
 
-Before proposing or implementing an idea, review primary related work and
-explain what it already solves, what remains open, and why the proposal is not
-a direct composition or parameter variant.
+## Source And Claim Discipline
 
-## Experimental Discipline
+Only summarize evidence that is committed and independently reviewed on its
+source branch. Every material update must state:
 
-- Keep method construction query-unaware. Base/index data may train a codec;
-  benchmark queries and ground truth may be opened only after the method,
-  baselines, operating points, and decision rule are frozen.
-- Separate a mathematical or implementation limitation from a method
-  contribution. A positive synthetic example or lower reconstruction error is
-  not an ANN result.
-- Compare storage, training/build work, temporary memory, query-table work,
-  scan work, recall, and throughput at matched fixed-rate payloads.
-- Include strong dominating classes when relevant. In particular, a
-  factorized scalar code must be compared conceptually and experimentally with
-  an unrestricted block/product vector quantizer at the same code capacity.
-- Do not introduce a hyperparameter without a mechanism-level derivation. A
-  parameter must have a defined physical/statistical meaning, a base-only
-  selection rule, and sensitivity evidence if it affects a claim.
-- Freeze protocols before inspecting the outcome. Preserve negative evidence;
-  do not add post-hoc datasets, thresholds, seeds, or variants to rescue a
-  failed hypothesis.
-- Use deterministic algorithms and explicit tie rules where practical. Record
-  any stochastic initialization, seed, and repetition count.
+- the source branch and exact commit;
+- the protocol, gate result, or terminal decision;
+- the maximum claim supported by that evidence;
+- the authoritative document and artifact paths; and
+- the next step that is explicitly authorized.
 
-## Branch Boundary
+Untracked implementation files, generated local artifacts, running jobs, and
+provisional outcomes are not evidence and must not appear as results. A frozen
+protocol is not an execution result; authorization is not completion; a
+synthetic witness is not natural-data or ANN evidence.
 
-This branch starts from `saq-correctness-base` and retains only two confirmed
-correctness fixes: positive one-bit segment packing and finite padded-lane
-block minima. Treat all other SAQ research branches as historical evidence,
-not implementation dependencies.
+The deck records authorization; it never grants authorization to a source
+branch.
 
-Attempt 4 begins as an offline, fixed-rate feasibility study. Do not modify the
-SAQ index format, CAQ encoder, search path, estimator, or SIMD layout until an
-offline protocol establishes a repeatable data-level opportunity and a later
-systems protocol justifies the integration cost.
+## Meeting Summary Handoff
 
-Do not present arbitrary-cardinality scalar alphabets, mixed-radix indexing,
-Huffman coding, entropy-constrained quantization, or bit allocation as novel
-primitives. Any eventual contribution must be ANN-specific and preserve or
-improve the relevant random-access scan interface.
+The session producing a committed and reviewed protocol, gate result, or
+terminal decision owns the handoff to this branch. Locate this linked worktree
+with `git worktree list`; do not rely on a hard-coded `/tmp` path.
 
-## A4-1S Authorization State
+Before editing, require a clean summary worktree and confirm that no other
+session is known to own an in-progress edit. If either condition is unknown,
+do not edit; report the source branch, commit, status, claim ceiling, evidence
+paths, and next authorized step to the user instead.
 
-The A4-1 base-only feasibility protocol is frozen. Its authoritative
-scientific contracts are:
+Update summary documents from the named committed sources only. Do not copy
+experiment code, generated artifacts, or unrelated branch files. Do not merge
+or cherry-pick an experiment branch merely to update the deck, and never merge
+this summary branch back into an experiment branch. Verify the focused diff,
+commit the summary update separately, and push `saq-meeting-summary`.
 
-- `docs/saq_attempt4_a4_1_base_only_feasibility_preregistration_2026_07_13.md`;
-- `docs/saq_attempt4_a4_1_base_only_input_spec_2026_07_13.json`;
-- `docs/saq_attempt4_a4_1_base_only_hypotheses_2026_07_13.json`.
+## Deck Inventory
 
-On 2026-07-13 the user explicitly authorized **A4-1S only**: synthetic runner
-implementation, exact parity, deterministic block-control review, and the
-full-shape `8192 x 128` synthetic cost projection. The frozen implementation
-contract is:
+- `docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md` is the immutable
+  historical snapshot for completed Attempts 1--3.
+- `docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` is the current
+  cross-attempt deck. Its Attempt 4 status must cite the exact source snapshot
+  and must be revised only after another committed and reviewed milestone.
 
-- `docs/saq_attempt4_a4_1s_synthetic_implementation_protocol_2026_07_13.md`.
+## Reporting Standard
 
-This authorization does not permit a natural-data adapter, any read of the six
-registered scientific inputs, the future atomic base command, or SAQ
-integration. The `synthetic_runner_implementation_authorized=false` field in
-the input contract records its preregistration-time state and must not be
-rewritten; the dated user instruction and A4-1S protocol are the later narrow
-authority.
+Write as a doctoral researcher seeking a SIGMOD/VLDB/ICDE-level contribution.
+Separate mathematical facts, instrument validation, offline data evidence,
+ANN evidence, and systems evidence. State the closest prior work and novelty
+boundary, construction/storage/query costs, likely reviewer objections, and
+the exact reason a direction continues or stops.
 
-Commit the implementation before generating the frozen random parity suites.
-Commit and independently review parity evidence before the full-shape cost
-projection. Then commit and review the cost manifest, summary, and detail
-ledger. Only `PASS_SYNTHETIC_GATE_ONLY` permits asking the user for a separate
-real-base authorization; it never grants that authorization itself.
+Do not present known primitives, bug fixes, source validation, tooling, or
+parameter variants as contributions. Preserve negative evidence and never add
+post-hoc datasets, thresholds, seeds, or variants to rescue a failed gate.
 
-The maximum registered outcome is `GO_TO_SYSTEMS_PREREG`: evidence of a
-word-local base-data opportunity that permits writing a later systems/ANN
-protocol. It is not authorization to modify SAQ or inspect benchmark queries.
-The registered scalar objective uses exact rational SSE on binary32 inputs.
-If the same-shape synthetic projection puts that solver above the frozen cost
-ceiling, return `NO_GO_EXACT_SOLVER_COST`; do not substitute a floating-point
-objective or reduce the projection shape.
+## Verification
 
-## Repository Layout
-
-- `saqlib/`: upstream C++ SAQ/CAQ implementation and search path.
-- `src/`: upstream command-line binaries.
-- `script/`: small, research-question-driven offline instruments.
-- `tests/`: Python tests for branch-local research instruments.
-- `unit_test/`: upstream C++ unit tests.
-- `docs/`: formulations, related-work reviews, frozen protocols, evidence, and
-  source ledgers.
-- `data/`, `results/`, `build/`, `bin/`: datasets or generated products; do not
-  commit large data, indexes, binaries, or build outputs.
-
-## Build And Verification
-
-Default C++ build:
+Before committing a deck update:
 
 ```bash
-mkdir -p build bin
-cmake -S . -B build -DBUILD_UNIT_TESTS=OFF
-cmake --build build -j
-```
-
-Branch-local Python verification:
-
-```bash
-python -m py_compile script/*.py tests/*.py
-python -m unittest discover -s tests -p 'test_*.py' -v
-git diff --check
+git diff --cached --check
+git diff --cached -- AGENTS.md TASK.md docs/
 git status --short --branch
 ```
 
-Before a scientific claim, rerun the exact frozen command from a clean output
-directory and record input provenance, command line, environment, runtime, and
-canonical output.
-
-## Do-Not Rules
-
-- Do not alter upstream code during the first offline feasibility stage.
-- Do not extend the A4-1S authorization beyond synthetic implementation,
-  parity, block-control review, and the frozen full-shape cost projection.
-- Do not implement a natural-data adapter or open `data/`, `results/`, or any
-  registered base, centroid, cluster-id, query, ground-truth, or index file.
-- Do not run the cost projection from an uncommitted implementation, before
-  parity evidence is committed and reviewed, or with a dirty worktree.
-- Do not rewrite the frozen A4-1P contracts to record later authorization.
-- Do not use benchmark queries to choose cardinalities, groups, codebooks, or
-  stopping decisions.
-- Do not equate a budget on the sum of center counts with a fixed bit budget;
-  fixed-rate Cartesian capacity is the product of per-factor cardinalities.
-- Do not claim that Huffman coding reduces worst-case fixed payload length; it
-  reduces expected length only under a nonuniform symbol distribution.
-- Do not claim a recall or QPS guarantee from an L2 reconstruction guarantee.
-- Do not omit unused mixed-radix states, lookup-table bytes, entropy metadata,
-  address metadata, or decode work from overhead accounting.
-- Do not describe bug fixes, provenance checks, or experimental tooling as
-  research contributions.
+Stage only the exact intended summary files before running these checks. Do
+not commit datasets, indexes, binaries, build products, caches, or experiment
+worktrees.

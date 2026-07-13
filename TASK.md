@@ -1,195 +1,58 @@
 # TASK.md
 
-## Active Research Question
+## Active Task
 
-Test whether a fixed-rate ANN scan block wastes useful code capacity when each
-scalar factor is restricted to a power-of-two number of reconstruction levels.
-For a group of `r` scalar factors and a `B_g`-bit stored word, compare:
+Maintain the canonical cross-attempt meeting deck on
+`saq-meeting-summary`. This branch summarizes committed and independently
+reviewed milestones from research branches; it does not execute those research
+protocols.
 
-```text
-dyadic product code:     K_j in {1, 2, 4, ...}
-arbitrary product code:  K_j in {1, 2, 3, ...}
-shared fixed-rate budget: product_j K_j <= S = 2^B_g
-```
+Current deck inventory:
 
-The first candidate representation is fixed-rate mixed radix. Huffman or
-other entropy coding is a separate, later model because variable-length codes
-change random access, SIMD scan, and worst-case storage.
+- `docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md` is the immutable
+  historical Attempts 1--3 snapshot from
+  `saq-caq-one-shell-repair@433e8ea`.
+- `docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` is the current deck.
+  Its Attempt 4 scientific snapshot is
+  `saq-arbitrary-cardinality-analysis@3c0a49f`.
 
-## Current Decision
+## Current Attempt 4 Boundary
 
-`A4_1S_AUTHORIZED_NOT_IMPLEMENTED`.
-
-A4-0 is complete with `PASS_INSTRUMENT_ONLY`. All seven deterministic tests
-and all frozen witness checks pass. The A4-1 base-data-only feasibility
-preregistration was frozen and pushed at `3aa2f6e`. No dataset artifact was
-opened while freezing it.
-
-The authoritative A4-1P contracts are:
-
-- `docs/saq_attempt4_a4_1_base_only_feasibility_preregistration_2026_07_13.md`;
-- `docs/saq_attempt4_a4_1_base_only_input_spec_2026_07_13.json`;
-- `docs/saq_attempt4_a4_1_base_only_hypotheses_2026_07_13.json`.
-
-On 2026-07-13 the user authorized A4-1S synthetic-only implementation, parity,
-block-control review, and the full-shape cost projection. The implementation
-boundary, commands, artifact schemas, conservative ambiguity resolutions, and
-status precedence are frozen in:
-
-- `docs/saq_attempt4_a4_1s_synthetic_implementation_protocol_2026_07_13.md`.
-
-No A4-1S runner or random fixture has yet been implemented or executed. Real
-base/centroid/cluster-id access, a natural-data adapter, the atomic base gate,
-benchmark queries, SAQ integration, and systems claims remain unauthorized.
-The next admissible work is the exact implementation and synthetic parity
-stage from a clean commit.
-
-The coding primitive is not novel: entropy-constrained quantization,
-transform coding, adaptive product-code bit allocation, mixed scalar level
-products, irregular SIMD product quantizers, and fixed-address fractional-rate
-vector quantizers are all relevant prior work. A publishable claim would need
-to establish an ANN-specific rate-distortion/scan advantage at unchanged
-fixed payload and controlled table/build work, not merely show that integer
-cardinalities form a larger feasible set than powers of two.
-
-## A4-1S: Authorized Synthetic Implementation Gate
-
-Execute in this mandatory order:
-
-1. Commit the A4-1S protocol before accepting or committing runner changes and
-   before executing RNG.
-2. Implement the compiled exact-rational scalar path, exact allocators,
-   direct rational rounding, packing/LUT reference, deterministic block VQ,
-   synthetic read guard, and canonical artifact writer without touching
-   upstream SAQ code.
-3. Commit the implementation, then run the exact exhaustive tiny suite, all
-   seven A4-0 tests, the frozen 256-case scalar suite, representation parity,
-   block semantic fixtures, and the frozen 64-case block suite.
-4. Commit and independently review parity evidence. Any implementation change
-   invalidates it and returns to step 2.
-5. From the clean reviewed commit, run the full
-   `PCG64(20260713) 8192 x 128 float32` projection with all 64 groups, both
-   rates, all scalar `K=1..256` curves, all registered allocations, and all
-   eight block starts.
-6. Commit and independently review the cost manifest, summary, and full-detail
-   hash ledger.
-
-Before any RNG execution, the A4-1S protocol mechanically clarifies two
-implementation-evidence details without changing the scientific gate:
-
-- exhaustive allocation parity still executes all 2,433,600 ordered
-  decisions, but the full inventory may be persisted as the frozen ordered
-  canonical-record SHA-256; the artifact must also retain explicit
-  support-class winners and candidate counts, mixed-radix/address fixtures,
-  B4/B8/global payload round trips, and binary64/binary32 LUT entries including
-  invalid `0x7f800000` entries;
-- the command entry is a bootstrap whose first gate action captures the
-  integer CPU/wall snapshots before importing the scientific runner,
-  reference, artifact helpers, or NumPy. Runner-module import time therefore
-  belongs to `preflight` and the snapshots are passed through unchanged.
-
-The frozen projection decision is:
+The deck may currently report only:
 
 ```text
-timed_region_cpu_microseconds is the integer getrusage delta defined by A4-1S
-projected cost = (5 * timed_region_cpu_microseconds) / 2 microseconds
-PASS iff 5 * timed_region_cpu_microseconds <= 2 * 86,400,000,000
-the fixed four-file post-timing trailer is the only excluded finalization
-NO_GO_EXACT_SOLVER_COST otherwise
+A4-0  PASS_INSTRUMENT_ONLY
+A4-1P FROZEN_NOT_AUTHORIZED
+A4-1S FROZEN_AUTHORIZED_NOT_IMPLEMENTED
 ```
 
-Artifact, implementation, and block-control defects take precedence over
-representation or cost outcomes. The maximum A4-1S result is
-`PASS_SYNTHETIC_GATE_ONLY`, which permits only asking the user whether to
-authorize the first real-base read. It is not natural-data evidence and is not
-base-data authorization.
+There is no committed A4-1S runner, parity result, cost projection, natural-
+data outcome, ANN result, or SAQ integration result in the cited snapshot.
+Untracked files in an experiment worktree are not evidence.
 
-## A4-0: Synthetic And Instrument Stage
+## Next Admissible Summary Work
 
-This stage is complete. It did not read benchmark query, ground-truth, or index
-artifacts and did not change the SAQ implementation. A4-1P subsequently froze
-the base-only protocol, and A4-1S is now the separately authorized synthetic
-implementation gate described above.
+Wait for a source branch to produce a committed and independently reviewed
+protocol, gate result, or terminal decision. Then, if this worktree is clean
+and has no known concurrent editor:
 
-1. Freeze the budget semantics and related-work boundary.
-2. Implement exact weighted 1D L2 quantization for every integer cardinality
-   `K=1..K_max` on a supplied discrete support.
-3. Solve the dyadic and arbitrary-cardinality product allocations under the
-   same capacity `S=2^B_g`.
-4. Validate mixed-radix encode/decode bijection and expanded query-LUT parity.
-5. Report Shannon entropy and optimal binary-prefix expected length, without
-   treating either as fixed-length savings.
-6. Run the frozen two-dimensional synthetic witness and write canonical JSON.
+1. verify the source branch and exact commit;
+2. read the authoritative evidence and artifact paths from that commit;
+3. record the status, claim ceiling, and next authorized step in the current
+   deck;
+4. update the evidence map and source snapshot;
+5. run `git diff --check` and review the focused documentation diff; and
+6. commit and push only the summary documents.
 
-### Frozen Witness
+Do not merge or cherry-pick an experiment branch merely to update the deck.
+Do not copy experiment code, generated artifacts, untracked files, or
+provisional outcomes. Never merge this summary branch back into an experiment
+branch.
 
-Use two independent, uniformly weighted scalar sources:
+## Not Authorized Here
 
-```text
-x_1 in {-1, 0, 1}               (three atoms)
-x_2 in {-2, -1, 0, 1, 2}        (five atoms)
-B_g = 4, S = 16 joint states
-```
-
-Expected result:
-
-```text
-arbitrary optimum: (K_1, K_2) = (3, 5), product 15, distortion 0
-dyadic optimum:    (K_1, K_2) = (4, 4), product 16,
-                   total mean squared distortion 0.1 per vector
-unrestricted 16-codeword block-VQ discrete-support oracle: distortion 0
-```
-
-The witness proves only strict inclusion and instrument activity. It does not
-establish natural-data prevalence, ANN recall, novelty, or a systems benefit.
-
-## Formal Objective
-
-For dimension `j`, let `E_j(K)` be the minimum expected scalar L2 distortion
-using at most `K` reconstruction levels. The fixed-rate factorized objective is
-
-```text
-minimize    sum_j E_j(K_j)
-subject to  product_j K_j <= 2^B_g.
-```
-
-The dyadic baseline adds `K_j = 2^{b_j}` for nonnegative integer `b_j`.
-Therefore the arbitrary-cardinality optimum cannot have higher reconstruction
-distortion than the dyadic optimum under this exact factorized model. This set
-inclusion gives no guarantee for recall, distance-estimation error, or QPS.
-
-## A4-0 Completion Gate
-
-A4-0 completes only if all of the following hold:
-
-- exact 1D DP agrees with exhaustive tiny references;
-- dyadic/arbitrary allocation agrees with exhaustive product enumeration;
-- all valid mixed-radix tuples encode/decode bijectively;
-- lookup-table distances equal direct reconstructed L2 distances;
-- the frozen witness returns the predeclared values in Release-independent
-  Python float64 arithmetic;
-- complexity and all representation costs are stated explicitly.
-
-Passing A4-0 authorizes only writing a separately frozen, base-data-only
-feasibility protocol. It does not authorize SAQ integration. Failure closes
-the formulation before any dataset work.
-
-## Complexity Boundary
-
-For `D` dimensions, `H` weighted support points per dimension, maximum tested
-cardinality `K_max`, group width `r`, and fixed word capacity `S=2^B_g`:
-
-```text
-exact scalar curves:       O(D K_max H^2) time, O(K_max H) DP memory
-allocation DP:             O(r S K_max) time, O(r S) frontier memory
-mixed-radix LUT build:     O(S r) per group and query
-fixed-rate database scan:  one table lookup per stored B_g-bit group
-```
-
-These are first-stage reference costs, not optimized production bounds.
-A4-1P instead freezes exact rational SSE on binary32 inputs and an
-exact-arithmetic Monge-optimized native solver. Its separately authorized
-same-shape synthetic projection, rather than an assumed asymptotic speedup,
-decides whether that stricter solver fits the registered 24 CPU-hour budget.
-An over-budget projection returns `NO_GO_EXACT_SOLVER_COST`; it does not
-authorize a floating-point approximation or a reduced-shape rescue run.
+- implementing or running A4-1S;
+- opening registered base, query, ground-truth, or index artifacts;
+- modifying SAQ/CAQ, index, estimator, packing, or search code;
+- expanding any source branch's experimental authorization; or
+- presenting instrument validation as natural-data, ANN, or systems evidence.
