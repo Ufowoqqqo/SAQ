@@ -33,8 +33,10 @@ baselines and survives query-level tail analysis.
 
 ```text
 A3-0  implement and validate the paper-exact evaluator
-A3-1  replay gist_sample100k K512 B=4 default versus frozen fac-error plan
-      over the historical common nprobe grid
+A3-1a replay gist_sample100k K512 B=4 default versus frozen fac-error plan
+       over the historical recovery grid; check curve-range sufficiency
+A3-1b if A3-1a is left-truncated, rerun both plans on the preregistered union
+       of nprobe values from the two historical experiment families
 A3-2  evaluate frozen DEEP B=4/B=5 rejected candidates as negative controls
 A3-3  decide whether any conclusion changed
 ```
@@ -70,6 +72,10 @@ Required deterministic tests are frozen in
 If the existing result artifacts contain only aggregate Recall/QPS, rerun the
 unchanged search with output-only ID recording. Do not reconstruct IDs from
 summary values.
+
+A3-1a uses `{200,220,240,280,300,320}`. If it lacks frontier support, A3-1b
+uses exactly `{20,50,100,160,200,220,240,280,300,320,400}` for both plans.
+No additional value may be selected from Attempt 3 results.
 
 ## Required Output
 

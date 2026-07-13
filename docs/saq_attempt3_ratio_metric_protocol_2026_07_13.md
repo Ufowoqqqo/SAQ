@@ -93,8 +93,8 @@ representations:
   SAQ default global plan
   frozen fac-error global plan
 
-search grid:
-  the exact common nprobe values already used in the historical recovery run
+initial search grid:
+  nprobe in {200, 220, 240, 280, 300, 320}
 
 metrics:
   Recall@100
@@ -106,6 +106,31 @@ metrics:
 If the historical artifacts do not preserve returned identifiers, rerun the
 unchanged search binaries with an output-only result-ID export. Do not change
 the index, estimator, pruning, heap, search grid, or thread configuration.
+
+### A3-1a range-sufficiency check
+
+Before interpreting a Pareto change, verify that both measured curves cover the
+quality range where either method could be selected. The recovery grid starts
+at `nprobe=200`, so it can be insufficient under a metric whose main purpose is
+to expose lower-effort operating points.
+
+If either curve is left-truncated in the overlapping `1/Ratio` range, classify
+A3-1a as `INSUFFICIENT_FRONTIER_SUPPORT`; do not claim a reversal from it.
+
+### A3-1b corrected historical-union grid
+
+For that range-sufficiency failure only, run both plans on the following grid:
+
+```text
+nprobe in {20, 50, 100, 160, 200, 220, 240, 280, 300, 320, 400}
+```
+
+This grid is frozen before A3-1b execution as the union of settings already
+present in the earlier GIST candidate-family evaluations (`20`, `50`, `100`,
+`160`, `200`, `240`, `400`) and the fac-error recall-recovery experiment
+(`200`, `220`, `240`, `280`, `300`, `320`). It is not selected from
+Attempt 3 quality values. Both plans must run every value, including repeated
+A3-1a values, so that one registered execution supplies the final curve.
 
 ## Frozen Stage A3-2: Negative Control
 
@@ -189,5 +214,5 @@ Stop and record negative evidence if:
 - apparent gains disappear on the full operating-point comparison; or
 - the metric changes absolute quality but not any method conclusion.
 
-No post-hoc nprobe values, bit budgets, candidate plans, or datasets may be
-added to rescue the first comparison.
+No `nprobe` outside the frozen A3-1b historical-union grid, bit budget,
+candidate plan, or dataset may be added to rescue the first comparison.
