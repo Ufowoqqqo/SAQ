@@ -19,6 +19,9 @@ using namespace saqlib;
 
 DEFINE_int32(fix_nprobe, 0, "Fixed nprobe value for QPS test. 0 means [5, 4000]");
 DEFINE_int32(fix_thread, 24, "Fixed thread value for QPS test. 0 means [1, 48]");
+DEFINE_string(index_file, "", "Explicit index path; empty uses the path derived from quantization flags");
+DEFINE_string(result_ids_file, "", "Write first-round top-k IDs as ivecs after timed search");
+DEFINE_string(result_file, "", "Explicit QPS CSV output prefix; empty uses the derived result path");
 
 constexpr size_t TOPK = 100;
 constexpr size_t ROUND = 10;
@@ -46,7 +49,19 @@ class QPSTester {
     IVF ivf_;
 
   private:
-    Stats run_search(const size_t nprobe, SearcherConfig &searcher_cfg, size_t num_threads) {
+    void save_result_ids(const std::string &path, const std::vector<std::vector<PID>> &results) {
+        UintRowMat result_matrix(results.size(), TOPK);
+        for (size_t query_id = 0; query_id < results.size(); ++query_id) {
+            CHECK_EQ(results[query_id].size(), TOPK);
+            for (size_t rank = 0; rank < TOPK; ++rank) {
+                result_matrix(query_id, rank) = results[query_id][rank];
+            }
+        }
+        utils::save_vecs<PID>(path.c_str(), result_matrix);
+    }
+
+    Stats run_search(const size_t nprobe, SearcherConfig &searcher_cfg, size_t num_threads,
+                     const std::string &result_ids_file = "") {
         size_t NQ = query_.rows();
         size_t total_count = TOPK * NQ;
         std::atomic<size_t> total_correct = 0;
@@ -83,6 +98,10 @@ class QPSTester {
         });
         pool.wait();
         auto tot_tm_ms = tot_stopw.getElapsedTimeMili();
+
+        if (!result_ids_file.empty()) {
+            save_result_ids(result_ids_file, results);
+        }
 
         pool.detach_loop(0, NQ, [&](size_t i) {
             dist_ratios[i] = utils::get_ratio(i, query_, data_, gt_, results[i].data(), TOPK, utils::L2Sqr) / TOPK;
@@ -137,8 +156,9 @@ class QPSTester {
     }
 
     Stats run_search_multi(const size_t nprobe, SearcherConfig &searcher_cfg,
-                           size_t num_threads, size_t round) {
-        auto sample = run_search(nprobe, searcher_cfg, num_threads);
+                           size_t num_threads, size_t round,
+                           const std::string &result_ids_file = "") {
+        auto sample = run_search(nprobe, searcher_cfg, num_threads, result_ids_file);
         utils::AvgMaxRecorder qps;
         utils::AvgMaxRecorder avg_tm_ms;
         qps.insert(sample.qps);
@@ -175,12 +195,17 @@ class QPSTester {
         std::cout << "query loaded\n";
         std::cout << "\tNQ: " << NQ << '\n';
 
-        std::cout << "load index from " << paths.quant_file << '\n';
+        const std::string index_file = FLAGS_index_file.empty() ? paths.quant_file : FLAGS_index_file;
+        std::cout << "load index from " << index_file << '\n';
 
-        ivf_.load(paths.quant_file.c_str());
+        ivf_.load(index_file.c_str());
     }
 
     void runQPSTests(const std::string &result_file, SearcherConfig &searcher_cfg) {
+        CHECK(FLAGS_result_ids_file.empty() || FLAGS_fix_nprobe > 0)
+            << "-result_ids_file requires one fixed nprobe";
+        CHECK(FLAGS_result_ids_file.empty() || FLAGS_fix_thread > 0)
+            << "-result_ids_file requires one fixed thread count";
         std::vector<size_t> thread_nums_list;
         std::vector<size_t> nprob_list;
         if (FLAGS_fix_thread == 0) {
@@ -226,7 +251,8 @@ class QPSTester {
 
         for (auto num_threads : thread_nums_list) {
             for (auto nprob : nprob_list) {
-                auto stats = run_search_multi(nprob, searcher_cfg, num_threads, ROUND);
+                auto stats = run_search_multi(nprob, searcher_cfg, num_threads, ROUND,
+                                              FLAGS_result_ids_file);
                 auto ts = fmt::format("{},{},{},{},{},{},{},{}\n", nprob, stats.num_threads, stats.qps, stats.avg_tm_ms, stats.recall,
                                       stats.dist_ratio, stats.bw_mbps, stats.compute_kopps);
                 csv_data << ts;
@@ -281,6 +307,9 @@ int main(int argc, char *argv[]) {
     }
     if (FLAGS_searcher_dist_type == 1) {
         result_file += "_ip";
+    }
+    if (!FLAGS_result_file.empty()) {
+        result_file = FLAGS_result_file;
     }
 
     // Run QPS test with fixed nprobe
