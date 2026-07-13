@@ -1,9 +1,13 @@
 # Post-SAQ Pivot: Attempts 1, 2, And 3
 
-PCA Replacement, Lossy Projection, Exact Scalar-Codebook DP, And
-Distance-Quality Re-evaluation
+PCA Replacement, Lossy Projection, Exact Scalar-Codebook DP,
+Recent ASQ Prior-Art Audit, And Distance-Quality Re-evaluation
 
 Date: 2026-07-13
+
+Revision: incorporates the 2026-07-13 audit of
+[White and Singal, arXiv:2606.00289v1](https://arxiv.org/abs/2606.00289)
+and its pinned official code.
 
 Audience assumption: familiar with vector search and vector quantization at a
 high level, but not with SAQ's transform, segmentation, or the experiments in
@@ -27,8 +31,9 @@ Attempt 1: Is PCA a practical limitation of SAQ?
            1A. Replace full-D raw-data PCA with another isometric transform.
            1B. Physically project D -> d and summarize the omitted tail.
 
-Attempt 2: Does exact scalar-codebook optimization improve the quantization
-           and retrieval result beyond Lloyd training?
+Attempt 2: Does histogram-exact scalar-codebook optimization improve the
+           quantization and retrieval result beyond Lloyd training, and what
+           remains after recent ASQ and exact-1D-DP prior work?
 
 Attempt 3: Does paper-exact distance quality change conclusions based on
            exact-identifier Recall@k?
@@ -39,8 +44,11 @@ Main message:
 
 ```text
 All three completed attempts found useful local evidence, but none established
-a new method. The stopping decisions were made at predeclared evidence gates,
-before turning a weak premise or an evaluation correction into a method claim.
+a new method. For Attempt 2, the local ANN audit remains informative, while
+the inner exact-DP primitive is established prior work and cannot be claimed as
+the contribution. The stopping decisions were made before turning a weak
+premise, a classical optimizer, or an evaluation correction into a method
+claim.
 ```
 
 Speaker notes:
@@ -48,7 +56,8 @@ Speaker notes:
 - The purpose is research selection, not presenting every experiment as a win.
 - Attempt 1 belongs to the SAQ repository.
 - Attempt 2 comes from the sibling `vectordb` repository and tests a more
-  classical scalar-quantization premise.
+  classical scalar-quantization premise. The new related-work audit separates
+  the local two-DP pipeline from the already-established inner optimizer.
 - Attempt 3 returns to SAQ and asks whether Recall understated the geometric
   quality of any previously rejected result set.
 
@@ -84,6 +93,9 @@ Safe interpretation:
 ```text
 The specific PCA-replacement, lossy-projection, and histogram-DP mechanisms
 tested here do not supply a sufficiently general, overhead-controlled method.
+The 2026 ASQ paper and pinned public code do not expose an integrated Attempt 2
+pipeline, but the paper and earlier exact-1D-clustering work remove the inner
+DP as a novelty claim.
 Paper-exact distance quality changes one GIST operating-point interpretation,
 but does not establish a new mechanism or a replicated method advantage.
 ```
@@ -96,7 +108,7 @@ but does not establish a new mechanism or a replicated method advantage.
 |---|---|---|---|
 | 1A. Full-D transform replacement | Does residual PCA or another isometric basis improve SAQ estimator behavior over raw-data PCA? | GIST sample50k, then preregistered CIFAR60K replication | Closed after replication failure |
 | 1B. Lossy `D -> d` projection | Can a PCA head plus a compact tail surrogate beat native full-D SAQ? | GIST sample50k, `960 -> 576`, favorable exact surrogate | Gate A failed; projected SAQ not built |
-| 2. Exact scalar-codebook DP | Does exact 1D histogram DP improve dimensionwise scalar quantization over Lloyd? | audio, PCA CIFAR60K, PCA DEEP1M | Stronger offline baseline; no stable recall dominance |
+| 2. Exact scalar-codebook DP | Does histogram-exact 1D DP improve shared dimensionwise scalar quantization over Lloyd, and is any method novelty left after prior work? | audio, PCA CIFAR60K, PCA DEEP1M; arXiv/code audit | Stronger offline baseline; inner DP is prior art; no stable recall dominance |
 | 3. Distance-quality re-evaluation | Does `1/Ratio@k` change a frozen Recall-based Pareto conclusion? | GIST sample100k B=4; DEEP sample100k B=4/B=5 controls | Closed as metric-sensitivity evidence |
 | 4. Reserved | To be chosen after Attempt 3 evidence | Not run | No claim |
 
@@ -864,27 +876,40 @@ exact-hist implementation checkpoint: 9a7026d
 cross-dataset comparison checkpoint:    870d829
 ```
 
-Question:
+Original empirical question:
 
 ```text
 If each coordinate uses a scalar codebook, can exact 1D dynamic programming
-produce a better codebook than Lloyd refinement, and does the lower training
-objective improve ANN recall?
+produce a better codebook than Lloyd refinement, and does lower raw
+reconstruction SSE improve ANN recall?
 ```
 
-This is relevant because scalar codebook quality is an intuitive lower-level
-quantization improvement. However:
+The 2026-07-13 related-work audit adds a distinct novelty question:
 
 ```text
-scalar quantization itself is established prior work
-the exact objective is reconstruction SSE, not recall
-the tested implementation is exact over histogram bins, not raw samples
+Does White and Singal's 2026 inner-product-aware quantization paper, together
+with the exact 1D k-means literature it uses, already subsume Attempt 2?
 ```
+
+Short answer:
+
+```text
+public artifacts: no integrated two-DP pipeline is documented or exposed
+combination claim: no novelty is established from that absence
+inner exact scalar-codebook DP: already established; no novelty claim remains
+local value that remains: controlled baseline and objective-mismatch evidence
+```
+
+The paper was submitted on 2026-05-29, before the `vectordb` exact-hist
+implementation on 2026-06-26. More importantly, exact 1D quantization DP
+predates both by decades.
 
 Speaker notes:
 
 - Attempt 2 is not SAQ's segment-planner DP.
 - It is also not the CAQ exact direction-code oracle from the later branch.
+- "No integrated public pipeline" must not be misread as "novel as a
+  component combination."
 
 ---
 
@@ -897,9 +922,15 @@ The `vectordb` pipeline contains two DPs.
 For one dimension `j` and bitwidth `b`:
 
 ```text
-input:  sorted scalar values or weighted histogram bins
-output: K_b centroids minimizing 1D reconstruction SSE
+input:  one sorted raw scalar column; the trainer internally constructs its
+        equal-count weighted histogram
+output: K_b centroids minimizing whole-bin partition SSE, with cuts restricted
+        to histogram-bin boundaries
 ```
+
+Only when each raw scalar is its own bin does this equal globally minimal
+raw-sample 1D reconstruction SSE. After DP backtracking, raw nearest-centroid
+SSE is separately recomputed under the deployed encoding semantics.
 
 ### Outer DP: bit allocation
 
@@ -916,14 +947,37 @@ subject to:
 ```
 
 The outer DP chooses the bitwidth of every dimension under an exact total bit
-budget. Attempt 2 focuses on whether replacing Lloyd with the inner exact-hist
-DP improves the final pipeline.
+budget. Attempt 2 changes only the inner trainer from Lloyd to exact-hist; the
+outer algorithm, objective form, and weights are held fixed as part of the
+evaluation pipeline. The selected bit vector is not fixed: it changes when the
+new trainer changes `E[j,b]`.
+
+Novelty accounting must therefore be layer-specific:
+
+```text
+inner DP: exact 1D scalar clustering / quantization is prior work
+outer DP: classical discrete rate allocation / multiple-choice knapsack
+local experiment: asks whether the replacement changes ANN recall
+```
 
 ---
 
 ## 28. Dimensionwise Scalar-Quantization Setting
 
-Database vector:
+Write the base matrix as:
+
+```math
+X\in\mathbb{R}^{N\times D}.
+```
+
+Attempt 2 trains on one column at a time:
+
+```math
+X[:,j]=(x_{1j},\ldots,x_{Nj}),
+```
+
+and shares the resulting codebook across all `N` base vectors. For database
+vector:
 
 ```math
 x=(x_1,\ldots,x_D).
@@ -964,6 +1018,11 @@ L2 only
 
 This is an algorithmic diagnostic, not a QPS-comparable SAQ index.
 
+The column-wise training direction matters for the paper comparison. The
+paper's formal ASQ problem instead chooses a quantization set from the
+coordinates of one input vector; its official code also contains a separate
+shared-block helper, audited later.
+
 ---
 
 ## 29. Exact-Hist Construction
@@ -1001,6 +1060,20 @@ Step 3: partition the `H` ordered bins into `K_b` contiguous clusters.
 
 Step 4: backtrack split points and use each interval mean as its centroid.
 
+Implementation detail that affects the guarantee:
+
+```text
+The histogram DP value is not inserted directly into E[j,b].
+After recovering centroids, midpoint Voronoi boundaries are rebuilt, every raw
+value is encoded by nearest centroid, and the raw-sample SSE of those encodings
+is recomputed and passed to the outer DP.
+```
+
+Thus the reported training SSE measures the realized raw encoding, while the
+global optimality claim applies only to split points between indivisible bins.
+The recomputation evaluates the selected centroid set; it does not reoptimize
+that set over raw-sample split points.
+
 ---
 
 ## 30. Scalar DP Recurrence And Guarantee
@@ -1023,8 +1096,11 @@ optimization to compute each layer.
 Exact guarantee:
 
 ```text
-Given the H weighted bins and K_b centroids, the DP returns the minimum SSE
-among contiguous partitions of those bins.
+For fixed H equal-count bins and K_b centroids, the DP returns the minimum
+raw-value SSE among contiguous partitions whose split points lie only at bin
+boundaries. Prefix weight/sum/sum_sq statistics evaluate each allowed
+interval's raw SSE exactly; approximation enters through forbidden in-bin
+split points.
 ```
 
 It does not guarantee:
@@ -1040,9 +1116,209 @@ If `H=N`, every bin contains one sample and the formulation becomes full-sample
 exact 1D k-means. That expensive configuration was not run in the recorded
 experiments.
 
+Strict novelty implication:
+
+```text
+The missing full-scale H=N run is a limitation of this local baseline,
+not an open algorithmic problem in the literature.
+```
+
+The recent paper's official repository directly vendors and exposes a raw
+exact 1D k-means solver primitive from earlier work; no public experiment
+caller integrates or evaluates that primitive. Scaling the local code by
+removing histogram coarsening would therefore close an implementation gap, not
+create a method contribution.
+
 ---
 
-## 31. Attempt 2 Code Map
+## 31. White And Singal 2026: Formal Problem
+
+[Inner Product Aware Quantization: Provably Fast, Accurate, and Adaptive
+Algorithms](https://arxiv.org/html/2606.00289v1) studies a different formal
+quantization problem.
+
+This is a May 2026 arXiv v1 preprint by Nathan White and Krish Singal; this
+deck makes no venue-acceptance claim. Its contributions are the MDV/ADV
+inner-product objectives, rounding-distribution results, exact/approximate
+algorithms, and practical ASQ acceleration, not the invention of exact 1D
+k-means.
+
+For one vector `w` and a quantization-set budget `|Q(w)| <= s`, standard
+stochastic quantization independently rounds each coordinate to its adjacent
+lower or upper point in `Q(w)`, using the unique probabilities that make the
+rounding unbiased. Several algorithms then return a set of size `s`.
+
+For an unseen input/query distribution, written as `\mathcal X` below, its
+Average Directional Variance is:
+
+```math
+\operatorname{ADV}_{\mathcal X}(w,Q)
+=\sum_i \lambda_i
+(w_i^\uparrow-w_i)(w_i-w_i^\downarrow),
+\qquad
+\lambda_i=\mathbb E_{x\sim\mathcal X}[x_i^2].
+```
+
+The paper also studies Maximum Directional Variance, which controls the worst
+coordinate variance rather than their weighted sum.
+
+Key semantic boundary:
+
+```text
+paper:     adaptive, unbiased, adjacent stochastic rounding
+Attempt 2: shared, biased, deterministic nearest-centroid encoding
+```
+
+---
+
+## 32. Related DPs, Different Interval Costs
+
+After jointly sorting coordinate-weight pairs so that
+`w_1 <= ... <= w_d` while each `lambda_i` remains attached to its original
+coordinate, define the paper's ADV interval cost:
+
+```math
+C[j,k]=\sum_{i=j}^{k}\lambda_i
+(w_k-w_i)(w_i-w_j).
+```
+
+A conventional equivalent form of its quantization-set DP is:
+
+```math
+G[t,k]=\min_{j<k}\left(G[t-1,j]+C[j,k]\right).
+```
+
+Here `G[t,k]` is the best cost for `t` selected quantization points ending at
+`w_k`, with `G[1,1]=0`; the answer is `G[s,d]`.
+
+Attempt 2 instead uses a best-mean interval cost:
+
+```math
+F[t,r]=\min_{m<r}
+\left(F[t-1,m]+SSE_{\mathrm{mean}}(m,r)\right).
+```
+
+The relationship is structural, not semantic:
+
+| Property | Paper ADV/ASQ | Attempt 2 inner DP |
+|---|---|---|
+| Ordered objects | coordinates of one vector | weighted bins from one database column |
+| Interval representative | two stochastic endpoints | one deterministic mean |
+| Interval cost | weighted rounding variance | centroid reconstruction SSE |
+| Shared skeleton | sorted contiguous partition with Monge structure | sorted contiguous partition with monotone splits |
+
+The paper explicitly notes that if biased quantization is allowed, the optimal
+scheme is 1D k-means plus nearest-cluster assignment. That observation places
+Attempt 2's mathematical core inside established related work.
+
+---
+
+## 33. The Training Axis Is Transposed
+
+Let `X` be an `N x D` database matrix.
+
+| Question | Attempt 2 | Paper formal model |
+|---|---|---|
+| Optimization input | column `X[:,j]`, containing `N` database scalars | row/vector `X[i,:]`, containing `D` coordinates |
+| Learned set | `C[j,b]` for one dimension and bitwidth | `Q(X[i,:])` for one vector |
+| Sharing | all `N` database vectors share `C[j,b]` | different vectors may have different `Q` |
+| Rate choice | heterogeneous `b_j`, exact total budget | one cardinality budget `s`, with `|Q| <= s`, per formal instance |
+| Encoding/objective semantics | biased deterministic nearest-centroid SSE | unbiased stochastic rounding optimized for IP variance |
+
+The paper's formal vector-search limitation follows from this orientation: it
+requires per-vector `Q` storage. Its discussion therefore leaves adaptation to
+potentially dynamic multi-vector quantization as
+[future work](https://arxiv.org/html/2606.00289v1#S5).
+
+This formal difference is real, but it is not enough to establish Attempt 2
+novelty: dimensionwise shared scalar codebooks and discrete rate allocation are
+themselves classical constructions.
+
+---
+
+## 34. Official-Code Audit: Stronger Adjacency
+
+The pinned
+[official repository](https://github.com/nathanllww/Inner-Product-Aware-Quantization/tree/e92ed904b85ad12469a0a350c81071ff9ef6aa37)
+contains more than the paper's formal per-vector interface:
+
+```text
+batch_row_quant(X, ...)
+  one Q per row/vector; matches the formal adaptive direction
+
+block_quant(X, m, s, ...)
+  flatten all N*m values in each consecutive m-column block
+  and train one shared size-s Q for that block
+
+kmeans_wilber_1d(sorted_points, k)
+  raw-point globally optimal 1D k-means implementation
+  requires ascending input; the wrapper does not sort
+```
+
+Pinned source:
+[shared-block and per-row interfaces](https://github.com/nathanllww/Inner-Product-Aware-Quantization/blob/e92ed904b85ad12469a0a350c81071ff9ef6aa37/cython/pq.pyx#L16-L202),
+[raw exact 1D k-means wrapper](https://github.com/nathanllww/Inner-Product-Aware-Quantization/blob/e92ed904b85ad12469a0a350c81071ff9ef6aa37/cython/kmeans1d.pyx#L38-L85).
+
+Consequently, `block_quant(..., m=1, ...)` has exactly the same training axis
+as a fixed-rate shared per-dimension codebook. However:
+
+```text
+it calls vmix_approx for ADV rather than centroid-SSE k-means
+all blocks receive the same s
+there is no per-dimension error table or outer bit-allocation DP
+```
+
+The `block_quant` docstring says `exact_adv`, while the pinned implementation
+calls `vmix_approx`; the implementation is the evidence used here. The public
+repository contains no caller or experiment script that proves which path
+generated the paper's GloVe table, so this deck makes no such attribution.
+
+The paper calls its GloVe result preliminary evidence and reports Recall@100
+for L2 and maximum-inner-product search at an average four bits per coordinate.
+It does not report a controlled Lloyd-versus-exact trainer ablation, QPS/build
+cost, or complete quantization-set storage accounting. That table therefore
+does not answer the specific Attempt 2 end-to-end question.
+
+---
+
+## 35. Prior-Art And Layer-By-Layer Verdict
+
+| Attempt 2 layer | Formal paper | Pinned public code | Strict-reviewer verdict |
+|---|---|---|---|
+| Raw exact 1D k-means optimizer | Recognizes it as older related work | Exposes `kmeans_wilber_1d` from the reused exact-1D library | Novelty foreclosed by Wu 1991 / GLM 2017; not a White-Singal contribution |
+| Shared per-dimension fixed-rate set | Formal unit is one vector | `block_quant(m=1)` is directly adjacent but uses ASQ semantics | Not a formal guarantee; shared scalar codebooks are not enough for novelty |
+| Potential diagonal query-second-moment weighting | ADV supplies diagonal second moments under per-vector independent unbiased rounding | `block_quant` uses all-one weights; no such experiment is exposed | High objective-level adjacency, not direct pipeline coverage or a validity proof for biased SQ |
+| Multi-bit error table `E[j,b]` | Fixes one cardinality budget `s`; no table | Repeated fixed-`s` calls are an API inference, not integrated or evaluated | Not claimed novel here; separate rate-distortion prior support is required |
+| Outer heterogeneous-bit DP | Not presented | Not exposed | Not covered by this paper, but [SAQ](https://arxiv.org/abs/2509.12086) already provides DP segmentation/bit allocation |
+| Controlled Lloyd/exact-hist L2 recall audit | Only preliminary GloVe L2/MIPS comparison against PQ | No public experiment caller/configuration | Useful local negative/baseline evidence, not a quantizer contribution |
+| Packed variable-rate ANN system | Per-vector storage is listed as a limitation/future-work issue | Fixed-rate block helper and 256-code search helper only | A possible problem layer, not an achieved result in either artifact |
+
+Timeline:
+
+```text
+paper and official code:       2026-05-29
+vectordb exact-hist checkpoint: 2026-06-26
+```
+
+The stronger point is not temporal priority. The paper itself traces exact 1D
+k-means matrix-search DP to Wu 1991. Separately, the pinned code exposes a
+solver primitive from the reused
+[2017 exact-1D-clustering implementation](https://arxiv.org/abs/1701.07204),
+without an integrated public experiment path.
+
+Bottom line:
+
+```text
+public-artifact level: no integrated shared-codebook + heterogeneous-bit +
+                       outer-allocation pipeline is documented or exposed
+novelty level:         absence is not combination novelty; the inner optimizer
+                       is foreclosed by older prior art, and remaining system
+                       layers were not built or validated by Attempt 2
+```
+
+---
+
+## 36. Attempt 2 Code Map
 
 Sibling repository code:
 
@@ -1052,6 +1328,7 @@ src/scalar_quantizer.cpp
   HistogramIntervalSse(...)
   ComputeExactKMeansLayer(...)
   TrainExactScalarQuantizerFromSorted(...)
+  midpoint boundaries, raw nearest-centroid reassignment, raw SSE
 
 src/dimensionwise_quantizer.cpp
   per-dimension/per-bitwidth training
@@ -1079,7 +1356,7 @@ eval_dimensionwise_quantizer ... [lloyd|exact-hist] [histogram_bins]
 
 ---
 
-## 32. Attempt 2 Complexity
+## 37. Attempt 2 Complexity
 
 For one dimension and one bitwidth after sorting:
 
@@ -1107,7 +1384,18 @@ The outer allocation DP has approximately:
 
 ```text
 time   O(D * (D B) * |bitwidth choices|)
-memory O(D * D B), or less with rolling layers
+cost rows with rolling layers: O(D B)
+backpointers for reconstruction: O(D * D B)
+current total memory:           O(D * D B)
+```
+
+Its optimality is conditional:
+
+```text
+Given one trainer-specific raw SSE table E[j,b], fixed weights w_j, the
+candidate set b in {0,...,8}, and a reachable budget, the outer DP finds the
+minimum table objective. It does not make the inner codebooks or Recall
+globally optimal.
 ```
 
 Full-sample `H=N` exact training would replace the small histogram term with
@@ -1116,7 +1404,7 @@ expensive for full DEEP1M and was not evaluated.
 
 ---
 
-## 33. Exact-Hist Running Example
+## 38. Exact-Hist Running Example
 
 One-dimensional sorted values:
 
@@ -1152,7 +1440,7 @@ difference between histogram exactness and raw-sample exactness.
 
 ---
 
-## 34. Audio Result: Lloyd Versus Exact-Hist
+## 39. Audio Result: Lloyd Versus Exact-Hist
 
 Dataset:
 
@@ -1163,6 +1451,7 @@ metric = L2
 mode = variable
 B = 4
 H = 256
+source = initial H=256 comparison run
 ```
 
 | Trainer | MSE/value | R@10 | R@100 | Training time |
@@ -1183,9 +1472,9 @@ or a new scalar-quantization contribution.
 
 ---
 
-## 35. Audio Histogram-Bin Sweep
+## 40. Audio Histogram-Bin Sweep
 
-`B=4`, variable allocation:
+`B=4`, variable allocation, later sweep rerun:
 
 | Histogram bins `H` | MSE/value | R@10 | R@100 | Training time |
 |---:|---:|---:|---:|---:|
@@ -1205,14 +1494,18 @@ At `B=8`, `H=256` is especially coarse because `K_b=256`: one centroid per
 histogram bin leaves little partition freedom. Increasing `H` improves the
 result, but the best MSE and best recall still occur at different bin counts.
 
+The `H=256` training time here and on the previous slide comes from separate
+runs; it is not an internal consistency check on timing noise.
+
 ---
 
-## 36. PCA CIFAR/DEEP Comparison
+## 41. PCA CIFAR/DEEP Comparison
 
-All rows use `H=256` and variable bit allocation. SSE ratio is
-`exact-hist / Lloyd`; recall delta is `exact-hist - Lloyd`.
+All rows use `H=256` and variable bit allocation. Raw SSE ratio is the reported
+unweighted nearest-centroid `training_sse`, `exact-hist / Lloyd`; recall delta
+is `exact-hist - Lloyd`.
 
-| Dataset | B | Allocation objective | SSE ratio | R@100 delta |
+| Dataset | B | Allocation objective | Raw SSE ratio | R@100 delta |
 |---|---:|---|---:|---:|
 | CIFAR60K | 2 | reconstruction | 0.9737 | +0.00313 |
 | CIFAR60K | 2 | rank-boundary | 0.9336 | +0.00378 |
@@ -1227,12 +1520,24 @@ Two different effects appear:
 
 1. CIFAR `B=4` reconstruction shows histogram exactness does not guarantee
    lower raw-sample SSE.
-2. DEEP `B=4` rank-boundary shows that a much lower training objective still
-   does not guarantee higher recall.
+2. DEEP `B=4` rank-boundary shows that much lower unweighted raw reconstruction
+   SSE still does not guarantee higher recall.
+
+Important correction to the earlier deck interpretation:
+
+```text
+DEEP B=4 rank-boundary allocation objective
+Lloyd:      1070.81
+exact-hist: 1551.93
+```
+
+The weighted outer objective worsened in that cell. Therefore it is evidence
+against using raw SSE as a recall surrogate, not evidence that a lower
+rank-boundary allocation objective failed to improve recall.
 
 ---
 
-## 37. Why Lower Reconstruction SSE Need Not Improve Recall
+## 42. Why Lower Reconstruction SSE Need Not Improve Recall
 
 Define base-vector quantization error:
 
@@ -1280,7 +1585,7 @@ Recall depends on the sign of this margin, not average reconstruction SSE.
 
 ---
 
-## 38. Ranking Running Example
+## 43. Ranking Running Example
 
 Exact distances near the retrieval boundary:
 
@@ -1312,17 +1617,18 @@ estimated n = 1.030
 result: ordering preserved
 ```
 
-This is why an SSE-optimal codebook can have lower recall than a Lloyd local
-optimum: ranking depends on differential error across close candidates.
+This is why a codebook or coupled variable-bit pipeline with lower raw
+reconstruction SSE can nevertheless have lower recall: ranking depends on
+differential error across close candidates.
 
 ---
 
-## 39. Bit-Allocation Coupling
+## 44. Bit-Allocation Coupling
 
 Changing the scalar trainer changes the full error table:
 
 ```math
-E[j,b]=\text{training error for dimension j at bitwidth b}.
+E[j,b]=\text{raw nearest-centroid SSE for dimension j at bitwidth b}.
 ```
 
 The outer DP then selects a different bit vector:
@@ -1350,6 +1656,10 @@ dimension bit reallocation
 surrogate-objective mismatch
 ```
 
+Given this trainer-specific table and fixed weights, the outer DP is exact over
+the enumerated bitwidths and reachable total budget. It does not isolate a pure
+inner-trainer effect: changing the trainer also changes the selected bit vector.
+
 Historical disclosure:
 
 ```text
@@ -1360,7 +1670,7 @@ current query-unaware project constraint.
 
 ---
 
-## 40. Attempt 2 Decision
+## 45. Attempt 2 Decision
 
 ```text
 Decision: KEEP EXACT-HIST AS A STRONG OFFLINE BASELINE, NOT A MAIN METHOD
@@ -1368,32 +1678,49 @@ Decision: KEEP EXACT-HIST AS A STRONG OFFLINE BASELINE, NOT A MAIN METHOD
 
 What the experiment establishes:
 
-1. Exact histogram DP is implemented and can materially lower its training
-   objective.
+1. The bin-restricted DP is implemented and can materially lower reported raw
+   reconstruction SSE after nearest-centroid reassignment.
 2. It sometimes improves recall, especially at lower bit budgets.
 3. Historical rank-boundary gains over reconstruction survive both Lloyd and
    exact-hist, so they are not only a Lloyd artifact.
+4. Lower raw SSE is not a stable surrogate for ANN ranking quality.
+
+What the related-work audit establishes:
+
+1. The White-Singal paper and pinned public code do not document or expose an
+   integrated shared-codebook, heterogeneous-bit, outer-allocation pipeline.
+2. The pinned code separately exposes a directly adjacent shared-block helper
+   and a full-raw-data exact 1D k-means solver primitive; neither is shown as an
+   integrated or evaluated Attempt 2 pipeline.
+3. Exact 1D scalar clustering is much older than either project; the formal
+   paper explicitly recognizes that prior.
 
 Why it is not a method contribution:
 
-1. It is exact only over a chosen histogram discretization.
+1. Split points are exact only under a chosen histogram boundary restriction.
 2. Full-sample exact DP was not evaluated at full scale.
 3. Lower SSE does not provide a recall guarantee.
 4. Recall gains are non-monotonic across `H`, datasets, budgets, and allocation
    objectives.
-5. Optimal 1D scalar quantization is established related work.
-6. The historical rank-boundary outer objective is query-aware.
+5. The inner optimizer's novelty is foreclosed by Wu 1991 / GLM 2017; outer
+   DP novelty is not claimed here, and SAQ already supplies direct ANN prior.
+6. The historical rank-boundary outer objective is query/ground-truth-aware.
+7. Unpacked byte codes and brute-force L2 scan do not establish a competitive
+   packed variable-rate ANN system.
 
 Strict-reviewer summary:
 
 ```text
-This is a useful baseline and objective-mismatch result, not a new ANN
-quantizer or a database-systems contribution.
+No integrated end-to-end pipeline is visible in the paper/public code, but
+that absence does not establish combination novelty. The inner optimizer is
+prior art and the unbuilt system layer remains unvalidated. This is a useful
+baseline and objective-mismatch result, not a new ANN quantizer or
+database-systems method.
 ```
 
 ---
 
-## 41. Attempt 3: Research Question
+## 46. Attempt 3: Research Question
 
 Recall@`k` measures exact identifier overlap. For exact top-`k` set `E_k(q)`
 and returned set `A_k(q)`:
@@ -1420,7 +1747,7 @@ Recall:       Did we return the same identifiers?
 
 ---
 
-## 42. Attempt 3 Metric: `1/Ratio@k`
+## 47. Attempt 3 Metric: `1/Ratio@k`
 
 For query `q`, define:
 
@@ -1452,7 +1779,7 @@ before forming the ratios.
 
 ---
 
-## 43. Attempt 3 Running Example
+## 48. Attempt 3 Running Example
 
 Let `k=3`. Suppose the exact result distances are:
 
@@ -1489,7 +1816,7 @@ metrics answer different scientific questions.
 
 ---
 
-## 44. Related Work And Novelty Gate
+## 49. Related Work And Novelty Gate
 
 The metric paper already contributes:
 
@@ -1523,7 +1850,7 @@ to benchmark queries or claim the metric as novelty.
 
 ---
 
-## 45. Frozen Attempt 3 Protocol
+## 50. Frozen Attempt 3 Protocol
 
 Stages:
 
@@ -1561,7 +1888,7 @@ from Attempt 3 outcomes.
 
 ---
 
-## 46. Evaluator And Search-Code Semantics
+## 51. Evaluator And Search-Code Semantics
 
 Core evaluator logic on branch `saq-ratio-metric-analysis`:
 
@@ -1590,7 +1917,7 @@ squared-L2, malformed-input, provenance, and frontier cases.
 
 ---
 
-## 47. Attempt 3 Complexity And Overhead
+## 52. Attempt 3 Complexity And Overhead
 
 Given `Q` queries, returned top-`k`, and dimension `D`:
 
@@ -1619,7 +1946,7 @@ a fitted decision rule.
 
 ---
 
-## 48. GIST Comparison: Two Frozen Global Plans
+## 53. GIST Comparison: Two Frozen Global Plans
 
 Setting: `gist_sample100k`, `K_IVF=512`, `B=4`, `D=960`, `k=100`.
 
@@ -1649,7 +1976,7 @@ plan artifact; Attempt 3 neither refits nor endorses that empirical objective.
 
 ---
 
-## 49. GIST Complete Common-Grid Result
+## 54. GIST Complete Common-Grid Result
 
 | nprobe | default R@100 | fac R@100 | default 1/Ratio | fac 1/Ratio | default QPS | fac QPS |
 |---:|---:|---:|---:|---:|---:|---:|
@@ -1671,7 +1998,7 @@ comparison; the relevant question is QPS at matched quality.
 
 ---
 
-## 50. GIST Metric-Sensitive Operating Point
+## 55. GIST Metric-Sensitive Operating Point
 
 Use the freshly replayed default `nprobe=200` row as the frozen target:
 
@@ -1704,7 +2031,7 @@ the target, but this is reported only as secondary evidence.
 
 ---
 
-## 51. GIST Query-Level Attribution
+## 56. GIST Query-Level Attribution
 
 For fac-error `nprobe=280` minus default `nprobe=200`:
 
@@ -1734,7 +2061,7 @@ new method claim.
 
 ---
 
-## 52. DEEP Negative Controls
+## 57. DEEP Negative Controls
 
 Frozen plans:
 
@@ -1761,7 +2088,7 @@ lower-Recall plan: both DEEP negative decisions remain negative.
 
 ---
 
-## 53. Attempt 3 Decision
+## 58. Attempt 3 Decision
 
 | Predeclared condition | Outcome |
 |---|---|
@@ -1795,7 +2122,7 @@ case study, not an independent database-systems method.
 
 ---
 
-## 54. Attempt 4: Reserved
+## 59. Attempt 4: Reserved
 
 ```text
 Status: NOT SELECTED
@@ -1818,13 +2145,13 @@ not a high-overhead method justified by a small quality change
 
 ---
 
-## 55. Current Synthesis
+## 60. Current Synthesis
 
 | Attempt | Theoretical guarantee | Strongest positive evidence | Why it stops |
 |---|---|---|---|
 | 1A full-D PCA replacement | L2 isometry for any orthogonal transform | GIST residual-PCA accurate/full RMSE `-0.60%/-0.33%` | no stable ranking gain; fast harm; CIFAR replication failure |
 | 1B lossy `D -> d` | exact head and norm terms in favorable oracle | tail norms reduce RMSE from 0.0445 to 0.00248 | omitted tail IP still worsens ranking versus native SAQ |
-| 2 exact scalar DP | exact minimum SSE over `H` weighted bins | audio B=4 MSE `-15.5%`, R@100 `+0.004` | no raw/full-scale or recall guarantee; cross-regime reversals |
+| 2 exact scalar DP | exact bin-boundary partition SSE using raw bin moments; final midpoint-nearest-centroid raw SSE is evaluated, not reoptimized; outer optimum is conditional on `E[j,b]` | audio B=4 raw MSE `-15.5%`, R@100 `+0.004` | inner-DP novelty is foreclosed by prior art; no full-scale raw optimum or recall guarantee; cross-regime reversals |
 | 3 distance-quality re-evaluation | paper-exact metric semantics; no method guarantee | GIST measured point: higher `1/Ratio`, `1.078x` QPS at the frozen target | one positive setting; DEEP controls remain negative; metric is prior work |
 | 4 | not defined | none | pending problem-selection review |
 
@@ -1841,7 +2168,7 @@ include all construction, storage, and query overhead.
 
 ---
 
-## 56. Proposed Meeting Discussion
+## 61. Proposed Meeting Discussion
 
 Decision 1:
 
@@ -1853,8 +2180,10 @@ direction, while avoiding a universal PCA-optimality claim?
 Decision 2:
 
 ```text
-Should exact-hist DP remain only a stronger offline baseline, given that its
-guarantee is histogram SSE rather than retrieval quality?
+Should exact-hist DP remain only a stronger offline baseline, given that
+Wu 1991 / GLM 2017 foreclose the inner algorithmic novelty and White-Singal
+2026 explicitly recognizes that baseline, while the local evidence does not
+establish retrieval or system dominance?
 ```
 
 Decision 3:
@@ -1880,7 +2209,7 @@ Speaker notes:
 
 ---
 
-## 57. Evidence And Code Map
+## 62. Evidence And Code Map
 
 Attempt 1, SAQ branch `saq-transform-analysis@3d94840`:
 
@@ -1908,7 +2237,26 @@ src/eval_dimensionwise_quantizer.cpp
 docs/dimensionwise_quantizer_smoke_run_2026_06_26.md
 reports/scalar_training_exact_hist_audit_2026_06_30/README.md
 reports/scalar_training_exact_hist_audit_2026_06_30/comparison.csv
+reports/scalar_training_exact_hist_audit_2026_06_30/logs/
+  deep1M_pca_B4_variable_exact-hist_rank-boundary.stdout
+reports/pca_rank_boundary_deep1M_2026_06_27/logs/
+  deep1M_pca_B4_variable_lloyd_rank-boundary.stdout
 ```
+
+Attempt 2 external primary sources:
+
+- [White and Singal, Inner Product Aware Quantization,
+  arXiv:2606.00289v1](https://arxiv.org/html/2606.00289v1)
+- [Pinned official code at
+  `e92ed90`](https://github.com/nathanllww/Inner-Product-Aware-Quantization/tree/e92ed904b85ad12469a0a350c81071ff9ef6aa37)
+- [Grønlund et al., Fast Exact k-Means, k-Medians and Bregman Divergence
+  Clustering in 1D](https://arxiv.org/abs/1701.07204)
+- [Wu, Optimal Quantization by Matrix Searching, Journal of Algorithms,
+  1991](https://www.sciencedirect.com/science/article/pii/0196677491900392)
+- [Li et al., SAQ: Pushing the Limits of Vector Quantization through Code
+  Adjustment and Dimension Segmentation,
+  arXiv:2509.12086](https://arxiv.org/abs/2509.12086), direct ANN prior for DP
+  segmentation and bit allocation under a space quota
 
 Attempt 3, branch `saq-ratio-metric-analysis@146dc16`:
 
@@ -1932,7 +2280,7 @@ docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md
 
 ---
 
-## 58. One-Slide Takeaway
+## 63. One-Slide Takeaway
 
 ```text
 Attempt 1:
@@ -1941,8 +2289,13 @@ replication. The favorable lossy D->d oracle still ranked worse than native
 SAQ because a norm-only tail cannot recover tail inner products.
 
 Attempt 2:
-Exact histogram DP can lower scalar reconstruction SSE, but histogram
-discretization and objective mismatch mean Recall can improve or regress.
+The paper and pinned public code do not present an integrated shared-codebook,
+heterogeneous-rate, outer-allocation pipeline; that absence does not establish
+novelty. Exact 1D scalar DP is old prior art. Separately, the pinned code
+exposes a full-raw-data exact solver primitive and an adjacent shared-block
+helper, neither with a public integrated experiment path. Local raw-SSE gains
+are real, but Recall can improve or regress. Keep this as offline baseline and
+objective-mismatch evidence, not a method.
 
 Attempt 3:
 Paper-exact 1/Ratio changes one GIST matched-quality conclusion: a measured
