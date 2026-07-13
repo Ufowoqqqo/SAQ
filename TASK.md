@@ -11,16 +11,19 @@ Current summary inventory:
 
 - `docs/saq_research_direction_registry.md` maps every audited SAQ branch to a
   normalized direction, scientific state, claim ceiling, and reporting state.
-  Its imported completed-meeting proxy is the historical Attempts 1--3 deck at
-  `saq-meeting-summary@5cdc270`; the actual meeting date is not recorded.
-  Attempt 4 remains `UNREPORTED` even though it is included in the successor
-  draft.
+  Its user-confirmed completed-meeting boundary is the 2026-07-09 deck at
+  `saq-graph-traversal-analysis@322214f`, with scientific content through
+  `d94279d`. `R01`--`R05` are `REPORTED`; `R06` is `UPDATE_PENDING` because of
+  its later evidence and closure; `R07`--`R12` are `UNREPORTED`.
 
-- `docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md` is the immutable
-  historical Attempts 1--3 snapshot from
+- `docs/saq_research_progress_meeting_slides_2026_07_09.md` is the immutable
+  completed-meeting deck, copied exactly from the registered source commit.
+- `docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md` is the superseded,
+  unpresented intermediate draft originally hosted at
   `saq-caq-one-shell-repair@433e8ea`.
-- `docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` is the current deck.
-  Its Attempt 4 scientific snapshot is
+- `docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` is the current,
+  unpresented successor draft. It queues `R07`, `R08`, `R10`, `R11`, and
+  `R12`; its Attempt 4 scientific snapshot is
   `saq-arbitrary-cardinality-analysis@3c0a49f`.
 
 ## Current Attempt 4 Boundary

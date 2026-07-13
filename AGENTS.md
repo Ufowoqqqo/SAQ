@@ -87,12 +87,19 @@ Use the exact definitions and rollover procedure in
 
 - `docs/saq_research_direction_registry.md` is the living canonical direction,
   branch, evidence-boundary, and reporting-state registry.
-
-- `docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md` is the immutable
-  historical snapshot for completed Attempts 1--3.
-- `docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` is the current
-  cross-attempt deck. Its Attempt 4 status must cite the exact source snapshot
-  and must be revised only after another committed and reviewed milestone.
+- `docs/saq_research_progress_meeting_slides_2026_07_09.md` is the immutable,
+  confirmed completed-meeting deck, copied from
+  `saq-graph-traversal-analysis@322214f` with only the trailing blank line
+  normalized. Its scientific snapshot is
+  `saq-graph-traversal-analysis@d94279d`; later edits to the same source-branch
+  filename are post-meeting evidence and are not part of this deck.
+- `docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md` is a superseded,
+  unpresented intermediate draft retained for provenance. It is not a
+  completed-meeting deck.
+- `docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` is the current,
+  unpresented cross-attempt draft. Its Attempt 4 status must cite the exact
+  source snapshot and must be revised only after another committed and
+  reviewed milestone.
 
 ## Reporting Standard
 

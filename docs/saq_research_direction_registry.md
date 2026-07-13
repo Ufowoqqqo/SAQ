@@ -15,40 +15,46 @@ branch may contain several related falsification studies.
 
 ## 1. Registered Reporting Boundary
 
-Per the current project convention, the previous completed-meeting proxy is:
+The user-confirmed completed-meeting boundary is the original 2026-07-09
+deck, frozen at the commit that added it:
 
 ```text
 deck:
-  docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md
-historical source:
-  saq-caq-one-shell-repair@433e8ea
-canonical reported_in:
-  saq-meeting-summary@5cdc270:
-    docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md
+  saq-graph-traversal-analysis@322214f:
+    docs/saq_research_progress_meeting_slides_2026_07_09.md
+scientific snapshot at deck time:
+  saq-graph-traversal-analysis@d94279d
 meeting_date:
-  NOT_RECORDED -- imported user-requested reporting proxy
+  2026-07-09
+canonical immutable copy on this branch:
+  docs/saq_research_progress_meeting_slides_2026_07_09.md
 ```
 
-Git proves deck content, not that every slide was spoken in a meeting. The
-`REPORTED` values below use the user's requested proxy: a direction counts as
-reported only when that historical deck gives it a substantive research
+The copied Markdown content comes from the blob at `322214f` (with only its
+trailing blank line normalized). The same source-branch filename was revised
+on 2026-07-10; those later revisions and their post-meeting evidence are
+deliberately excluded from this reporting boundary. A direction counts as
+reported only when the frozen meeting deck gives it a substantive research
 question, evidence/status, decision or claim ceiling, and an authoritative
-source snapshot. A bare mention, baseline use, or “do not reopen” sentence
-does not count. This imported legacy boundary is the only meeting-date
-exception; every future rollover requires the confirmed date and exact deck
-commit. If this proxy is not the deck actually presented, revise this boundary
-and all affected rows together rather than editing individual flags ad hoc.
+source snapshot. A bare mention, baseline use, or future-direction sentence
+does not count.
 
-The current successor deck is:
+The 2026-07-13 files are unpresented drafts, not completed-meeting records:
 
 ```text
-docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md
-summary snapshot: saq-meeting-summary@43835d9
-Attempt 4 scientific snapshot: saq-arbitrary-cardinality-analysis@3c0a49f
+superseded intermediate draft:
+  docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md
+  historical source: saq-caq-one-shell-repair@433e8ea
+  canonical copy introduced at: saq-meeting-summary@5cdc270
+current successor draft:
+  docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md
+  summary snapshot: saq-meeting-summary@43835d9
+  Attempt 4 scientific snapshot: saq-arbitrary-cardinality-analysis@3c0a49f
 ```
 
-This successor is a draft for a future meeting. Inclusion in it does not change
-`UNREPORTED` to `REPORTED`.
+The date in these filenames is the draft date. Neither draft has been through
+a meeting, so inclusion in either one does not change `UNREPORTED` to
+`REPORTED`.
 
 ### Reporting-state vocabulary
 
@@ -89,34 +95,38 @@ INCLUDED_PENDING_REPORT     substantively drafted but not yet reported
 
 ## 2. Research Direction Registry
 
-| ID | Meeting label | Direction | Scientific snapshot | Research state | Exact decision / boundary | Reporting state | Previous-deck coverage | Current successor coverage |
+| ID | Meeting label | Direction | Scientific snapshot | Research state | Exact decision / boundary | Reporting state | 2026-07-09 completed-deck coverage | Current successor coverage |
 |---|---|---|---|---|---|---|---|---|
-| `R01` | historical | Default-neighborhood fixed policy and boundary-aware local plan selection | `saq-boundary-audit@e582974` | `CLOSED` | stop as main method; retain as diagnostic baseline | `UNREPORTED` | `ABSENT` | `NOT_INCLUDED_SUBSTANTIVELY` |
-| `R02` | historical | Mixed shared local residual plans | `saq-structural-followup@b71c699` | `CLOSED` | recall signal lost to mixed-plan query/layout overhead | `UNREPORTED` | `REFERENCE_ONLY` | `NOT_INCLUDED_SUBSTANTIVELY` |
-| `R03` | historical | Single-global static segment-cost DP | `saq-global-cost-dp@699d2c9` | `CLOSED` | no lower-cost plan dominated SAQ risk; near-frontier plans were slower | `UNREPORTED` | `ABSENT` | `NOT_INCLUDED_SUBSTANTIVELY` |
-| `R04` | historical | Measured `fac_error` planner objective | `saq-planner-objective-analysis@5756412` | `CLOSED` | limitation evidence only; increasing nprobe did not recover default recall before the QPS advantage disappeared | `UNREPORTED` | `BASELINE_REFERENCE_ONLY` | `NOT_INCLUDED_SUBSTANTIVELY` |
-| `R05` | historical | Segment ordering, search scheduling, and variance-bound calibration | `saq-planner-objective-analysis@5756412` | `CLOSED` | no safe mechanism removed enough slack | `UNREPORTED` | `REFERENCE_ONLY` | `NOT_INCLUDED_SUBSTANTIVELY` |
-| `R06` | historical | Graph traversal with progressive SAQ prefixes | `saq-graph-traversal-analysis@a03ee40` | `CLOSED` | stopped before Phase 5; grouped complete estimator still cost about `26.8x` SymphonyQG | `UNREPORTED` | `REFERENCE_ONLY` | `NOT_INCLUDED_SUBSTANTIVELY` |
-| `R07` | Attempt 1A | Full-dimensional PCA/residual-PCA transform replacement | `saq-transform-analysis@3d94840` | `CLOSED` | preregistered CIFAR replication failed | `REPORTED` | `SUBSTANTIVE`, slides 6--16 | `CARRIED_FORWARD` |
-| `R08` | Attempt 1B | Physical `D -> d` lossy projection with tail surrogate | `saq-lossy-projection-analysis@051ec6a` | `CLOSED` | LP-0 Gate A failed before projected SAQ build | `REPORTED` | `SUBSTANTIVE`, slides 17--25 | `CARRIED_FORWARD` |
-| `R09` | historical | Finite-round CAQ exact-gap limitation and low-cost repair | `saq-caq-one-shell-repair@977e7ff` | `CLOSED` | limitation retained; repair `NO_GO_ON_COMPLEXITY`; SAQ-centric incremental line stopped | `UNREPORTED` | `REFERENCE_ONLY` | `NOT_INCLUDED_SUBSTANTIVELY` |
-| `R10` | Attempt 2 | Exact-hist shared scalar-codebook DP and outer bit allocation | local evidence `vectordb@f51b487`; prior-art/report snapshot `saq-caq-one-shell-repair@433e8ea` | `CLOSED` | retain as stronger offline baseline and objective-mismatch evidence, not a method | `REPORTED` | `SUBSTANTIVE`, slides 26--45 | `CARRIED_FORWARD` |
-| `R11` | Attempt 3 | Paper-exact `1/Ratio@k` distance-quality re-evaluation | `saq-ratio-metric-analysis@146dc16` | `CLOSED` | `CLOSE_AS_METRIC_SENSITIVITY_EVIDENCE` | `REPORTED` | `SUBSTANTIVE`, slides 46--58 | `CARRIED_FORWARD` |
-| `R12` | Attempt 4 | Fixed-rate arbitrary-cardinality mixed-radix scalar-product quantization | `saq-arbitrary-cardinality-analysis@3c0a49f` | `ACTIVE` | A4-0 `PASS_INSTRUMENT_ONLY`; A4-1S `FROZEN_AUTHORIZED_NOT_IMPLEMENTED`; real-base gate unauthorized | `UNREPORTED` | `RESERVED_NO_EVIDENCE` | `INCLUDED_PENDING_REPORT`, slides 59--64 |
+| `R01` | 2026-07-09 Attempt 1 | Default-neighborhood fixed policy and boundary-aware local plan selection | `saq-boundary-audit@e582974` | `CLOSED` | stop as main method; retain as diagnostic baseline | `REPORTED` | `SUBSTANTIVE`, slides 12--15 | `NOT_INCLUDED_SUBSTANTIVELY` |
+| `R02` | 2026-07-09 Attempt 2 | Mixed shared local residual plans | `saq-structural-followup@b71c699` | `CLOSED` | recall signal lost to mixed-plan query/layout overhead | `REPORTED` | `SUBSTANTIVE`, slides 16--19 | `NOT_INCLUDED_SUBSTANTIVELY` |
+| `R03` | 2026-07-09 Attempt 3 | Single-global static segment-cost DP | `saq-global-cost-dp@699d2c9` | `CLOSED` | no lower-cost plan dominated SAQ risk; near-frontier plans were slower | `REPORTED` | `SUBSTANTIVE`, slides 20--23 | `NOT_INCLUDED_SUBSTANTIVELY` |
+| `R04` | 2026-07-09 Attempt 4 | Measured `fac_error` planner objective | `saq-planner-objective-analysis@5756412` | `CLOSED` | limitation evidence only; increasing nprobe did not recover default recall before the QPS advantage disappeared | `REPORTED` | `SUBSTANTIVE`, slides 24--28 | `NOT_INCLUDED_SUBSTANTIVELY` |
+| `R05` | 2026-07-09 Attempt 5 | Segment ordering, search scheduling, and variance-bound calibration | `saq-planner-objective-analysis@5756412` | `CLOSED` | no safe mechanism removed enough slack | `REPORTED` | `SUBSTANTIVE`, slides 29--33 | `NOT_INCLUDED_SUBSTANTIVELY` |
+| `R06` | 2026-07-09 graph pivot | Graph traversal with progressive SAQ prefixes | `saq-graph-traversal-analysis@a03ee40` | `CLOSED` | stopped before Phase 5; grouped complete estimator still cost about `26.8x` SymphonyQG | `UPDATE_PENDING` | `SUBSTANTIVE`, slides 34--42, through `d94279d` | `NOT_INCLUDED_SUBSTANTIVELY` |
+| `R07` | 2026-07-13 draft Attempt 1A | Full-dimensional PCA/residual-PCA transform replacement | `saq-transform-analysis@3d94840` | `CLOSED` | preregistered CIFAR replication failed | `UNREPORTED` | `ABSENT` | `INCLUDED_PENDING_REPORT`, slides 6--16 |
+| `R08` | 2026-07-13 draft Attempt 1B | Physical `D -> d` lossy projection with tail surrogate | `saq-lossy-projection-analysis@051ec6a` | `CLOSED` | LP-0 Gate A failed before projected SAQ build | `UNREPORTED` | `ABSENT` | `INCLUDED_PENDING_REPORT`, slides 17--25 |
+| `R09` | historical | Finite-round CAQ exact-gap limitation and low-cost repair | `saq-caq-one-shell-repair@977e7ff` | `CLOSED` | limitation retained; repair `NO_GO_ON_COMPLEXITY`; SAQ-centric incremental line stopped | `UNREPORTED` | `ABSENT` | `NOT_INCLUDED_SUBSTANTIVELY` |
+| `R10` | 2026-07-13 draft Attempt 2 | Exact-hist shared scalar-codebook DP and outer bit allocation | local evidence `vectordb@f51b487`; prior-art/draft snapshot `saq-caq-one-shell-repair@433e8ea` | `CLOSED` | retain as stronger offline baseline and objective-mismatch evidence, not a method | `UNREPORTED` | `ABSENT` | `INCLUDED_PENDING_REPORT`, slides 26--45 |
+| `R11` | 2026-07-13 draft Attempt 3 | Paper-exact `1/Ratio@k` distance-quality re-evaluation | `saq-ratio-metric-analysis@146dc16` | `CLOSED` | `CLOSE_AS_METRIC_SENSITIVITY_EVIDENCE` | `UNREPORTED` | `ABSENT` | `INCLUDED_PENDING_REPORT`, slides 46--58 |
+| `R12` | 2026-07-13 draft Attempt 4 | Fixed-rate arbitrary-cardinality mixed-radix scalar-product quantization | `saq-arbitrary-cardinality-analysis@3c0a49f` | `ACTIVE` | A4-0 `PASS_INSTRUMENT_ONLY`; A4-1S `FROZEN_AUTHORIZED_NOT_IMPLEMENTED`; real-base gate unauthorized | `UNREPORTED` | `ABSENT` | `INCLUDED_PENDING_REPORT`, slides 59--64 |
 
 ### Reported-through ledger
 
 | Direction | Reported through | Report source | Later material update |
 |---|---|---|---|
-| `R07` | `saq-transform-analysis@3d94840` | `saq-meeting-summary@5cdc270:docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md` | none registered |
-| `R08` | `saq-lossy-projection-analysis@051ec6a` | `saq-meeting-summary@5cdc270:docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md` | none registered |
-| `R10` | local evidence `vectordb@f51b487`; White--Singal audit/report `saq-caq-one-shell-repair@433e8ea`; external pins `arXiv:2606.00289v1` and official code `e92ed90` | `saq-meeting-summary@5cdc270:docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md` | none registered |
-| `R11` | `saq-ratio-metric-analysis@146dc16` | `saq-meeting-summary@5cdc270:docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md` | none registered |
+| `R01` | `saq-boundary-audit@e582974` | `saq-graph-traversal-analysis@322214f:docs/saq_research_progress_meeting_slides_2026_07_09.md` | none registered |
+| `R02` | `saq-structural-followup@b71c699` | `saq-graph-traversal-analysis@322214f:docs/saq_research_progress_meeting_slides_2026_07_09.md` | none registered |
+| `R03` | `saq-global-cost-dp@699d2c9` | `saq-graph-traversal-analysis@322214f:docs/saq_research_progress_meeting_slides_2026_07_09.md` | none registered |
+| `R04` | `saq-planner-objective-analysis@5756412` | `saq-graph-traversal-analysis@322214f:docs/saq_research_progress_meeting_slides_2026_07_09.md` | none registered |
+| `R05` | `saq-planner-objective-analysis@5756412` | `saq-graph-traversal-analysis@322214f:docs/saq_research_progress_meeting_slides_2026_07_09.md` | none registered |
+| `R06` | `saq-graph-traversal-analysis@d94279d` | `saq-graph-traversal-analysis@322214f:docs/saq_research_progress_meeting_slides_2026_07_09.md` | `saq-graph-traversal-analysis@a03ee40`: source-aligned follow-up, complete-work evidence, and terminal closure |
 
-All other research directions are baseline-relative `UNREPORTED`. Older
-unreported directions form a historical backlog; they are not automatically
-added to the next deck. `R12` is the only direction currently queued in the
-successor deck.
+`R01`--`R05` are fully reported through their current scientific snapshots.
+`R06` has a reported 2026-07-09 snapshot but a material post-meeting update,
+so it is `UPDATE_PENDING`. `R07`--`R12` are baseline-relative `UNREPORTED`.
+The current successor draft queues `R07`, `R08`, `R10`, `R11`, and `R12`;
+`R09` remains outside it. Historical backlog is not automatically added to a
+future deck.
 
 ## 3. Evidence And Claim-Ceiling Ledger
 
@@ -159,10 +169,10 @@ scientific milestone; such a row has no direction ID or scientific claim.
 | SAQ | `saq-lossy-projection-analysis` | `051ec6a` | `FOLLOWUP` | `R08` | Attempt 1B closed |
 | SAQ | `saq-caq-optimality-analysis` | `9bb7d0c` | `PRIMARY` | `R09` | v1 official-source contract stopped; v2 protocol recorded |
 | SAQ | `saq-caq-corrected-oracle-v2` | `ff360cd` | `FOLLOWUP` | `R09` | limitation established; one-shell candidate selected for one synthetic gate |
-| SAQ | `saq-caq-one-shell-repair` | `433e8ea` | `EVIDENCE_SNAPSHOT_AND_LEGACY_DECK_HOST` | `R09` | scientific closure at `977e7ff`; later commits add meeting material |
+| SAQ | `saq-caq-one-shell-repair` | `433e8ea` | `EVIDENCE_SNAPSHOT_AND_UNPRESENTED_DRAFT_HOST` | `R09` | scientific closure at `977e7ff`; later commits add unpresented draft material |
 | SAQ | `saq-ratio-metric-analysis` | `146dc16` | `PRIMARY` | `R11` | Attempt 3 closed |
 | SAQ | `saq-arbitrary-cardinality-analysis` | `d9dd626` | `PRIMARY` | `R12` | only active scientific direction; scientific content through `3c0a49f` |
-| SAQ | `saq-meeting-summary` | `SELF` -- commit containing this registry; parent at reconciliation `43835d9` | `SUMMARY` | all | summary-only; no experiment execution |
+| SAQ | `saq-meeting-summary` | `SELF` -- commit containing this registry; parent at reconciliation `34e94dc` | `SUMMARY` | all | summary-only; no experiment execution |
 
 ### Sibling evidence snapshot
 

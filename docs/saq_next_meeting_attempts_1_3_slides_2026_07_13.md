@@ -5,6 +5,8 @@ Recent ASQ Prior-Art Audit, And Distance-Quality Re-evaluation
 
 Date: 2026-07-13
 
+Presentation status: **SUPERSEDED DRAFT -- never presented at a meeting.**
+
 Revision: incorporates the 2026-07-13 audit of
 [White and Singal, arXiv:2606.00289v1](https://arxiv.org/abs/2606.00289)
 and its pinned official code.
