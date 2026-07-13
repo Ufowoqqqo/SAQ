@@ -60,8 +60,9 @@ clean committed review checkpoint.
 
 Real base/centroid/cluster-id access, a natural-data adapter, the atomic base
 gate, benchmark queries, SAQ integration, and systems claims remain
-unauthorized. The next admissible work is to commit the implementation and run
-the exact synthetic parity command from that clean commit.
+unauthorized. The next admissible work is only the exact frozen full-shape
+synthetic cost projection from a clean descendant of the reviewed parity
+checkpoint.
 
 The coding primitive is not novel: entropy-constrained quantization,
 transform coding, adaptive product-code bit allocation, mixed scalar level
