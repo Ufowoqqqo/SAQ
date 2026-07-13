@@ -100,7 +100,8 @@ Authoritative documents:
 - `docs/saq_caq_low_cost_repair_sources_2026_07_12.json`;
 - `docs/saq_caq_one_shell_synthetic_falsification_2026_07_12.md`;
 - `docs/saq_caq_one_shell_synthetic_artifacts_2026_07_12/validation_result.json`;
-- `docs/saq_caq_limitation_repair_closure_and_project_pivot_2026_07_13.md`.
+- `docs/saq_caq_limitation_repair_closure_and_project_pivot_2026_07_13.md`;
+- `docs/saq_next_meeting_attempts_1_2_slides_2026_07_13.md`.
 
 ## Research Question
 
