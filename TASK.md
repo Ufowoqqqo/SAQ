@@ -18,7 +18,7 @@ change random access, SIMD scan, and worst-case storage.
 
 ## Current Decision
 
-`A4_1S_IMPLEMENTATION_CORRECTED_PARITY_PENDING`.
+`A4_1S_PASS_PARITY_REVIEWED_COST_PENDING`.
 
 A4-0 is complete with `PASS_INSTRUMENT_ONLY`. All seven deterministic tests
 and all frozen witness checks pass. The A4-1 base-data-only feasibility
@@ -39,18 +39,24 @@ status precedence are frozen in:
 - `docs/saq_attempt4_a4_1s_synthetic_implementation_protocol_2026_07_13.md`.
 
 The branch-local A4-1S native solver, independent references, synthetic-only
-runner, artifact writer, and deterministic tests are now implemented. The 7
-A4-0 and 15 A4-1S nonrandom tests pass as pre-execution diagnostics. The first
-exact-parity attempt from implementation commit `9e65159` stopped before the
-frozen 64-case block RNG suite with `IMPLEMENTATION_INVALID`: the strict
-parser incorrectly required every converged, nonselected block start to have
-`S` distinct binary32 centers, while the frozen protocol applies that rule
-only to the selected winner. The corrected parser preserves all per-start
-shape checks and validates selected-winner distinctness plus the registered
-collision control. The failed attempt's synthetic files are WIP, are not
-committed evidence, and carry no scientific decision. No cost projection has
-run. The correction must be committed and the exact parity command rerun from
-an empty output directory.
+runner, artifact writer, and deterministic tests are implemented. The 7 A4-0
+and 15 A4-1S nonrandom tests pass. The first exact-parity attempt from
+implementation commit `9e65159` stopped before the frozen 64-case block RNG
+suite with `IMPLEMENTATION_INVALID`: the strict parser incorrectly required
+every converged, nonselected block start to have `S` distinct binary32
+centers. Those files were WIP, were never committed as evidence, and carry no
+scientific decision.
+
+The corrected implementation is `779c556`; it applies distinctness to the
+selected winner, independently replays best-of-eight, validates the selected
+collision control, and preserves unrelated control failures. Its clean exact
+parity run passed, and the six canonical evidence files are committed at
+`335837e`. Independent review is recorded in
+`docs/saq_attempt4_a4_1s_implementation_parity_review_2026_07_13.md` with
+verdict `PASS_PARITY`. This is instrument validation only, not the synthetic
+cost result or natural-data/ANN evidence. No cost projection has run. The next
+authorized step is the exact frozen full-shape synthetic cost command from the
+clean committed review checkpoint.
 
 Real base/centroid/cluster-id access, a natural-data adapter, the atomic base
 gate, benchmark queries, SAQ integration, and systems claims remain
