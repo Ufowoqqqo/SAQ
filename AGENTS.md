@@ -60,17 +60,34 @@ improve the relevant random-access scan interface.
 
 ## Meeting Summary Handoff
 
-The canonical cross-attempt meeting deck is maintained on branch
-`saq-meeting-summary`. Locate its linked worktree with `git worktree list`;
-do not rely on a hard-coded `/tmp` path.
+The canonical cross-attempt direction registry and meeting deck are maintained
+on branch `saq-meeting-summary`. Locate its linked worktree with
+`git worktree list`; do not rely on a hard-coded `/tmp` path. The registry is
+`docs/saq_research_direction_registry.md` on that branch.
 
 After each committed and independently reviewed protocol, gate result, or
 terminal decision, the session producing that milestone owns a summary
-handoff. Update the canonical deck when the summary worktree is clean and no
-other session is known to be editing it. Every update must record the source
-branch and commit, the decision or status, the maximum supported claim, the
-authoritative evidence paths, and the next authorized step. Commit and push
-the deck update separately on `saq-meeting-summary`.
+handoff. Before touching the summary worktree, re-read its `AGENTS.md` and
+`docs/saq_research_direction_registry.md`, fetch, require it to be clean and
+equal to its remote, record that remote commit, and atomically acquire the
+mandatory `saq-meeting-summary-edit.lock` under the Git common directory. If
+the lock cannot be acquired, report the handoff instead of editing.
+
+Every registry update must record the source branch and commit, audited branch
+head, scientific snapshot, decision or status, maximum supported claim,
+authoritative evidence paths, next authorized step, and reporting state.
+Update the deck only if this direction is selected for the meeting. Before
+push, fetch again; if the summary remote moved from the recorded commit, stop
+and integrate deliberately while retaining the lock. Commit and push the
+focused summary update separately, never force-push, and release the lock after
+a successful push or clean abort.
+
+New directions and never-reported directions remain `UNREPORTED`. If a
+direction was reported and gains a newer material milestone, set it to
+`UPDATE_PENDING`. Merely adding material to a draft deck does not mark it
+reported. Change it to `REPORTED` only after the user confirms the completed
+meeting and exact deck commit; handoff-only or wording commits do not advance
+the scientific snapshot.
 
 Synchronize committed evidence only. Never copy untracked implementation
 files, generated artifacts, or provisional outcomes into the summary branch.
