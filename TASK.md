@@ -8,6 +8,13 @@ The immediate target is not a method. It is a validated evaluator and a fair
 QPS-versus-quality replay in which the baseline and alternative use the same
 search-effort grid.
 
+A3-0 and A3-1 are complete. The evaluator passes all deterministic fixtures.
+On `gist_sample100k/K512/B4`, fac-error `nprobe=280` exceeds the historical
+default `nprobe=200` in mean `1/Ratio@100` and QPS (`1.07793x`), although it
+cannot reach the default Recall target and 39.6% of paired query-level
+`1/Ratio` differences are negative. This is metric-sensitivity evidence on one
+setting, not a method or contribution.
+
 ## Research Question
 
 ```text
@@ -44,6 +51,11 @@ A3-3  decide whether any conclusion changed
 Do not begin A3-2 before A3-1 is recorded. Exact-hist/Lloyd,
 lossy-projection, RaBitQ, and SymphonyQG analyses are optional later stages and
 require a separate decision.
+
+A3-1 is recorded in
+`docs/saq_attempt3_a3_0_a3_1_gist_evidence_2026_07_13.md`, with compact
+artifacts under `docs/saq_attempt3_a3_1b_artifacts_2026_07_13/`. The immediate
+next stage is A3-2; do not broaden GIST or design a metric-aware method first.
 
 ## A3-0 Requirements
 
