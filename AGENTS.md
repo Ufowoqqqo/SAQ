@@ -58,6 +58,28 @@ Huffman coding, entropy-constrained quantization, or bit allocation as novel
 primitives. Any eventual contribution must be ANN-specific and preserve or
 improve the relevant random-access scan interface.
 
+## Meeting Summary Handoff
+
+The canonical cross-attempt meeting deck is maintained on branch
+`saq-meeting-summary`. Locate its linked worktree with `git worktree list`;
+do not rely on a hard-coded `/tmp` path.
+
+After each committed and independently reviewed protocol, gate result, or
+terminal decision, the session producing that milestone owns a summary
+handoff. Update the canonical deck when the summary worktree is clean and no
+other session is known to be editing it. Every update must record the source
+branch and commit, the decision or status, the maximum supported claim, the
+authoritative evidence paths, and the next authorized step. Commit and push
+the deck update separately on `saq-meeting-summary`.
+
+Synchronize committed evidence only. Never copy untracked implementation
+files, generated artifacts, or provisional outcomes into the summary branch.
+Do not merge or cherry-pick an experiment branch merely to update the deck,
+and never merge the summary branch back into an experiment branch. If the
+summary worktree is dirty, its ownership is unclear, or the milestone has not
+been reviewed, leave the experiment branch unchanged and report the handoff
+to the user instead.
+
 ## A4-1S Authorization State
 
 The A4-1 base-only feasibility protocol is frozen. Its authoritative
