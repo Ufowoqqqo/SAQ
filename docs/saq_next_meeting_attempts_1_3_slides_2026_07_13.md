@@ -1,6 +1,7 @@
-# Post-SAQ Pivot: Attempts 1 And 2
+# Post-SAQ Pivot: Attempts 1, 2, And 3
 
-PCA Replacement, Lossy Projection, And Exact Scalar-Codebook DP
+PCA Replacement, Lossy Projection, Exact Scalar-Codebook DP, And
+Distance-Quality Re-evaluation
 
 Date: 2026-07-13
 
@@ -8,9 +9,9 @@ Audience assumption: familiar with vector search and vector quantization at a
 high level, but not with SAQ's transform, segmentation, or the experiments in
 these repositories.
 
-Deck status: Attempts 1 and 2 are complete historical studies. Attempts 3 and
-4 are intentionally reserved for later problem-first directions and contain no
-experimental claims yet.
+Deck status: Attempts 1, 2, and 3 are complete studies. Attempt 4 remains
+reserved for a later problem-first direction and contains no experimental
+claim.
 
 ---
 
@@ -18,7 +19,7 @@ experimental claims yet.
 
 This is not a presentation of a finished method.
 
-The goal is to explain two research attempts in enough detail to decide what
+The goal is to explain three research attempts in enough detail to decide what
 they teach us and what they rule out:
 
 ```text
@@ -29,16 +30,17 @@ Attempt 1: Is PCA a practical limitation of SAQ?
 Attempt 2: Does exact scalar-codebook optimization improve the quantization
            and retrieval result beyond Lloyd training?
 
-Attempt 3: reserved; not selected yet
+Attempt 3: Does paper-exact distance quality change conclusions based on
+           exact-identifier Recall@k?
 Attempt 4: reserved; not selected yet
 ```
 
 Main message:
 
 ```text
-Both completed attempts found useful local evidence, but neither established a
-new method. The stopping decisions were made at predeclared evidence gates,
-before spending more implementation effort on a weak premise.
+All three completed attempts found useful local evidence, but none established
+a new method. The stopping decisions were made at predeclared evidence gates,
+before turning a weak premise or an evaluation correction into a method claim.
 ```
 
 Speaker notes:
@@ -47,6 +49,8 @@ Speaker notes:
 - Attempt 1 belongs to the SAQ repository.
 - Attempt 2 comes from the sibling `vectordb` repository and tests a more
   classical scalar-quantization premise.
+- Attempt 3 returns to SAQ and asks whether Recall understated the geometric
+  quality of any previously rejected result set.
 
 ---
 
@@ -62,10 +66,12 @@ next directions:                       problem-first review before coding
 
 Why still present these attempts:
 
-1. They test two intuitive claims that may arise in a meeting.
+1. They test three intuitive claims that may arise in a meeting.
 2. They distinguish optimization guarantees from retrieval guarantees.
 3. They provide quantitative stop evidence instead of relying on intuition.
-4. They define what Attempt 3 and Attempt 4 must do differently.
+4. Attempt 3 tests whether an evaluation choice, rather than a quantizer
+   mechanism, caused one earlier negative conclusion.
+5. Together they define what Attempt 4 must do differently.
 
 Unsafe interpretation:
 
@@ -78,6 +84,8 @@ Safe interpretation:
 ```text
 The specific PCA-replacement, lossy-projection, and histogram-DP mechanisms
 tested here do not supply a sufficiently general, overhead-controlled method.
+Paper-exact distance quality changes one GIST operating-point interpretation,
+but does not establish a new mechanism or a replicated method advantage.
 ```
 
 ---
@@ -89,7 +97,7 @@ tested here do not supply a sufficiently general, overhead-controlled method.
 | 1A. Full-D transform replacement | Does residual PCA or another isometric basis improve SAQ estimator behavior over raw-data PCA? | GIST sample50k, then preregistered CIFAR60K replication | Closed after replication failure |
 | 1B. Lossy `D -> d` projection | Can a PCA head plus a compact tail surrogate beat native full-D SAQ? | GIST sample50k, `960 -> 576`, favorable exact surrogate | Gate A failed; projected SAQ not built |
 | 2. Exact scalar-codebook DP | Does exact 1D histogram DP improve dimensionwise scalar quantization over Lloyd? | audio, PCA CIFAR60K, PCA DEEP1M | Stronger offline baseline; no stable recall dominance |
-| 3. Reserved | To be chosen through a problem-first novelty/complexity review | Not run | No claim |
+| 3. Distance-quality re-evaluation | Does `1/Ratio@k` change a frozen Recall-based Pareto conclusion? | GIST sample100k B=4; DEEP sample100k B=4/B=5 controls | Closed as metric-sensitivity evidence |
 | 4. Reserved | To be chosen after Attempt 3 evidence | Not run | No claim |
 
 Speaker notes:
@@ -142,16 +150,20 @@ subspaces receive high bits, low bits, or no inner-product code.
 
 | Symbol | Meaning | Values used here |
 |---|---|---|
-| `N` | number of base vectors | GIST 50,000; CIFAR 60,000; DEEP 1,000,000 |
+| `N` | number of base vectors | GIST 50,000/100,000; CIFAR 60,000; DEEP 100,000/1,000,000 |
 | `D` | original dimension | GIST 960; CIFAR 512; DEEP 256; audio 192 |
 | `d` | physically retained dimension after lossy projection | GIST 576 |
-| `K_IVF` | number of IVF clusters | 512 in Attempt 1 |
-| `B` | nominal average bits/dimension | 4 in Attempt 1; 2/4/8 in Attempt 2 |
-| `Q` | number of held-out evaluation queries | 128 or 1,000 in Attempt 1 |
+| `K_IVF` | number of IVF clusters | 512 in Attempts 1 and 3 |
+| `B` | nominal average bits/dimension | 4 in Attempt 1; 2/4/8 in Attempt 2; 4/5 in Attempt 3 |
+| `Q` | number of held-out evaluation queries | 128 or 1,000 in Attempts 1 and 3 |
 | `H` | equal-count histogram bins for scalar DP | default 256 |
 | `K_b` | scalar centroids at bitwidth `b` | up to `2^b` |
 | `w_j` | allocation weight for dimension `j` | 1 or historical rank-boundary weight |
 | `R` | full-D orthogonal transform matrix | transform-dependent |
+| `k` | number of returned neighbors evaluated | 100 in Attempt 3 |
+| `nprobe` | IVF cells scanned per query | GIST 20--400; DEEP 50--400 |
+| `d_i(q)` | true Euclidean distance to exact neighbor at distance rank `i` | recomputed in float64 |
+| `d_tilde_i(q)` | true Euclidean distance at rank `i` within the returned set | recomputed in float64 |
 
 Important notation distinction:
 
@@ -1381,35 +1393,409 @@ quantizer or a database-systems contribution.
 
 ---
 
-## 41. Attempt 3: Reserved
+## 41. Attempt 3: Research Question
+
+Recall@`k` measures exact identifier overlap. For exact top-`k` set `E_k(q)`
+and returned set `A_k(q)`:
 
 ```text
-Status: NOT SELECTED
-Evidence: NONE
-Claims: NONE
+Recall@k(q) = |E_k(q) intersect A_k(q)| / k.
 ```
 
-Attempt 3 will be added only after a problem-first review records:
+This can penalize a geometrically near-equivalent replacement at a dense
+top-`k` boundary. Attempt 3 therefore asks:
 
 ```text
-database problem and workload
-closest primary related work
-what those methods already solve
-remaining mechanism-level gap
-at least two independent strong baselines
-query-unaware information available at build time
-time, build, storage, and query complexity
-smallest falsification experiment
-strict-reviewer objection
-GO / NO-GO decision
+Does paper-exact distance quality change the Pareto interpretation of any
+previously frozen SAQ comparison, when both plans are evaluated on the same
+search-effort grid?
 ```
 
-No method name or expected positive result should be inserted before this
-review passes.
+The premise is about evaluation validity, not a new quantizer:
+
+```text
+Recall:       Did we return the same identifiers?
+1/Ratio:      How far are the returned vectors compared with the exact ranks?
+```
 
 ---
 
-## 42. Attempt 4: Reserved
+## 42. Attempt 3 Metric: `1/Ratio@k`
+
+For query `q`, define:
+
+- `d_i(q)`: true Euclidean distance to the exact neighbor at distance rank
+  `i`, for `i=1,...,k`;
+- `d_tilde_i(q)`: true Euclidean distance at rank `i` after independently
+  sorting the `k` returned identifiers by true distance.
+
+The metric from
+[ANN Search: Recall What Matters](https://arxiv.org/abs/2606.04522v1) is:
+
+```text
+Ratio@k(q) = (1/k) * sum_{i=1}^k d_tilde_i(q) / d_i(q)
+
+1/Ratio@k(q) = k / sum_{i=1}^k d_tilde_i(q) / d_i(q).
+```
+
+Properties under valid exact top-`k` input:
+
+```text
+0 < 1/Ratio@k <= 1
+higher is better
+1 means equal distance quality, even if tied identifiers differ
+```
+
+Critical semantic detail: SAQ internally reports squared L2 distances, but
+this metric uses Euclidean distances. The evaluator must take square roots
+before forming the ratios.
+
+---
+
+## 43. Attempt 3 Running Example
+
+Let `k=3`. Suppose the exact result distances are:
+
+```text
+d = [1.00, 1.10, 1.20].
+```
+
+The ANN result shares only one exact identifier, but after recomputing and
+sorting true distances it has:
+
+```text
+d_tilde = [1.00, 1.11, 1.21].
+```
+
+Then:
+
+```text
+Recall@3 = 1/3 = 0.3333
+
+1/Ratio@3
+  = 3 / (1.00/1.00 + 1.11/1.10 + 1.21/1.20)
+  = 0.9942.
+```
+
+Interpretation:
+
+```text
+identifier recovery is poor
+geometric result quality is nearly exact
+```
+
+This example does not imply that Recall is wrong. It shows that the two
+metrics answer different scientific questions.
+
+---
+
+## 44. Related Work And Novelty Gate
+
+The metric paper already contributes:
+
+1. the judge-free, hyperparameter-free `1/Ratio@k` definition;
+2. evaluation of Annoy, SuCo, HNSW, RaBitQ, and SymphonyQG on six datasets;
+3. build, memory, distance-work, classification, and RAG analyses; and
+4. evidence that less search effort can satisfy a distance-quality target than
+   an equal-valued Recall target.
+
+At `k=100` and quality `0.95`, it reports the following average ratios between
+the effort required by Recall and by `1/Ratio`:
+
+| Method | Relative distance-computation effort |
+|---|---:|
+| HNSW | `9.36x` |
+| RaBitQ | `2.48x` |
+| SymphonyQG | `2.38x` |
+| SuCo | `1.86x` |
+| Annoy | `3.22x` |
+
+Strict-reviewer constraint:
+
+```text
+The metric is prior work, and the paper reports that relative algorithm
+rankings are usually stable. Re-evaluating SAQ is not a method contribution.
+```
+
+Attempt 3 was therefore authorized only as a frozen retrospective
+falsification study. It could clarify prior evidence, but could not fit a plan
+to benchmark queries or claim the metric as novelty.
+
+---
+
+## 45. Frozen Attempt 3 Protocol
+
+Stages:
+
+```text
+A3-0  validate the paper-exact evaluator on deterministic fixtures
+A3-1  replay the frozen GIST default-versus-fac-error comparison
+A3-2  test frozen DEEP B=4/B=5 rejected plans as negative controls
+A3-3  apply the preregistered cross-dataset decision gate
+```
+
+| Variable | GIST A3-1 | DEEP A3-2 |
+|---|---:|---:|
+| base vectors `N` | 100,000 | 100,000 |
+| queries `Q` | 1,000 | 1,000 |
+| dimension `D` | 960 | 256 |
+| IVF clusters `K_IVF` | 512 | 512 |
+| nominal budget `B` | 4 | 4 and 5 |
+| result size `k` | 100 | 100 |
+| `nprobe` grid | 20, 50, 100, 160, 200, 220, 240, 280, 300, 320, 400 | 50, 100, 200, 400 |
+
+Frozen common settings:
+
+```text
+threads = 24
+QPS repetitions = 10 per row
+searcher_safe_block_min_mode = 2
+searcher_vars_bound_m = 4
+PCA = enabled, retaining all D dimensions
+```
+
+`nprobe` is the number of IVF cells scanned. Mode `2` is the previously fixed
+correctness-preserving block-min path, and `m=4` is SAQ's unchanged variance
+bound multiplier. Neither is a parameter of `1/Ratio`; no value was selected
+from Attempt 3 outcomes.
+
+---
+
+## 46. Evaluator And Search-Code Semantics
+
+Core evaluator logic on branch `saq-ratio-metric-analysis`:
+
+```python
+exact = sorted(true_l2(base[groundtruth_ids], query))
+returned = sorted(true_l2(base[result_ids], query))
+inverse_ratio = k / sum(returned[i] / exact[i] for i in range(k))
+```
+
+The implementation in `script/evaluate_inverse_ratio.py`:
+
+1. recomputes both sets of distances in float64;
+2. independently sorts by true Euclidean distance;
+3. rejects duplicate, invalid, truncated, or non-finite result rows;
+4. stops explicitly if an exact distance is zero; and
+5. preserves every query-level value instead of only the mean.
+
+The existing upstream `utils::get_ratio` was not used as the scientific
+artifact because it reports forward `Ratio`, skips tiny squared distances with
+an epsilon, and discards query-level values.
+
+`src/test_qps.cpp` exports result IDs only after the timed search region. Thus
+the evaluator can replay exact returned sets without inflating measured QPS.
+Eighteen deterministic Python tests cover exact, tied-distance, reordered,
+squared-L2, malformed-input, provenance, and frontier cases.
+
+---
+
+## 47. Attempt 3 Complexity And Overhead
+
+Given `Q` queries, returned top-`k`, and dimension `D`:
+
+```text
+recompute exact and returned distances: O(Q k D) time
+sort each query's distance lists:       O(Q k log k) time
+Recall and ratio aggregation:           O(Q k) time
+stored result identifiers:              O(Q k)
+stored per-query metric values:         O(Q)
+```
+
+No `O(QND)` exhaustive search is required when exact top-`k` identifiers
+already exist. Only the `2Qk` selected-vector distances are recomputed.
+
+Separation of costs:
+
+```text
+ANN query latency / QPS: unchanged; result export is outside the timer
+benchmark evaluation:    O(Q k D), reported separately
+index build and storage: unchanged
+```
+
+The evaluator has no learned parameters. `k` is the benchmark result size,
+and the `nprobe` values describe the measured search-effort curve rather than
+a fitted decision rule.
+
+---
+
+## 48. GIST Comparison: Two Frozen Global Plans
+
+Setting: `gist_sample100k`, `K_IVF=512`, `B=4`, `D=960`, `k=100`.
+
+```text
+SAQ default: 64x11 | 192x6 | 320x4 | 256x2 | 128x0
+fac-error:   192x9 | 512x4 | 256x0
+```
+
+Each `dimensions x bits` term means that every coordinate in the contiguous
+PCA segment receives that many code bits. Both plan strings sum to 960
+dimensions and were materialized as frozen SAQ `B=4` indexes before Attempt 3.
+The plan string alone is not total index-byte accounting because SAQ also
+stores per-segment factors.
+
+The comparison changes only the global plan:
+
+```text
+same PCA vectors and IVF assignments
+same CAQ encoder and serialized index format
+same distance estimator, pruning, heap, and safe-search mode
+same nprobe grid, threads, and repetitions
+```
+
+The fac-error plan has two positive-bit segments instead of four, so it is a
+plausible lower-search-work shape. Its name refers to the historical offline
+plan artifact; Attempt 3 neither refits nor endorses that empirical objective.
+
+---
+
+## 49. GIST Complete Common-Grid Result
+
+| nprobe | default R@100 | fac R@100 | default 1/Ratio | fac 1/Ratio | default QPS | fac QPS |
+|---:|---:|---:|---:|---:|---:|---:|
+| 20 | 0.75957 | 0.75952 | 0.993860620 | 0.993858359 | 31234.2 | 36687.1 |
+| 50 | 0.92809 | 0.92769 | 0.998671018 | 0.998668346 | 20104.2 | 25581.3 |
+| 100 | 0.98140 | 0.98069 | 0.999773561 | 0.999769939 | 13825.0 | 18572.6 |
+| 160 | 0.99036 | 0.98958 | 0.999964379 | 0.999960461 | 10524.5 | 14189.3 |
+| 200 | 0.99132 | 0.99059 | 0.999985301 | 0.999981452 | 9264.9 | 12333.9 |
+| 220 | 0.99149 | 0.99079 | 0.999987377 | 0.999983555 | 8777.6 | 11739.0 |
+| 240 | 0.99153 | 0.99084 | 0.999988670 | 0.999984881 | 8313.8 | 11073.8 |
+| 280 | 0.99163 | 0.99091 | 0.999991688 | 0.999987869 | 7579.7 | 9986.9 |
+| 300 | 0.99164 | 0.99091 | 0.999992743 | 0.999988921 | 7329.5 | 9522.1 |
+| 320 | 0.99164 | 0.99091 | 0.999993271 | 0.999989447 | 7035.6 | 9086.9 |
+| 400 | 0.99164 | 0.99091 | 0.999993271 | 0.999989447 | 6111.4 | 7784.3 |
+
+At every equal `nprobe`, fac-error is faster and slightly worse under both
+quality metrics. Equal search effort is therefore not the scientific
+comparison; the relevant question is QPS at matched quality.
+
+---
+
+## 50. GIST Metric-Sensitive Operating Point
+
+Use the freshly replayed default `nprobe=200` row as the frozen target:
+
+```text
+default Recall@100:    0.991320000000
+default 1/Ratio@100:   0.999985300968
+default QPS:           9264.923
+```
+
+Recall conclusion:
+
+```text
+maximum measured fac-error Recall = 0.99091
+target 0.99132 is unreachable
+decision: reject at this reference quality
+```
+
+Distance-quality conclusion:
+
+```text
+fac-error nprobe=280  1/Ratio@100 = 0.999987869279
+fac-error nprobe=280  QPS         = 9986.910
+quality               > default target
+QPS ratio             = 1.07793x
+```
+
+This is a directly measured point, not interpolation. Linear interpolation
+between fac-error `nprobe=240` and `280` estimates `1.17876x` QPS exactly at
+the target, but this is reported only as secondary evidence.
+
+---
+
+## 51. GIST Query-Level Attribution
+
+For fac-error `nprobe=280` minus default `nprobe=200`:
+
+| Statistic of paired `1/Ratio@100` delta | Value |
+|---|---:|
+| mean | `+2.5683e-6` |
+| median | `0` |
+| minimum | `-3.1166e-4` |
+| p01 | `-1.1754e-4` |
+| p05 | `-4.1993e-5` |
+| queries worse | `39.6%` |
+| queries equal | `23.0%` |
+| queries better | `37.4%` |
+
+The alternative improves the aggregate mean and its separately measured
+marginal lower-tail statistics, but it does not dominate query by query.
+
+Strict interpretation:
+
+```text
+supported:   the historical GIST operating-point rejection is metric-sensitive
+unsupported: fac-error is uniformly better or provides a per-query guarantee
+```
+
+This paired distribution is why the mean metric alone is insufficient for a
+new method claim.
+
+---
+
+## 52. DEEP Negative Controls
+
+Frozen plans:
+
+```text
+B=4 default:   64x6 | 192x3     candidate: 128x4 | 128x3
+B=5 default:   64x7 | 192x4     candidate: 128x5 | 128x4
+```
+
+| B | nprobe | default R | candidate R | default 1/Ratio | candidate 1/Ratio | QPS ratio |
+|---:|---:|---:|---:|---:|---:|---:|
+| 4 | 50 | 0.94550 | 0.92381 | 0.998803057 | 0.998540024 | 1.075x |
+| 4 | 100 | 0.97061 | 0.94401 | 0.999686070 | 0.999416524 | 1.095x |
+| 4 | 200 | 0.97641 | 0.94884 | 0.999904123 | 0.999633936 | 1.071x |
+| 4 | 400 | 0.97713 | 0.94940 | 0.999930322 | 0.999658856 | 1.046x |
+| 5 | 50 | 0.95180 | 0.94251 | 0.998842845 | 0.998776284 | 1.108x |
+| 5 | 100 | 0.97973 | 0.96687 | 0.999728710 | 0.999659199 | 1.092x |
+| 5 | 200 | 0.98670 | 0.97241 | 0.999948614 | 0.999877534 | 1.077x |
+| 5 | 400 | 0.98752 | 0.97304 | 0.999974940 | 0.999903505 | 1.043x |
+
+Neither candidate reaches its default `nprobe=200` `1/Ratio` target anywhere
+on the measured curve. At `nprobe=200`, 97.1% of B=4 queries and 87.3% of B=5
+queries are worse. Therefore `1/Ratio` is not merely accepting every faster,
+lower-Recall plan: both DEEP negative decisions remain negative.
+
+---
+
+## 53. Attempt 3 Decision
+
+| Predeclared condition | Outcome |
+|---|---|
+| at least one previous conclusion changes | pass: GIST historical reference |
+| change survives a complete measured curve | pass: 11-point GIST union grid |
+| positive result appears on two datasets or independent baselines | fail: DEEP provides controls, not a second positive |
+| query-level tails show no hidden material loss | mixed: 39.6% of paired GIST queries worsen |
+| a mechanism-level gap remains after related work | fail: no mechanism beyond the old fac-error plan |
+
+```text
+Decision: CLOSE_AS_METRIC_SENSITIVITY_EVIDENCE
+```
+
+What survives:
+
+1. report Recall and `1/Ratio` together in future ANN studies;
+2. distinguish identifier-boundary loss from geometric degradation; and
+3. retain GIST as a concrete metric-sensitive SAQ case and DEEP as controls.
+
+What does not reopen:
+
+```text
+fac-error plan sweeps
+query-fitted metric-aware planning
+lossy projection or exact-hist as methods
+high-overhead CAQ, mixed-plan, graph-prefix, or search-bound directions
+```
+
+The metric paper owns the general contribution. Our evidence is a bounded SAQ
+case study, not an independent database-systems method.
+
+---
+
+## 54. Attempt 4: Reserved
 
 ```text
 Status: NOT SELECTED
@@ -1417,80 +1803,84 @@ Evidence: NONE
 Claims: NONE
 ```
 
-Attempt 4 should not be chosen merely as a fallback if Attempt 3 fails. It must
-independently pass the same novelty and complexity gate.
+Attempt 4 should not be chosen merely as a fallback. It must independently
+pass a problem-first related-work, novelty, and complexity gate.
 
-Required distinction from Attempts 1 and 2:
+Required distinction from Attempts 1--3:
 
 ```text
 not another transform substitution without a replicated limitation
-not another surrogate-objective optimizer without a ranking mechanism
+not another surrogate optimizer without a ranking or system mechanism
 not a parameter sweep around SAQ
-not a high-overhead method justified by a small recall change
+not a new evaluation metric presented as our method
+not a high-overhead method justified by a small quality change
 ```
 
 ---
 
-## 43. Current Synthesis
+## 55. Current Synthesis
 
 | Attempt | Theoretical guarantee | Strongest positive evidence | Why it stops |
 |---|---|---|---|
 | 1A full-D PCA replacement | L2 isometry for any orthogonal transform | GIST residual-PCA accurate/full RMSE `-0.60%/-0.33%` | no stable ranking gain; fast harm; CIFAR replication failure |
 | 1B lossy `D -> d` | exact head and norm terms in favorable oracle | tail norms reduce RMSE from 0.0445 to 0.00248 | omitted tail IP still worsens ranking versus native SAQ |
 | 2 exact scalar DP | exact minimum SSE over `H` weighted bins | audio B=4 MSE `-15.5%`, R@100 `+0.004` | no raw/full-scale or recall guarantee; cross-regime reversals |
-| 3 | not defined | none | pending selection review |
-| 4 | not defined | none | pending selection review |
+| 3 distance-quality re-evaluation | paper-exact metric semantics; no method guarantee | GIST measured point: higher `1/Ratio`, `1.078x` QPS at the frozen target | one positive setting; DEEP controls remain negative; metric is prior work |
+| 4 | not defined | none | pending problem-selection review |
 
 Cross-attempt lesson:
 
 ```text
-Optimizing a mathematically valid surrogate is not enough.
+Optimizing a mathematically valid surrogate is not enough, and changing the
+evaluation metric is not itself a mechanism.
 
-The missing contribution must connect its optimized quantity to top-k ranking
-or system work, survive a second regime, and include all overhead.
+The missing contribution must connect its optimized quantity to top-k or
+downstream quality and system work, survive a second baseline or regime, and
+include all construction, storage, and query overhead.
 ```
 
 ---
 
-## 44. Proposed Meeting Discussion
+## 56. Proposed Meeting Discussion
 
 Decision 1:
 
 ```text
-Do the Attempt 1 results justify treating PCA as a closed practical direction,
-while explicitly avoiding a universal optimality claim?
+Do the Attempt 1 results justify treating PCA replacement as a closed practical
+direction, while avoiding a universal PCA-optimality claim?
 ```
 
 Decision 2:
 
 ```text
-Should exact-hist DP remain only a baseline, given that its guarantee is SSE
-over histogram bins and not recall?
+Should exact-hist DP remain only a stronger offline baseline, given that its
+guarantee is histogram SSE rather than retrieval quality?
 ```
 
 Decision 3:
 
 ```text
-For Attempt 3, should we require a theorem/inequality connecting the method
-objective to ranking, or is a mechanism-derived systems model sufficient?
+Should future ANN evidence always report both identifier Recall and geometric
+distance quality, while treating the GIST flip only as measurement evidence?
 ```
 
 Decision 4:
 
 ```text
-What broader vector-search problem should be reviewed before naming Attempt 3
-and Attempt 4?
+What broader vector-search problem, meaningful beyond SAQ and beyond one
+metric, should be reviewed before selecting Attempt 4?
 ```
 
 Speaker notes:
 
-- The immediate meeting objective is selecting a research problem, not
-  selecting another implementation task.
-- The advisor should challenge novelty and overhead before experimental scope.
+- The immediate objective is research-problem selection, not another local
+  implementation task.
+- Novelty, mechanism, replication, and total overhead should be challenged
+  before experimental scope is expanded.
 
 ---
 
-## 45. Evidence And Code Map
+## 57. Evidence And Code Map
 
 Attempt 1, SAQ branch `saq-transform-analysis@3d94840`:
 
@@ -1520,28 +1910,48 @@ reports/scalar_training_exact_hist_audit_2026_06_30/README.md
 reports/scalar_training_exact_hist_audit_2026_06_30/comparison.csv
 ```
 
+Attempt 3, branch `saq-ratio-metric-analysis@146dc16`:
+
+```text
+docs/saq_attempt3_ratio_metric_related_work_and_gate_2026_07_13.md
+docs/saq_attempt3_ratio_metric_protocol_2026_07_13.md
+docs/saq_attempt3_a3_0_a3_1_gist_evidence_2026_07_13.md
+docs/saq_attempt3_a3_2_a3_3_decision_2026_07_13.md
+docs/saq_attempt3_a3_1b_artifacts_2026_07_13/
+docs/saq_attempt3_a3_2_artifacts_2026_07_13/
+script/evaluate_inverse_ratio.py
+script/summarize_ratio_frontier.py
+src/test_qps.cpp
+```
+
 Current deck:
 
 ```text
-docs/saq_next_meeting_attempts_1_2_slides_2026_07_13.md
+docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md
 ```
 
 ---
 
-## 46. One-Slide Takeaway
+## 58. One-Slide Takeaway
 
 ```text
 Attempt 1:
 PCA replacement found a small GIST estimator signal that failed CIFAR
-replication. The more favorable lossy D->d oracle also ranked worse than native
+replication. The favorable lossy D->d oracle still ranked worse than native
 SAQ because a norm-only tail cannot recover tail inner products.
 
 Attempt 2:
 Exact histogram DP can lower scalar reconstruction SSE, but histogram
-discretization and objective mismatch mean recall can improve or regress.
+discretization and objective mismatch mean Recall can improve or regress.
+
+Attempt 3:
+Paper-exact 1/Ratio changes one GIST matched-quality conclusion: a measured
+fac-error point gives higher geometric quality and 1.078x QPS. DEEP B=4/B=5
+remain negative, 39.6% of paired GIST queries worsen, and the metric is prior
+work. The result is measurement evidence, not a method.
 
 Project decision:
-Keep both as rigorous negative/partial evidence. Do not turn either into a
-method by adding post-hoc sweeps. Select Attempts 3 and 4 through a new
-problem-first related-work and complexity gate.
+Keep all three as rigorous negative or partial evidence. Do not rescue them
+with post-hoc sweeps. Select Attempt 4 only after a broader problem-first
+related-work, mechanism, and complexity review.
 ```
