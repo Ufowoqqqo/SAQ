@@ -12,15 +12,16 @@ Revision: incorporates the 2026-07-13 audit of
 [White and Singal, arXiv:2606.00289v1](https://arxiv.org/abs/2606.00289)
 and its pinned official code, plus the committed Attempt 4 scientific-content
 snapshot
-`saq-arbitrary-cardinality-analysis@3c0a49f`.
+`saq-arbitrary-cardinality-analysis@988ace0`.
 
 Audience assumption: familiar with vector search and vector quantization at a
 high level, but not with SAQ's transform, segmentation, or the experiments in
 these repositories.
 
 Deck status: Attempts 1, 2, and 3 are complete studies. Attempt 4 has completed
-only A4-0 instrument validation. A4-1S is authorized but has no committed
-implementation or outcome. A4-1 real-base execution and SAQ integration remain
+A4-0 instrument validation and independently reviewed A4-1S implementation
+parity. The exact full-shape A4-1S cost projection is authorized but has no
+committed result. A4-1 real-base execution and SAQ integration remain
 unauthorized.
 
 ---
@@ -56,7 +57,8 @@ For Attempt 2, the local ANN audit remains informative, while the inner exact-
 DP primitive is established prior work and cannot be claimed as the
 contribution. Attempt 4 is an active gated feasibility study, not a completed
 study or a natural-data, ANN, or systems result. Its current evidence validates
-only a synthetic instrument.
+only the synthetic instrument through exact implementation parity; its frozen
+cost gate remains unexecuted.
 ```
 
 Speaker notes:
@@ -68,8 +70,9 @@ Speaker notes:
   the local two-DP pipeline from the already-established inner optimizer.
 - Attempt 3 returns to SAQ and asks whether Recall understated the geometric
   quality of any previously rejected result set.
-- Attempt 4 is problem-first and fixed-rate. Its current branch must not be
-  described as having implementation, natural-data, ANN, or systems evidence.
+- Attempt 4 is problem-first and fixed-rate. Its current branch has only
+  implementation-parity evidence; it must not be described as having passed
+  the cost gate or as having natural-data, ANN, or systems evidence.
 
 ---
 
@@ -126,7 +129,7 @@ neither ANN improvement nor a systems advantage.
 | 1B. Lossy `D -> d` projection | Can a PCA head plus a compact tail surrogate beat native full-D SAQ? | GIST sample50k, `960 -> 576`, favorable exact surrogate | Gate A failed; projected SAQ not built |
 | 2. Exact scalar-codebook DP | Does histogram-exact 1D DP improve shared dimensionwise scalar quantization over Lloyd, and is any method novelty left after prior work? | audio, PCA CIFAR60K, PCA DEEP1M; arXiv/code audit | Stronger offline baseline; inner DP is prior art; no stable recall dominance |
 | 3. Distance-quality re-evaluation | Does `1/Ratio@k` change a frozen Recall-based Pareto conclusion? | GIST sample100k B=4; DEEP sample100k B=4/B=5 controls | Closed as metric-sensitivity evidence |
-| 4. Arbitrary-cardinality fixed-rate words | Does the power-of-two restriction waste material capacity at unchanged fixed payload and lookup granularity? | A4-0 synthetic witness; A4-1S synthetic correctness/cost gate; registered GIST50k/CIFAR60k base-only gate only if later authorized | A4-0 `PASS_INSTRUMENT_ONLY`; A4-1S authorized with no committed result; base read forbidden |
+| 4. Arbitrary-cardinality fixed-rate words | Does the power-of-two restriction waste material capacity at unchanged fixed payload and lookup granularity? | A4-0 synthetic witness; A4-1S synthetic correctness/cost gate; registered GIST50k/CIFAR60k base-only gate only if later authorized | A4-0 `PASS_INSTRUMENT_ONLY`; A4-1S `PASS_PARITY`, exact cost pending; base read forbidden |
 
 Speaker notes:
 
@@ -2146,13 +2149,13 @@ case study, not an independent database-systems method.
 
 ## 59. Attempt 4: Research Question And Current Gate
 
-Scientific-content snapshot: `saq-arbitrary-cardinality-analysis@3c0a49f`
+Scientific-content snapshot: `saq-arbitrary-cardinality-analysis@988ace0`
 
 | Stage | Committed status | What it means |
 |---|---|---|
 | A4-0 synthetic instrument | `PASS_INSTRUMENT_ONLY` | formulation, tiny witness, and reference checks passed |
 | A4-1P base-only protocol | `FROZEN_NOT_AUTHORIZED` | scientific inputs and decision rule are registered; base read is forbidden |
-| A4-1S synthetic implementation | `FROZEN_AUTHORIZED_NOT_IMPLEMENTED` | implementation/parity/cost work is authorized, but no committed result exists |
+| A4-1S synthetic implementation | `PASS_PARITY / EXACT_COST_PENDING` | exact scalar, allocation, representation, and block controls passed; full-shape cost has not run |
 | SAQ/index/search integration | `NOT_AUTHORIZED` | no production representation or query-path change may be made |
 
 Research question:
@@ -2333,20 +2336,27 @@ claim. At this snapshot, reading the registered base inputs is forbidden.
 
 ## 64. A4-1S Synthetic Implementation And Cost Gate
 
-Status: `FROZEN_AUTHORIZED_NOT_IMPLEMENTED`
+Status: `PASS_PARITY / EXACT_COST_PENDING`
 
 A4-1S exists only to establish that the exact registered machinery is correct,
-deterministic, representation-complete, and affordable before any base read:
+deterministic, representation-complete, and affordable before any base read.
+Its committed parity phase executed:
 
 ```text
-256-case exact scalar reference suite
+1,044 exact scalar cases: 780 exhaustive + 8 bit-pattern + 256 PCG64
+3,961 persisted scalar solutions and exact-rational replays
 2,433,600 allocation decisions, all executed in canonical order and digested
 explicit mixed-radix, B4/B8 packing, and LUT fixtures
-64-case deterministic trained-block-VQ control suite
-one full-shape 8192 x 128 synthetic cost projection
+64 deterministic trained-block-VQ cases plus five named microfixtures
+six status-precedence fixtures and 22/22 deterministic tests
 ```
 
-The projection must use the same compiled exact-arithmetic implementation,
+All registered parity checks passed. The six canonical evidence files are at
+`335837e`; independent review at `988ace0` found zero blocker or high-severity
+issues. This supports `PASS_PARITY` for the instrument only.
+
+The still-pending one-panel `8192 x 128` projection must use the same compiled
+exact-arithmetic implementation,
 all `K=1,...,256` scalar curves, both product allocators, 64 groups, both rates,
 and all eight block starts. The projected two-dataset cost is `2.5` times the
 one-panel CPU time and must not exceed 24 CPU-hours.
@@ -2365,8 +2375,9 @@ evidence:
 `PASS_SYNTHETIC_GATE_ONLY` permits only asking the user whether to authorize
 the already-registered base gate. It does not authorize that read itself.
 
-Snapshot at `3c0a49f`: no committed runner, parity evidence, cost projection,
-or A4-1 result exists. Untracked worktree files are deliberately excluded.
+Snapshot at `988ace0`: implementation parity is committed and independently
+reviewed, but no full-shape cost projection or A4-1 result exists. Untracked
+worktree files are deliberately excluded.
 
 ---
 
@@ -2378,7 +2389,7 @@ or A4-1 result exists. Untracked worktree files are deliberately excluded.
 | 1B lossy `D -> d` | exact head and norm terms in favorable oracle | tail norms reduce RMSE from 0.0445 to 0.00248 | omitted tail IP still worsens ranking versus native SAQ |
 | 2 exact scalar DP | exact bin-boundary partition SSE using raw bin moments; final midpoint-nearest-centroid raw SSE is evaluated, not reoptimized; outer optimum is conditional on `E[j,b]` | audio B=4 raw MSE `-15.5%`, R@100 `+0.004` | inner-DP novelty is foreclosed by prior art; no full-scale raw optimum or recall guarantee; cross-regime reversals |
 | 3 distance-quality re-evaluation | paper-exact metric semantics; no method guarantee | GIST measured point: higher `1/Ratio`, `1.078x` QPS at the frozen target | one positive setting; DEEP controls remain negative; metric is prior work |
-| 4 arbitrary-cardinality fixed-rate words | the arbitrary positive-integer feasible set contains the dyadic set for exact factorized SSE | frozen `(3,5)` witness: gap `0.1`, exact address/LUT parity | A4-0 instrument only; primitives are prior art; natural-data prevalence, block-VQ competitiveness, and ANN/system value remain unestablished |
+| 4 arbitrary-cardinality fixed-rate words | the arbitrary positive-integer feasible set contains the dyadic set for exact factorized SSE | frozen `(3,5)` witness plus independently reviewed exact implementation parity | A4-1S cost remains pending; primitives are prior art; natural-data prevalence, block-VQ competitiveness, and ANN/system value remain unestablished |
 
 Cross-attempt lesson:
 
@@ -2427,8 +2438,8 @@ Decision 4:
 
 ```text
 Do we agree that Attempt 4 is only a conditional offline falsification study,
-and that no base read should occur until a committed, independently reviewed
-A4-1S outcome is presented?
+and that parity alone does not authorize a base read before a committed,
+independently reviewed full A4-1S cost outcome is presented?
 ```
 
 Future decision, only after `PASS_SYNTHETIC_GATE_ONLY`:
@@ -2511,7 +2522,7 @@ script/summarize_ratio_frontier.py
 src/test_qps.cpp
 ```
 
-Attempt 4, branch `saq-arbitrary-cardinality-analysis@3c0a49f`:
+Attempt 4, branch `saq-arbitrary-cardinality-analysis@988ace0`:
 
 ```text
 docs/saq_attempt4_arbitrary_cardinality_related_work_and_gate_2026_07_13.md
@@ -2523,10 +2534,13 @@ docs/saq_attempt4_a4_1_base_only_feasibility_preregistration_2026_07_13.md
 docs/saq_attempt4_a4_1_base_only_input_spec_2026_07_13.json
 docs/saq_attempt4_a4_1_base_only_hypotheses_2026_07_13.json
 docs/saq_attempt4_a4_1s_synthetic_implementation_protocol_2026_07_13.md
+docs/saq_attempt4_a4_1s_artifacts_2026_07_13/parity_artifact_index.json
+docs/saq_attempt4_a4_1s_implementation_parity_review_2026_07_13.md
 ```
 
-Only A4-0 is outcome evidence. The A4-1 and A4-1S files are frozen protocols
-and contracts; they do not establish implementation or scientific results.
+A4-0 and A4-1S parity are outcome evidence only at their stated instrument
+ceilings. A4-1 remains a frozen protocol, and no cost, natural-data, ANN, or
+systems result is established.
 
 Current deck:
 
@@ -2563,7 +2577,8 @@ Attempt 4:
 Fixed-rate arbitrary cardinalities strictly beat the dyadic scalar-product
 restriction on the frozen (3,5) witness, but unrestricted block VQ matches
 them and the primitives are known. A4-0 validates only the instrument. A4-1S
-is authorized with no committed outcome; natural-data access and SAQ/system
+exact implementation parity is now committed and independently reviewed, but
+the full-shape cost gate is still pending; natural-data access and SAQ/system
 claims remain forbidden.
 
 Project decision:

@@ -24,7 +24,7 @@ Current summary inventory:
 - `docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` is the current,
   unpresented successor draft. It queues `R07`, `R08`, `R10`, `R11`, and
   `R12`; its Attempt 4 scientific snapshot is
-  `saq-arbitrary-cardinality-analysis@3c0a49f`.
+  `saq-arbitrary-cardinality-analysis@988ace0`.
 
 ## Current Attempt 4 Boundary
 
@@ -33,20 +33,24 @@ The deck may currently report only:
 ```text
 A4-0  PASS_INSTRUMENT_ONLY
 A4-1P FROZEN_NOT_AUTHORIZED
-A4-1S FROZEN_AUTHORIZED_NOT_IMPLEMENTED
+A4-1S PASS_PARITY / EXACT_COST_PENDING
 ```
 
-There is no committed A4-1S runner, parity result, cost projection, natural-
-data outcome, ANN result, or SAQ integration result in the cited snapshot.
-Untracked files in an experiment worktree are not evidence.
+The six canonical A4-1S parity artifacts are committed at `335837e`; their
+independent review is committed at `988ace0`. This validates the frozen
+exact-scalar, allocation, representation, and block-control instrument only.
+There is no committed full-shape cost projection, natural-data outcome, ANN
+result, or SAQ integration result. Untracked files in an experiment worktree
+are not evidence.
 
 ## Next Admissible Summary Work
 
-Wait for a source branch to produce a committed and independently reviewed
-protocol, gate result, or terminal decision. Then re-read `AGENTS.md` and the
-registry, fetch, require this worktree to be clean and equal to its remote,
-record that remote commit, and acquire the mandatory common-directory summary
-lock before editing:
+Wait for the source branch to produce a committed and independently reviewed
+full-shape A4-1S cost result, or for another source branch to produce a
+committed and independently reviewed protocol, gate result, or terminal
+decision. Then re-read `AGENTS.md` and the registry, fetch, require this
+worktree to be clean and equal to its remote, record that remote commit, and
+acquire the mandatory common-directory summary lock before editing:
 
 1. verify the source branch and exact commit;
 2. read the authoritative evidence and artifact paths from that commit;

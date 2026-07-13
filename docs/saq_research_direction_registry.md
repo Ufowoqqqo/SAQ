@@ -1,6 +1,6 @@
 # SAQ Research Direction Registry
 
-Last reconciled: 2026-07-13
+Last reconciled: 2026-07-14
 
 SAQ branch scope: every `origin/*` branch plus `upstream/main`, after
 `git fetch --all --prune`. At this snapshot there are 15 unique SAQ branches
@@ -48,8 +48,9 @@ superseded intermediate draft:
   canonical copy introduced at: saq-meeting-summary@5cdc270
 current successor draft:
   docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md
-  summary snapshot: saq-meeting-summary@43835d9
-  Attempt 4 scientific snapshot: saq-arbitrary-cardinality-analysis@3c0a49f
+  original summary snapshot: saq-meeting-summary@43835d9
+  latest Attempt 4 scientific snapshot:
+    saq-arbitrary-cardinality-analysis@988ace0
 ```
 
 The date in these filenames is the draft date. Neither draft has been through
@@ -108,7 +109,7 @@ INCLUDED_PENDING_REPORT     substantively drafted but not yet reported
 | `R09` | historical | Finite-round CAQ exact-gap limitation and low-cost repair | `saq-caq-one-shell-repair@977e7ff` | `CLOSED` | limitation retained; repair `NO_GO_ON_COMPLEXITY`; SAQ-centric incremental line stopped | `UNREPORTED` | `ABSENT` | `NOT_INCLUDED_SUBSTANTIVELY` |
 | `R10` | 2026-07-13 draft Attempt 2 | Exact-hist shared scalar-codebook DP and outer bit allocation | local evidence `vectordb@f51b487`; prior-art/draft snapshot `saq-caq-one-shell-repair@433e8ea` | `CLOSED` | retain as stronger offline baseline and objective-mismatch evidence, not a method | `UNREPORTED` | `ABSENT` | `INCLUDED_PENDING_REPORT`, slides 26--45 |
 | `R11` | 2026-07-13 draft Attempt 3 | Paper-exact `1/Ratio@k` distance-quality re-evaluation | `saq-ratio-metric-analysis@146dc16` | `CLOSED` | `CLOSE_AS_METRIC_SENSITIVITY_EVIDENCE` | `UNREPORTED` | `ABSENT` | `INCLUDED_PENDING_REPORT`, slides 46--58 |
-| `R12` | 2026-07-13 draft Attempt 4 | Fixed-rate arbitrary-cardinality mixed-radix scalar-product quantization | `saq-arbitrary-cardinality-analysis@3c0a49f` | `ACTIVE` | A4-0 `PASS_INSTRUMENT_ONLY`; A4-1S `FROZEN_AUTHORIZED_NOT_IMPLEMENTED`; real-base gate unauthorized | `UNREPORTED` | `ABSENT` | `INCLUDED_PENDING_REPORT`, slides 59--64 |
+| `R12` | 2026-07-13 draft Attempt 4 | Fixed-rate arbitrary-cardinality mixed-radix scalar-product quantization | `saq-arbitrary-cardinality-analysis@988ace0` | `ACTIVE` | A4-0 `PASS_INSTRUMENT_ONLY`; A4-1S `PASS_PARITY`, exact full-shape cost pending; real-base gate unauthorized | `UNREPORTED` | `ABSENT` | `INCLUDED_PENDING_REPORT`, slides 59--64 |
 
 ### Reported-through ledger
 
@@ -146,7 +147,7 @@ this summary branch.
 | `R09` | Registered base-only limitation survived controls, but exact encoding cost `272.9x` and one-shell total cost `4.579x--8.169x` failed the `2.0x` gate; limitation only, no repair method or ANN claim. | `saq-caq-optimality-analysis@9bb7d0c`: `docs/saq_caq_co0a_official_source_parity_2026_07_11.md`; `saq-caq-corrected-oracle-v2@ff360cd`: `docs/saq_caq_co0_v2_b1_registered_evidence_2026_07_12.md`; `saq-caq-one-shell-repair@977e7ff`: `docs/saq_caq_one_shell_synthetic_falsification_2026_07_12.md`, `docs/saq_caq_limitation_repair_closure_and_project_pivot_2026_07_13.md` | method closed; problem-first selection only |
 | `R10` | Exact-hist can reduce offline SSE, but the inner exact 1D DP is prior art and recall effects reverse across regimes; stronger baseline, not a method. | `vectordb@f51b487`: `reports/scalar_training_exact_hist_audit_2026_06_30/README.md`, `docs/saq_limitation_transfer_memo_2026_07_02.md`; `saq-caq-one-shell-repair@433e8ea:docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md` | closed as method; retained baseline |
 | `R11` | One GIST conclusion changes under paper-exact distance quality while DEEP controls remain negative; measurement evidence only. | `saq-ratio-metric-analysis@146dc16`: `docs/saq_attempt3_a3_2_a3_3_decision_2026_07_13.md` | closed |
-| `R12` | A4-0 validates a strict synthetic dyadic-feasible-set witness and instrument only; no committed A4-1S, natural-data, ANN, or systems result. | `saq-arbitrary-cardinality-analysis@3c0a49f`: `docs/saq_attempt4_a4_0_synthetic_evidence_2026_07_13.md`, `docs/saq_attempt4_a4_1_base_only_feasibility_preregistration_2026_07_13.md`, `docs/saq_attempt4_a4_1s_synthetic_implementation_protocol_2026_07_13.md` | execute only the authorized A4-1S synthetic gate; base read remains forbidden |
+| `R12` | A4-0 validates a strict synthetic dyadic-feasible-set witness. A4-1S independently reviewed evidence validates the frozen exact-scalar, allocation, representation, and block-control instrument with `PASS_PARITY`; it is not a cost, natural-data, ANN, or systems result. | Parity evidence `saq-arbitrary-cardinality-analysis@335837e`, reviewed snapshot `@988ace0`: `docs/saq_attempt4_a4_0_synthetic_evidence_2026_07_13.md`, `docs/saq_attempt4_a4_1s_synthetic_implementation_protocol_2026_07_13.md`, `docs/saq_attempt4_a4_1s_artifacts_2026_07_13/parity_artifact_index.json`, `docs/saq_attempt4_a4_1s_implementation_parity_review_2026_07_13.md` | run only the frozen exact full-shape A4-1S synthetic cost projection; base read remains forbidden |
 
 ## 4. Complete SAQ Branch Crosswalk
 
@@ -171,8 +172,8 @@ scientific milestone; such a row has no direction ID or scientific claim.
 | SAQ | `saq-caq-corrected-oracle-v2` | `ff360cd` | `FOLLOWUP` | `R09` | limitation established; one-shell candidate selected for one synthetic gate |
 | SAQ | `saq-caq-one-shell-repair` | `433e8ea` | `EVIDENCE_SNAPSHOT_AND_UNPRESENTED_DRAFT_HOST` | `R09` | scientific closure at `977e7ff`; later commits add unpresented draft material |
 | SAQ | `saq-ratio-metric-analysis` | `146dc16` | `PRIMARY` | `R11` | Attempt 3 closed |
-| SAQ | `saq-arbitrary-cardinality-analysis` | `d9dd626` | `PRIMARY` | `R12` | only active scientific direction; scientific content through `3c0a49f` |
-| SAQ | `saq-meeting-summary` | `SELF` -- commit containing this registry; parent at reconciliation `34e94dc` | `SUMMARY` | all | summary-only; no experiment execution |
+| SAQ | `saq-arbitrary-cardinality-analysis` | `d0d7057` | `PRIMARY` | `R12` | scientific snapshot `988ace0`; later TASK-only clarification, exact cost pending |
+| SAQ | `saq-meeting-summary` | `SELF` -- commit containing this registry; parent at reconciliation `79c83e0` | `SUMMARY` | all | summary-only; no experiment execution |
 
 ### Sibling evidence snapshot
 
