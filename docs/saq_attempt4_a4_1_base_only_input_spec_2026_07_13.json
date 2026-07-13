@@ -1,0 +1,214 @@
+{
+  "schema_version": 2,
+  "protocol_version": "saq-attempt4-a4-1-20260713-schema2",
+  "stage": "A4-1P",
+  "status": "FROZEN_NOT_AUTHORIZED",
+  "provenance_source": {
+    "kind": "previously committed input contract; no artifact bytes read for A4-1P",
+    "git_commit": "ff360cdf2699f68cb36f3aa95dd2fc380897ae1a",
+    "git_path": "docs/saq_caq_co0_v2_b0_input_spec_2026_07_11.json",
+    "git_blob": "85330ae6065ab6d8acb268fd9e5ce74ccf731722"
+  },
+  "allowed_scientific_artifact_kinds": [
+    "pca_space_base_vectors",
+    "pca_space_ivf_centroids",
+    "ivf_cluster_ids"
+  ],
+  "forbidden_scientific_artifact_kinds": [
+    "benchmark_queries",
+    "ground_truth",
+    "raw_base_alternative",
+    "variance_vectors",
+    "pca_matrix",
+    "serialized_index",
+    "prior_a4_output",
+    "other_branch_result"
+  ],
+  "residual_view": {
+    "formula": "float32(base_pca[j] - centroid_pca[cluster_id,j])",
+    "subtraction_precision": "IEEE-754 binary32 round-to-nearest-even",
+    "scalar_fit_objective": "exact rational squared error on finite binary32 residual values",
+    "runtime_score_accumulation": "IEEE-754 binary64",
+    "additional_transform": "none",
+    "normalization": "none"
+  },
+  "group_panel": {
+    "group_count": 64,
+    "group_width": 2,
+    "selection_formula": "P=D/2; p_h=floor((2*h+1)*P/128); coordinates=(2*p_h,2*p_h+1), h=0..63",
+    "selection_depends_on_values": false,
+    "word_bits": [4, 8],
+    "capacities": [16, 256],
+    "payload_bytes_per_panel_vector": {
+      "4": 32,
+      "8": 64
+    }
+  },
+  "inventory": {
+    "fit_rows_per_dataset": 8192,
+    "heldout_rows_per_dataset": 8192,
+    "selection_key_encoding": "UTF-8",
+    "selection_key_template": "{protocol_version}|{dataset_id}|{cell_id}|{vector_id}",
+    "selection_key_example": "saq-attempt4-a4-1-20260713-schema2|gist_sample50k_k512|0|17",
+    "selection_key_expansion": "no braces, zero-based canonical decimal ids without leading zeros, no terminating newline",
+    "selection_digest": "SHA-256",
+    "within_cell_order": "ascending raw digest bytes, then ascending vector_id",
+    "pool_assignment": "even within-cell rank to fit pool; odd within-cell rank to heldout pool",
+    "allocation": "reserve two rows per cell, then capacity-proportional largest remainder independently within each pool",
+    "base_quota": "two per cell plus floor(7168 * (pool_cell_count-2) / sum_c(pool_cell_count_c-2))",
+    "remainder_order": "descending exact integer remainder numerator, then ascending cell_id",
+    "required_cell_coverage_per_split": 512,
+    "minimum_base_rows_per_cell": 4,
+    "minimum_selected_rows_per_cell_per_split": 2,
+    "pairing": "within heldout cell, consecutive selected ranks without reuse; lower rank stored; odd final rank unused"
+  },
+  "fitting": {
+    "maximum_scalar_cardinality": 256,
+    "scalar_objective": "globally minimum empirical one-dimensional L2 SSE on fit rows",
+    "scalar_solver": "compiled native Monge/SMAWK, divide-and-conquer, or equivalent dynamic program over the registered exact rational objective",
+    "scalar_arithmetic": "canonicalize signed zero to +0.0; every finite normal/subnormal binary32 x_i is exact n_i*2^-149; aggregate equal n_i values with positive integer weights; interval W=sum(w), A=sum(w*n), C=sum(w*n^2), SSE=((W*C-A^2)/W)*2^-298 using arbitrary-precision integers/rationals; no floating surrogate or max(0) repair",
+    "scalar_monge_contract": "weighted sorted 1D squared-error interval costs satisfy the exact Monge/quadrangle property and adding a prior DP row preserves total monotonicity; accelerated DP is valid only with exact rational candidate ordering",
+    "scalar_cardinality_semantics": "at most K nonempty intervals; on equal exact SSE choose more intervals then recursive earliest predecessors; for K>H_distinct copy the H_distinct solution and report effective_cardinality=H_distinct; selecting an unreachable nominal K is NO_GO_REPRESENTATION",
+    "scalar_tie": "canonical reduced nonnegative numerator/positive denominator; exact arbitrary-precision cross multiplication; earliest predecessor only on mathematical equality",
+    "scalar_runtime_certificate": "persist canonical exact curves and partitions; exact-rational replay plus nondecreasing predecessor diagnostic for every cardinality; every comparison must resolve exactly; violation=IMPLEMENTATION_INVALID; diagnostics do not replace the exact Monge contract",
+    "scalar_exact_curve_encoding": "reduced numerator, positive denominator, binary_grid_exponent=-298",
+    "scalar_centroid_rounding": "exact mean (A/W)*2^-149 rounded directly RNE to binary64 for block start0 and independently directly RNE to binary32 for runtime arms; no intermediate floating conversion",
+    "scalar_random_parity_suite": "one PCG64(20260713) stream; t=0..255; input H=1+(t mod 12); values=integers(-8,9); weights=integers(1,6); K=1..min(8,H_distinct)",
+    "support_approximation": "forbidden",
+    "allocation_tie": "minimum fit SSE, then maximum used states, then lexicographically smaller cardinalities",
+    "serialized_centroid_precision": "IEEE-754 binary32",
+    "serialized_scalar_centroid_collision": "NO_GO_REPRESENTATION",
+    "block_vq_starts": [
+      "start 0: arbitrary exact means directly RNE-rounded to binary64, Cartesian product in mixed-radix order, plus deterministic farthest-point fill",
+      "starts 1..7: deterministic farthest-first from salted minimum SHA-256 fitting vector"
+    ],
+    "block_vq_start_count": 8,
+    "block_vq_start_hash_template": "SHA-256({protocol_version}|{dataset_id}|{capacity}|{group_id}|{start_id}|{cell_id}|{vector_id}); no braces/newline; canonical decimal; digest tie by vector_id",
+    "block_vq_row_order": "ascending (cell_id, selection_digest_bytes, vector_id)",
+    "block_vq_max_complete_iterations": 300,
+    "block_vq_stop": "unchanged assignments",
+    "block_vq_assignment_tie": "lowest codeword id",
+    "block_vq_empty_cluster": "retain previous centroid",
+    "block_vq_candidate_sse_increase": "CONTROL_INVALID; no rejection/recovery path",
+    "block_vq_serialized_distinct_centers": "must equal S or CONTROL_INVALID",
+    "block_vq_synthetic_suite": "fresh PCG64(20260713) stream; t=0..63; N=8+(t mod 25); S=2+(t mod 7); coordinates=integers(-8,9,size=(N,2)); dataset_id=synthetic_block_case_{t}; group=0; row i has cell=i mod 4 and vector=i; selection hashes use registered template; start0 uses exact scalar curves K<=S plus arbitrary allocation capacity S",
+    "global_control_name": "global_dyadic_pack_cap8",
+    "global_dyadic_max_bits_per_coordinate": 8,
+    "global_pack": "selected-coordinate order; b_j label bits LSB-first; stream bit t maps to byte floor(t/8), bit t mod 8; zero-pad high tail to exact 32/64-byte payload"
+  },
+  "lookup": {
+    "matched_word_entry_count_per_group": "S",
+    "entry_precision": "IEEE-754 binary32",
+    "valid_entry_arithmetic": "promote binary32 q and centroids to binary64; coordinate-0 square then coordinate-1 square; add; narrow once to binary32",
+    "invalid_product_entry": "binary32 positive infinity",
+    "pair_estimate": "group-order binary64 accumulation of stored binary32 LUT entries",
+    "global_control": "sum_j K_j binary32 scalar entries; each is float64 promoted subtract/square then one binary32 narrowing; 128 scalar lookups"
+  },
+  "statistics": {
+    "bootstrap_replicates": 10000,
+    "rng": "NumPy Generator(PCG64)",
+    "seed": 20260713,
+    "unit": "two-stage IVF cell then heldout row/pair",
+    "draws_per_replicate": 512,
+    "within_cell_draw_count": "original selected vector or pair count in each sampled cell occurrence",
+    "replicate_scaling": "reconstruction raw SSE divided by replicate vector count; pair raw absolute error divided by replicate pair count; same normalization for point estimates",
+    "target_weighting": "vector-weighted or pair-weighted frozen heldout inventory with IVF cells as first-stage clusters, not a mean of cell means",
+    "shared_draws": "cell matrix across datasets; within-cell indices across arms and rates",
+    "generation_order": "cell matrix integers(0,512,size=(10000,512)); GIST then CIFAR; replicate; cell occurrence; integers(0,n,size=n) vectors; integers(0,m,size=m) pairs",
+    "accumulation_order": "point: (cell,digest,vector), then group/coordinate; bootstrap: sampled-cell occurrence, draw, group/coordinate; pairs: (cell,pair_rank); sequential binary64",
+    "alpha": 0.05,
+    "interval": "basic bootstrap with NumPy method=linear quantiles",
+    "p_value": "null-centered (1 + count((T_b-T_hat)>=T_hat)) / 10001, ties included",
+    "multiple_testing": "Holm step-down across the 16 registered one-sided linear-contrast hypotheses; ties by hypothesis id"
+  },
+  "execution": {
+    "threads": 1,
+    "thread_environment": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    },
+    "native_scalar_solver_required": true,
+    "native_numeric_contract": {
+      "compiler": "GCC 11.5.0",
+      "flags": "-O3 -fno-fast-math -ffp-contract=off -frounding-math -mfpmath=sse; no -march=native; no fused multiply-add",
+      "rounding": "call and verify fesetround(FE_TONEAREST)",
+      "subnormals": "x86-64 MXCSR FTZ and DAZ bits cleared and verified",
+      "manifest": "compiler identity, complete flags, CPU model, exact integer/rational library and version, rounding mode, MXCSR, NumPy version"
+    },
+    "synthetic_cost_projection": "separate precommitted review command excluded from atomic base CPU; same compiled exact-arithmetic library/compiler, all K=1..256 curves, exact allocations, and direct-rational rounding as base; C-order Generator(PCG64(20260713)).standard_normal((8192,128),dtype=float32); dataset_id=synthetic_cost_projection; row i cell=0 vector=i; group h columns=(2h,2h+1); registered selection/capacity hashes; record NumPy version; all rates/eight starts; projected two-dataset base CPU=2.5x measured",
+    "synthetic_cost_projection_failure": "projected CPU above 24 hours returns NO_GO_EXACT_SOLVER_COST; no shape reduction or floating-point fallback",
+    "cpu_hour_ceiling": 24,
+    "cpu_accounting": "getrusage(RUSAGE_SELF)+getrusage(RUSAGE_CHILDREN) for whole atomic command",
+    "synthetic_runner_implementation_authorized": false,
+    "real_base_execution_authorized": false
+  },
+  "datasets": [
+    {
+      "dataset_id": "gist_sample50k_k512",
+      "rows": 50000,
+      "dimension": 960,
+      "ivf_clusters": 512,
+      "group_coordinates": [[6, 7], [22, 23], [36, 37], [52, 53], [66, 67], [82, 83], [96, 97], [112, 113], [126, 127], [142, 143], [156, 157], [172, 173], [186, 187], [202, 203], [216, 217], [232, 233], [246, 247], [262, 263], [276, 277], [292, 293], [306, 307], [322, 323], [336, 337], [352, 353], [366, 367], [382, 383], [396, 397], [412, 413], [426, 427], [442, 443], [456, 457], [472, 473], [486, 487], [502, 503], [516, 517], [532, 533], [546, 547], [562, 563], [576, 577], [592, 593], [606, 607], [622, 623], [636, 637], [652, 653], [666, 667], [682, 683], [696, 697], [712, 713], [726, 727], [742, 743], [756, 757], [772, 773], [786, 787], [802, 803], [816, 817], [832, 833], [846, 847], [862, 863], [876, 877], [892, 893], [906, 907], [922, 923], [936, 937], [952, 953]],
+      "artifacts": {
+        "base": {
+          "relative_name": "gist_sample50k_base_pca.fvecs",
+          "format": "fvecs",
+          "rows": 50000,
+          "dimension": 960,
+          "size_bytes": 192200000,
+          "expected_sha256": "a027be4e9942c7935ba4c7184eac09b4ad2d2c6fbe561ed9a598e66933b20671"
+        },
+        "centroids": {
+          "relative_name": "gist_sample50k_centroid_512_pca.fvecs",
+          "format": "fvecs",
+          "rows": 512,
+          "dimension": 960,
+          "size_bytes": 1968128,
+          "expected_sha256": "48af2216744f9bb39fd7dccf2e0358aa705a4647227adb777796623c676674db"
+        },
+        "cluster_ids": {
+          "relative_name": "gist_sample50k_cluster_id_512.ivecs",
+          "format": "ivecs",
+          "rows": 50000,
+          "dimension": 1,
+          "size_bytes": 400000,
+          "expected_sha256": "c466b5685dd4ef12f42f1d7fa304f42b2c9989df12190c84b8bb4c0a29618eb1"
+        }
+      }
+    },
+    {
+      "dataset_id": "cifar60k_k512",
+      "rows": 60000,
+      "dimension": 512,
+      "ivf_clusters": 512,
+      "group_coordinates": [[4, 5], [12, 13], [20, 21], [28, 29], [36, 37], [44, 45], [52, 53], [60, 61], [68, 69], [76, 77], [84, 85], [92, 93], [100, 101], [108, 109], [116, 117], [124, 125], [132, 133], [140, 141], [148, 149], [156, 157], [164, 165], [172, 173], [180, 181], [188, 189], [196, 197], [204, 205], [212, 213], [220, 221], [228, 229], [236, 237], [244, 245], [252, 253], [260, 261], [268, 269], [276, 277], [284, 285], [292, 293], [300, 301], [308, 309], [316, 317], [324, 325], [332, 333], [340, 341], [348, 349], [356, 357], [364, 365], [372, 373], [380, 381], [388, 389], [396, 397], [404, 405], [412, 413], [420, 421], [428, 429], [436, 437], [444, 445], [452, 453], [460, 461], [468, 469], [476, 477], [484, 485], [492, 493], [500, 501], [508, 509]],
+      "artifacts": {
+        "base": {
+          "relative_name": "cifar60k_base_pca.fvecs",
+          "format": "fvecs",
+          "rows": 60000,
+          "dimension": 512,
+          "size_bytes": 123120000,
+          "expected_sha256": "2019cfa391c5d10742a9963b6dc3d28d633097632b7bb1acde737caa6d314845"
+        },
+        "centroids": {
+          "relative_name": "cifar60k_centroid_512_pca.fvecs",
+          "format": "fvecs",
+          "rows": 512,
+          "dimension": 512,
+          "size_bytes": 1050624,
+          "expected_sha256": "ad4498c3b67a1ab598eb47bee560133a3d6ca46a7867db29ffb55ce53b3c9827"
+        },
+        "cluster_ids": {
+          "relative_name": "cifar60k_cluster_id_512.ivecs",
+          "format": "ivecs",
+          "rows": 60000,
+          "dimension": 1,
+          "size_bytes": 480000,
+          "expected_sha256": "3168f05171f74afb175c50a0ec9e584b0f666b157fbedba6d3841cc2e43107e9"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "schema_version": 2,
+  "protocol_version": "saq-attempt4-a4-1-20260713-schema2",
+  "stage": "A4-1P",
+  "status": "FROZEN_NOT_AUTHORIZED",
+  "family_size": 16,
+  "alpha": 0.05,
+  "correction": "Holm step-down across all 16 one-sided linear-contrast hypotheses; raw-p ties by hypothesis id",
+  "bootstrap": {
+    "replicates": 10000,
+    "rng": "NumPy Generator(PCG64)",
+    "seed": 20260713,
+    "unit": "two-stage IVF cell then selected heldout row or pair",
+    "cell_draws_per_replicate": 512,
+    "within_cell_draw_count": "same as original selected row or pair count for each sampled cell occurrence",
+    "shared_indices": "cell matrix across datasets; within-cell draws across arms and rates",
+    "generation_order": "integers(0,512,size=(10000,512)); GIST then CIFAR; replicate; sampled-cell occurrence; integers(0,n,size=n) vectors; integers(0,m,size=m) pairs",
+    "replicate_scaling": "raw SSE divided by replicate vector count; raw absolute error divided by replicate pair count",
+    "accumulation_order": "sampled-cell occurrence, resampled draw, group, coordinate; sequential binary64",
+    "interval": "basic bootstrap; NumPy quantile method=linear",
+    "one_sided_lower_bound": "T_hat - quantile_0.95(T_bootstrap-T_hat)",
+    "p_value": "(1 + count((T_bootstrap-T_hat) >= T_hat)) / 10001; ties included"
+  },
+  "components": {
+    "D_arm": "raw heldout panel SSE divided by heldout vector count",
+    "delta_A": "D_dyadic_word-D_arbitrary_word",
+    "delta_V": "D_dyadic_word-D_trained_block_vq",
+    "A_arm": "sum over registered base pairs of abs(float64_sum_stored_float32_LUT_entries-true_float64_L2_squared), divided by pair count"
+  },
+  "registered_statistics": {
+    "L_G": "delta_A-0.05*D_dyadic_word",
+    "L_V": "delta_V",
+    "L_C": "delta_A-0.50*delta_V",
+    "L_Q": "A_dyadic_word-A_arbitrary_word"
+  },
+  "descriptive_ratios_not_tested": {
+    "G": "delta_A/D_dyadic_word when denominator is positive",
+    "C": "delta_A/delta_V only when point delta_V is positive; no bootstrap CI or p-value",
+    "Q": "L_Q/A_dyadic_word when denominator is positive"
+  },
+  "descriptive_nondecision_sensitivity": {
+    "G_thresholds": [0.02, 0.10],
+    "rule": "report only; neither threshold can replace the registered 0.05 gate"
+  },
+  "hypotheses": [
+    {"id": "LG_GIST_B4", "class": "materiality", "dataset": "gist_sample50k_k512", "word_bits": 4, "statistic": "L_G", "null": "<=", "value": 0.0},
+    {"id": "LG_GIST_B8", "class": "materiality", "dataset": "gist_sample50k_k512", "word_bits": 8, "statistic": "L_G", "null": "<=", "value": 0.0},
+    {"id": "LG_CIFAR_B4", "class": "materiality", "dataset": "cifar60k_k512", "word_bits": 4, "statistic": "L_G", "null": "<=", "value": 0.0},
+    {"id": "LG_CIFAR_B8", "class": "materiality", "dataset": "cifar60k_k512", "word_bits": 8, "statistic": "L_G", "null": "<=", "value": 0.0},
+    {"id": "LV_GIST_B4", "class": "positive_block_opportunity", "dataset": "gist_sample50k_k512", "word_bits": 4, "statistic": "L_V", "null": "<=", "value": 0.0},
+    {"id": "LV_GIST_B8", "class": "positive_block_opportunity", "dataset": "gist_sample50k_k512", "word_bits": 8, "statistic": "L_V", "null": "<=", "value": 0.0},
+    {"id": "LV_CIFAR_B4", "class": "positive_block_opportunity", "dataset": "cifar60k_k512", "word_bits": 4, "statistic": "L_V", "null": "<=", "value": 0.0},
+    {"id": "LV_CIFAR_B8", "class": "positive_block_opportunity", "dataset": "cifar60k_k512", "word_bits": 8, "statistic": "L_V", "null": "<=", "value": 0.0},
+    {"id": "LC_GIST_B4", "class": "block_opportunity_closure", "dataset": "gist_sample50k_k512", "word_bits": 4, "statistic": "L_C", "null": "<=", "value": 0.0},
+    {"id": "LC_GIST_B8", "class": "block_opportunity_closure", "dataset": "gist_sample50k_k512", "word_bits": 8, "statistic": "L_C", "null": "<=", "value": 0.0},
+    {"id": "LC_CIFAR_B4", "class": "block_opportunity_closure", "dataset": "cifar60k_k512", "word_bits": 4, "statistic": "L_C", "null": "<=", "value": 0.0},
+    {"id": "LC_CIFAR_B8", "class": "block_opportunity_closure", "dataset": "cifar60k_k512", "word_bits": 8, "statistic": "L_C", "null": "<=", "value": 0.0},
+    {"id": "LQ_GIST_B4", "class": "base_pair_improvement", "dataset": "gist_sample50k_k512", "word_bits": 4, "statistic": "L_Q", "null": "<=", "value": 0.0},
+    {"id": "LQ_GIST_B8", "class": "base_pair_improvement", "dataset": "gist_sample50k_k512", "word_bits": 8, "statistic": "L_Q", "null": "<=", "value": 0.0},
+    {"id": "LQ_CIFAR_B4", "class": "base_pair_improvement", "dataset": "cifar60k_k512", "word_bits": 4, "statistic": "L_Q", "null": "<=", "value": 0.0},
+    {"id": "LQ_CIFAR_B8", "class": "base_pair_improvement", "dataset": "cifar60k_k512", "word_bits": 8, "statistic": "L_Q", "null": "<=", "value": 0.0}
+  ],
+  "additional_hard_gates_per_dataset_rate_cell": {
+    "positive_group_count": "at least 48 of 64 groups have point-estimate G_g > 0",
+    "leave_one_group_out": "minimum of 64 pooled G point estimates is at least 0.05"
+  },
+  "maximum_pass_decision": "GO_TO_SYSTEMS_PREREG",
+  "claims_not_authorized": [
+    "SAQ-specific limitation",
+    "ANN ranking or recall improvement",
+    "throughput or QPS improvement",
+    "novelty of arbitrary cardinalities or mixed radix",
+    "SAQ or scan-path integration"
+  ]
+}

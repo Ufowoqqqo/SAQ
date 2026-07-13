@@ -18,12 +18,25 @@ change random access, SIMD scan, and worst-case storage.
 
 ## Current Decision
 
-`CONDITIONAL_GO_FOR_OFFLINE_FEASIBILITY_ONLY`.
+`A4_1P_FROZEN_NOT_AUTHORIZED`.
 
 A4-0 is complete with `PASS_INSTRUMENT_ONLY`. All seven deterministic tests
-and all frozen witness checks pass. This result authorizes only preparation of
-a separately frozen, base-data-only feasibility protocol; that next protocol
-has not yet been written or executed. SAQ integration remains unauthorized.
+and all frozen witness checks pass. The separately frozen A4-1 base-data-only
+feasibility preregistration has now been written, but no natural-data adapter,
+runner, or A4-1 result has been implemented or executed. No dataset artifact
+was opened while freezing the protocol. Real-base execution and SAQ
+integration remain unauthorized.
+
+The authoritative A4-1P contracts are:
+
+- `docs/saq_attempt4_a4_1_base_only_feasibility_preregistration_2026_07_13.md`;
+- `docs/saq_attempt4_a4_1_base_only_input_spec_2026_07_13.json`;
+- `docs/saq_attempt4_a4_1_base_only_hypotheses_2026_07_13.json`.
+
+The next decision is whether to authorize the synthetic-only implementation,
+parity review, and same-shape cost projection. Real-base execution is a later
+separate decision after those artifacts are committed and reviewed. Do not
+treat the committed protocol as either authorization.
 
 The coding primitive is not novel: entropy-constrained quantization,
 transform coding, adaptive product-code bit allocation, mixed scalar level
@@ -35,8 +48,10 @@ cardinalities form a larger feasible set than powers of two.
 
 ## A4-0: Synthetic And Instrument Stage
 
-This is the only authorized stage now. It must not read benchmark query,
-ground-truth, or index artifacts and must not change the SAQ implementation.
+This was the only authorized experimental stage and is complete. It did not
+read benchmark query, ground-truth, or index artifacts and did not change the
+SAQ implementation. A4-1P subsequently froze a protocol only; no new
+experimental execution is currently authorized.
 
 1. Freeze the budget semantics and related-work boundary.
 2. Implement exact weighted 1D L2 quantization for every integer cardinality
@@ -114,3 +129,9 @@ fixed-rate database scan:  one table lookup per stored B_g-bit group
 ```
 
 These are first-stage reference costs, not optimized production bounds.
+A4-1P instead freezes exact rational SSE on binary32 inputs and an
+exact-arithmetic Monge-optimized native solver. Its separately authorized
+same-shape synthetic projection, rather than an assumed asymptotic speedup,
+decides whether that stricter solver fits the registered 24 CPU-hour budget.
+An over-budget projection returns `NO_GO_EXACT_SOLVER_COST`; it does not
+authorize a floating-point approximation or a reduced-shape rescue run.

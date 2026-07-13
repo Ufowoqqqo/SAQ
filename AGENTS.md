@@ -58,6 +58,31 @@ Huffman coding, entropy-constrained quantization, or bit allocation as novel
 primitives. Any eventual contribution must be ANN-specific and preserve or
 improve the relevant random-access scan interface.
 
+## A4-1 Preregistration State
+
+The A4-1 base-only feasibility protocol is frozen but **not authorized for
+implementation or execution**. Its authoritative contracts are:
+
+- `docs/saq_attempt4_a4_1_base_only_feasibility_preregistration_2026_07_13.md`;
+- `docs/saq_attempt4_a4_1_base_only_input_spec_2026_07_13.json`;
+- `docs/saq_attempt4_a4_1_base_only_hypotheses_2026_07_13.json`.
+
+No natural-data adapter or result was produced when these contracts were
+written, and no dataset artifact was opened. Do not implement the A4-1 runner,
+read its six registered scientific inputs, or execute its gate without later
+explicit user authorization. Runner implementation needs its own
+authorization. Synthetic parity, code review, and the same-shape cost
+projection must then be committed and reviewed before a separate authorization
+for the first base read.
+
+The maximum registered outcome is `GO_TO_SYSTEMS_PREREG`: evidence of a
+word-local base-data opportunity that permits writing a later systems/ANN
+protocol. It is not authorization to modify SAQ or inspect benchmark queries.
+The registered scalar objective uses exact rational SSE on binary32 inputs.
+If the same-shape synthetic projection puts that solver above the frozen cost
+ceiling, return `NO_GO_EXACT_SOLVER_COST`; do not substitute a floating-point
+objective or reduce the projection shape.
+
 ## Repository Layout
 
 - `saqlib/`: upstream C++ SAQ/CAQ implementation and search path.
@@ -96,6 +121,8 @@ canonical output.
 ## Do-Not Rules
 
 - Do not alter upstream code during the first offline feasibility stage.
+- Do not treat the frozen A4-1 preregistration as authorization to implement
+  or execute its runner.
 - Do not use benchmark queries to choose cardinalities, groups, codebooks, or
   stopping decisions.
 - Do not equate a budget on the sum of center counts with a fixed bit budget;
