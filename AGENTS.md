@@ -58,22 +58,34 @@ Huffman coding, entropy-constrained quantization, or bit allocation as novel
 primitives. Any eventual contribution must be ANN-specific and preserve or
 improve the relevant random-access scan interface.
 
-## A4-1 Preregistration State
+## A4-1S Authorization State
 
-The A4-1 base-only feasibility protocol is frozen but **not authorized for
-implementation or execution**. Its authoritative contracts are:
+The A4-1 base-only feasibility protocol is frozen. Its authoritative
+scientific contracts are:
 
 - `docs/saq_attempt4_a4_1_base_only_feasibility_preregistration_2026_07_13.md`;
 - `docs/saq_attempt4_a4_1_base_only_input_spec_2026_07_13.json`;
 - `docs/saq_attempt4_a4_1_base_only_hypotheses_2026_07_13.json`.
 
-No natural-data adapter or result was produced when these contracts were
-written, and no dataset artifact was opened. Do not implement the A4-1 runner,
-read its six registered scientific inputs, or execute its gate without later
-explicit user authorization. Runner implementation needs its own
-authorization. Synthetic parity, code review, and the same-shape cost
-projection must then be committed and reviewed before a separate authorization
-for the first base read.
+On 2026-07-13 the user explicitly authorized **A4-1S only**: synthetic runner
+implementation, exact parity, deterministic block-control review, and the
+full-shape `8192 x 128` synthetic cost projection. The frozen implementation
+contract is:
+
+- `docs/saq_attempt4_a4_1s_synthetic_implementation_protocol_2026_07_13.md`.
+
+This authorization does not permit a natural-data adapter, any read of the six
+registered scientific inputs, the future atomic base command, or SAQ
+integration. The `synthetic_runner_implementation_authorized=false` field in
+the input contract records its preregistration-time state and must not be
+rewritten; the dated user instruction and A4-1S protocol are the later narrow
+authority.
+
+Commit the implementation before generating the frozen random parity suites.
+Commit and independently review parity evidence before the full-shape cost
+projection. Then commit and review the cost manifest, summary, and detail
+ledger. Only `PASS_SYNTHETIC_GATE_ONLY` permits asking the user for a separate
+real-base authorization; it never grants that authorization itself.
 
 The maximum registered outcome is `GO_TO_SYSTEMS_PREREG`: evidence of a
 word-local base-data opportunity that permits writing a later systems/ANN
@@ -121,8 +133,13 @@ canonical output.
 ## Do-Not Rules
 
 - Do not alter upstream code during the first offline feasibility stage.
-- Do not treat the frozen A4-1 preregistration as authorization to implement
-  or execute its runner.
+- Do not extend the A4-1S authorization beyond synthetic implementation,
+  parity, block-control review, and the frozen full-shape cost projection.
+- Do not implement a natural-data adapter or open `data/`, `results/`, or any
+  registered base, centroid, cluster-id, query, ground-truth, or index file.
+- Do not run the cost projection from an uncommitted implementation, before
+  parity evidence is committed and reviewed, or with a dirty worktree.
+- Do not rewrite the frozen A4-1P contracts to record later authorization.
 - Do not use benchmark queries to choose cardinalities, groups, codebooks, or
   stopping decisions.
 - Do not equate a budget on the sum of center counts with a fixed bit budget;

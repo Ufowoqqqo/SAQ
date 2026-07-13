@@ -18,14 +18,12 @@ change random access, SIMD scan, and worst-case storage.
 
 ## Current Decision
 
-`A4_1P_FROZEN_NOT_AUTHORIZED`.
+`A4_1S_AUTHORIZED_NOT_IMPLEMENTED`.
 
 A4-0 is complete with `PASS_INSTRUMENT_ONLY`. All seven deterministic tests
-and all frozen witness checks pass. The separately frozen A4-1 base-data-only
-feasibility preregistration has now been written, but no natural-data adapter,
-runner, or A4-1 result has been implemented or executed. No dataset artifact
-was opened while freezing the protocol. Real-base execution and SAQ
-integration remain unauthorized.
+and all frozen witness checks pass. The A4-1 base-data-only feasibility
+preregistration was frozen and pushed at `3aa2f6e`. No dataset artifact was
+opened while freezing it.
 
 The authoritative A4-1P contracts are:
 
@@ -33,10 +31,18 @@ The authoritative A4-1P contracts are:
 - `docs/saq_attempt4_a4_1_base_only_input_spec_2026_07_13.json`;
 - `docs/saq_attempt4_a4_1_base_only_hypotheses_2026_07_13.json`.
 
-The next decision is whether to authorize the synthetic-only implementation,
-parity review, and same-shape cost projection. Real-base execution is a later
-separate decision after those artifacts are committed and reviewed. Do not
-treat the committed protocol as either authorization.
+On 2026-07-13 the user authorized A4-1S synthetic-only implementation, parity,
+block-control review, and the full-shape cost projection. The implementation
+boundary, commands, artifact schemas, conservative ambiguity resolutions, and
+status precedence are frozen in:
+
+- `docs/saq_attempt4_a4_1s_synthetic_implementation_protocol_2026_07_13.md`.
+
+No A4-1S runner or random fixture has yet been implemented or executed. Real
+base/centroid/cluster-id access, a natural-data adapter, the atomic base gate,
+benchmark queries, SAQ integration, and systems claims remain unauthorized.
+The next admissible work is the exact implementation and synthetic parity
+stage from a clean commit.
 
 The coding primitive is not novel: entropy-constrained quantization,
 transform coding, adaptive product-code bit allocation, mixed scalar level
@@ -46,12 +52,48 @@ to establish an ANN-specific rate-distortion/scan advantage at unchanged
 fixed payload and controlled table/build work, not merely show that integer
 cardinalities form a larger feasible set than powers of two.
 
+## A4-1S: Authorized Synthetic Implementation Gate
+
+Execute in this mandatory order:
+
+1. Commit the A4-1S protocol before accepting or committing runner changes and
+   before executing RNG.
+2. Implement the compiled exact-rational scalar path, exact allocators,
+   direct rational rounding, packing/LUT reference, deterministic block VQ,
+   synthetic read guard, and canonical artifact writer without touching
+   upstream SAQ code.
+3. Commit the implementation, then run the exact exhaustive tiny suite, all
+   seven A4-0 tests, the frozen 256-case scalar suite, representation parity,
+   block semantic fixtures, and the frozen 64-case block suite.
+4. Commit and independently review parity evidence. Any implementation change
+   invalidates it and returns to step 2.
+5. From the clean reviewed commit, run the full
+   `PCG64(20260713) 8192 x 128 float32` projection with all 64 groups, both
+   rates, all scalar `K=1..256` curves, all registered allocations, and all
+   eight block starts.
+6. Commit and independently review the cost manifest, summary, and full-detail
+   hash ledger.
+
+The frozen projection decision is:
+
+```text
+projected two-dataset CPU = 2.5 * whole synthetic command CPU
+PASS only if complete projection CPU <= 34,560 seconds
+NO_GO_EXACT_SOLVER_COST if the projected CPU exceeds 24 hours
+```
+
+Artifact, implementation, and block-control defects take precedence over
+representation or cost outcomes. The maximum A4-1S result is
+`PASS_SYNTHETIC_GATE_ONLY`, which permits only asking the user whether to
+authorize the first real-base read. It is not natural-data evidence and is not
+base-data authorization.
+
 ## A4-0: Synthetic And Instrument Stage
 
-This was the only authorized experimental stage and is complete. It did not
-read benchmark query, ground-truth, or index artifacts and did not change the
-SAQ implementation. A4-1P subsequently froze a protocol only; no new
-experimental execution is currently authorized.
+This stage is complete. It did not read benchmark query, ground-truth, or index
+artifacts and did not change the SAQ implementation. A4-1P subsequently froze
+the base-only protocol, and A4-1S is now the separately authorized synthetic
+implementation gate described above.
 
 1. Freeze the budget semantics and related-work boundary.
 2. Implement exact weighted 1D L2 quantization for every integer cardinality
