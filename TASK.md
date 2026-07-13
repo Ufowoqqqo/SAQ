@@ -18,7 +18,7 @@ change random access, SIMD scan, and worst-case storage.
 
 ## Current Decision
 
-`A4_1S_AUTHORIZED_NOT_IMPLEMENTED`.
+`A4_1S_IMPLEMENTED_NOT_EXECUTED`.
 
 A4-0 is complete with `PASS_INSTRUMENT_ONLY`. All seven deterministic tests
 and all frozen witness checks pass. The A4-1 base-data-only feasibility
@@ -38,11 +38,17 @@ status precedence are frozen in:
 
 - `docs/saq_attempt4_a4_1s_synthetic_implementation_protocol_2026_07_13.md`.
 
-No A4-1S runner or random fixture has yet been implemented or executed. Real
-base/centroid/cluster-id access, a natural-data adapter, the atomic base gate,
-benchmark queries, SAQ integration, and systems claims remain unauthorized.
-The next admissible work is the exact implementation and synthetic parity
-stage from a clean commit.
+The branch-local A4-1S native solver, independent references, synthetic-only
+runner, artifact writer, and deterministic tests are now implemented. The 7
+A4-0 and 14 A4-1S nonrandom tests pass as pre-execution diagnostics, but no
+PCG64 fixture, parity artifact, cost projection, or gate decision has yet been
+produced. Those diagnostics are not a substitute for the committed and
+independently reviewed parity checkpoint required below.
+
+Real base/centroid/cluster-id access, a natural-data adapter, the atomic base
+gate, benchmark queries, SAQ integration, and systems claims remain
+unauthorized. The next admissible work is to commit the implementation and run
+the exact synthetic parity command from that clean commit.
 
 The coding primitive is not novel: entropy-constrained quantization,
 transform coding, adaptive product-code bit allocation, mixed scalar level
