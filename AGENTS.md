@@ -33,12 +33,14 @@ The authoritative documents are:
 - `docs/saq_attempt3_ratio_metric_sources_2026_07_13.json`;
 - `docs/saq_attempt3_ratio_metric_protocol_2026_07_13.md`.
 - `docs/saq_attempt3_a3_0_a3_1_gist_evidence_2026_07_13.md`.
+- `docs/saq_attempt3_a3_2_a3_3_decision_2026_07_13.md`.
 
-Do not design a metric-aware plan, fit on benchmark queries, add candidates,
-or reopen an earlier method before the protocol's retrospective comparison is
-complete. A3-1 finds one GIST metric-sensitive operating point, not a method.
-A later method review still requires a stable Pareto-order change on at least
-two datasets or two independent competitive baselines.
+The retrospective comparison is complete and closes as metric-sensitivity
+evidence. A3-1 finds one GIST metric-sensitive operating point; A3-2 preserves
+the DEEP B4/B5 negative controls. Do not design a metric-aware plan, fit on
+benchmark queries, add candidates, or reopen an earlier method from this
+result. A later method review still requires a stable Pareto-order change on
+at least two datasets or two independent competitive baselines.
 
 ## Branch Hygiene
 

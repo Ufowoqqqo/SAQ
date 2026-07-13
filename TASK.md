@@ -8,12 +8,15 @@ The immediate target is not a method. It is a validated evaluator and a fair
 QPS-versus-quality replay in which the baseline and alternative use the same
 search-effort grid.
 
-A3-0 and A3-1 are complete. The evaluator passes all deterministic fixtures.
+A3-0 through A3-3 are complete. The evaluator passes all deterministic fixtures.
 On `gist_sample100k/K512/B4`, fac-error `nprobe=280` exceeds the historical
 default `nprobe=200` in mean `1/Ratio@100` and QPS (`1.07793x`), although it
 cannot reach the default Recall target and 39.6% of paired query-level
-`1/Ratio` differences are negative. This is metric-sensitivity evidence on one
-setting, not a method or contribution.
+`1/Ratio` differences are negative. On DEEP sample100k B4 and B5, the rejected
+candidates cannot reach the default np200 target under either metric, and
+97.1% / 87.3% of same-nprobe query deltas are negative. This is
+metric-sensitivity evidence with preserved negative controls, not a method or
+contribution.
 
 ## Research Question
 
@@ -45,7 +48,7 @@ A3-1a replay gist_sample100k K512 B=4 default versus frozen fac-error plan
 A3-1b if A3-1a is left-truncated, rerun both plans on the preregistered union
        of nprobe values from the two historical experiment families
 A3-2  evaluate frozen DEEP B=4/B=5 rejected candidates as negative controls
-A3-3  decide whether any conclusion changed
+A3-3  decide whether any conclusion changed                         COMPLETE
 ```
 
 Do not begin A3-2 before A3-1 is recorded. Exact-hist/Lloyd,
@@ -55,7 +58,14 @@ require a separate decision.
 A3-1 is recorded in
 `docs/saq_attempt3_a3_0_a3_1_gist_evidence_2026_07_13.md`, with compact
 artifacts under `docs/saq_attempt3_a3_1b_artifacts_2026_07_13/`. The immediate
-next stage is A3-2; do not broaden GIST or design a metric-aware method first.
+decision and DEEP controls are recorded in
+`docs/saq_attempt3_a3_2_a3_3_decision_2026_07_13.md`, with compact artifacts
+under `docs/saq_attempt3_a3_2_artifacts_2026_07_13/`.
+
+Attempt 3 is closed as `CLOSE_AS_METRIC_SENSITIVITY_EVIDENCE`. Do not broaden
+GIST/DEEP, resume fac-error planning, or design a metric-aware method on this
+branch. The next project step should be meeting synthesis or an independently
+reviewed Attempt 4, not an Attempt 3 rescue.
 
 ## A3-0 Requirements
 

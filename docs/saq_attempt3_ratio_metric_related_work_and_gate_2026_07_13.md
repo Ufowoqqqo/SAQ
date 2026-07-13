@@ -5,8 +5,14 @@ Date: 2026-07-13
 ## Decision
 
 ```text
-CONDITIONAL_GO_FOR_EVALUATION_ONLY
+FINAL: CLOSE_AS_METRIC_SENSITIVITY_EVIDENCE
 ```
+
+The original review decision was `CONDITIONAL_GO_FOR_EVALUATION_ONLY`. A3-0
+through A3-3 are now complete. GIST supplies one metric-sensitive operating
+point, while DEEP B4/B5 preserve their negative-control decisions. The
+cross-dataset positive-reproduction and mechanism gates do not pass. See
+`docs/saq_attempt3_a3_2_a3_3_decision_2026_07_13.md`.
 
 Attempt 3 may implement a paper-exact `1/Ratio@k` evaluator and use it to
 re-evaluate a small, frozen set of earlier outcomes. This decision does not

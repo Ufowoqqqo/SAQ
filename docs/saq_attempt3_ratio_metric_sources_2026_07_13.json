@@ -2,6 +2,7 @@
   "topic": "Attempt 3 distance-quality metric review and retrospective evaluation gate",
   "retrieved_on": "2026-07-13",
   "decision": "CONDITIONAL_GO_FOR_EVALUATION_ONLY",
+  "final_outcome": "CLOSE_AS_METRIC_SENSITIVITY_EVIDENCE",
   "review_contract": {
     "primary_sources_only": true,
     "implementation_before_decision": false,
