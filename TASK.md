@@ -77,9 +77,11 @@ Execute in this mandatory order:
 The frozen projection decision is:
 
 ```text
-projected two-dataset CPU = 2.5 * whole synthetic command CPU
-PASS only if complete projection CPU <= 34,560 seconds
-NO_GO_EXACT_SOLVER_COST if the projected CPU exceeds 24 hours
+timed_region_cpu_microseconds is the integer getrusage delta defined by A4-1S
+projected cost = (5 * timed_region_cpu_microseconds) / 2 microseconds
+PASS iff 5 * timed_region_cpu_microseconds <= 2 * 86,400,000,000
+the fixed four-file post-timing trailer is the only excluded finalization
+NO_GO_EXACT_SOLVER_COST otherwise
 ```
 
 Artifact, implementation, and block-control defects take precedence over

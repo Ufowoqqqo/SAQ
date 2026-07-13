@@ -112,16 +112,28 @@ MXCSR. GCC 11.5.0 is an exact identity, not a minimum version. An unavailable
 or mismatched toolchain stops before parity as `IMPLEMENTATION_INVALID`.
 
 The complete compiler commands are read from
-`build/a4_1s/compile_commands.json` for all three target translation units:
-`a4_1s_native.cpp`, `exact_quantizer.cpp`, and `numeric_runtime.cpp`. Sort
-entries by repository-relative source path, store each raw `command` string,
-and tokenize it with Python `shlex.split(..., posix=True)` into the recorded
-argv array. Absence of a raw `command` field is `IMPLEMENTATION_INVALID`; do
-not silently substitute a generator-specific representation. Every one of the
-three argv arrays must contain all mandatory flags and no forbidden flag. The
-runtime helper's compiled-in `compile_flags` field records only the frozen
-numerical subset; it may not be reported as a complete command. Source and
-binary hashes bind the manifest to these entries.
+`build/a4_1s/compile_commands.json` for exactly these seven target translation
+units:
+
+```text
+a4_1s_native.cpp
+block_cli.cpp
+block_vq.cpp
+exact_quantizer.cpp
+numeric_runtime.cpp
+representation.cpp
+representation_cli.cpp
+```
+
+Sort entries by repository-relative source path, store each raw `command`
+string, and tokenize it with Python `shlex.split(..., posix=True)` into the
+recorded argv array. Absence of one of the seven entries, an extra target
+translation unit, or absence of a raw `command` field is
+`IMPLEMENTATION_INVALID`; do not silently substitute a generator-specific
+representation. Every one of the seven argv arrays must contain all mandatory
+flags and no forbidden flag. The runtime helper's compiled-in `compile_flags`
+field records only the frozen numerical subset; it may not be reported as a
+complete command. Source and binary hashes bind the manifest to these entries.
 
 The layer must implement direct, correctly rounded, ties-to-even conversion
 from the registered exact rational means to binary32 and independently to
@@ -366,39 +378,62 @@ accounting work.
 
 The gate CPU clock is the delta of
 `getrusage(RUSAGE_SELF)+getrusage(RUSAGE_CHILDREN)`, captured by the Python
-supervisor at its first executable statement before NumPy is imported. The
-timed region includes contract/numeric preflight, NumPy import and generation,
-all native children, every model, encoding, all external detail shards, the
-complete detail-ledger body, its serialization, flush, and close. The
-supervisor captures the end usage immediately after those timed files are
+supervisor at its first executable statement before NumPy is imported. Read
+each underlying `struct timeval` as integers and convert it as
+`tv_sec*1_000_000+tv_usec`; do not obtain the authority-bearing value by
+multiplying a binary floating-point seconds value. Sum user and system time for
+self and terminated children at the start and end, then subtract to obtain the
+nonnegative integer `timed_region_cpu_microseconds`.
+Every native child is waited to termination before its model checkpoint and
+before the end snapshot, so its user and system time is present in
+`RUSAGE_CHILDREN` exactly once.
+
+The timed region includes contract/numeric preflight, NumPy import and
+generation, all native children, every model, encoding, all external detail
+shards, the complete detail-ledger body, its serialization, flush, and close.
+The supervisor captures the end usage immediately after those timed files are
 closed.
 
 The captured end value is necessarily unavailable to a file that must already
 contain and be flushed with that value. Therefore only the following small
 trailer finalization is outside the gate clock: inject the captured total into
-the cost manifest and summary, copy the timed region's already-computed shard
-hashes into the detail-ledger wrapper, write and hash those three files, then
-write the artifact index, and flush those four committed JSON files. These
-wrappers may derive no model, allocation, encoding, or work result. Their own
-write/flush duration cannot be embedded without a second self-reference, so no
-untimed-duration field is reported or interpreted. The artifact index records
-the first three wrapper sizes and hashes and, as always, excludes itself.
-This exact four-file trailer is the complete exclusion and may not grow. It
-resolves the timing self-reference; it is not a discretionary exclusion.
+the cost manifest and summary, apply the integer timing decision, copy the
+timed region's already-computed shard hashes into the detail-ledger wrapper,
+write and hash those three files, then write the artifact index, and flush
+those four committed JSON files. These wrappers may derive no model,
+allocation, encoding, or work result; the final status may differ from the
+timed body's pending status only through the frozen integer timing comparison.
+Their own write/flush duration cannot be embedded without a second
+self-reference, so no untimed-duration field is reported or interpreted. The
+artifact index records the first three wrapper sizes and hashes and, as always,
+excludes itself. This exact four-file trailer is the complete exclusion and
+may not grow. It resolves the timing self-reference; it is not a discretionary
+exclusion.
 
-Record component CPU and wall times as diagnostics, but apply the decision
-only to the timed-region CPU delta. The projected two-dataset cost is exactly
-`2.5 * timed_region_cpu_seconds`; passage requires it to be at most 86,400
-seconds, equivalently a complete one-panel timed region at most 34,560 CPU
-seconds.
+Record component CPU microseconds and wall nanoseconds as integers, but apply
+the decision only to `timed_region_cpu_microseconds`. Store the projected cost
+without floating point as
 
-Check cumulative timed-region CPU after each completed scalar coordinate, allocation,
-block model, encoding arm, and output shard. If it has already exceeded 34,560
-seconds, further work cannot restore passage. The runner may then stop at that
-checkpoint and return `NO_GO_EXACT_SOLVER_COST` with `projection_complete=false`
-and the measured CPU as a strict lower bound. This is not a reduced-shape run:
-the full shape was launched, the fixed ceiling was already crossed, and no
-scientific output is interpreted. A pass is valid only after every listed
+```text
+projected_cpu_numerator_microseconds = 5 * timed_region_cpu_microseconds
+projected_cpu_denominator = 2
+base_cpu_limit_microseconds = 86_400_000_000
+PASS iff 5 * timed_region_cpu_microseconds
+        <= 2 * 86_400_000_000.
+```
+
+Equivalently, a complete one-panel timed region must be at most
+`34_560_000_000` CPU microseconds. Decimal seconds are descriptive conversions
+only and never enter the comparison.
+
+Check cumulative integer timed-region CPU microseconds after each completed
+scalar coordinate, allocation, block model, encoding arm, and output shard.
+If it has exceeded `34_560_000_000`, further work cannot restore passage. The
+runner may then stop at that checkpoint and return
+`NO_GO_EXACT_SOLVER_COST` with `projection_complete=false` and the measured
+integer CPU microseconds as a strict lower bound. This is not a reduced-shape
+run: the full shape was launched, the fixed ceiling was already crossed, and
+no scientific output is interpreted. A pass is valid only after every listed
 operation completes.
 
 The threshold covers the entire scalar-plus-block command despite the legacy
@@ -449,6 +484,42 @@ an explicit `valid=false`; it is never emitted as a JSON numeric infinity.
 Hashes are lowercase SHA-256 hexadecimal strings. Durations are integer CPU
 microseconds or wall-clock nanoseconds; human decimal seconds are descriptive.
 
+Define `canonical_json_bytes(v)` as the UTF-8 bytes produced with object keys
+sorted lexicographically, separators `(',', ':')`, `ensure_ascii=False`, and
+`allow_nan=False`, with no terminal LF. A JSONL record is
+`canonical_json_bytes(record)` followed by one LF. For every logical array
+field `x` paired with `x_sha256`, the hash preimage is exactly
+`canonical_json_bytes(x)`. This rule applies even when only the hash, rather
+than the full array, is persisted. A `payload_sha256` instead hashes the raw
+bytes decoded from its paired lowercase `payload_hex`; file and shard hashes
+cover the exact bytes on disk.
+
+The schemas below use these aliases:
+
+```text
+id: nonnegative JSON integer
+count: nonnegative decimal-integer string
+sha256: 64-character lowercase hexadecimal string
+bits32: string matching 0x followed by 8 lowercase hexadecimal digits
+bits64: string matching 0x followed by 16 lowercase hexadecimal digits
+exact_sse: {binary_grid_exponent:integer exactly -298,
+            denominator:positive decimal-integer string,
+            numerator:nonnegative decimal-integer string}
+exact_mean: {binary_grid_exponent:integer exactly -149,
+             denominator:positive decimal-integer string,
+             numerator:signed decimal-integer string}
+interval: {begin:id, end:id} with begin < end
+```
+
+Both rational aliases are reduced to greatest-common-divisor one; a zero
+numerator has denominator `"1"`. Their separate binary-grid exponent is not
+absorbed into the fraction.
+
+For each JSONL record map and the timed-ledger map explicitly declared below,
+the map lists every allowed key and no undeclared key is permitted in schema
+version 1. A nullable field is present and has either its declared type or JSON
+`null`; it is never omitted.
+
 All committed top-level `.json` artifacts and the external
 `timed_output_ledger_body.json` use `schema_version=1` and
 `protocol_version="saq-attempt4-a4-1s-20260713-schema1"`. The common fields
@@ -459,15 +530,15 @@ schema_version: integer
 protocol_version: string
 stage: string, exactly "A4-1S"
 status: string
-parent_preregistration_commit: 40-hex string
-implementation_commit: 40-hex string
-execution_commit: 40-hex string
+parent_preregistration_commit: 40-character lowercase hexadecimal string
+implementation_commit: 40-character lowercase hexadecimal string
+execution_commit: 40-character lowercase hexadecimal string
 command: array of strings containing argv without shell reconstruction
 thread_environment: object from string keys to string values
 input_ledger: array of {path:string, role:string, size_bytes:integer,
-                        sha256:string}
+                        sha256:sha256}
 output_ledger: array of {path:string, role:string, size_bytes:integer,
-                         sha256:string, timed:boolean}
+                         sha256:sha256, timed:boolean}
 ```
 
 Paths are repository-relative for committed inputs and relative to the
@@ -517,9 +588,33 @@ cardinalities, distinct-center checks, completion flag, and outcome. The cost
 manifest repeats the runtime numeric state and records implementation, parity
 evidence, parity review, and execution commits.
 
-Every exact curve and partition from the full projection must be persisted in
-the empty external output directory. Because the complete partition detail can
-be large, raw detail is not committed to Git. Instead,
+The authority-bearing timing fields in the cost manifest, cost summary, and
+committed detail-ledger wrapper have exactly these names and JSON integer
+types:
+
+```text
+timed_region_cpu_microseconds
+projected_cpu_numerator_microseconds
+projected_cpu_denominator, exactly 2
+base_cpu_limit_microseconds, exactly 86400000000
+gate_left_integer, exactly 5*timed_region_cpu_microseconds
+gate_right_integer, exactly 2*base_cpu_limit_microseconds
+component_cpu_microseconds: object with exactly the keys preflight,
+    generation_and_order, scalar, allocation, block, encoding,
+    shard_serialization, and total; values are nonnegative JSON integers
+component_wall_nanoseconds: object with exactly the same keys and
+    nonnegative JSON integer values
+```
+
+`gate_pass` is a JSON boolean equal to `gate_left_integer<=gate_right_integer`.
+The first seven component keys form a nonoverlapping partition and sum exactly
+to `total` in their respective units. No authority-bearing CPU-seconds or
+floating projected-cost field is allowed.
+
+For a completed projection, every exact curve and partition must be persisted
+in the empty external output directory. A registered terminal run instead
+persists the complete prefix defined in Section 5.5. Because the complete
+partition detail can be large, raw detail is not committed to Git. Instead,
 `synthetic_cost_projection_detail_ledger.json` commits, for every deterministic
 output shard, its relative path, schema, record count, byte size, and SHA-256,
 plus a SHA-256 over the canonical ordered ledger. The cost summary and timing
@@ -527,38 +622,360 @@ are committed as required by the parent protocol. Review must inspect a
 deterministic sample from every shard class and independently verify all shard
 hashes before real-base authorization is requested.
 
-The external detail layout is frozen, uncompressed UTF-8 canonical JSON Lines
-with one canonical object and one LF per line:
+The external detail layout is frozen as follows:
 
 ```text
 detail/scalar/coordinate_000.jsonl ... coordinate_127.jsonl
+detail/allocations.jsonl
 detail/block/group_000_b04.jsonl ... group_063_b04.jsonl
 detail/block/group_000_b08.jsonl ... group_063_b08.jsonl
-detail/allocations.jsonl
 detail/encoding/rate_b04.jsonl
 detail/encoding/rate_b08.jsonl
 detail/timed_output_ledger_body.json
 ```
 
-Each scalar shard has exactly 256 records in ascending `K`; each record holds
-the exact curve, effective cardinality, complete partition/means, rounding
-bits, replay result, and diagnostics for that coordinate and `K`. Each block
-shard has one metadata record followed by exactly eight start records in start
-id order; a start record contains its initialization and complete accepted-step
-trace. `allocations.jsonl` has the 128 group/rate product records in
-`(word_bits,group_id)` order followed by the B4 then B8 global records.
+Only files ending in `.jsonl` are JSON Lines. Each contains one canonical
+record plus LF per line. `timed_output_ledger_body.json` is one canonical
+top-level JSON object with the common fields above and one final LF; it is not
+JSON Lines. No gzip, compression, binary side format, or data-dependent split
+is allowed.
 
-Each encoding shard has 8,192 records in vector-id order. A record contains
-each arm's complete selected-label array **and** its SHA-256, exact paid
-payload bytes as lowercase hex, round-trip result, and byte/work counters; the
-global arm is included.
-`timed_output_ledger_body.json` lists every preceding timed shard with path,
-role, record count, byte size, and SHA-256. No gzip, compression, binary side
-format, alternate shard count, or data-dependent split is allowed. These
-fixed files, including serialization, flush, and close, are inside the timed
-region. The committed detail-ledger wrapper repeats this body, binds its
-ordered canonical SHA-256, and adds the captured timing trailer outside the
-clock as specified in Section 4.
+### 5.1 Scalar JSONL record
+
+Each scalar shard has 256 records in ascending `requested_cardinality`. Every
+record has exactly this map:
+
+```text
+{
+  record_type:string exactly "scalar_curve",
+  coordinate_id:id,
+  requested_cardinality:id in 1..256,
+  effective_cardinality:id,
+  fit_row_count:id exactly 8192,
+  distinct_support_size:id,
+  exact_sse:exact_sse,
+  partition:array<interval>,
+  exact_means:array<exact_mean>,
+  binary32_centroid_bits:array<bits32>,
+  binary32_centroid_bits_sha256:sha256,
+  binary64_centroid_bits:array<bits64>,
+  binary64_centroid_bits_sha256:sha256,
+  predecessor_indices:array<id>,
+  predecessor_indices_sha256:sha256,
+  comparison_count:count,
+  exact_tie_count:count,
+  exact_replay_sse:exact_sse,
+  exact_replay_match:boolean,
+  predecessors_nondecreasing:boolean,
+  serialized_binary32_strictly_increasing:boolean
+}
+```
+
+The partition and mean arrays have length `effective_cardinality`, use support
+indices after exact aggregation, and occur in increasing support order. The
+centroid arrays use label order and have the same length. The predecessor
+array is the optimized layer's complete endpoint-order predecessor row used by
+the monotonicity diagnostic.
+
+### 5.2 Block JSONL records
+
+Each block shard has one metadata record followed by eight start records in
+ascending `start_id`. The metadata record is exactly:
+
+```text
+{
+  record_type:string exactly "block_metadata",
+  word_bits:id restricted to 4 or 8,
+  capacity:id equal to 2^word_bits,
+  group_id:id in 0..63,
+  coordinates:array<id> of length 2,
+  fit_row_count:id exactly 8192,
+  row_order_vector_ids:array<id> of length 8192,
+  row_order_vector_ids_sha256:sha256,
+  arbitrary_cardinalities:array<id> of length 2,
+  arbitrary_used_states:id,
+  selected_start_id:id
+}
+```
+
+A block step is exactly:
+
+```text
+{
+  iteration:id starting at 1,
+  prior_sse_bits:bits64,
+  candidate_sse_bits:bits64,
+  assignments_before_sha256:sha256,
+  assignments_after_sha256:sha256,
+  centers_after_binary64_bits_sha256:sha256,
+  changed_assignment_count:id,
+  empty_center_ids:array<id>,
+  empty_center_ids_sha256:sha256,
+  accepted:boolean exactly true
+}
+```
+
+The two assignment hashes use the canonical JSON bytes of the corresponding
+8,192-integer label arrays. A start record is exactly:
+
+```text
+{
+  record_type:string exactly "block_start",
+  word_bits:id restricted to 4 or 8,
+  capacity:id equal to 2^word_bits,
+  group_id:id in 0..63,
+  start_id:id in 0..7,
+  initialization_kind:string restricted to "cartesian_fill" or
+      "hashed_farthest_first",
+  initialization_vector_ids:array<id>,
+  initialization_vector_ids_sha256:sha256,
+  prefill_cartesian_centers_binary64_bits:
+      nullable array<array<bits64> of length 2>,
+  prefill_cartesian_centers_binary64_bits_sha256:nullable sha256,
+  prefill_cartesian_sse_bits:nullable bits64,
+  initial_centers_binary64_bits:array<array<bits64> of length 2>,
+  initial_centers_binary64_bits_sha256:sha256,
+  steps:array<block_step>,
+  iteration_count:id,
+  accepted_update_count:id,
+  converged:boolean,
+  final_assignments:array<id> of length 8192,
+  final_assignments_sha256:sha256,
+  final_centers_binary64_bits:array<array<bits64> of length 2>,
+  final_centers_binary64_bits_sha256:sha256,
+  final_centers_binary32_bits:array<array<bits32> of length 2>,
+  final_centers_binary32_bits_sha256:sha256,
+  final_sse_bits:bits64,
+  distance_comparison_count:count,
+  assignment_tie_count:count,
+  farthest_tie_count:count,
+  serialized_distinct_center_count:id,
+  direct_replay_match:boolean,
+  cartesian_dominance_pass:boolean,
+  selected_best_start:boolean
+}
+```
+
+Every center array has `capacity` rows except the start-0 prefill array, whose
+length is `arbitrary_used_states`. The three `prefill_cartesian_*` fields are
+nonnull only for start 0 and are null together for starts 1--7. For start 0,
+`initialization_vector_ids` lists only the deterministic fill rows and has
+length `capacity-arbitrary_used_states`; for starts 1--7 it lists all
+farthest-first rows and has length `capacity`. The step array contains every
+accepted complete Lloyd step. Its center hash uses the canonical JSON bytes of
+the logical post-update binary64 center-bit array. `iteration_count`,
+`accepted_update_count`, and the step-array length are equal. The selected-start
+flags contain exactly one `true`, matching the metadata record. Each
+`cartesian_dominance_pass` records the direct comparison with the shared
+start-0 prefill replay. Start 0 and the selected start must pass; the field is
+descriptive for the other starts.
+
+### 5.3 Allocation JSONL records
+
+An allocation arm object is exactly:
+
+```text
+{
+  requested_cardinalities:array<id> of length 2,
+  effective_cardinalities:array<id> of length 2,
+  used_states:id,
+  invalid_states:id,
+  exact_fitting_sse:exact_sse,
+  enumerated_candidate_count:count
+}
+```
+
+`allocations.jsonl` first has 128 group records in `(word_bits,group_id)` order,
+B4 before B8. Each is exactly:
+
+```text
+{
+  record_type:string exactly "group_allocation",
+  word_bits:id restricted to 4 or 8,
+  capacity:id equal to 2^word_bits,
+  group_id:id in 0..63,
+  coordinates:array<id> of length 2,
+  dyadic_word:allocation_arm,
+  arbitrary_word:allocation_arm
+}
+```
+
+The final two records are B4 then B8 and are exactly:
+
+```text
+{
+  record_type:string exactly "global_allocation",
+  word_bits:id restricted to 4 or 8,
+  total_bit_budget:id equal to 64*word_bits,
+  bit_widths:array<id> of length 128,
+  bit_widths_sha256:sha256,
+  cardinalities:array<id> of length 128,
+  cardinalities_sha256:sha256,
+  used_bits:id,
+  exact_fitting_sse:exact_sse,
+  enumerated_transition_count:count
+}
+```
+
+Thus a complete allocation shard always has exactly 130 records.
+
+### 5.4 Encoding JSONL records
+
+An encoding arm object is exactly:
+
+```text
+{
+  label_count:id,
+  labels:array<id>,
+  labels_sha256:sha256,
+  payload_bytes:id restricted to 32 or 64,
+  payload_hex:string of exactly 2*payload_bytes lowercase hex digits,
+  payload_sha256:sha256,
+  alignment_bytes:id,
+  output_bytes:id,
+  roundtrip_labels:array<id>,
+  roundtrip_labels_sha256:sha256,
+  roundtrip_match:boolean,
+  distance_comparison_count:count,
+  pack_operation_count:count,
+  unpack_operation_count:count
+}
+```
+
+For the three matched-word arms, `label_count=64`; for the global arm it is
+128. Each rate shard has 8,192 records in vector-id order, each exactly:
+
+```text
+{
+  record_type:string exactly "encoded_vector",
+  word_bits:id restricted to 4 or 8,
+  vector_id:id in 0..8191,
+  arms:{
+    dyadic_word:encoding_arm,
+    arbitrary_word:encoding_arm,
+    trained_block_vq:encoding_arm,
+    global_dyadic_pack_cap8:encoding_arm
+  }
+}
+```
+
+The arm object has exactly those four keys. Labels and round-trip labels use
+their representation's declared group or selected-coordinate order.
+
+### 5.5 Timed ledger and terminal prefixes
+
+The pass plan contains exactly 259 normal shards in this order: 128 scalar
+shards by coordinate id, the allocation shard, 64 B4 block shards by group,
+64 B8 block shards by group, then the B4 and B8 encoding shards. A plan entry
+is exactly:
+
+```text
+{index:id, path:string, role:string, expected_record_count:id}
+```
+
+Roles and pass counts are fixed by path class:
+
+```text
+detail/scalar/*.jsonl: role="scalar_curve_shard", count=256
+detail/allocations.jsonl: role="allocation_shard", count=130
+detail/block/*.jsonl: role="block_vq_shard", count=9
+detail/encoding/*.jsonl: role="encoding_shard", count=8192
+```
+
+Plan indices are `0..127` for scalar coordinates, `128` for allocations,
+`129..192` for B4 block groups, `193..256` for B8 block groups, `257` for B4
+encoding, and `258` for B8 encoding.
+
+A completed-shard entry is exactly:
+
+```text
+{index:id, path:string, role:string, record_count:id, size_bytes:id,
+ sha256:sha256}
+```
+
+A normal shard is written to a temporary path, flushed and closed, checked for
+its exact pass record count, hashed, and only then atomically published. A
+temporary or partial normal shard is never published or entered in the
+ledger.
+
+The checkpoint object is exactly:
+
+```text
+{
+  phase:string restricted to "preflight", "scalar", "allocation", "block",
+      "encoding", "output", or "complete",
+  completed_operation_count:id,
+  last_completed_plan_index:integer at least -1,
+  cumulative_cpu_microseconds:id,
+  reason_code:string,
+  message:string,
+  path:nullable string,
+  coordinate_id:nullable id,
+  word_bits:nullable id,
+  group_id:nullable id,
+  start_id:nullable id,
+  arm:nullable string,
+  requested_cardinality:nullable id,
+  effective_cardinality:nullable id,
+  first_colliding_label:nullable id,
+  prior_sse_bits:nullable bits64,
+  candidate_sse_bits:nullable bits64,
+  center_count:nullable id,
+  distinct_center_count:nullable id,
+  expected_sha256:nullable sha256,
+  observed_sha256:nullable sha256
+}
+```
+
+In addition to the common top-level fields,
+`timed_output_ledger_body.json` has exactly:
+
+```text
+planned_shards:array<plan_entry>
+completed_shards:array<completed_shard_entry>
+missing_suffix:array<plan_entry>
+checkpoint:checkpoint
+projection_complete:boolean
+terminal_status:string restricted to "ARTIFACT_INVALID",
+    "IMPLEMENTATION_INVALID", "CONTROL_INVALID",
+    "NO_GO_REPRESENTATION", "NO_GO_EXACT_SOLVER_COST", or
+    "PENDING_FINAL_CPU_DECISION"
+```
+
+`planned_shards` is always the complete 259-entry pass plan.
+`completed_shards` must match an exact prefix of that plan by index, path, role,
+and expected record count. `missing_suffix` is exactly the remaining plan
+suffix. The body does not list itself. When all scientific pipeline work is
+complete, all 259 shards are present at their fixed counts,
+`missing_suffix=[]`, checkpoint phase is `complete`,
+`projection_complete=true`, and both the common `status` and
+`terminal_status` are `PENDING_FINAL_CPU_DECISION`. The body is then closed and
+the end CPU snapshot is captured. The untimed wrapper, manifest, and summary
+replace that pending status with `PASS_SYNTHETIC_GATE_ONLY` or
+`NO_GO_EXACT_SOLVER_COST` using only the integer gate in Section 4. Thus output
+serialization that crosses the ceiling cannot leave a stale PASS in the timed
+body.
+
+For any terminal or early-stop status written directly into the timed body
+before full pipeline completion, publish only fully completed normal shards in
+the exact prefix, discard a current temporary shard, set the checkpoint to the
+last completed operation and failure evidence, list the entire uncompleted
+normal-shard suffix, and set `projection_complete=false`. This is the only
+permitted incomplete normal-shard layout; it cannot reorder work, retain a
+hole, publish a short normal shard, or omit a completed prefix shard. It lets
+the declared `CONTROL_INVALID`, `NO_GO_REPRESENTATION`, and lower-bound
+`NO_GO_EXACT_SOLVER_COST` states remain distinguishable from
+`IMPLEMENTATION_INVALID`.
+
+If all 259 normal shards and the timed body complete but the final integer CPU
+snapshot fails the gate, the final state is `NO_GO_EXACT_SOLVER_COST` with
+`projection_complete=true` and an empty missing suffix. This full-completion
+case is distinct from the earlier lower-bound stop.
+
+The timed ledger body, including serialization, flush, and close, is inside
+the timed region. The committed detail-ledger wrapper repeats this body, binds
+its canonical SHA-256, and adds the captured integer-microsecond timing trailer
+outside the clock as specified in Section 4.
 
 Each artifact index lists the relative path, byte size, SHA-256, schema
 version, and producer execution commit of every committed artifact in that
@@ -576,7 +993,7 @@ defect.
 | 2 | Toolchain, numeric, exact-reference, allocation, rounding, packing, lookup, schema, ledger, or accounting failure | `IMPLEMENTATION_INVALID` |
 | 3 | Block initialization, convergence, monotonicity, dominance, best-start, or distinct-center failure | `CONTROL_INVALID` |
 | 4 | A full-shape selected scalar nominal alphabet is unreachable or collapses at binary32 | `NO_GO_REPRESENTATION` |
-| 5 | Complete projection exceeds 34,560 CPU seconds, or its running lower bound has already crossed it | `NO_GO_EXACT_SOLVER_COST` |
+| 5 | `5*timed_region_cpu_microseconds > 2*86400000000`, or the running integer-microsecond lower bound has crossed the equivalent one-panel limit | `NO_GO_EXACT_SOLVER_COST` |
 | 6 | Every parity/control check and the complete cost projection pass | `PASS_SYNTHETIC_GATE_ONLY` |
 
 An external interruption, machine loss, scheduler eviction, or missing output
