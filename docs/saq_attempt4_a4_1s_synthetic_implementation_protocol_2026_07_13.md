@@ -6,6 +6,10 @@ Stage: A4-1S
 
 Status: **FROZEN_AUTHORIZED_NOT_IMPLEMENTED**
 
+Protocol version: `saq-attempt4-a4-1s-20260713-schema1`
+
+Artifact schema version: `1`
+
 Authorization: the user explicitly authorized synthetic-only implementation,
 parity review, and the full-shape synthetic cost projection on 2026-07-13.
 
@@ -72,6 +76,18 @@ cardinality, seed, restart count, iteration limit, threshold, or exclusion
 override. It may read the two frozen JSON contracts, repository source and
 build metadata, and its own declared output directory.
 
+After parity evidence and its review are committed, `cost-projection` may also
+read exactly the committed A4-1S build manifest, parity artifacts, parity
+artifact index, and implementation/parity review named in Section 5. These
+are instrument-validation evidence, not a prior scientific A4 result. Their
+identities are bound as follows: entries in `parity_artifact_index.json` bind
+the five non-index JSON artifacts--the build manifest and four parity
+artifacts; the index itself is bound by its Git blob at the clean
+reviewed-parity commit; and the Markdown review memo is independently bound by
+its Git blob at that same commit. The review memo has no artifact schema or
+producer entry. No other result or artifact becomes readable through this
+exception.
+
 The runner records all contract inputs and generated output paths. It must
 reject any attempted open of a path beneath a repository `data/` or `results/`
 directory, either real-data root recorded in the parent preregistration, or a
@@ -94,6 +110,18 @@ identity, complete command and flags, CPU model, exact integer/rational
 library and version, NumPy version, thread environment, rounding mode, and
 MXCSR. GCC 11.5.0 is an exact identity, not a minimum version. An unavailable
 or mismatched toolchain stops before parity as `IMPLEMENTATION_INVALID`.
+
+The complete compiler commands are read from
+`build/a4_1s/compile_commands.json` for all three target translation units:
+`a4_1s_native.cpp`, `exact_quantizer.cpp`, and `numeric_runtime.cpp`. Sort
+entries by repository-relative source path, store each raw `command` string,
+and tokenize it with Python `shlex.split(..., posix=True)` into the recorded
+argv array. Absence of a raw `command` field is `IMPLEMENTATION_INVALID`; do
+not silently substitute a generator-specific representation. Every one of the
+three argv arrays must contain all mandatory flags and no forbidden flag. The
+runtime helper's compiled-in `compile_flags` field records only the frozen
+numerical subset; it may not be reported as a complete command. Source and
+binary hashes bind the manifest to these entries.
 
 The layer must implement direct, correctly rounded, ties-to-even conversion
 from the registered exact rational means to binary32 and independently to
@@ -337,15 +365,34 @@ to omit any listed fitting, allocation, block-training, encoding, packing, or
 accounting work.
 
 The gate CPU clock is the delta of
-`getrusage(RUSAGE_SELF)+getrusage(RUSAGE_CHILDREN)`, captured at the first
-runner statement before NumPy is imported and after the final output is
-flushed. Record component CPU and wall times as diagnostics, but apply the
-decision only to the whole-command CPU delta. The projected two-dataset cost
-is exactly `2.5 * whole_command_cpu_seconds`; passage requires it to be at
-most 86,400 seconds, equivalently a complete one-panel run at most 34,560 CPU
+`getrusage(RUSAGE_SELF)+getrusage(RUSAGE_CHILDREN)`, captured by the Python
+supervisor at its first executable statement before NumPy is imported. The
+timed region includes contract/numeric preflight, NumPy import and generation,
+all native children, every model, encoding, all external detail shards, the
+complete detail-ledger body, its serialization, flush, and close. The
+supervisor captures the end usage immediately after those timed files are
+closed.
+
+The captured end value is necessarily unavailable to a file that must already
+contain and be flushed with that value. Therefore only the following small
+trailer finalization is outside the gate clock: inject the captured total into
+the cost manifest and summary, copy the timed region's already-computed shard
+hashes into the detail-ledger wrapper, write and hash those three files, then
+write the artifact index, and flush those four committed JSON files. These
+wrappers may derive no model, allocation, encoding, or work result. Their own
+write/flush duration cannot be embedded without a second self-reference, so no
+untimed-duration field is reported or interpreted. The artifact index records
+the first three wrapper sizes and hashes and, as always, excludes itself.
+This exact four-file trailer is the complete exclusion and may not grow. It
+resolves the timing self-reference; it is not a discretionary exclusion.
+
+Record component CPU and wall times as diagnostics, but apply the decision
+only to the timed-region CPU delta. The projected two-dataset cost is exactly
+`2.5 * timed_region_cpu_seconds`; passage requires it to be at most 86,400
+seconds, equivalently a complete one-panel timed region at most 34,560 CPU
 seconds.
 
-Check cumulative CPU after each completed scalar coordinate, allocation,
+Check cumulative timed-region CPU after each completed scalar coordinate, allocation,
 block model, encoding arm, and output shard. If it has already exceeded 34,560
 seconds, further work cannot restore passage. The runner may then stop at that
 checkpoint and return `NO_GO_EXACT_SOLVER_COST` with `projection_complete=false`
@@ -402,6 +449,38 @@ an explicit `valid=false`; it is never emitted as a JSON numeric infinity.
 Hashes are lowercase SHA-256 hexadecimal strings. Durations are integer CPU
 microseconds or wall-clock nanoseconds; human decimal seconds are descriptive.
 
+All committed top-level `.json` artifacts and the external
+`timed_output_ledger_body.json` use `schema_version=1` and
+`protocol_version="saq-attempt4-a4-1s-20260713-schema1"`. The common fields
+have these fixed JSON types:
+
+```text
+schema_version: integer
+protocol_version: string
+stage: string, exactly "A4-1S"
+status: string
+parent_preregistration_commit: 40-hex string
+implementation_commit: 40-hex string
+execution_commit: 40-hex string
+command: array of strings containing argv without shell reconstruction
+thread_environment: object from string keys to string values
+input_ledger: array of {path:string, role:string, size_bytes:integer,
+                        sha256:string}
+output_ledger: array of {path:string, role:string, size_bytes:integer,
+                         sha256:string, timed:boolean}
+```
+
+Paths are repository-relative for committed inputs and relative to the
+declared empty output directory for external outputs. Ledger arrays sort by
+path bytes. A generated value not yet associated with a Git commit uses the
+40-zero sentinel only in an external precommit artifact; every committed
+artifact must contain the actual producer commit. An artifact's embedded
+`output_ledger` lists only external timed shards or direct child outputs. It
+excludes the containing file and all committed peer wrappers in the same
+checkpoint, avoiding self- and peer-hash cycles; the checkpoint artifact index
+binds peer files from the outside. Individual JSONL records use their
+record-specific schema below and do not repeat command or ledger fields.
+
 Every artifact begins with:
 
 ```text
@@ -447,6 +526,39 @@ plus a SHA-256 over the canonical ordered ledger. The cost summary and timing
 are committed as required by the parent protocol. Review must inspect a
 deterministic sample from every shard class and independently verify all shard
 hashes before real-base authorization is requested.
+
+The external detail layout is frozen, uncompressed UTF-8 canonical JSON Lines
+with one canonical object and one LF per line:
+
+```text
+detail/scalar/coordinate_000.jsonl ... coordinate_127.jsonl
+detail/block/group_000_b04.jsonl ... group_063_b04.jsonl
+detail/block/group_000_b08.jsonl ... group_063_b08.jsonl
+detail/allocations.jsonl
+detail/encoding/rate_b04.jsonl
+detail/encoding/rate_b08.jsonl
+detail/timed_output_ledger_body.json
+```
+
+Each scalar shard has exactly 256 records in ascending `K`; each record holds
+the exact curve, effective cardinality, complete partition/means, rounding
+bits, replay result, and diagnostics for that coordinate and `K`. Each block
+shard has one metadata record followed by exactly eight start records in start
+id order; a start record contains its initialization and complete accepted-step
+trace. `allocations.jsonl` has the 128 group/rate product records in
+`(word_bits,group_id)` order followed by the B4 then B8 global records.
+
+Each encoding shard has 8,192 records in vector-id order. A record contains
+each arm's complete selected-label array **and** its SHA-256, exact paid
+payload bytes as lowercase hex, round-trip result, and byte/work counters; the
+global arm is included.
+`timed_output_ledger_body.json` lists every preceding timed shard with path,
+role, record count, byte size, and SHA-256. No gzip, compression, binary side
+format, alternate shard count, or data-dependent split is allowed. These
+fixed files, including serialization, flush, and close, are inside the timed
+region. The committed detail-ledger wrapper repeats this body, binds its
+ordered canonical SHA-256, and adds the captured timing trailer outside the
+clock as specified in Section 4.
 
 Each artifact index lists the relative path, byte size, SHA-256, schema
 version, and producer execution commit of every committed artifact in that
