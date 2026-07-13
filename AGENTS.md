@@ -80,6 +80,10 @@ summary worktree is dirty, its ownership is unclear, or the milestone has not
 been reviewed, leave the experiment branch unchanged and report the handoff
 to the user instead.
 
+This documentation handoff grants no authority to run another experiment,
+read data, alter a frozen protocol, or advance the source branch. All
+source-branch authorization remains unchanged.
+
 ## A4-1S Authorization State
 
 The A4-1 base-only feasibility protocol is frozen. Its authoritative
