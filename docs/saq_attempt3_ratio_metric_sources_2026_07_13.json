@@ -1,0 +1,102 @@
+{
+  "topic": "Attempt 3 distance-quality metric review and retrospective evaluation gate",
+  "retrieved_on": "2026-07-13",
+  "decision": "CONDITIONAL_GO_FOR_EVALUATION_ONLY",
+  "review_contract": {
+    "primary_sources_only": true,
+    "implementation_before_decision": false,
+    "query_unaware_method_scope": true,
+    "metric_may_use_benchmark_queries_for_evaluation": true,
+    "inclusion_rule": "Include work that directly proposes 1/Ratio@k, critiques Recall for ANN evaluation, evaluates downstream vector-search utility, or controls ANN search using a declared quality target.",
+    "excluded": [
+      "blogs and secondary summaries",
+      "generic ranking metrics without ANN evaluation evidence",
+      "metric-learning papers that alter the embedding model",
+      "new SAQ mechanisms proposed before metric-sensitivity evidence"
+    ]
+  },
+  "sources": [
+    {
+      "id": "inverse_ratio",
+      "title": "ANN Search: Recall What Matters",
+      "authors": [
+        "Dimitris Dimitropoulos",
+        "Nikos Mamoulis"
+      ],
+      "year": 2026,
+      "status": "arXiv v1 preprint",
+      "url": "https://arxiv.org/abs/2606.04522v1",
+      "pdf": "https://arxiv.org/pdf/2606.04522",
+      "review_depth": "full primary paper",
+      "finding": "Defines 1/Ratio@k as the inverse mean of position-wise returned-to-exact Euclidean-distance ratios; shows lower cost at fixed distance-quality thresholds, while reporting that algorithm rankings remain largely unchanged."
+    },
+    {
+      "id": "semantic_recall",
+      "title": "Semantic Recall for Vector Search",
+      "authors": [
+        "Leonardo Kuffo",
+        "Ioanna Tsakalidou",
+        "Roberta De Viti",
+        "Albert Angel",
+        "Jiri Isa",
+        "Rastislav Lenhardt"
+      ],
+      "year": 2026,
+      "venue": "SIGIR 2026",
+      "doi": "10.1145/3805712.3809894",
+      "url": "https://arxiv.org/abs/2604.20417",
+      "review_depth": "primary abstract and comparison in the inverse-ratio paper",
+      "finding": "Proposes Semantic Recall and Tolerant Recall to avoid penalizing semantically irrelevant or distance-equivalent misses; the former requires relevance judgments and the latter a tolerance."
+    },
+    {
+      "id": "darth",
+      "title": "DARTH: Declarative Recall Through Early Termination for Approximate Nearest Neighbor Search",
+      "authors": [
+        "Manos Chatzakis",
+        "Yannis Papakonstantinou",
+        "Themis Palpanas"
+      ],
+      "year": 2026,
+      "venue": "SIGMOD 2026",
+      "doi": "10.1145/3749160",
+      "url": "https://arxiv.org/abs/2505.19001",
+      "review_depth": "primary abstract and paper positioning",
+      "finding": "Uses adaptive early termination to meet a declarative Recall target for HNSW and IVF. A future ratio-targeted search controller would collide directly and require a distinct mechanism."
+    },
+    {
+      "id": "robustness_delta",
+      "title": "Towards Robustness: A Critique of Current Vector Database Assessments",
+      "authors": [
+        "Zikai Wang",
+        "Qianxi Zhang",
+        "Baotong Lu",
+        "Qi Chen",
+        "Cheng Tan"
+      ],
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2507.00379",
+      "review_depth": "primary abstract and comparison in the inverse-ratio paper",
+      "finding": "Defines Robustness-delta@K as the fraction of queries whose Recall exceeds a chosen floor, addressing hidden query tails but retaining identifier Recall and a threshold parameter."
+    },
+    {
+      "id": "iceberg",
+      "title": "Reveal Hidden Pitfalls and Navigate Next Generation of Vector Similarity Search from Task-Centric Views",
+      "authors": [
+        "Tingyang Chen",
+        "Cong Fu",
+        "Jiahua Wu",
+        "Haotian Wu",
+        "Hua Fan",
+        "Xiangyu Ke",
+        "Yunjun Gao",
+        "Yabo Ni",
+        "Anxiang Zeng"
+      ],
+      "year": 2026,
+      "venue": "SIGMOD 2026",
+      "url": "https://arxiv.org/abs/2512.12980",
+      "review_depth": "primary abstract and comparison in the inverse-ratio paper",
+      "finding": "Evaluates vector search with application-specific labels and metrics across realistic tasks; it can reorder methods but requires inputs beyond a standard ANN benchmark."
+    }
+  ]
+}
