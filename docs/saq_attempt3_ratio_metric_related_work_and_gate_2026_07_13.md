@@ -17,6 +17,10 @@ The stage passes only if it establishes whether the evaluation metric changes
 the scientific interpretation of an existing comparison. The metric itself is
 prior work and cannot be claimed as this project's contribution.
 
+Execution moved to branch `saq-ratio-metric-analysis`. Its final decision at
+commit `146dc16` is `CLOSE_AS_METRIC_SENSITIVITY_EVIDENCE`; this file preserves
+the pre-execution gate.
+
 ## Problem
 
 Recall@`k` counts identifier overlap with the exact top-`k` set. When many
@@ -121,10 +125,10 @@ method question exists. It is not yet a database-systems method contribution.
 
 ## Earlier Directions Worth Re-evaluating
 
-### Highest priority: one-global-plan GIST comparison
+### Highest priority: one-global-plan GIST sample comparison
 
-The fac-error global plan on full GIST, `B=4`, changed the measured operating
-point from
+The fac-error global plan on `gist_sample100k`, `K=512`, `B=4`, changed the
+measured operating point from
 
 ```text
 default:   nprobe=200, R@100=0.99132, QPS= 9215.208
@@ -213,4 +217,3 @@ otherwise:
 
 The bounded source ledger is
 `docs/saq_attempt3_ratio_metric_sources_2026_07_13.json`.
-
