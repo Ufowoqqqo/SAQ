@@ -33,7 +33,7 @@ baselines and survives query-level tail analysis.
 
 ```text
 A3-0  implement and validate the paper-exact evaluator
-A3-1  replay full-GIST K4096 B=4 default versus frozen fac-error plan
+A3-1  replay gist_sample100k K512 B=4 default versus frozen fac-error plan
       over the historical common nprobe grid
 A3-2  evaluate frozen DEEP B=4/B=5 rejected candidates as negative controls
 A3-3  decide whether any conclusion changed
@@ -61,9 +61,9 @@ Required deterministic tests are frozen in
 
 ## A3-1 Inputs To Locate Before Running
 
-- full GIST base and query fvecs;
+- GIST sample100k base and query fvecs;
 - original-space exact top-100 ground truth;
-- default and frozen fac-error full-GIST `K=4096`, `B=4` indexes;
+- default and frozen fac-error `K=512`, `B=4` indexes;
 - historical common `nprobe` grid and thread/search configuration;
 - a result-ID export path that does not alter search semantics.
 
@@ -92,4 +92,3 @@ Stop and preserve negative evidence if the evaluator fails deterministic
 validation, result IDs cannot be exported without changing semantics, the two
 plans cannot share a search grid, or the full curve does not change any method
 conclusion. Do not add post-hoc settings to search for a positive case.
-

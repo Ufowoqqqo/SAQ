@@ -83,7 +83,10 @@ The evaluator must pass deterministic fixtures covering:
 
 ## Frozen Stage A3-1: Smallest Retrospective Comparison
 
-Run full-GIST `K=4096`, `B=4`, top-100 only:
+Run `gist_sample100k`, `K=512`, `B=4`, top-100 only. This is the smallest
+setting because it is the exact frozen setting that produced the historical
+fac-error recall/QPS comparison; the recorded numbers do not come from full
+GIST/K4096.
 
 ```text
 representations:
@@ -188,4 +191,3 @@ Stop and record negative evidence if:
 
 No post-hoc nprobe values, bit budgets, candidate plans, or datasets may be
 added to rescue the first comparison.
-
