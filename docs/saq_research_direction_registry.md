@@ -3,7 +3,7 @@
 Last reconciled: 2026-07-14
 
 SAQ branch scope: every `origin/*` branch plus `upstream/main`, after
-`git fetch --all --prune`. At this snapshot there are 15 unique SAQ branches
+`git fetch --all --prune`. At this snapshot there are 16 unique SAQ branches
 and no remote-only research branch. Sibling scope is deliberately narrower:
 only `vectordb/main@f51b487` is audited as the external evidence snapshot for
 `R10`; this file is not a complete inventory of all vectordb branches.
@@ -50,7 +50,7 @@ current successor draft:
   docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md
   original summary snapshot: saq-meeting-summary@43835d9
   latest Attempt 4 scientific snapshot:
-    saq-arbitrary-cardinality-analysis@f1b464b
+    saq-arbitrary-cardinality-feasibility-v2@f86a51d
 ```
 
 The date in these filenames is the draft date. Neither draft has been through
@@ -109,7 +109,7 @@ INCLUDED_PENDING_REPORT     substantively drafted but not yet reported
 | `R09` | historical | Finite-round CAQ exact-gap limitation and low-cost repair | `saq-caq-one-shell-repair@977e7ff` | `CLOSED` | limitation retained; repair `NO_GO_ON_COMPLEXITY`; SAQ-centric incremental line stopped | `UNREPORTED` | `ABSENT` | `NOT_INCLUDED_SUBSTANTIVELY` |
 | `R10` | 2026-07-13 draft Attempt 2 | Exact-hist shared scalar-codebook DP and outer bit allocation | local evidence `vectordb@f51b487`; prior-art/draft snapshot `saq-caq-one-shell-repair@433e8ea` | `CLOSED` | retain as stronger offline baseline and objective-mismatch evidence, not a method | `UNREPORTED` | `ABSENT` | `INCLUDED_PENDING_REPORT`, slides 26--45 |
 | `R11` | 2026-07-13 draft Attempt 3 | Paper-exact `1/Ratio@k` distance-quality re-evaluation | `saq-ratio-metric-analysis@146dc16` | `CLOSED` | `CLOSE_AS_METRIC_SENSITIVITY_EVIDENCE` | `UNREPORTED` | `ABSENT` | `INCLUDED_PENDING_REPORT`, slides 46--58 |
-| `R12` | 2026-07-13 draft Attempt 4 | Fixed-rate arbitrary-cardinality mixed-radix scalar-product quantization | `saq-arbitrary-cardinality-analysis@f1b464b` | `CLOSED` | A4-1S `NO_GO_EXACT_SOLVER_COST`: the frozen exact construction/evidence pipeline projected to `24.170246892361` CPU-hours, above the 24-hour ceiling; real-base gate not run or authorized | `UNREPORTED` | `ABSENT` | `INCLUDED_PENDING_REPORT`, slides 59--64 |
+| `R12` | 2026-07-13 draft Attempt 4 | Fixed-rate arbitrary-cardinality mixed-radix scalar-product quantization | `saq-arbitrary-cardinality-feasibility-v2@f86a51d` | `AWAITING_AUTHORIZATION` | preserve terminal A4-1S `NO_GO_EXACT_SOLVER_COST`; A4 V2 is `PROTOCOL_READY_NOT_AUTHORIZED_FOR_EXECUTION`, with no implementation, build, parity, synthetic run, or data access authorized | `UNREPORTED` | `ABSENT` | `INCLUDED_PENDING_REPORT`, slides 59--65 |
 
 ### Reported-through ledger
 
@@ -147,7 +147,7 @@ this summary branch.
 | `R09` | Registered base-only limitation survived controls, but exact encoding cost `272.9x` and one-shell total cost `4.579x--8.169x` failed the `2.0x` gate; limitation only, no repair method or ANN claim. | `saq-caq-optimality-analysis@9bb7d0c`: `docs/saq_caq_co0a_official_source_parity_2026_07_11.md`; `saq-caq-corrected-oracle-v2@ff360cd`: `docs/saq_caq_co0_v2_b1_registered_evidence_2026_07_12.md`; `saq-caq-one-shell-repair@977e7ff`: `docs/saq_caq_one_shell_synthetic_falsification_2026_07_12.md`, `docs/saq_caq_limitation_repair_closure_and_project_pivot_2026_07_13.md` | method closed; problem-first selection only |
 | `R10` | Exact-hist can reduce offline SSE, but the inner exact 1D DP is prior art and recall effects reverse across regimes; stronger baseline, not a method. | `vectordb@f51b487`: `reports/scalar_training_exact_hist_audit_2026_06_30/README.md`, `docs/saq_limitation_transfer_memo_2026_07_02.md`; `saq-caq-one-shell-repair@433e8ea:docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md` | closed as method; retained baseline |
 | `R11` | One GIST conclusion changes under paper-exact distance quality while DEEP controls remain negative; measurement evidence only. | `saq-ratio-metric-analysis@146dc16`: `docs/saq_attempt3_a3_2_a3_3_decision_2026_07_13.md` | closed |
-| `R12` | A4-0 and A4-1S parity validate the synthetic witness and instrument. The frozen full-shape command then stopped after 61 scalar-coordinate shards: timed CPU `34,805,155,525 us`, projected cost `24.170246892361` CPU-hours, versus the registered 24-hour ceiling. Because canonical serialization is included and dominates scalar work, this is a pipeline-cost stop, not a solver-only complexity or quantization-quality result. No natural-data, block-VQ, ANN, or systems claim. | Cost evidence `saq-arbitrary-cardinality-analysis@9ce1052`, reviewed terminal snapshot `@f1b464b`: `docs/saq_attempt4_a4_1s_artifacts_2026_07_13/synthetic_cost_projection_manifest.json`, `docs/saq_attempt4_a4_1s_artifacts_2026_07_13/synthetic_cost_projection_summary.json`, `docs/saq_attempt4_a4_1s_artifacts_2026_07_13/synthetic_cost_projection_detail_ledger.json`, `docs/saq_attempt4_a4_1s_artifacts_2026_07_13/cost_projection_artifact_index.json`, `docs/saq_attempt4_a4_1s_cost_projection_review_2026_07_13.md`; parity evidence remains at `@335837e`, reviewed at `@988ace0` | closed at A4-1S cost gate; preserve and report; no base read, rerun, rescue, or further experiment authorized |
+| `R12` | A4-1S remains a terminal pipeline-cost stop: 61 scalar-coordinate shards used `34,805,155,525 us`, and its frozen `5/2` projection was `24.170246892361` CPU-hours. The new primary-source review supports only a protocol redesign: A4 V2 measures complete four-arm comparative-instrument construction as `T_instrument=C_setup+C_core+C_bundle_io`, keeps build/parity/evidence/replay/archive/memory/bytes separately mandatory, and forbids transferring the old `5/2` projection to real data or SAQ. This is protocol evidence only, not feasibility, natural-data, ANN, or systems evidence. | Old cost evidence `saq-arbitrary-cardinality-analysis@9ce1052`, reviewed terminal snapshot `@f1b464b`: `docs/saq_attempt4_a4_1s_artifacts_2026_07_13/synthetic_cost_projection_manifest.json`, `docs/saq_attempt4_a4_1s_artifacts_2026_07_13/synthetic_cost_projection_summary.json`, `docs/saq_attempt4_a4_1s_cost_projection_review_2026_07_13.md`. V2 primary review `saq-arbitrary-cardinality-feasibility-v2@c4ccea3` and reviewed protocol snapshot `@f86a51d`: `docs/saq_a4_v2_cost_evidence_primary_source_review_2026_07_14.md`, `docs/saq_a4_v2_cost_evidence_go_no_go_memo_2026_07_14.md`, `docs/saq_a4_v2_synthetic_construction_preregistration_2026_07_14.md`, `docs/saq_a4_v2_synthetic_construction_contract_2026_07_14.json`, `docs/saq_a4_v2_artifact_schema_2026_07_14.json`, `docs/saq_a4_v2_protocol_independent_review_2026_07_14.md` | await explicit authorization for `A4-V2-I` implementation-only work; currently no next stage, build, run, data read, or SAQ change is authorized |
 
 ## 4. Complete SAQ Branch Crosswalk
 
@@ -173,7 +173,8 @@ scientific milestone; such a row has no direction ID or scientific claim.
 | SAQ | `saq-caq-one-shell-repair` | `433e8ea` | `EVIDENCE_SNAPSHOT_AND_UNPRESENTED_DRAFT_HOST` | `R09` | scientific closure at `977e7ff`; later commits add unpresented draft material |
 | SAQ | `saq-ratio-metric-analysis` | `146dc16` | `PRIMARY` | `R11` | Attempt 3 closed |
 | SAQ | `saq-arbitrary-cardinality-analysis` | `f1b464b` | `PRIMARY` | `R12` | reviewed terminal snapshot `f1b464b`; cost evidence `9ce1052`; closed at A4-1S exact-pipeline cost gate |
-| SAQ | `saq-meeting-summary` | `SELF` -- commit containing this registry; parent at reconciliation `b49990d` | `SUMMARY` | all | summary-only; no experiment execution |
+| SAQ | `saq-arbitrary-cardinality-feasibility-v2` | `f86a51d` | `FOLLOWUP` | `R12` | reviewed protocol-only follow-up; awaiting explicit `A4-V2-I` authorization; no execution or data access |
+| SAQ | `saq-meeting-summary` | `SELF` -- commit containing this registry; parent at reconciliation `16df04a` | `SUMMARY` | all | summary-only; no experiment execution |
 
 ### Sibling evidence snapshot
 

@@ -24,7 +24,7 @@ Current summary inventory:
 - `docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` is the current,
   unpresented successor draft. It queues `R07`, `R08`, `R10`, `R11`, and
   `R12`; its Attempt 4 scientific snapshot is
-  `saq-arbitrary-cardinality-analysis@f1b464b`.
+  `saq-arbitrary-cardinality-feasibility-v2@f86a51d`.
 
 ## Current Attempt 4 Boundary
 
@@ -34,6 +34,11 @@ The deck may currently report only:
 A4-0  PASS_INSTRUMENT_ONLY
 A4-1P FROZEN_NOT_AUTHORIZED / NOT_RUN
 A4-1S NO_GO_EXACT_SOLVER_COST / REVIEWED_TERMINAL
+A4-V2-R GO_PROTOCOL_DESIGN / REVIEWED
+A4-V2-P PROTOCOL_READY_NOT_AUTHORIZED_FOR_EXECUTION / REVIEWED
+A4-V2-I NOT_AUTHORIZED
+A4-V2-PAR NOT_AUTHORIZED
+A4-V2-SRUN NOT_AUTHORIZED
 ```
 
 The six canonical A4-1S parity artifacts are committed at `335837e`; their
@@ -44,15 +49,33 @@ timed CPU was `34,805,155,525 us`, and the registered `5/2` projection was
 `24.170246892361` CPU-hours, above the 24-hour ceiling. Canonical shard
 serialization is included in that cost, so this is not a solver-only
 complexity claim. There is no natural-data, block-VQ, ANN, or SAQ integration
-result. The formulation is closed, the base gate was not run, and untracked
-files in an experiment worktree are not evidence.
+result. The A4-1S formulation is closed, the base gate was not run, and
+untracked files in an experiment worktree are not evidence.
+
+The V2 primary-source review is committed at `c4ccea3`, and the
+independently reviewed protocol is committed at `f86a51d`. V2 does not
+overturn the old stop. It replaces neither the old timer nor its decision;
+instead it preregisters a new internal synthetic comparative-instrument FOM:
+
+```text
+T_instrument = C_setup + C_core + C_bundle_io
+PASS iff T_instrument <= 34,560,000,000 CPU microseconds
+```
+
+Build, parity, evidence emission, independent replay, archive, memory, and
+bytes remain separately metered and mandatory. The old `5/2` projection does
+not transfer to this FOM, so the protocol makes no real-data, SAQ index-build,
+deployment-cost, ANN, or systems claim. No V2 implementation or execution
+stage is currently authorized.
 
 ## Next Admissible Summary Work
 
-Wait for another source branch to produce a committed and independently
-reviewed protocol, gate result, or terminal decision. Attempt 4 has no further
-authorized experiment. For the next handoff, re-read `AGENTS.md` and the
-registry, fetch, require this
+Wait for explicit user authorization on a source branch or for another source
+branch to produce a committed and independently reviewed protocol, gate
+result, or terminal decision. The next possible Attempt 4 stage is
+implementation-only `A4-V2-I`, but it is not currently authorized and would
+not authorize a build, parity, RNG, synthetic run, data read, or SAQ change.
+For the next handoff, re-read `AGENTS.md` and the registry, fetch, require this
 worktree to be clean and equal to its remote, record that remote commit, and
 acquire the mandatory common-directory summary lock before editing:
 
@@ -82,6 +105,8 @@ branch.
 ## Not Authorized Here
 
 - implementing or rerunning A4-1S, or opening its foreclosed base gate;
+- implementing or executing A4 V2 without a separately explicit named-stage
+  authorization;
 - opening registered base, query, ground-truth, or index artifacts;
 - modifying SAQ/CAQ, index, estimator, packing, or search code;
 - expanding any source branch's experimental authorization; or

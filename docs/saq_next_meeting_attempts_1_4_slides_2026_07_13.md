@@ -8,21 +8,23 @@ Date: 2026-07-13
 
 Presentation status: **CURRENT DRAFT -- not yet presented at a meeting.**
 
-Revision: incorporates the 2026-07-13 audit of
+Latest revision: 2026-07-14. Incorporates the 2026-07-13 audit of
 [White and Singal, arXiv:2606.00289v1](https://arxiv.org/abs/2606.00289)
-and its pinned official code, plus the committed Attempt 4 scientific-content
-snapshot
-`saq-arbitrary-cardinality-analysis@f1b464b`.
+and its pinned official code, the terminal A4-1S snapshot
+`saq-arbitrary-cardinality-analysis@f1b464b`, and the reviewed A4 V2
+protocol-only snapshot
+`saq-arbitrary-cardinality-feasibility-v2@f86a51d`.
 
 Audience assumption: familiar with vector search and vector quantization at a
 high level, but not with SAQ's transform, segmentation, or the experiments in
 these repositories.
 
-Deck status: Attempts 1, 2, and 3 are complete studies. Attempt 4 is now also
-closed: A4-0 and A4-1S parity validated the synthetic instrument, but the
-frozen A4-1S construction/evidence pipeline failed its preregistered cost gate
-with `NO_GO_EXACT_SOLVER_COST`. A4-1 real-base execution never became
-authorized, and SAQ integration remains unauthorized.
+Deck status: Attempts 1, 2, and 3 are complete studies. Attempt 4 preserves
+the terminal A4-1S `NO_GO_EXACT_SOLVER_COST`, while a new primary-source review
+supports a narrower A4 V2 protocol for a differently defined synthetic
+comparative-instrument cost question. V2 is
+`PROTOCOL_READY_NOT_AUTHORIZED_FOR_EXECUTION`: no implementation, build,
+parity, synthetic run, real-base read, or SAQ integration is authorized.
 
 ---
 
@@ -55,10 +57,10 @@ Main message:
 Attempts 1--3 found useful local evidence, but none established a new method.
 For Attempt 2, the local ANN audit remains informative, while the inner exact-
 DP primitive is established prior work and cannot be claimed as the
-contribution. Attempt 4 is a completed synthetic falsification study, not a
-natural-data, ANN, or systems result. Its frozen pipeline exceeded the cost
-ceiling before allocation, block-VQ, or encoding phases ran, so the current
-formulation stops without opening the real-base gate.
+contribution. Attempt 4's A4-1S formulation is a completed synthetic pipeline-
+cost falsification study, not a natural-data, ANN, or systems result. A4 V2
+preserves that stop and preregisters a new cost/evidence boundary; it is a
+reviewed protocol, not a feasibility result or permission to run.
 ```
 
 Speaker notes:
@@ -70,9 +72,10 @@ Speaker notes:
   the local two-DP pipeline from the already-established inner optimizer.
 - Attempt 3 returns to SAQ and asks whether Recall understated the geometric
   quality of any previously rejected result set.
-- Attempt 4 is problem-first and fixed-rate. It passed implementation parity
-  but failed the separately frozen pipeline-cost gate; it must not be
-  described as quantization-quality, natural-data, ANN, or systems evidence.
+- Attempt 4 is problem-first and fixed-rate. A4-1S passed implementation
+  parity but failed its pipeline-cost gate. A4 V2 is only a reviewed protocol;
+  neither may be described as quantization-quality, natural-data, ANN, or
+  systems evidence.
 
 ---
 
@@ -83,7 +86,8 @@ Project-level decision before this deck:
 ```text
 SAQ-centric incremental method search: STOP
 SAQ as a strong baseline:              RETAIN
-Attempt 4 offline feasibility:         STOP AT A4-1S COST GATE
+Attempt 4 A4-1S formulation:           TERMINAL COST STOP
+Attempt 4 A4 V2:                       PROTOCOL READY; NO STAGE AUTHORIZED
 SAQ/index/search integration:          NOT AUTHORIZED
 ```
 
@@ -94,8 +98,9 @@ Why still present these attempts:
 3. They provide quantitative stop evidence instead of relying on intuition.
 4. Attempt 3 tests whether an evaluation choice, rather than a quantizer
    mechanism, caused one earlier negative conclusion.
-5. Attempt 4 shows how a direction can be stopped by a preregistered synthetic
-   cost gate before data access or systems integration.
+5. Attempt 4 shows both a preregistered synthetic cost stop and how a later
+   protocol must preserve that result while redefining its FOM and evidence
+   boundary before any new authorization.
 
 Unsafe interpretation:
 
@@ -116,7 +121,9 @@ but does not establish a new mechanism or a replicated method advantage.
 For Attempt 4, allowing positive-integer cardinalities only enlarges the
 dyadic feasible set for a factorized reconstruction objective. Mixed-radix
 addressing and non-power-of-two scalar alphabets are prior art, and imply
-neither ANN improvement nor a systems advantage.
+neither ANN improvement nor a systems advantage. A4 V2 only asks whether a
+complete four-arm synthetic comparative instrument fits an internal cost cap;
+the old `5/2` real-data projection does not transfer.
 ```
 
 ---
@@ -129,7 +136,7 @@ neither ANN improvement nor a systems advantage.
 | 1B. Lossy `D -> d` projection | Can a PCA head plus a compact tail surrogate beat native full-D SAQ? | GIST sample50k, `960 -> 576`, favorable exact surrogate | Gate A failed; projected SAQ not built |
 | 2. Exact scalar-codebook DP | Does histogram-exact 1D DP improve shared dimensionwise scalar quantization over Lloyd, and is any method novelty left after prior work? | audio, PCA CIFAR60K, PCA DEEP1M; arXiv/code audit | Stronger offline baseline; inner DP is prior art; no stable recall dominance |
 | 3. Distance-quality re-evaluation | Does `1/Ratio@k` change a frozen Recall-based Pareto conclusion? | GIST sample100k B=4; DEEP sample100k B=4/B=5 controls | Closed as metric-sensitivity evidence |
-| 4. Arbitrary-cardinality fixed-rate words | Does the power-of-two restriction waste material capacity at unchanged fixed payload and lookup granularity? | A4-0 synthetic witness; A4-1S synthetic correctness/cost gate; registered GIST50k/CIFAR60k base-only gate was conditional and never authorized | A4-1S `NO_GO_EXACT_SOLVER_COST`; formulation closed before base read |
+| 4. Arbitrary-cardinality fixed-rate words | Does the power-of-two restriction waste material capacity at unchanged fixed payload and lookup granularity? | A4-0 synthetic witness; terminal A4-1S correctness/cost gate; reviewed A4 V2 protocol; registered real-base gates remain unauthorized | preserve A4-1S `NO_GO_EXACT_SOLVER_COST`; A4 V2 `PROTOCOL_READY_NOT_AUTHORIZED_FOR_EXECUTION` |
 
 Speaker notes:
 
@@ -2147,15 +2154,21 @@ case study, not an independent database-systems method.
 
 ---
 
-## 59. Attempt 4: Research Question And Terminal Gate
+## 59. Attempt 4: Research Question, Old Stop, And V2 Boundary
 
-Scientific-content snapshot: `saq-arbitrary-cardinality-analysis@f1b464b`
+Current scientific-content snapshot:
+`saq-arbitrary-cardinality-feasibility-v2@f86a51d`
+
+Preserved terminal A4-1S snapshot:
+`saq-arbitrary-cardinality-analysis@f1b464b`
 
 | Stage | Committed status | What it means |
 |---|---|---|
 | A4-0 synthetic instrument | `PASS_INSTRUMENT_ONLY` | formulation, tiny witness, and reference checks passed |
 | A4-1P base-only protocol | `FROZEN_NOT_AUTHORIZED / NOT_RUN` | scientific inputs and decision rule were registered; base read remained forbidden |
 | A4-1S synthetic implementation | `NO_GO_EXACT_SOLVER_COST` | parity passed, but the reviewed frozen construction/evidence pipeline exceeded its cost ceiling |
+| A4-V2 primary review and protocol | `PROTOCOL_READY_NOT_AUTHORIZED_FOR_EXECUTION` | a new FOM and evidence boundary are independently reviewed; no implementation or run has occurred |
+| A4-V2-I / PAR / SRUN | `NOT_AUTHORIZED` | implementation, build/parity, and one synthetic event are separate, non-transitive future stages |
 | SAQ/index/search integration | `NOT_AUTHORIZED` | no production representation or query-path change may be made |
 
 Research question:
@@ -2244,16 +2257,18 @@ Therefore a publishable claim would need evidence beyond the primitive:
 4. only after a new frozen systems protocol, a replicated Recall-throughput
    effect against competitive baselines.
 
-Current decision:
+Current boundary:
 
 ```text
-STOP AT A4-1S SYNTHETIC COST GATE
+PRESERVE A4-1S TERMINAL COST STOP
+A4 V2 PROTOCOL READY; NO EXECUTION STAGE AUTHORIZED
 ```
 
 The fixed-word opportunity remains a mathematical possibility, but the frozen
-exact construction/evidence pipeline did not meet its preregistered cost
-ceiling. The current formulation is closed; it cannot claim a new
-quantization primitive or enter SAQ integration.
+exact A4-1S construction/evidence pipeline did not meet its preregistered cost
+ceiling. V2 does not rescue or reinterpret that result. It freezes a new
+synthetic comparative-instrument question and cannot claim a new quantization
+primitive, feasibility, or SAQ integration.
 
 ---
 
@@ -2336,6 +2351,11 @@ writing a later systems protocol. It still would not have established Recall,
 QPS, or a method claim. A4-1S did not pass, so reading the registered base
 inputs remains forbidden and this gate must not be opened.
 
+A4 V2 does not reopen A4-1. Its current authorization ceiling is protocol
+publication only. Even a separately authorized and successful future V2
+synthetic event would stop to ask whether to write a new base-only
+preregistration; it would not itself authorize any base or query read.
+
 ---
 
 ## 64. A4-1S Synthetic Implementation And Cost Gate
@@ -2398,7 +2418,63 @@ deliberately excluded.
 
 ---
 
-## 65. Current Synthesis
+## 65. A4 V2: Reviewed Cost And Evidence Protocol
+
+Primary review: `saq-arbitrary-cardinality-feasibility-v2@c4ccea3`
+
+Reviewed protocol snapshot:
+`saq-arbitrary-cardinality-feasibility-v2@f86a51d`
+
+The review preserves the old A4-1S result and changes the next question, not
+the result. A4-1S timed exact construction together with full canonical
+research serialization; serialization alone used 18,096 CPU-seconds. That
+supports neither a solver lower bound nor candidate-only deployment cost.
+
+V2 therefore freezes one primary FOM for the complete four-arm synthetic
+comparative instrument:
+
+```text
+T_instrument = C_setup + C_core + C_bundle_io
+PASS iff T_instrument <= 34,560,000,000 CPU microseconds
+```
+
+The cap is only an internal admission boundary for the one frozen synthetic
+panel. The old `5/2` factor does not transfer: there is no V2 projection to
+GIST, CIFAR, two datasets, a full vector, an SAQ index build, or deployment.
+
+No work disappears from reporting:
+
+```text
+B_build + P_parity + T_instrument
+        + E_emit + V_replay + E_archive_body = T_study_metered
+F_trailer is a finite disclosed reporting trailer
+memory, temporary bytes, bundle bytes, evidence/archive bytes: separately capped
+```
+
+The schema freezes 396 atomic construction units, exact-prefix evidence,
+independent exact-rational scalar/allocation replay, deterministic bit-level
+block/encoding/packing replay, raw prelaunch evidence, and admissibility-first
+status precedence. The four-arm bundle is A4-reference-equivalent only; it is
+not current SAQ's serialized representation or query estimator.
+
+Independent review returned `0 BLOCKER / 0 HIGH / 0 LOW`. The maximum claim is:
+
+```text
+PROTOCOL_READY_NOT_AUTHORIZED_FOR_EXECUTION
+```
+
+Future stages are separate and non-transitive:
+
+| Stage | Scope | Current authorization |
+|---|---|---|
+| `A4-V2-I` | source implementation and independent review | `NOT_AUTHORIZED` |
+| `A4-V2-PAR` | frozen build and parity only | `NOT_AUTHORIZED` |
+| `A4-V2-SRUN` | one logical synthetic admission event | `NOT_AUTHORIZED` |
+| data / SAQ | base, query, index, estimator, integration | `NOT_AUTHORIZED` |
+
+---
+
+## 66. Current Synthesis
 
 | Attempt | Theoretical guarantee | Strongest positive evidence | Decision / current boundary |
 |---|---|---|---|
@@ -2406,7 +2482,7 @@ deliberately excluded.
 | 1B lossy `D -> d` | exact head and norm terms in favorable oracle | tail norms reduce RMSE from 0.0445 to 0.00248 | omitted tail IP still worsens ranking versus native SAQ |
 | 2 exact scalar DP | exact bin-boundary partition SSE using raw bin moments; final midpoint-nearest-centroid raw SSE is evaluated, not reoptimized; outer optimum is conditional on `E[j,b]` | audio B=4 raw MSE `-15.5%`, R@100 `+0.004` | inner-DP novelty is foreclosed by prior art; no full-scale raw optimum or recall guarantee; cross-regime reversals |
 | 3 distance-quality re-evaluation | paper-exact metric semantics; no method guarantee | GIST measured point: higher `1/Ratio`, `1.078x` QPS at the frozen target | one positive setting; DEEP controls remain negative; metric is prior work |
-| 4 arbitrary-cardinality fixed-rate words | the arbitrary positive-integer feasible set contains the dyadic set for exact factorized SSE | frozen `(3,5)` witness plus independently reviewed exact implementation parity | `NO_GO_EXACT_SOLVER_COST`: frozen pipeline projected to `24.170246892361` CPU-hours; closed before natural-data, block-VQ, or ANN/system evidence |
+| 4 arbitrary-cardinality fixed-rate words | the arbitrary positive-integer feasible set contains the dyadic set for exact factorized SSE | frozen `(3,5)` witness, exact implementation parity, and reviewed V2 cost/evidence protocol | preserve A4-1S `NO_GO_EXACT_SOLVER_COST`; V2 is protocol-ready but no implementation, run, data, or ANN/system evidence is authorized |
 
 Cross-attempt lesson:
 
@@ -2420,12 +2496,14 @@ include all construction, storage, and query overhead.
 
 Attempt 4 was deliberately staged so that a representation theorem or a
 synthetic witness could not silently become a method claim. The committed and
-reviewed cost stop prevented the next expansion of scope.
+reviewed A4-1S cost stop prevented the next expansion of scope. V2 changes the
+future measurement contract but is not evidence that the instrument is
+feasible.
 ```
 
 ---
 
-## 66. Proposed Meeting Discussion
+## 67. Proposed Meeting Discussion
 
 Decision 1:
 
@@ -2453,18 +2531,19 @@ distance quality, while treating the GIST flip only as measurement evidence?
 Decision 4:
 
 ```text
-Do we agree that Attempt 4 should close at the preregistered A4-1S pipeline-cost
-failure, without interpreting the narrow machine-bound margin as a general
-complexity lower bound or as evidence that arbitrary cardinalities are
-ineffective?
+Do we agree to preserve the terminal A4-1S pipeline-cost failure, while
+treating A4 V2 only as a reviewed new measurement protocol rather than a
+rescued result or feasibility claim?
 ```
 
-No base-authorization question remains under the current formulation:
+The only possible next authorization question is deliberately narrow:
 
 ```text
-A4-1S did not return PASS_SYNTHETIC_GATE_ONLY.
-Do not open the registered base inputs, rerun the cost gate, or rescue the
-result by changing precision, shape, serialization, library, or machine.
+Should a future session receive explicit authorization for A4-V2-I
+implementation-only work?
+
+Even YES would not authorize build, parity, RNG, a synthetic run, base/query
+inputs, SAQ changes, or the old A4-1 gate.
 ```
 
 Speaker notes:
@@ -2473,12 +2552,14 @@ Speaker notes:
   affordability under the frozen pipeline-cost gate; allocation, block-VQ,
   and encoding cost phases were not
   reached after the scalar-prefix early stop.
+- A4 V2's direct internal cap and evidence split are preregistered but wholly
+  unexecuted. The old `5/2` projection is not a V2 cost model.
 - Novelty, mechanism, replication, and total overhead should be challenged
   before experimental scope is expanded.
 
 ---
 
-## 67. Evidence And Code Map
+## 68. Evidence And Code Map
 
 Attempt 1, SAQ branch `saq-transform-analysis@3d94840`:
 
@@ -2562,10 +2643,24 @@ docs/saq_attempt4_a4_1s_artifacts_2026_07_13/cost_projection_artifact_index.json
 docs/saq_attempt4_a4_1s_cost_projection_review_2026_07_13.md
 ```
 
+Attempt 4 V2 protocol-only follow-up, branch
+`saq-arbitrary-cardinality-feasibility-v2@f86a51d`:
+
+```text
+docs/saq_a4_v2_primary_source_metadata_2026_07_14.json
+docs/saq_a4_v2_cost_evidence_primary_source_review_2026_07_14.md
+docs/saq_a4_v2_cost_evidence_go_no_go_memo_2026_07_14.md
+docs/saq_a4_v2_synthetic_construction_preregistration_2026_07_14.md
+docs/saq_a4_v2_synthetic_construction_contract_2026_07_14.json
+docs/saq_a4_v2_artifact_schema_2026_07_14.json
+docs/saq_a4_v2_protocol_independent_review_2026_07_14.md
+```
+
 A4-0 and A4-1S parity are outcome evidence only at their stated instrument
 ceilings. A4-1S cost is a reviewed pipeline-cost no-go. A4-1 remains an
 unexecuted frozen protocol; no natural-data, ANN, or systems result is
-established.
+established. A4 V2 is an independently reviewed protocol, not an execution
+result; all future V2 stages and all data access remain unauthorized.
 
 Current deck:
 
@@ -2575,7 +2670,7 @@ docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md
 
 ---
 
-## 68. One-Slide Takeaway
+## 69. One-Slide Takeaway
 
 ```text
 Attempt 1:
@@ -2604,11 +2699,13 @@ restriction on the frozen (3,5) witness, but unrestricted block VQ matches
 them and the primitives are known. A4-0 validates only the instrument. A4-1S
 exact implementation parity passed, but the frozen construction/evidence
 pipeline projected to 24.170246892361 CPU-hours and failed its 24-hour gate.
-The current formulation closes before natural-data access or SAQ/system
-claims.
+That terminal result remains unchanged. A4 V2 now freezes a direct internal
+comparative-instrument FOM and a complete evidence ledger, but the old 5/2
+projection does not transfer and V2 has not been implemented or run.
 
 Project decision:
 Keep Attempts 1--3 as rigorous negative or partial evidence. Do not rescue
-them with post-hoc sweeps. Preserve Attempt 4 as a preregistered synthetic
-cost stop; do not rerun or rescue it, and do not open the real-base gate.
+them with post-hoc sweeps. Preserve A4-1S as a preregistered synthetic cost
+stop. Treat A4 V2 only as protocol-ready and await an explicit, named
+implementation-only authorization; do not open any base or query gate.
 ```
