@@ -23,6 +23,7 @@
       "artifact_index.json",
       "par_seal.json"
     ],
+    "canonical_seal_encoding": "UTF-8; recursively lexicographic keys; comma/colon without spaces; decimal integer tokens; literal lowercase booleans; no escaped solidus; shortest required JSON escapes; exactly one terminal LF",
     "coarse_seal_guard_bytes": 65536,
     "directory_membership": "exactly the B/P evidence files listed by artifact_index.json plus artifact_index.json and par_seal.json; fixed-path build binaries are bound directly by build_manifest and par_seal; independent review and par_review_binding live outside this immutable directory",
     "duration_or_RSS_interpreted": false,
@@ -48,6 +49,8 @@
     "maximal_instance": {
       "canonical_bytes_including_terminal_LF": 5171,
       "path": "docs/saq_a4_v2_par_report_seal_maximal_instance_2026_07_14.json",
+      "purpose": "conservative exact maximum of the closed syntactic schema language; cross-record aggregate resource semantics are validated separately",
+      "semantically_admissible_observation": false,
       "sha256": "6659f41de48fa23007ae6c27e38daff1c83b909a8c2dd0f9a762193fb12c2450"
     },
     "metered": false,
@@ -91,17 +94,19 @@
       "all seal fields except captured terminal P values",
       "indexed-file and staging-directory fsync"
     ],
-    "publication": "sole created file par_seal.json followed by atomic no-replace rename of docs/saq_a4_v2_par_artifacts_2026_07_14.staging to docs/saq_a4_v2_par_artifacts_2026_07_14 and parent fsync",
-    "seal_path": "docs/saq_a4_v2_par_artifacts_2026_07_14/par_seal.json",
+    "publication": "sole physical file creation at the staging path followed by atomic no-replace rename of docs/saq_a4_v2_par_artifacts_2026_07_14.staging to docs/saq_a4_v2_par_artifacts_2026_07_14 and parent fsync",
+    "seal_published_path": "docs/saq_a4_v2_par_artifacts_2026_07_14/par_seal.json",
+    "seal_staging_path": "docs/saq_a4_v2_par_artifacts_2026_07_14.staging/par_seal.json",
     "self_identity_embedded": false
   },
   "future_git_authority": {
     "ancestry": "strict distinct I < P < R < E",
-    "E_binding": "E carries par_review_binding.json naming I,P,R and verifies exact git show R:path bytes for par_seal, artifact_index, and the independent review memo",
+    "E_binding": "E carries par_review_binding.json naming I,P,R and the immutable PAR artifact tree OID; it verifies exact git show R:path bytes for par_seal, artifact_index, and the independent review memo",
     "I": "reviewed implementation commit",
     "P": "PAR artifact commit produced from I",
-    "R": "independent PAR-review commit preserving P seal/index bytes",
+    "R": "independent PAR-review commit preserving the complete P PAR-artifact tree object",
     "E": "later clean execution-authority commit after R",
+    "par_artifact_tree_binding": "git rev-parse COMMIT:docs/saq_a4_v2_par_artifacts_2026_07_14 must return one identical tree OID at P,R,E; recursive git ls-tree modes,names,blob OIDs must equal exact indexed membership plus artifact_index.json and par_seal.json, with no symlink, submodule, extra entry, or nonregular mode",
     "human_git_and_review_work": "NOT_MEASURED and never PAR_report or scientific work"
   },
   "metered_formula_unchanged": "T_study_metered=B_build+P_parity+T_instrument+E_emit+V_replay+E_archive_body",
@@ -121,6 +126,7 @@
     "separate_B_report": false,
     "unchanged_maximum_attempts_per_phase": 2
   },
+  "semantic_receipt_validation": "every timestamp is a real RFC3339 UTC instant with year 0001..9999, valid calendar/date/time fields, exactly six fractional digits and terminal Z; start_utc<=end_utc and all receipt intervals/orders agree with the parent chronological phase ledger; aggregate CPU/wall/byte/resource caps are validated separately from the width-bounded schema",
   "schema_version": 1,
   "stage": "A4-V2-P-ERRATUM",
   "status": "AUTHORIZED_DOCUMENTATION_ONLY_PENDING_INDEPENDENT_REVIEW",

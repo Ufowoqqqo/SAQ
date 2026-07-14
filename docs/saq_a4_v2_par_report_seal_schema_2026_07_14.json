@@ -2,13 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Ufowoqqqo/SAQ/blob/saq-arbitrary-cardinality-feasibility-v2/docs/saq_a4_v2_par_report_seal_schema_2026_07_14.json",
   "title": "A4 V2 PAR seal schema after PAR-report timing-closure erratum",
-  "$comment": "The canonical maximal instance registered by the composite protocol authority supplies the exact byte ceiling M. Runtime also requires M <= 65536. Cross-record hash, identity, aggregate, and Git-DAG invariants are normative in the erratum contract.",
+  "$comment": "The canonical maximal instance registered by the composite protocol authority is the conservative exact maximum of this closed syntactic schema language and supplies byte ceiling M; it is not a semantically admissible resource observation. Runtime separately validates cross-record aggregate caps and requires M <= 65536. Cross-record hash, identity, timestamp, aggregate, and Git-DAG invariants are normative in the erratum contract.",
   "$ref": "#/$defs/par_seal",
   "$defs": {
-    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-    "git_oid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "sha256": {"type": "string", "minLength": 64, "maxLength": 64, "pattern": "^[0-9a-f]{64}$"},
+    "git_oid": {"type": "string", "minLength": 40, "maxLength": 40, "pattern": "^[0-9a-f]{40}$"},
     "uint64": {"type": "integer", "minimum": 0, "maximum": 18446744073709551615},
-    "utc_microseconds": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$"},
+    "utc_microseconds": {"type": "string", "minLength": 27, "maxLength": 27, "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$"},
+    "external_signal_reason": {"type": "string", "minLength": 17, "maxLength": 18, "pattern": "^EXTERNAL_SIGNAL_([1-9]|[1-5][0-9]|6[0-4])$", "not": {"pattern": "[\\r\\n\\u2028\\u2029]"}},
     "document_identity": {
       "type": "object",
       "additionalProperties": false,
@@ -32,7 +33,7 @@
         "end_utc": {"$ref": "#/$defs/utc_microseconds"},
         "environment_sha256": {"$ref": "#/$defs/sha256"},
         "execution_commit": {"$ref": "#/$defs/git_oid"},
-        "exit_reason": {"oneOf": [{"const": "PHASE_COMPLETE"}, {"type": "string", "pattern": "^EXTERNAL_SIGNAL_([1-9]|[1-5][0-9]|6[0-4])$"}]},
+        "exit_reason": {"oneOf": [{"const": "PHASE_COMPLETE"}, {"$ref": "#/$defs/external_signal_reason"}]},
         "logical_run_id": {"$ref": "#/$defs/sha256"},
         "peak_rss_bytes": {"$ref": "#/$defs/uint64"},
         "phase": {"enum": ["B_build", "P_parity"]},
@@ -52,10 +53,10 @@
       ]
     },
     "b0_complete": {"allOf": [{"$ref": "#/$defs/phase_receipt"}, {"properties": {"attempt_id": {"const": 0}, "exit_reason": {"const": "PHASE_COMPLETE"}, "phase": {"const": "B_build"}, "staging_disposition": {"const": "NONE"}}}]},
-    "b0_interrupted": {"allOf": [{"$ref": "#/$defs/phase_receipt"}, {"properties": {"attempt_id": {"const": 0}, "exit_reason": {"pattern": "^EXTERNAL_SIGNAL_([1-9]|[1-5][0-9]|6[0-4])$"}, "phase": {"const": "B_build"}, "staging_disposition": {"const": "DISCARDED"}}}]},
+    "b0_interrupted": {"allOf": [{"$ref": "#/$defs/phase_receipt"}, {"properties": {"attempt_id": {"const": 0}, "exit_reason": {"$ref": "#/$defs/external_signal_reason"}, "phase": {"const": "B_build"}, "staging_disposition": {"const": "DISCARDED"}}}]},
     "b1_complete": {"allOf": [{"$ref": "#/$defs/phase_receipt"}, {"properties": {"attempt_id": {"const": 1}, "exit_reason": {"const": "PHASE_COMPLETE"}, "phase": {"const": "B_build"}, "staging_disposition": {"const": "NONE"}}}]},
     "p0_complete": {"allOf": [{"$ref": "#/$defs/phase_receipt"}, {"properties": {"attempt_id": {"const": 0}, "exit_reason": {"const": "PHASE_COMPLETE"}, "phase": {"const": "P_parity"}, "staging_disposition": {"const": "NONE"}}}]},
-    "p0_interrupted": {"allOf": [{"$ref": "#/$defs/phase_receipt"}, {"properties": {"attempt_id": {"const": 0}, "exit_reason": {"pattern": "^EXTERNAL_SIGNAL_([1-9]|[1-5][0-9]|6[0-4])$"}, "phase": {"const": "P_parity"}, "staging_disposition": {"const": "DISCARDED"}}}]},
+    "p0_interrupted": {"allOf": [{"$ref": "#/$defs/phase_receipt"}, {"properties": {"attempt_id": {"const": 0}, "exit_reason": {"$ref": "#/$defs/external_signal_reason"}, "phase": {"const": "P_parity"}, "staging_disposition": {"const": "DISCARDED"}}}]},
     "p1_complete": {"allOf": [{"$ref": "#/$defs/phase_receipt"}, {"properties": {"attempt_id": {"const": 1}, "exit_reason": {"const": "PHASE_COMPLETE"}, "phase": {"const": "P_parity"}, "staging_disposition": {"const": "NONE"}}}]},
     "receipt_sequence": {
       "oneOf": [

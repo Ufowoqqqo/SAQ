@@ -147,5 +147,7 @@ Return `GO_PROTOCOL_DESIGN` only if all are supported before execution:
   merely demonstrate faster artifact production.
 
 Stop after independent review, focused commits, push, and Meeting Summary
-Handoff. Await explicit authorization for one named future stage; do not infer
-it from protocol publication.
+Handoff. The earlier explicit A4-V2-I authorization then remains available but
+is not resumed as part of this erratum stage. `A4-V2-PAR` and `A4-V2-SRUN`
+still require separate explicit authorization; never infer either from
+protocol publication.

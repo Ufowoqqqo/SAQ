@@ -118,9 +118,10 @@ in order:
 4. canonical-encode that object once and require its in-memory byte length to
    be no greater than both the exact schema maximum registered by the maximal
    instance and the coarse 65,536-byte guard;
-5. create only
-   `docs/saq_a4_v2_par_artifacts_2026_07_14/par_seal.json`, using exclusive,
-   no-follow, regular-file semantics;
+5. physically create only
+   `docs/saq_a4_v2_par_artifacts_2026_07_14.staging/par_seal.json`, using
+   exclusive, no-follow, regular-file semantics; its eventual published path
+   is `docs/saq_a4_v2_par_artifacts_2026_07_14/par_seal.json`;
 6. write the already encoded bytes, fsync and close the file, fsync the exact
    `docs/saq_a4_v2_par_artifacts_2026_07_14.staging` directory, atomically
    rename that directory without replacement to
@@ -184,6 +185,13 @@ attempt of that phase. The successful B and P receipts use
 `staging_disposition=NONE` because atomic publication belongs to
 `PAR_report`, not to either metered phase.
 
+The semantic validator must parse every fixed-width UTC string as a real
+RFC 3339 UTC instant with year `0001..9999`, valid calendar/date/time fields,
+exactly six fractional digits, and terminal `Z`. For every receipt,
+`start_utc <= end_utc`; receipt intervals and attempt order must also agree
+with the parent chronological phase ledger. The width-only schema is not a
+substitute for these semantic checks.
+
 ## 7. Nonrecursive byte and Git identity
 
 `par_seal.json` embeds neither its own size or SHA-256 nor a total that includes
@@ -195,27 +203,48 @@ PAR artifact bytes and all artifact-index work remain charged to B or P.
 
 The closed PAR-seal schema fixes every path, hash width, timestamp width,
 integer representation bound, receipt order, and array cardinality. Its
-canonical maximal instance uses four legal receipts and maximum values. The
-exact byte length of that committed instance is the normative seal ceiling;
+canonical maximal instance uses the longest legal four-receipt shape and every
+independent per-field maximum. It is deliberately the maximum of the schema
+language, not a semantically admissible observation: its aggregate CPU/wall
+and byte values exceed parent cross-record caps and must be rejected by the
+separate semantic validator. That conservative syntactic maximum is exactly
+5,171 bytes including the terminal LF and is the normative seal ceiling;
 65,536 bytes is only a coarse safety guard. Crossing either bound produces no
 valid PAR seal and is not permission to enlarge the schema or report.
+
+For this size proof, canonical seal JSON is UTF-8 with recursively
+lexicographic keys, no insignificant whitespace, comma and colon separators
+without spaces, decimal integer tokens, literal lowercase booleans, no escaped
+solidus, the shortest required JSON escape for any escapable character, and
+exactly one terminal LF. The closed schema admits only ASCII string values
+that need no escape under this rule.
 
 The future authority DAG is strictly ordered:
 
 ```text
 I  reviewed implementation commit
 P  PAR artifact commit produced from I
-R  independent PAR-review commit, preserving P's seal and index bytes
+R  independent PAR-review commit, preserving P's complete PAR artifact tree
 E  later clean execution-authority commit, strictly after R
 ```
 
-Thus `I < P < R < E`. Before any later SRUN, E must bind I, P, and R and verify
-that exact `git show R:path` bytes for `par_seal.json`, `artifact_index.json`,
-and the independent review memo equal the admitted worktree bytes. A separate
-`par_review_binding.json` at E carries those prior identities; the PAR seal
-does not predict a future commit. Git staging, commits, and human review remain
-the already declared NOT_MEASURED implementation/review work, never
-`PAR_report` or scientific evidence-generation time.
+Thus `I < P < R < E`. P commits the complete immutable Git tree at
+`docs/saq_a4_v2_par_artifacts_2026_07_14`. R must preserve that exact tree
+object while adding its review memo outside the tree. E must again preserve
+the exact tree object. Independent review and later admission require equal
+`git rev-parse COMMIT:docs/saq_a4_v2_par_artifacts_2026_07_14` tree OIDs at P,
+R, and E, and must inspect its recursive `git ls-tree` modes, names, and blob
+OIDs to enforce exact index-listed membership plus `artifact_index.json` and
+`par_seal.json`, with no symlink, submodule, extra entry, or nonregular mode.
+
+Before any later SRUN, E must bind I, P, R, and that immutable tree OID and
+verify that exact `git show R:path` bytes for `par_seal.json`,
+`artifact_index.json`, and the independent review memo equal the admitted
+worktree bytes. A separate `par_review_binding.json` at E carries those prior
+identities; the PAR seal does not predict a future commit. Git staging,
+commits, and human review remain the already declared NOT_MEASURED
+implementation/review work, never `PAR_report` or scientific evidence-
+generation time.
 
 ## 8. Failure semantics
 
