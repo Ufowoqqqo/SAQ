@@ -1,25 +1,47 @@
 # TASK.md
 
-## Active Research Task
+## Current Research Milestone
 
-Conduct a bounded primary-source review of whether the A4-1S terminal result
-supports a scientifically legitimate new feasibility protocol with separate
-construction, verification, and archival-evidence cost ledgers.
+The bounded primary-source review and documentation-only V2 protocol design
+are complete. The review returned `GO_PROTOCOL_DESIGN`; the current maximum
+outcome is `PROTOCOL_READY_NOT_AUTHORIZED_FOR_EXECUTION`. This is a protocol
+milestone, not a synthetic gate result and not evidence that the direction is
+feasible on base data.
 
 Current authorization is documentation-only:
 
 ```text
-A4-V2-R  bounded primary-source review             AUTHORIZED
-A4-V2-D  cost/evidence-model go/no-go decision     AUTHORIZED
-A4-V2-P  new preregistration, only if review GO    AUTHORIZED_TO_WRITE
-A4-V2-X  implementation or execution               NOT_AUTHORIZED
-data     synthetic RNG or benchmark inputs         NOT_AUTHORIZED
+A4-V2-R     bounded primary-source review             COMPLETED_DOCUMENTATION
+A4-V2-D     cost/evidence-model go/no-go decision     GO_PROTOCOL_DESIGN
+A4-V2-P     preregistration/schema/contract            COMPLETED_DOCUMENTATION
+A4-V2-I     source implementation                      NOT_AUTHORIZED
+A4-V2-PAR   build and frozen parity execution          NOT_AUTHORIZED
+A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
+data        benchmark/base/query/index reads           NOT_AUTHORIZED
 ```
 
-The maximum outcome of this task is
-`PROTOCOL_READY_NOT_AUTHORIZED_FOR_EXECUTION`. If the review cannot defend a
-new scientific question and complete non-hidden cost ledger, stop with
-`NO_GO_REOPENING`.
+Each future stage requires a separate explicit user authorization; one never
+implies the next. No current authorization permits a build, implementation,
+RNG, synthetic run, data read, or SAQ modification.
+
+## Frozen V2 Outcome
+
+The positive target is the four-arm diagnostic bundle under the A4 reference
+decoder/lookup interface frozen before the old cost result at `3aa2f6e`. It is
+not byte-equivalent or estimator-equivalent to current SAQ and is not a
+full-vector ANN index.
+
+The primary gate is:
+
+```text
+T_instrument = C_setup + C_core + C_bundle_io
+PASS iff T_instrument <= 34,560,000,000 CPU microseconds
+```
+
+The cap is internal to the one synthetic panel. The old `5/2` real-dataset
+projection does not transfer. Build, parity, evidence emission, independent
+full replay, archive, memory, and bytes remain separately metered and mandatory
+for any admissible later decision.
 
 ## Preserved Predecessor Result
 
@@ -42,19 +64,18 @@ permanent and transient memory
 future query/index work, if ever authorized
 ```
 
-## Required Deliverables
+## Completed Deliverables
 
-1. A bounded review with explicit search scope, inclusion/exclusion rules,
-   closest primary sources, and source-by-source applicability.
-2. Machine-readable source metadata sufficient to recheck titles, versions,
-   identifiers, URLs, and supported claims.
-3. A decision memo returning either `GO_PROTOCOL_DESIGN` or
-   `NO_GO_REOPENING`.
-4. Only after `GO_PROTOCOL_DESIGN`, a frozen V2 preregistration that is
-   explicitly marked `NOT_AUTHORIZED_FOR_EXECUTION`.
-5. Independent review before treating the decision or protocol as a committed
-   milestone.
-6. After commit and review, the mandatory Meeting Summary Handoff.
+1. `docs/saq_a4_v2_cost_evidence_primary_source_review_2026_07_14.md`.
+2. `docs/saq_a4_v2_primary_source_metadata_2026_07_14.json`.
+3. `docs/saq_a4_v2_cost_evidence_go_no_go_memo_2026_07_14.md`.
+4. `docs/saq_a4_v2_synthetic_construction_preregistration_2026_07_14.md`.
+5. `docs/saq_a4_v2_synthetic_construction_contract_2026_07_14.json`.
+6. `docs/saq_a4_v2_artifact_schema_2026_07_14.json`.
+
+Before these become authoritative, they must pass independent review, be
+committed in focused commits, and receive the mandatory Meeting Summary
+Handoff. Untracked drafts and WIP are never evidence.
 
 ## Review Boundaries
 
@@ -89,5 +110,6 @@ Return `GO_PROTOCOL_DESIGN` only if all are supported before execution:
 - the resulting study could falsify an ANN-relevant opportunity rather than
   merely demonstrate faster artifact production.
 
-Until a separately committed and reviewed execution authorization exists,
-stop after writing and reviewing the protocol.
+Stop after independent review, focused commits, push, and Meeting Summary
+Handoff. Await explicit authorization for one named future stage; do not infer
+it from protocol publication.

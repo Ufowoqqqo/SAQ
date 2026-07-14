@@ -37,6 +37,49 @@ SAQ integration, query inspection, or generated scientific result. A protocol
 written here is `NOT_AUTHORIZED_FOR_EXECUTION` until the user separately and
 explicitly authorizes its named execution stage.
 
+## Review And Protocol Outcome
+
+The bounded review returned `GO_PROTOCOL_DESIGN`. The maximum branch outcome
+is `PROTOCOL_READY_NOT_AUTHORIZED_FOR_EXECUTION`; it is not a gate result.
+The authoritative documents are:
+
+- `docs/saq_a4_v2_primary_source_metadata_2026_07_14.json`;
+- `docs/saq_a4_v2_cost_evidence_primary_source_review_2026_07_14.md`;
+- `docs/saq_a4_v2_cost_evidence_go_no_go_memo_2026_07_14.md`;
+- `docs/saq_a4_v2_synthetic_construction_preregistration_2026_07_14.md`;
+- `docs/saq_a4_v2_synthetic_construction_contract_2026_07_14.json`; and
+- `docs/saq_a4_v2_artifact_schema_2026_07_14.json`.
+
+The positive object is an **A4-reference-equivalent four-arm diagnostic
+bundle** whose scientific interface was frozen before the old cost outcome at
+`saq-arbitrary-cardinality-analysis@3aa2f6e`. It is not byte-equivalent or
+estimator-equivalent to current SAQ, not a full-vector ANN index, and not a
+deployable representation.
+
+The new primary FOM is complete comparative-instrument construction CPU:
+
+```text
+T_instrument = C_setup + C_core + C_bundle_io
+PASS iff T_instrument <= 34,560,000,000 CPU microseconds
+```
+
+That number is an internal one-panel admission cap only. The predecessor's
+`5/2` real-dataset projection does not transfer to the new FOM. Build, parity,
+independent full replay, evidence emission, archive work, memory, and bytes
+remain mandatory separately reported terms. A finite three-file reporting
+trailer is the only disclosed timing-closure exclusion.
+
+Future stages are separate and all currently unauthorized:
+
+```text
+A4-V2-I     source implementation only
+A4-V2-PAR   frozen build and parity execution only
+A4-V2-SRUN  one logical synthetic admission event only
+```
+
+Authorization for one stage never implies the next. No stage above permits
+benchmark/base/query/index reads or SAQ modification.
+
 ## Prior A4-1S Result
 
 The prior formulation remains terminal on

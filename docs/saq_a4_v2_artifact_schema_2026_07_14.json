@@ -1,0 +1,962 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Ufowoqqqo/SAQ/blob/saq-arbitrary-cardinality-feasibility-v2/docs/saq_a4_v2_artifact_schema_2026_07_14.json",
+  "title": "A4 V2 comparative-instrument artifact schemas",
+  "description": "Normative structural schema registry. Cross-record order, cardinality, arithmetic, hash-preimage, and phase invariants are additionally normative in the preregistration and machine-readable contract.",
+  "oneOf": [
+    {"$ref": "#/$defs/scalar_optimum_v2"},
+    {"$ref": "#/$defs/allocation_summary_v2"},
+    {"$ref": "#/$defs/block_metadata_v2"},
+    {"$ref": "#/$defs/block_start_v2"},
+    {"$ref": "#/$defs/encoding_summary_v2"},
+    {"$ref": "#/$defs/models_v2"},
+    {"$ref": "#/$defs/representation_manifest_v2"},
+    {"$ref": "#/$defs/producer_manifest_v2"},
+    {"$ref": "#/$defs/verifier_summary_v2"},
+    {"$ref": "#/$defs/archive_body_v2"},
+    {"$ref": "#/$defs/resource_ledger_v2"},
+    {"$ref": "#/$defs/decision_v2"},
+    {"$ref": "#/$defs/artifact_index_v2"}
+  ],
+  "$defs": {
+    "id": {"type": "integer", "minimum": 0},
+    "positive_id": {"type": "integer", "minimum": 1},
+    "count": {"type": "string", "pattern": "^(0|[1-9][0-9]*)$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "git_oid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "bits32": {"type": "string", "pattern": "^[0-9a-f]{8}$"},
+    "bits64": {"type": "string", "pattern": "^[0-9a-f]{16}$"},
+    "byte_hex": {"type": "string", "pattern": "^(?:[0-9a-f]{2})*$"},
+    "nonempty_byte_hex": {"type": "string", "pattern": "^(?:[0-9a-f]{2})+$"},
+    "nonnegative_decimal": {"type": "string", "pattern": "^(0|[1-9][0-9]*)$"},
+    "nonnegative_fixed_decimal": {"type": "string", "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"},
+    "conflict_marker": {"enum": ["a4_1s_native", "a4_1s_runner.py", "a4_v2_archive.py", "a4_v2_native", "a4_v2_runner.py", "a4_v2_verifier.py", "evaluate_arbitrary_cardinality.py", "run_arbitrary_cardinality_a4_1s.py", "run_arbitrary_cardinality_a4_v2.py", "run_saq_cost_projection.py", "saq_cost_projection", "saq_cost_projection.py"]},
+    "positive_decimal": {"type": "string", "pattern": "^[1-9][0-9]*$"},
+    "signed_decimal": {"type": "string", "pattern": "^(0|-?[1-9][0-9]*)$"},
+    "exact_sse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["binary_grid_exponent", "denominator", "numerator"],
+      "properties": {
+        "binary_grid_exponent": {"const": -298},
+        "denominator": {"$ref": "#/$defs/positive_decimal"},
+        "numerator": {"$ref": "#/$defs/nonnegative_decimal"}
+      }
+    },
+    "exact_mean": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["binary_grid_exponent", "denominator", "numerator"],
+      "properties": {
+        "binary_grid_exponent": {"const": -149},
+        "denominator": {"$ref": "#/$defs/positive_decimal"},
+        "numerator": {"$ref": "#/$defs/signed_decimal"}
+      }
+    },
+    "interval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["support_begin", "support_end_exclusive"],
+      "properties": {
+        "support_begin": {"$ref": "#/$defs/id"},
+        "support_end_exclusive": {"$ref": "#/$defs/positive_id"}
+      }
+    },
+    "file_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "producing_phase", "role", "schema", "sha256", "size_bytes"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "producing_phase": {"type": "string", "minLength": 1},
+        "role": {"type": "string", "minLength": 1},
+        "schema": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size_bytes": {"$ref": "#/$defs/id"}
+      }
+    },
+    "bundle_models_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "schema_version", "sha256", "size_bytes"],
+      "properties": {
+        "path": {"const": "models.json"},
+        "schema_version": {"const": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size_bytes": {"$ref": "#/$defs/id"}
+      }
+    },
+    "bundle_code_file_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [
+        {"if": {"properties": {"path": {"const": "codes_b04.bin"}}, "required": ["path"]}, "then": {"properties": {"payload_bytes": {"const": 32}, "size_bytes": {"const": 1048576}, "word_bits": {"const": 4}}}},
+        {"if": {"properties": {"path": {"const": "codes_b08.bin"}}, "required": ["path"]}, "then": {"properties": {"payload_bytes": {"const": 64}, "size_bytes": {"const": 2097152}, "word_bits": {"const": 8}}}}
+      ],
+      "required": ["arm_order", "layout", "path", "payload_bytes", "sha256", "size_bytes", "vector_count", "word_bits"],
+      "properties": {
+        "arm_order": {"const": ["dyadic_word", "arbitrary_word", "trained_block_vq", "global_dyadic_pack_cap8"]},
+        "layout": {"const": "arm-major_then_vector-major"},
+        "path": {"enum": ["codes_b04.bin", "codes_b08.bin"]},
+        "payload_bytes": {"enum": [32, 64]},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size_bytes": {"enum": [1048576, 2097152]},
+        "vector_count": {"const": 8192},
+        "word_bits": {"enum": [4, 8]}
+      }
+    },
+    "document_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "size_bytes"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size_bytes": {"$ref": "#/$defs/id"}
+      }
+    },
+    "source_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["clean_tree", "execution_commit", "repository_url", "source_tree_sha256"],
+      "properties": {
+        "clean_tree": {"const": true},
+        "execution_commit": {"$ref": "#/$defs/git_oid"},
+        "repository_url": {"type": "string", "minLength": 1},
+        "source_tree_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "command_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["argv", "argv_sha256"],
+      "properties": {
+        "argv": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "argv_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "environment_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["CPU", "GMP", "MPFR", "MXCSR", "NumPy", "OpenSSL", "Python", "allowed_affinity", "compiler", "compiler_flags", "environment_sha256", "governor", "kernel", "physical_memory_bytes", "rounding", "SMT", "thread_environment", "threads", "turbo"],
+      "properties": {
+        "CPU": {"const": "Intel(R) Core(TM) i9-10920X CPU @ 3.50GHz"},
+        "GMP": {"const": "6.2.0"},
+        "MPFR": {"const": "4.1.0-p9"},
+        "MXCSR": {"const": "0x00001f80; FTZ=false; DAZ=false"},
+        "NumPy": {"const": "1.23.5"},
+        "OpenSSL": {"const": "3.5.5 27 Jan 2026"},
+        "Python": {"const": "CPython 3.9.25"},
+        "allowed_affinity": {"const": "0-23"},
+        "compiler": {"const": "GCC 11.5.0 20240719 (Red Hat 11.5.0-14)"},
+        "compiler_flags": {"const": ["-O3", "-fno-fast-math", "-ffp-contract=off", "-frounding-math", "-mfpmath=sse"]},
+        "environment_sha256": {"$ref": "#/$defs/sha256"},
+        "governor": {"const": "performance"},
+        "kernel": {"const": "5.14.0-687.24.1.el9_8.x86_64"},
+        "physical_memory_bytes": {"const": 33047748608},
+        "rounding": {"const": "FE_TONEAREST"},
+        "SMT": {"const": "active"},
+        "thread_environment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["MKL_NUM_THREADS", "OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS"],
+          "properties": {
+            "MKL_NUM_THREADS": {"const": "1"},
+            "OMP_NUM_THREADS": {"const": "1"},
+            "OPENBLAS_NUM_THREADS": {"const": "1"}
+          }
+        },
+        "threads": {"const": 1},
+        "turbo": {"const": "enabled; intel_pstate/no_turbo=0"}
+      }
+    },
+    "pid_filter_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["effective_uid", "initial_proc_status_hex", "initial_proc_status_sha256", "pid", "same_as_preflight_effective_uid"],
+      "properties": {
+        "effective_uid": {"$ref": "#/$defs/id"},
+        "initial_proc_status_hex": {"$ref": "#/$defs/nonempty_byte_hex"},
+        "initial_proc_status_sha256": {"$ref": "#/$defs/sha256"},
+        "pid": {"$ref": "#/$defs/positive_id"},
+        "same_as_preflight_effective_uid": {"type": "boolean"}
+      }
+    },
+    "same_user_process": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {"properties": {"is_preflight_self": {"const": true}}, "required": ["is_preflight_self"]},
+          "then": {"properties": {"classification": {"const": "ALLOW_PREFLIGHT_SELF"}}},
+          "else": {"properties": {"classification": {"const": "ALLOW_NO_MARKER"}, "matched_conflict_markers": {"maxItems": 0}}}
+        }
+      ],
+      "required": ["classification", "comm_hex", "conflicting_a4_or_saq_cost", "final_cmdline_hex", "final_cmdline_sha256", "final_executable_target_hex", "final_proc_stat_hex", "final_proc_stat_sha256", "final_proc_status_hex", "final_proc_status_sha256", "initial_cmdline_hex", "initial_cmdline_sha256", "initial_executable_target_hex", "initial_proc_stat_hex", "initial_proc_stat_sha256", "is_preflight_self", "matched_conflict_markers", "pid", "pid_filter_record_index", "start_time_clock_ticks", "state", "system_cpu_clock_ticks", "total_cpu_clock_ticks", "user_cpu_clock_ticks"],
+      "properties": {
+        "classification": {"enum": ["ALLOW_PREFLIGHT_SELF", "ALLOW_NO_MARKER"]},
+        "comm_hex": {"$ref": "#/$defs/nonempty_byte_hex"},
+        "conflicting_a4_or_saq_cost": {"const": false},
+        "final_cmdline_hex": {"$ref": "#/$defs/byte_hex"},
+        "final_cmdline_sha256": {"$ref": "#/$defs/sha256"},
+        "final_executable_target_hex": {"$ref": "#/$defs/byte_hex"},
+        "final_proc_stat_hex": {"$ref": "#/$defs/nonempty_byte_hex"},
+        "final_proc_stat_sha256": {"$ref": "#/$defs/sha256"},
+        "final_proc_status_hex": {"$ref": "#/$defs/nonempty_byte_hex"},
+        "final_proc_status_sha256": {"$ref": "#/$defs/sha256"},
+        "initial_cmdline_hex": {"$ref": "#/$defs/byte_hex"},
+        "initial_cmdline_sha256": {"$ref": "#/$defs/sha256"},
+        "initial_executable_target_hex": {"$ref": "#/$defs/byte_hex"},
+        "initial_proc_stat_hex": {"$ref": "#/$defs/nonempty_byte_hex"},
+        "initial_proc_stat_sha256": {"$ref": "#/$defs/sha256"},
+        "is_preflight_self": {"type": "boolean"},
+        "matched_conflict_markers": {"type": "array", "items": {"$ref": "#/$defs/conflict_marker"}, "uniqueItems": true},
+        "pid": {"$ref": "#/$defs/positive_id"},
+        "pid_filter_record_index": {"$ref": "#/$defs/id"},
+        "start_time_clock_ticks": {"$ref": "#/$defs/id"},
+        "state": {"type": "string", "pattern": "^[A-Za-z]$"},
+        "system_cpu_clock_ticks": {"$ref": "#/$defs/id"},
+        "total_cpu_clock_ticks": {"$ref": "#/$defs/id"},
+        "user_cpu_clock_ticks": {"$ref": "#/$defs/id"}
+      }
+    },
+    "prelaunch_observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["available_memory_requirement_pass", "available_physical_memory_bytes", "conflicting_process_requirement_pass", "effective_uid", "environment_identity_sha256", "environment_requirement_pass", "free_output_bytes", "free_output_requirement_pass", "load_average", "loadavg_hex", "loadavg_sha256", "memavailable_kib", "meminfo_hex", "meminfo_sha256", "numeric_pid_count", "observed_utc", "output_f_bavail", "output_f_frsize", "output_filesystem_device_id", "output_root", "pid_filter_records", "preconditions_pass", "preflight_pid", "preflight_start_time_clock_ticks", "process_inventory_complete", "same_user_process_count", "same_user_processes"],
+      "properties": {
+        "available_memory_requirement_pass": {"const": true},
+        "available_physical_memory_bytes": {"$ref": "#/$defs/id"},
+        "conflicting_process_requirement_pass": {"const": true},
+        "effective_uid": {"$ref": "#/$defs/id"},
+        "environment_identity_sha256": {"$ref": "#/$defs/sha256"},
+        "environment_requirement_pass": {"const": true},
+        "free_output_bytes": {"$ref": "#/$defs/id"},
+        "free_output_requirement_pass": {"const": true},
+        "load_average": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fifteen_minute", "five_minute", "one_minute"],
+          "properties": {
+            "fifteen_minute": {"$ref": "#/$defs/nonnegative_fixed_decimal"},
+            "five_minute": {"$ref": "#/$defs/nonnegative_fixed_decimal"},
+            "one_minute": {"$ref": "#/$defs/nonnegative_fixed_decimal"}
+          }
+        },
+        "loadavg_hex": {"$ref": "#/$defs/nonempty_byte_hex"},
+        "loadavg_sha256": {"$ref": "#/$defs/sha256"},
+        "memavailable_kib": {"$ref": "#/$defs/id"},
+        "meminfo_hex": {"$ref": "#/$defs/nonempty_byte_hex"},
+        "meminfo_sha256": {"$ref": "#/$defs/sha256"},
+        "numeric_pid_count": {"$ref": "#/$defs/positive_id"},
+        "observed_utc": {"type": "string", "format": "date-time"},
+        "output_f_bavail": {"$ref": "#/$defs/id"},
+        "output_f_frsize": {"$ref": "#/$defs/positive_id"},
+        "output_filesystem_device_id": {"$ref": "#/$defs/id"},
+        "output_root": {"type": "string", "minLength": 1},
+        "pid_filter_records": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/pid_filter_record"},
+          "contains": {"properties": {"same_as_preflight_effective_uid": {"const": true}}, "required": ["same_as_preflight_effective_uid"]},
+          "minContains": 1,
+          "minItems": 1
+        },
+        "preconditions_pass": {"const": true},
+        "preflight_pid": {"$ref": "#/$defs/positive_id"},
+        "preflight_start_time_clock_ticks": {"$ref": "#/$defs/id"},
+        "process_inventory_complete": {"const": true},
+        "same_user_process_count": {"$ref": "#/$defs/id"},
+        "same_user_processes": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/same_user_process"},
+          "contains": {"properties": {"is_preflight_self": {"const": true}}, "required": ["is_preflight_self"]},
+          "minContains": 1,
+          "maxContains": 1
+        }
+      }
+    },
+    "input_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cell_id", "dataset_id", "dtype", "generator", "input_identity_sha256", "numpy", "order", "raw_bytes", "raw_sha256", "selection_digest_stream_sha256", "selection_hash_domain", "shape", "vector_id_order"],
+      "properties": {
+        "cell_id": {"const": 0},
+        "dataset_id": {"const": "synthetic_cost_projection"},
+        "dtype": {"const": "little-endian binary32"},
+        "generator": {"const": "Generator(PCG64(20260713)).standard_normal((8192,128), dtype=float32)"},
+        "input_identity_sha256": {"$ref": "#/$defs/sha256"},
+        "numpy": {"const": "1.23.5"},
+        "order": {"const": "C"},
+        "raw_bytes": {"const": 4194304},
+        "raw_sha256": {"const": "10e128854768358323a8b13066a6f34076cfc7216db35992ac58ece0ec6f5b0c"},
+        "selection_digest_stream_sha256": {"const": "6e7dbc26c7d5f63c2c8e5a5fa4d647cf3237597696c3f2431fd715ffbc712145"},
+        "selection_hash_domain": {"const": "saq-attempt4-a4-1-20260713-schema2"},
+        "shape": {"const": [8192, 128]},
+        "vector_id_order": {"const": "0..8191 ascending"}
+      }
+    },
+    "phase_receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["argv_sha256", "attempt_id", "binary_sha256", "completed_unit_index", "cpu_microseconds", "end_utc", "environment_sha256", "execution_commit", "exit_reason", "logical_run_id", "peak_rss_bytes", "phase", "staging_disposition", "start_utc", "wall_nanoseconds"],
+      "properties": {
+        "argv_sha256": {"$ref": "#/$defs/sha256"},
+        "attempt_id": {"$ref": "#/$defs/id"},
+        "binary_sha256": {"$ref": "#/$defs/sha256"},
+        "completed_unit_index": {"type": "integer", "minimum": -1},
+        "cpu_microseconds": {"$ref": "#/$defs/id"},
+        "end_utc": {"type": "string", "format": "date-time"},
+        "environment_sha256": {"$ref": "#/$defs/sha256"},
+        "execution_commit": {"$ref": "#/$defs/git_oid"},
+        "exit_reason": {"type": "string", "minLength": 1},
+        "logical_run_id": {"$ref": "#/$defs/sha256"},
+        "peak_rss_bytes": {"$ref": "#/$defs/id"},
+        "phase": {"enum": ["B_build", "P_parity", "C_setup", "C_core", "C_bundle_io", "E_emit", "V_replay", "E_archive_body"]},
+        "staging_disposition": {"enum": ["ATOMICALLY_PUBLISHED", "DISCARDED", "NONE"]},
+        "start_utc": {"type": "string", "format": "date-time"},
+        "wall_nanoseconds": {"$ref": "#/$defs/id"}
+      }
+    },
+    "phase_start_checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["completed_unit_count", "input_file_count", "last_completed_unit_index", "logical_run_id", "phase", "start_utc"],
+      "properties": {
+        "completed_unit_count": {"type": "integer", "minimum": 0, "maximum": 396},
+        "input_file_count": {"$ref": "#/$defs/id"},
+        "last_completed_unit_index": {"type": "integer", "minimum": -1, "maximum": 395},
+        "logical_run_id": {"$ref": "#/$defs/sha256"},
+        "phase": {"enum": ["E_emit", "V_replay", "E_archive_body"]},
+        "start_utc": {"type": "string", "format": "date-time"}
+      }
+    },
+    "scalar_optimum_v2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["binary32_centroid_bits", "binary64_centroid_bits", "comparison_count", "coordinate_id", "distinct_support_size", "effective_cardinality", "exact_means", "exact_sse", "exact_tie_count", "fit_row_count", "partition", "record_type", "requested_cardinality", "serialized_binary32_strictly_increasing"],
+      "properties": {
+        "binary32_centroid_bits": {"type": "array", "items": {"$ref": "#/$defs/bits32"}, "minItems": 1},
+        "binary64_centroid_bits": {"type": "array", "items": {"$ref": "#/$defs/bits64"}, "minItems": 1},
+        "comparison_count": {"$ref": "#/$defs/count"},
+        "coordinate_id": {"type": "integer", "minimum": 0, "maximum": 127},
+        "distinct_support_size": {"type": "integer", "minimum": 1, "maximum": 8192},
+        "effective_cardinality": {"type": "integer", "minimum": 1, "maximum": 256},
+        "exact_means": {"type": "array", "items": {"$ref": "#/$defs/exact_mean"}, "minItems": 1},
+        "exact_sse": {"$ref": "#/$defs/exact_sse"},
+        "exact_tie_count": {"$ref": "#/$defs/count"},
+        "fit_row_count": {"const": 8192},
+        "partition": {"type": "array", "items": {"$ref": "#/$defs/interval"}, "minItems": 1},
+        "record_type": {"const": "scalar_optimum_v2"},
+        "requested_cardinality": {"type": "integer", "minimum": 1, "maximum": 256},
+        "serialized_binary32_strictly_increasing": {"type": "boolean"}
+      }
+    },
+    "allocation_arm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["effective_cardinalities", "enumerated_candidate_count", "exact_fitting_sse", "invalid_states", "requested_cardinalities", "used_states"],
+      "properties": {
+        "effective_cardinalities": {"type": "array", "items": {"$ref": "#/$defs/positive_id"}, "minItems": 2, "maxItems": 2},
+        "enumerated_candidate_count": {"$ref": "#/$defs/count"},
+        "exact_fitting_sse": {"$ref": "#/$defs/exact_sse"},
+        "invalid_states": {"$ref": "#/$defs/id"},
+        "requested_cardinalities": {"type": "array", "items": {"$ref": "#/$defs/positive_id"}, "minItems": 2, "maxItems": 2},
+        "used_states": {"$ref": "#/$defs/positive_id"}
+      }
+    },
+    "group_allocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [
+        {"if": {"properties": {"word_bits": {"const": 4}}, "required": ["word_bits"]}, "then": {"properties": {"capacity": {"const": 16}}}},
+        {"if": {"properties": {"word_bits": {"const": 8}}, "required": ["word_bits"]}, "then": {"properties": {"capacity": {"const": 256}}}}
+      ],
+      "required": ["arbitrary_word", "capacity", "coordinates", "dyadic_word", "group_id", "record_type", "word_bits"],
+      "properties": {
+        "arbitrary_word": {"$ref": "#/$defs/allocation_arm"},
+        "capacity": {"enum": [16, 256]},
+        "coordinates": {"type": "array", "items": {"type": "integer", "minimum": 0, "maximum": 127}, "minItems": 2, "maxItems": 2},
+        "dyadic_word": {"$ref": "#/$defs/allocation_arm"},
+        "group_id": {"type": "integer", "minimum": 0, "maximum": 63},
+        "record_type": {"const": "group_allocation_v2"},
+        "word_bits": {"enum": [4, 8]}
+      }
+    },
+    "global_allocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [
+        {"if": {"properties": {"word_bits": {"const": 4}}, "required": ["word_bits"]}, "then": {"properties": {"total_bit_budget": {"const": 256}}}},
+        {"if": {"properties": {"word_bits": {"const": 8}}, "required": ["word_bits"]}, "then": {"properties": {"total_bit_budget": {"const": 512}}}}
+      ],
+      "required": ["bit_widths", "cardinalities", "enumerated_transition_count", "exact_fitting_sse", "record_type", "total_bit_budget", "used_bits", "word_bits"],
+      "properties": {
+        "bit_widths": {"type": "array", "items": {"type": "integer", "minimum": 0, "maximum": 8}, "minItems": 128, "maxItems": 128},
+        "cardinalities": {"type": "array", "items": {"type": "integer", "minimum": 1, "maximum": 256}, "minItems": 128, "maxItems": 128},
+        "enumerated_transition_count": {"$ref": "#/$defs/count"},
+        "exact_fitting_sse": {"$ref": "#/$defs/exact_sse"},
+        "record_type": {"const": "global_allocation_v2"},
+        "total_bit_budget": {"enum": [256, 512]},
+        "used_bits": {"$ref": "#/$defs/id"},
+        "word_bits": {"enum": [4, 8]}
+      }
+    },
+    "allocation_summary_v2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_kind", "global_records", "group_records", "protocol_version", "schema_version"],
+      "properties": {
+        "artifact_kind": {"const": "a4_allocation_summary"},
+        "global_records": {"type": "array", "items": {"$ref": "#/$defs/global_allocation"}, "maxItems": 2},
+        "group_records": {"type": "array", "items": {"$ref": "#/$defs/group_allocation"}, "maxItems": 128},
+        "protocol_version": {"const": "saq-a4-v2-synthetic-construction-20260714-schema1"},
+        "schema_version": {"const": 1}
+      }
+    },
+    "block_metadata_v2": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [
+        {"if": {"properties": {"word_bits": {"const": 4}}, "required": ["word_bits"]}, "then": {"properties": {"capacity": {"const": 16}}}},
+        {"if": {"properties": {"word_bits": {"const": 8}}, "required": ["word_bits"]}, "then": {"properties": {"capacity": {"const": 256}}}}
+      ],
+      "required": ["arbitrary_cardinalities", "arbitrary_used_states", "capacity", "coordinates", "fit_row_count", "group_id", "record_type", "row_order_vector_ids_sha256", "selected_start_id", "word_bits"],
+      "properties": {
+        "arbitrary_cardinalities": {"type": "array", "items": {"$ref": "#/$defs/positive_id"}, "minItems": 2, "maxItems": 2},
+        "arbitrary_used_states": {"$ref": "#/$defs/positive_id"},
+        "capacity": {"enum": [16, 256]},
+        "coordinates": {"type": "array", "items": {"type": "integer", "minimum": 0, "maximum": 127}, "minItems": 2, "maxItems": 2},
+        "fit_row_count": {"const": 8192},
+        "group_id": {"type": "integer", "minimum": 0, "maximum": 63},
+        "record_type": {"const": "block_metadata_v2"},
+        "row_order_vector_ids_sha256": {"$ref": "#/$defs/sha256"},
+        "selected_start_id": {"type": "integer", "minimum": 0, "maximum": 7},
+        "word_bits": {"enum": [4, 8]}
+      }
+    },
+    "block_step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["accepted", "assignments_after_sha256", "assignments_before_sha256", "candidate_sse_bits", "centers_after_binary64_bits_sha256", "changed_assignment_count", "empty_center_ids", "iteration", "prior_sse_bits"],
+      "properties": {
+        "accepted": {"const": true},
+        "assignments_after_sha256": {"$ref": "#/$defs/sha256"},
+        "assignments_before_sha256": {"$ref": "#/$defs/sha256"},
+        "candidate_sse_bits": {"$ref": "#/$defs/bits64"},
+        "centers_after_binary64_bits_sha256": {"$ref": "#/$defs/sha256"},
+        "changed_assignment_count": {"type": "integer", "minimum": 0, "maximum": 8192},
+        "empty_center_ids": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "iteration": {"type": "integer", "minimum": 1, "maximum": 300},
+        "prior_sse_bits": {"$ref": "#/$defs/bits64"}
+      }
+    },
+    "nullable_bits64": {"oneOf": [{"$ref": "#/$defs/bits64"}, {"type": "null"}]},
+    "nullable_sha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+    "centers64": {"type": "array", "items": {"type": "array", "items": {"$ref": "#/$defs/bits64"}, "minItems": 2, "maxItems": 2}, "minItems": 1},
+    "nullable_centers64": {"oneOf": [{"$ref": "#/$defs/centers64"}, {"type": "null"}]},
+    "block_start_v2": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [
+        {"if": {"properties": {"word_bits": {"const": 4}}, "required": ["word_bits"]}, "then": {"properties": {"capacity": {"const": 16}, "final_centers_binary32_bits": {"minItems": 16, "maxItems": 16}, "final_centers_binary64_bits": {"minItems": 16, "maxItems": 16}, "initial_centers_binary64_bits": {"minItems": 16, "maxItems": 16}}}},
+        {"if": {"properties": {"word_bits": {"const": 8}}, "required": ["word_bits"]}, "then": {"properties": {"capacity": {"const": 256}, "final_centers_binary32_bits": {"minItems": 256, "maxItems": 256}, "final_centers_binary64_bits": {"minItems": 256, "maxItems": 256}, "initial_centers_binary64_bits": {"minItems": 256, "maxItems": 256}}}},
+        {"if": {"properties": {"start_id": {"const": 0}}, "required": ["start_id"]}, "then": {"properties": {"initialization_kind": {"const": "cartesian_fill"}, "prefill_cartesian_centers_binary64_bits": {"$ref": "#/$defs/centers64"}, "prefill_cartesian_centers_binary64_bits_sha256": {"$ref": "#/$defs/sha256"}, "prefill_cartesian_sse_bits": {"$ref": "#/$defs/bits64"}}}, "else": {"properties": {"initialization_kind": {"const": "hashed_farthest_first"}, "prefill_cartesian_centers_binary64_bits": {"type": "null"}, "prefill_cartesian_centers_binary64_bits_sha256": {"type": "null"}, "prefill_cartesian_sse_bits": {"type": "null"}}}}
+      ],
+      "required": ["accepted_update_count", "assignment_tie_count", "capacity", "cartesian_dominance_pass", "converged", "direct_replay_match", "distance_comparison_count", "farthest_tie_count", "final_assignments", "final_assignments_sha256", "final_centers_binary32_bits", "final_centers_binary64_bits", "final_sse_bits", "group_id", "initial_centers_binary64_bits", "initialization_kind", "initialization_vector_ids", "iteration_count", "prefill_cartesian_centers_binary64_bits", "prefill_cartesian_centers_binary64_bits_sha256", "prefill_cartesian_sse_bits", "record_type", "selected_best_start", "serialized_distinct_center_count", "start_id", "steps", "word_bits"],
+      "properties": {
+        "accepted_update_count": {"$ref": "#/$defs/id"},
+        "assignment_tie_count": {"$ref": "#/$defs/count"},
+        "capacity": {"enum": [16, 256]},
+        "cartesian_dominance_pass": {"type": "boolean"},
+        "converged": {"type": "boolean"},
+        "direct_replay_match": {"type": "boolean"},
+        "distance_comparison_count": {"$ref": "#/$defs/count"},
+        "farthest_tie_count": {"$ref": "#/$defs/count"},
+        "final_assignments": {"type": "array", "items": {"$ref": "#/$defs/id"}, "minItems": 8192, "maxItems": 8192},
+        "final_assignments_sha256": {"$ref": "#/$defs/sha256"},
+        "final_centers_binary32_bits": {"type": "array", "items": {"type": "array", "items": {"$ref": "#/$defs/bits32"}, "minItems": 2, "maxItems": 2}, "minItems": 16, "maxItems": 256},
+        "final_centers_binary64_bits": {"type": "array", "items": {"type": "array", "items": {"$ref": "#/$defs/bits64"}, "minItems": 2, "maxItems": 2}, "minItems": 16, "maxItems": 256},
+        "final_sse_bits": {"$ref": "#/$defs/bits64"},
+        "group_id": {"type": "integer", "minimum": 0, "maximum": 63},
+        "initial_centers_binary64_bits": {"type": "array", "items": {"type": "array", "items": {"$ref": "#/$defs/bits64"}, "minItems": 2, "maxItems": 2}, "minItems": 16, "maxItems": 256},
+        "initialization_kind": {"enum": ["cartesian_fill", "hashed_farthest_first"]},
+        "initialization_vector_ids": {"type": "array", "items": {"type": "integer", "minimum": 0, "maximum": 8191}},
+        "iteration_count": {"type": "integer", "minimum": 0, "maximum": 300},
+        "prefill_cartesian_centers_binary64_bits": {"$ref": "#/$defs/nullable_centers64"},
+        "prefill_cartesian_centers_binary64_bits_sha256": {"$ref": "#/$defs/nullable_sha256"},
+        "prefill_cartesian_sse_bits": {"$ref": "#/$defs/nullable_bits64"},
+        "record_type": {"const": "block_start_v2"},
+        "selected_best_start": {"type": "boolean"},
+        "serialized_distinct_center_count": {"$ref": "#/$defs/id"},
+        "start_id": {"type": "integer", "minimum": 0, "maximum": 7},
+        "steps": {"type": "array", "items": {"$ref": "#/$defs/block_step"}, "maxItems": 300},
+        "word_bits": {"enum": [4, 8]}
+      }
+    },
+    "encoding_arm_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [
+        {"if": {"properties": {"word_bits": {"const": 4}}, "required": ["word_bits"]}, "then": {"properties": {"capacity": {"const": 16}, "code_file_path": {"const": "codes_b04.bin"}, "file_byte_length": {"const": 262144}, "output_bytes": {"const": 262144}, "payload_bytes_per_vector": {"const": 32}, "payload_hex": {"minLength": 524288, "maxLength": 524288}}}},
+        {"if": {"properties": {"word_bits": {"const": 8}}, "required": ["word_bits"]}, "then": {"properties": {"capacity": {"const": 256}, "code_file_path": {"const": "codes_b08.bin"}, "file_byte_length": {"const": 524288}, "output_bytes": {"const": 524288}, "payload_bytes_per_vector": {"const": 64}, "payload_hex": {"minLength": 1048576, "maxLength": 1048576}}}},
+        {"if": {"properties": {"arm": {"const": "global_dyadic_pack_cap8"}}, "required": ["arm"]}, "then": {"properties": {"labels_per_vector": {"const": 128}}}, "else": {"properties": {"labels_per_vector": {"const": 64}}}}
+      ],
+      "required": ["alignment_bytes", "arm", "capacity", "code_file_path", "distance_comparison_count", "file_byte_length", "file_byte_offset", "labels_per_vector", "output_bytes", "pack_operation_count", "payload_bytes_per_vector", "payload_hex", "payload_sha256", "record_type", "roundtrip_match", "roundtrip_mismatch_count", "roundtrip_vector_count", "unpack_operation_count", "vector_count", "word_bits"],
+      "properties": {
+        "alignment_bytes": {"const": 1},
+        "arm": {"enum": ["dyadic_word", "arbitrary_word", "trained_block_vq", "global_dyadic_pack_cap8"]},
+        "capacity": {"enum": [16, 256]},
+        "code_file_path": {"enum": ["codes_b04.bin", "codes_b08.bin"]},
+        "distance_comparison_count": {"$ref": "#/$defs/count"},
+        "file_byte_length": {"enum": [262144, 524288]},
+        "file_byte_offset": {"$ref": "#/$defs/id"},
+        "labels_per_vector": {"enum": [64, 128]},
+        "output_bytes": {"$ref": "#/$defs/id"},
+        "pack_operation_count": {"$ref": "#/$defs/count"},
+        "payload_bytes_per_vector": {"enum": [32, 64]},
+        "payload_hex": {"type": "string", "pattern": "^[0-9a-f]+$", "minLength": 524288, "maxLength": 1048576},
+        "payload_sha256": {"$ref": "#/$defs/sha256"},
+        "record_type": {"const": "encoding_arm_summary_v2"},
+        "roundtrip_match": {"type": "boolean"},
+        "roundtrip_mismatch_count": {"$ref": "#/$defs/id"},
+        "roundtrip_vector_count": {"const": 8192},
+        "unpack_operation_count": {"$ref": "#/$defs/count"},
+        "vector_count": {"const": 8192},
+        "word_bits": {"enum": [4, 8]}
+      }
+    },
+    "encoding_summary_v2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_kind", "protocol_version", "records", "schema_version"],
+      "properties": {
+        "artifact_kind": {"const": "a4_encoding_summary"},
+        "protocol_version": {"const": "saq-a4-v2-synthetic-construction-20260714-schema1"},
+        "records": {"type": "array", "items": {"$ref": "#/$defs/encoding_arm_summary"}, "maxItems": 8},
+        "schema_version": {"const": 1}
+      }
+    },
+    "product_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["centroids_binary32_bits", "effective_cardinalities", "invalid_states", "requested_cardinalities", "used_states"],
+      "properties": {
+        "centroids_binary32_bits": {"type": "array", "items": {"type": "array", "items": {"$ref": "#/$defs/bits32"}, "minItems": 1}, "minItems": 2, "maxItems": 2},
+        "effective_cardinalities": {"type": "array", "items": {"$ref": "#/$defs/positive_id"}, "minItems": 2, "maxItems": 2},
+        "invalid_states": {"$ref": "#/$defs/id"},
+        "requested_cardinalities": {"type": "array", "items": {"$ref": "#/$defs/positive_id"}, "minItems": 2, "maxItems": 2},
+        "used_states": {"$ref": "#/$defs/positive_id"}
+      }
+    },
+    "group_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["arbitrary_word", "coordinates", "dyadic_word", "group_id", "trained_block_vq"],
+      "properties": {
+        "arbitrary_word": {"$ref": "#/$defs/product_model"},
+        "coordinates": {"type": "array", "items": {"type": "integer", "minimum": 0, "maximum": 127}, "minItems": 2, "maxItems": 2},
+        "dyadic_word": {"$ref": "#/$defs/product_model"},
+        "group_id": {"type": "integer", "minimum": 0, "maximum": 63},
+        "trained_block_vq": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["center_count", "centers_binary32_bits", "selected_start_id"],
+          "properties": {
+            "center_count": {"enum": [16, 256]},
+            "centers_binary32_bits": {"type": "array", "items": {"type": "array", "items": {"$ref": "#/$defs/bits32"}, "minItems": 2, "maxItems": 2}, "minItems": 16, "maxItems": 256},
+            "selected_start_id": {"type": "integer", "minimum": 0, "maximum": 7}
+          }
+        }
+      }
+    },
+    "rate_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [
+        {"if": {"properties": {"word_bits": {"const": 4}}, "required": ["word_bits"]}, "then": {"properties": {"capacity": {"const": 16}, "payload_bytes": {"const": 32}}}},
+        {"if": {"properties": {"word_bits": {"const": 8}}, "required": ["word_bits"]}, "then": {"properties": {"capacity": {"const": 256}, "payload_bytes": {"const": 64}}}}
+      ],
+      "required": ["capacity", "global_dyadic_pack_cap8", "groups", "payload_bytes", "word_bits"],
+      "properties": {
+        "capacity": {"enum": [16, 256]},
+        "global_dyadic_pack_cap8": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["bit_widths", "cardinalities", "centroids_binary32_bits"],
+          "properties": {
+            "bit_widths": {"type": "array", "items": {"type": "integer", "minimum": 0, "maximum": 8}, "minItems": 128, "maxItems": 128},
+            "cardinalities": {"type": "array", "items": {"type": "integer", "minimum": 1, "maximum": 256}, "minItems": 128, "maxItems": 128},
+            "centroids_binary32_bits": {"type": "array", "items": {"type": "array", "items": {"$ref": "#/$defs/bits32"}, "minItems": 1}, "minItems": 128, "maxItems": 128}
+          }
+        },
+        "groups": {"type": "array", "items": {"$ref": "#/$defs/group_model"}, "minItems": 64, "maxItems": 64},
+        "payload_bytes": {"enum": [32, 64]},
+        "word_bits": {"enum": [4, 8]}
+      }
+    },
+    "models_v2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_kind", "protocol_version", "rates", "schema_version"],
+      "properties": {
+        "artifact_kind": {"const": "a4_comparative_models"},
+        "protocol_version": {"const": "saq-a4-v2-synthetic-construction-20260714-schema1"},
+        "rates": {
+          "type": "array",
+          "prefixItems": [
+            {"allOf": [{"$ref": "#/$defs/rate_model"}, {"properties": {"word_bits": {"const": 4}}}]},
+            {"allOf": [{"$ref": "#/$defs/rate_model"}, {"properties": {"word_bits": {"const": 8}}}]}
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "schema_version": {"const": 1}
+      }
+    },
+    "representation_manifest_v2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["arm_order", "artifact_kind", "code_files", "input", "models", "protocol_version", "schema_version"],
+      "properties": {
+        "arm_order": {"const": ["dyadic_word", "arbitrary_word", "trained_block_vq", "global_dyadic_pack_cap8"]},
+        "artifact_kind": {"const": "a4_comparative_bundle_manifest"},
+        "code_files": {
+          "type": "array",
+          "prefixItems": [
+            {"allOf": [{"$ref": "#/$defs/bundle_code_file_identity"}, {"properties": {"path": {"const": "codes_b04.bin"}}}]},
+            {"allOf": [{"$ref": "#/$defs/bundle_code_file_identity"}, {"properties": {"path": {"const": "codes_b08.bin"}}}]}
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dtype", "order", "raw_sha256", "shape"],
+          "properties": {
+            "dtype": {"const": "little-endian binary32"},
+            "order": {"const": "C"},
+            "raw_sha256": {"$ref": "#/$defs/sha256"},
+            "shape": {"const": [8192, 128]}
+          }
+        },
+        "models": {"$ref": "#/$defs/bundle_models_identity"},
+        "protocol_version": {"const": "saq-a4-v2-synthetic-construction-20260714-schema1"},
+        "schema_version": {"const": 1}
+      }
+    },
+    "producer_manifest_v2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_kind", "binary_identity", "bundle_published", "command_identity", "completed_unit_count", "emit_start_checkpoint", "environment_identity", "evidence_files", "full_shape_complete", "input_identity", "last_completed_unit_index", "phase_receipts_through_instrument", "prelaunch_observation", "protocol_identity", "record_counts", "schema_identity", "schema_version", "source_identity"],
+      "properties": {
+        "artifact_kind": {"const": "a4_producer_manifest"},
+        "binary_identity": {"$ref": "#/$defs/file_identity"},
+        "bundle_published": {"type": "boolean"},
+        "command_identity": {"$ref": "#/$defs/command_identity"},
+        "completed_unit_count": {"type": "integer", "minimum": 0, "maximum": 396},
+        "emit_start_checkpoint": {"allOf": [{"$ref": "#/$defs/phase_start_checkpoint"}, {"properties": {"phase": {"const": "E_emit"}}}]},
+        "environment_identity": {"$ref": "#/$defs/environment_identity"},
+        "evidence_files": {
+          "type": "array",
+          "prefixItems": [
+            {"allOf": [{"$ref": "#/$defs/file_identity"}, {"properties": {"path": {"const": "evidence/scalar_optimum_records.jsonl"}, "producing_phase": {"const": "E_emit"}, "role": {"const": "scalar_optimum_records"}, "schema": {"const": "scalar_optimum_v2-jsonl"}}}]},
+            {"allOf": [{"$ref": "#/$defs/file_identity"}, {"properties": {"path": {"const": "evidence/allocation_summary.json"}, "producing_phase": {"const": "E_emit"}, "role": {"const": "allocation_summary"}, "schema": {"const": "allocation_summary_v2"}}}]},
+            {"allOf": [{"$ref": "#/$defs/file_identity"}, {"properties": {"path": {"const": "evidence/block_trajectories.jsonl"}, "producing_phase": {"const": "E_emit"}, "role": {"const": "block_trajectories"}, "schema": {"const": "block_metadata_v2-or-block_start_v2-jsonl"}}}]},
+            {"allOf": [{"$ref": "#/$defs/file_identity"}, {"properties": {"path": {"const": "evidence/encoding_summary.json"}, "producing_phase": {"const": "E_emit"}, "role": {"const": "encoding_summary"}, "schema": {"const": "encoding_summary_v2"}}}]}
+          ],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "full_shape_complete": {"type": "boolean"},
+        "input_identity": {"$ref": "#/$defs/input_identity"},
+        "last_completed_unit_index": {"type": "integer", "minimum": -1, "maximum": 395},
+        "phase_receipts_through_instrument": {"type": "array", "items": {"$ref": "#/$defs/phase_receipt"}, "minItems": 1},
+        "prelaunch_observation": {"$ref": "#/$defs/prelaunch_observation"},
+        "protocol_identity": {"$ref": "#/$defs/document_identity"},
+        "record_counts": {"$ref": "#/$defs/decision_counts"},
+        "schema_identity": {"$ref": "#/$defs/document_identity"},
+        "schema_version": {"const": 1},
+        "source_identity": {"$ref": "#/$defs/source_identity"}
+      }
+    },
+    "decision_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allocation_group_records", "allocation_global_records", "block_metadata_records", "block_start_records", "block_step_records", "bundle_files", "encoding_arm_records", "scalar_optimum_records"],
+      "properties": {
+        "allocation_group_records": {"$ref": "#/$defs/id"},
+        "allocation_global_records": {"$ref": "#/$defs/id"},
+        "block_metadata_records": {"$ref": "#/$defs/id"},
+        "block_start_records": {"$ref": "#/$defs/id"},
+        "block_step_records": {"$ref": "#/$defs/id"},
+        "bundle_files": {"$ref": "#/$defs/id"},
+        "encoding_arm_records": {"$ref": "#/$defs/id"},
+        "scalar_optimum_records": {"$ref": "#/$defs/id"}
+      }
+    },
+    "nullable_string": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+    "discrepancy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["class", "expected_sha256", "location", "message", "observed_sha256"],
+      "properties": {
+        "class": {"type": "string", "minLength": 1},
+        "expected_sha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+        "location": {"type": "string", "minLength": 1},
+        "message": {"type": "string"},
+        "observed_sha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]}
+      }
+    },
+    "archive_start_checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["completed_unit_count", "last_completed_unit_index", "logical_run_id", "pretrailer_file_count", "start_utc"],
+      "properties": {
+        "completed_unit_count": {"type": "integer", "minimum": 0, "maximum": 396},
+        "last_completed_unit_index": {"type": "integer", "minimum": -1, "maximum": 395},
+        "logical_run_id": {"$ref": "#/$defs/sha256"},
+        "pretrailer_file_count": {"$ref": "#/$defs/id"},
+        "start_utc": {"type": "string", "format": "date-time"}
+      }
+    },
+    "gate_operands": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cap_crossed", "completed_unit_count", "full_shape_complete", "last_completed_unit_index", "primary_cpu_cap_microseconds", "t_instrument_cpu_microseconds"],
+      "properties": {
+        "cap_crossed": {"type": "boolean"},
+        "completed_unit_count": {"type": "integer", "minimum": 0, "maximum": 396},
+        "full_shape_complete": {"type": "boolean"},
+        "last_completed_unit_index": {"type": "integer", "minimum": -1, "maximum": 395},
+        "primary_cpu_cap_microseconds": {"const": 34560000000},
+        "t_instrument_cpu_microseconds": {"$ref": "#/$defs/id"}
+      }
+    },
+    "archive_status_inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_valid", "control_valid", "full_shape_complete", "implementation_valid", "primary_cap_pass", "producer_evidence_complete", "representation_valid", "resource_complete_through_verifier", "verification_pass", "verifier_summary_complete"],
+      "properties": {
+        "artifact_valid": {"type": "boolean"},
+        "control_valid": {"type": "boolean"},
+        "full_shape_complete": {"type": "boolean"},
+        "implementation_valid": {"type": "boolean"},
+        "primary_cap_pass": {"type": "boolean"},
+        "producer_evidence_complete": {"type": "boolean"},
+        "representation_valid": {"type": "boolean"},
+        "resource_complete_through_verifier": {"type": "boolean"},
+        "verification_pass": {"type": "boolean"},
+        "verifier_summary_complete": {"type": "boolean"}
+      }
+    },
+    "decision_status_inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["archive_complete", "artifact_index_required", "artifact_valid", "control_valid", "full_shape_complete", "implementation_valid", "primary_cap_pass", "producer_evidence_complete", "representation_valid", "resource_complete_through_archive", "verification_pass", "verifier_summary_complete"],
+      "properties": {
+        "archive_complete": {"const": true},
+        "artifact_index_required": {"const": true},
+        "artifact_valid": {"type": "boolean"},
+        "control_valid": {"type": "boolean"},
+        "full_shape_complete": {"type": "boolean"},
+        "implementation_valid": {"type": "boolean"},
+        "primary_cap_pass": {"type": "boolean"},
+        "producer_evidence_complete": {"type": "boolean"},
+        "representation_valid": {"type": "boolean"},
+        "resource_complete_through_archive": {"type": "boolean"},
+        "verification_pass": {"type": "boolean"},
+        "verifier_summary_complete": {"type": "boolean"}
+      }
+    },
+    "byte_ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deleted_partial_bytes", "intermediate_bundle_bytes", "maximum_live_owned_temporary_bytes", "research_evidence_archive_bytes", "total_created_temporary_bytes"],
+      "properties": {
+        "deleted_partial_bytes": {"$ref": "#/$defs/id"},
+        "intermediate_bundle_bytes": {"$ref": "#/$defs/id"},
+        "maximum_live_owned_temporary_bytes": {"$ref": "#/$defs/id"},
+        "research_evidence_archive_bytes": {"$ref": "#/$defs/id"},
+        "total_created_temporary_bytes": {"$ref": "#/$defs/id"}
+      }
+    },
+    "phase_byte_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["created_temporary_bytes", "deleted_partial_bytes", "maximum_live_owned_temporary_bytes", "permanent_intermediate_bundle_bytes", "phase", "research_evidence_archive_bytes"],
+      "properties": {
+        "created_temporary_bytes": {"$ref": "#/$defs/id"},
+        "deleted_partial_bytes": {"$ref": "#/$defs/id"},
+        "maximum_live_owned_temporary_bytes": {"$ref": "#/$defs/id"},
+        "permanent_intermediate_bundle_bytes": {"$ref": "#/$defs/id"},
+        "phase": {"enum": ["B_build", "P_parity", "C_setup", "C_core", "C_bundle_io", "E_emit", "V_replay", "E_archive_body"]},
+        "research_evidence_archive_bytes": {"$ref": "#/$defs/id"}
+      }
+    },
+    "phase_resource_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attempt_count", "cpu_microseconds", "peak_rss_bytes", "peak_rss_scope", "phase", "started", "wall_nanoseconds"],
+      "properties": {
+        "attempt_count": {"type": "integer", "minimum": 0, "maximum": 2},
+        "cpu_microseconds": {"$ref": "#/$defs/id"},
+        "peak_rss_bytes": {"$ref": "#/$defs/id"},
+        "peak_rss_scope": {"enum": ["phase_process_family", "shared_cumulative_producer", "unstarted"]},
+        "phase": {"enum": ["B_build", "P_parity", "C_setup", "C_core", "C_bundle_io", "E_emit", "V_replay", "E_archive_body"]},
+        "started": {"type": "boolean"},
+        "wall_nanoseconds": {"$ref": "#/$defs/id"}
+      }
+    },
+    "instrument_attribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["C_arm_arbitrary", "C_arm_block", "C_arm_dyadic", "C_arm_global", "C_common_manifest", "C_interrupted_tail", "C_setup", "C_shared_fit"],
+      "properties": {
+        "C_arm_arbitrary": {"$ref": "#/$defs/id"},
+        "C_arm_block": {"$ref": "#/$defs/id"},
+        "C_arm_dyadic": {"$ref": "#/$defs/id"},
+        "C_arm_global": {"$ref": "#/$defs/id"},
+        "C_common_manifest": {"$ref": "#/$defs/id"},
+        "C_interrupted_tail": {"$ref": "#/$defs/id"},
+        "C_setup": {"$ref": "#/$defs/id"},
+        "C_shared_fit": {"$ref": "#/$defs/id"}
+      }
+    },
+    "ceiling_operands": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["intermediate_bundle_bytes", "owned_live_temporary_bytes", "per_phase_cpu_microseconds", "per_phase_names", "per_phase_wall_nanoseconds", "per_producer_attempt_cpu_microseconds", "per_producer_attempt_wall_nanoseconds", "producer_or_verifier_peak_rss_bytes", "research_evidence_archive_bytes", "t_study_metered_cpu_microseconds"],
+      "properties": {
+        "intermediate_bundle_bytes": {"const": 268435456},
+        "owned_live_temporary_bytes": {"const": 17179869184},
+        "per_phase_cpu_microseconds": {"const": 86400000000},
+        "per_phase_names": {"const": ["B_build", "P_parity", "E_emit", "V_replay", "E_archive_body"]},
+        "per_phase_wall_nanoseconds": {"const": 172800000000000},
+        "per_producer_attempt_cpu_microseconds": {"const": 86400000000},
+        "per_producer_attempt_wall_nanoseconds": {"const": 172800000000000},
+        "producer_or_verifier_peak_rss_bytes": {"const": 25769803776},
+        "research_evidence_archive_bytes": {"const": 4294967296},
+        "t_study_metered_cpu_microseconds": {"const": 518400000000}
+      }
+    },
+    "verifier_summary_v2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_kind", "decision_counts_expected", "decision_counts_observed", "discrepancies", "independence_attestations", "input_identity", "producer_identity", "schema_version", "status", "verifier_start_checkpoint"],
+      "properties": {
+        "artifact_kind": {"const": "a4_verifier_summary"},
+        "decision_counts_expected": {"$ref": "#/$defs/decision_counts"},
+        "decision_counts_observed": {"$ref": "#/$defs/decision_counts"},
+        "discrepancies": {"type": "array", "items": {"$ref": "#/$defs/discrepancy"}},
+        "independence_attestations": {"const": ["optimized_solver_not_shared", "allocation_logic_not_shared", "tie_logic_not_shared", "rational_to_float_not_shared", "block_trainer_not_shared", "packer_not_shared", "logical_record_encoder_not_shared", "parser_core_not_shared", "producer_self_replay_not_used"]},
+        "input_identity": {"$ref": "#/$defs/sha256"},
+        "producer_identity": {"$ref": "#/$defs/sha256"},
+        "schema_version": {"const": 1},
+        "status": {"enum": ["VERIFIED", "MISMATCH", "INCOMPLETE"]},
+        "verifier_start_checkpoint": {"allOf": [{"$ref": "#/$defs/phase_start_checkpoint"}, {"properties": {"phase": {"const": "V_replay"}}}]}
+      }
+    },
+    "archive_body_v2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["archive_start_checkpoint", "artifact_kind", "attempt_ledger", "gate_operands", "phase_receipts_through_verifier", "pretrailer_files", "protocol_identity", "schema_version", "status_inputs"],
+      "properties": {
+        "archive_start_checkpoint": {"$ref": "#/$defs/archive_start_checkpoint"},
+        "artifact_kind": {"const": "a4_archive_body"},
+        "attempt_ledger": {"type": "array", "items": {"$ref": "#/$defs/phase_receipt"}, "minItems": 1},
+        "gate_operands": {"$ref": "#/$defs/gate_operands"},
+        "phase_receipts_through_verifier": {"type": "array", "items": {"$ref": "#/$defs/phase_receipt"}, "minItems": 1},
+        "pretrailer_files": {"type": "array", "items": {"$ref": "#/$defs/file_identity"}, "minItems": 1},
+        "protocol_identity": {"$ref": "#/$defs/sha256"},
+        "schema_version": {"const": 1},
+        "status_inputs": {"$ref": "#/$defs/archive_status_inputs"}
+      }
+    },
+    "resource_ledger_v2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["archive_body", "artifact_kind", "byte_ledger", "ceilings", "f_trailer_exclusion", "instrument_attribution_cpu_microseconds", "phase_attempt_receipts", "phase_byte_ledger", "phase_resource_ledger", "schema_version", "t_arbitrary_ready_conservative_cpu_microseconds", "t_instrument_cpu_microseconds", "t_study_metered_cpu_microseconds"],
+      "properties": {
+        "archive_body": {"$ref": "#/$defs/file_identity"},
+        "artifact_kind": {"const": "a4_resource_ledger"},
+        "byte_ledger": {"$ref": "#/$defs/byte_ledger"},
+        "ceilings": {"$ref": "#/$defs/ceiling_operands"},
+        "f_trailer_exclusion": {"const": ["resource_ledger.json", "decision.json", "artifact_index.json"]},
+        "instrument_attribution_cpu_microseconds": {"$ref": "#/$defs/instrument_attribution"},
+        "phase_byte_ledger": {
+          "type": "array",
+          "prefixItems": [
+            {"allOf": [{"$ref": "#/$defs/phase_byte_entry"}, {"properties": {"phase": {"const": "B_build"}}}]},
+            {"allOf": [{"$ref": "#/$defs/phase_byte_entry"}, {"properties": {"phase": {"const": "P_parity"}}}]},
+            {"allOf": [{"$ref": "#/$defs/phase_byte_entry"}, {"properties": {"phase": {"const": "C_setup"}}}]},
+            {"allOf": [{"$ref": "#/$defs/phase_byte_entry"}, {"properties": {"phase": {"const": "C_core"}}}]},
+            {"allOf": [{"$ref": "#/$defs/phase_byte_entry"}, {"properties": {"phase": {"const": "C_bundle_io"}}}]},
+            {"allOf": [{"$ref": "#/$defs/phase_byte_entry"}, {"properties": {"phase": {"const": "E_emit"}}}]},
+            {"allOf": [{"$ref": "#/$defs/phase_byte_entry"}, {"properties": {"phase": {"const": "V_replay"}}}]},
+            {"allOf": [{"$ref": "#/$defs/phase_byte_entry"}, {"properties": {"phase": {"const": "E_archive_body"}}}]}
+          ],
+          "items": false,
+          "minItems": 8,
+          "maxItems": 8
+        },
+        "phase_attempt_receipts": {"type": "array", "items": {"$ref": "#/$defs/phase_receipt"}, "minItems": 1},
+        "phase_resource_ledger": {
+          "type": "array",
+          "prefixItems": [
+            {"allOf": [{"$ref": "#/$defs/phase_resource_entry"}, {"properties": {"phase": {"const": "B_build"}}}]},
+            {"allOf": [{"$ref": "#/$defs/phase_resource_entry"}, {"properties": {"phase": {"const": "P_parity"}}}]},
+            {"allOf": [{"$ref": "#/$defs/phase_resource_entry"}, {"properties": {"phase": {"const": "C_setup"}}}]},
+            {"allOf": [{"$ref": "#/$defs/phase_resource_entry"}, {"properties": {"phase": {"const": "C_core"}}}]},
+            {"allOf": [{"$ref": "#/$defs/phase_resource_entry"}, {"properties": {"phase": {"const": "C_bundle_io"}}}]},
+            {"allOf": [{"$ref": "#/$defs/phase_resource_entry"}, {"properties": {"phase": {"const": "E_emit"}}}]},
+            {"allOf": [{"$ref": "#/$defs/phase_resource_entry"}, {"properties": {"phase": {"const": "V_replay"}}}]},
+            {"allOf": [{"$ref": "#/$defs/phase_resource_entry"}, {"properties": {"phase": {"const": "E_archive_body"}}}]}
+          ],
+          "items": false,
+          "minItems": 8,
+          "maxItems": 8
+        },
+        "schema_version": {"const": 1},
+        "t_arbitrary_ready_conservative_cpu_microseconds": {"$ref": "#/$defs/id"},
+        "t_instrument_cpu_microseconds": {"$ref": "#/$defs/id"},
+        "t_study_metered_cpu_microseconds": {"$ref": "#/$defs/id"}
+      }
+    },
+    "decision_v2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["admissible_only_with_complete_artifact_index", "archive_body", "artifact_kind", "claim_ceiling", "completed_unit_count", "final_status", "full_shape_complete", "primary_cpu_cap_microseconds", "protocol_identity", "resource_ledger", "schema_version", "status_inputs", "status_precedence", "t_instrument_cpu_microseconds"],
+      "properties": {
+        "admissible_only_with_complete_artifact_index": {"const": true},
+        "archive_body": {"$ref": "#/$defs/file_identity"},
+        "artifact_kind": {"const": "a4_decision"},
+        "claim_ceiling": {"type": "string", "minLength": 1},
+        "completed_unit_count": {"type": "integer", "minimum": 0, "maximum": 396},
+        "final_status": {"enum": ["ARTIFACT_INVALID", "IMPLEMENTATION_INVALID", "CONTROL_INVALID", "RESOURCE_INCOMPLETE_NO_DECISION", "EVIDENCE_INCOMPLETE_NO_DECISION", "VERIFICATION_INVALID", "NO_GO_REPRESENTATION", "NO_GO_SYNTHETIC_INSTRUMENT_COST", "PASS_SYNTHETIC_INSTRUMENT_GATE_ONLY"]},
+        "full_shape_complete": {"type": "boolean"},
+        "primary_cpu_cap_microseconds": {"const": 34560000000},
+        "protocol_identity": {"$ref": "#/$defs/sha256"},
+        "resource_ledger": {"$ref": "#/$defs/file_identity"},
+        "schema_version": {"const": 1},
+        "status_inputs": {"$ref": "#/$defs/decision_status_inputs"},
+        "status_precedence": {"const": ["ARTIFACT_INVALID", "IMPLEMENTATION_INVALID", "CONTROL_INVALID", "RESOURCE_INCOMPLETE_NO_DECISION", "EVIDENCE_INCOMPLETE_NO_DECISION", "VERIFICATION_INVALID", "NO_GO_REPRESENTATION", "NO_GO_SYNTHETIC_INSTRUMENT_COST", "PASS_SYNTHETIC_INSTRUMENT_GATE_ONLY"]},
+        "t_instrument_cpu_microseconds": {"$ref": "#/$defs/id"}
+      }
+    },
+    "artifact_index_v2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_kind", "files", "producer_commit", "schema_version"],
+      "properties": {
+        "artifact_kind": {"const": "a4_artifact_index"},
+        "files": {"type": "array", "items": {"$ref": "#/$defs/file_identity"}, "minItems": 1},
+        "producer_commit": {"$ref": "#/$defs/git_oid"},
+        "schema_version": {"const": 1}
+      }
+    }
+  }
+}
