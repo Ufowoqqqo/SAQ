@@ -41,6 +41,17 @@ a direct composition or parameter variant.
 - Use deterministic algorithms and explicit tie rules where practical. Record
   any stochastic initialization, seed, and repetition count.
 
+## Long-Running Jobs And Monitoring
+
+Do not poll long-running jobs frequently. Prefer a blocking wait or a single
+long poll that lets the process continue without repeated model re-entry. If
+an explicit status check is necessary, wait 2--5 minutes between checks.
+
+When the status has not changed, do not return to model reasoning, repeat the
+same status, or reread unchanged logs. Resume reasoning only when the job
+completes, fails, or requires human intervention. Never implement a short
+monitoring loop whose every tick invokes the model.
+
 ## Branch Boundary
 
 This branch starts from `saq-correctness-base` and retains only two confirmed
