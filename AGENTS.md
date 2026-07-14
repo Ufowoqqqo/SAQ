@@ -24,24 +24,42 @@ Treat every other SAQ branch as historical evidence, not an implementation
 dependency. Do not merge or cherry-pick their runners, generated artifacts,
 or method variants.
 
-On 2026-07-14 the user authorized only:
+On 2026-07-14 the user first authorized only:
 
 1. a bounded primary-source review of the cost-model and evidence-generation
    boundary exposed by A4-1S; and
 2. if that review supports reopening, a new preregistration describing a
    scientifically defensible cost ledger and sufficient evidence contract.
 
-This is a documentation-only authorization. It permits no implementation,
-compiled runner, RNG execution, benchmark or synthetic cost run, dataset read,
-SAQ integration, query inspection, or generated scientific result. A protocol
-written here is `NOT_AUTHORIZED_FOR_EXECUTION` until the user separately and
-explicitly authorizes its named execution stage.
+That documentation-only stage ended at the reviewed protocol commit
+`f86a51d`. The user then explicitly authorized `A4-V2-I`. Static source
+inspection exposed a terminal `P_parity` receipt/publication self-reference,
+so implementation stopped before a commit or review pass. On 2026-07-14 the
+user explicitly authorized the documentation-only `A4-V2-P-ERRATUM` stage.
+Its authority is recorded in
+`docs/saq_a4_v2_par_report_erratum_authorization_2026_07_14.md`.
+
+`A4-V2-I` remains the prior source authorization, but it is paused while the
+erratum is written and independently reviewed. It permits source and
+implementation-binding documentation for the V2
+producer, independent verifier, archive/finalizer, timers, ledgers, and later
+parity interfaces. It permits no build, compiler, Python import of the
+implementation, syntax/test command, native execution, parity fixture, RNG,
+synthetic event, generated artifact, benchmark/data read, or SAQ modification.
+`A4-V2-PAR` and `A4-V2-SRUN` remain separately unauthorized.
+
+`A4-V2-P-ERRATUM` permits only additive protocol-authority documents, branch
+status documents, focused commits, static independent review, push, and the
+required Meeting Summary Handoff. Do not edit or commit implementation WIP
+under that authorization.
 
 ## Review And Protocol Outcome
 
-The bounded review returned `GO_PROTOCOL_DESIGN`. The maximum branch outcome
-is `PROTOCOL_READY_NOT_AUTHORIZED_FOR_EXECUTION`; it is not a gate result.
-The authoritative documents are:
+The bounded review returned `GO_PROTOCOL_DESIGN`. The original reviewed
+protocol remains byte-preserved at `f86a51d`. The erratum adds a composite
+authority without rewriting those parent blobs. The maximum erratum outcome
+is `PROTOCOL_ERRATUM_INDEPENDENT_REVIEW_PASS`; it is not a gate result. The
+parent authoritative documents are:
 
 - `docs/saq_a4_v2_primary_source_metadata_2026_07_14.json`;
 - `docs/saq_a4_v2_cost_evidence_primary_source_review_2026_07_14.md`;
@@ -67,14 +85,17 @@ That number is an internal one-panel admission cap only. The predecessor's
 `5/2` real-dataset projection does not transfer to the new FOM. Build, parity,
 independent full replay, evidence emission, archive work, memory, and bytes
 remain mandatory separately reported terms. A finite three-file reporting
-trailer is the only disclosed timing-closure exclusion.
+trailer and the additive one-file `PAR_report` are the only disclosed timing-
+closure exclusions. `PAR_report` changes no metered formula or scientific
+boundary.
 
-Future stages are separate and all currently unauthorized:
+Current stages remain separate:
 
 ```text
-A4-V2-I     source implementation only
-A4-V2-PAR   frozen build and parity execution only
-A4-V2-SRUN  one logical synthetic admission event only
+A4-V2-P-ERRATUM documentation-only closure correction  AUTHORIZED_IN_PROGRESS
+A4-V2-I     source implementation only                 AUTHORIZED_PAUSED
+A4-V2-PAR   frozen build and parity execution only      NOT_AUTHORIZED
+A4-V2-SRUN  one logical synthetic admission event only  NOT_AUTHORIZED
 ```
 
 Authorization for one stage never implies the next. No stage above permits
@@ -170,29 +191,47 @@ authorization.
 
 ## Repository Layout
 
-- `docs/`: primary-source review, source metadata, decision memo, and frozen
-  protocol documents.
-- `saqlib/`, `src/`, `script/`, `tests/`, `unit_test/`: out of scope under the
-  current documentation-only authorization.
+- `docs/`: primary-source review, frozen protocol, implementation binding, and
+  independent source-review documents.
+- `research/a4_v2/`, `research/a4_v2_verifier/`: V2-only native source; never
+  include, link, or load a historical worktree at runtime.
+- `script/a4_v2_*.py` and `script/run_arbitrary_cardinality_a4_v2.py`: V2-only
+  source. Producer and verifier scientific implementations must remain
+  physically independent as frozen by the protocol.
+- `saqlib/`, `src/`, existing non-V2 `script/`, and `unit_test/`: out of scope;
+  do not modify them for A4 V2.
 - `data/`, `results/`, `build/`, `bin/`: do not open or generate under the
   current authorization.
 
 ## Verification
 
-Before committing documentation:
+For `A4-V2-P-ERRATUM`, verification is limited to diff/whitespace checks,
+structured-document parsing, exact blob identities, schema/contract static
+inspection, and independent review. Do not touch implementation WIP.
+
+Before committing A4-V2-I source and documentation:
 
 ```bash
 git diff --check
 git status --short --branch
 ```
 
-Validate structured source metadata with a read-only parser. Do not run
-project tests or builds merely to produce activity on a documentation-only
-branch.
+Do not build, import, syntax-check, execute, or test the implementation during
+`A4-V2-I`. Verification is limited to diff/whitespace checks, source-to-
+contract inspection, and independent static review. Structured frozen
+metadata may be inspected but must not be rewritten.
 
 ## Do-Not Rules
 
 - Do not run or modify the old A4-1S command.
+- Do not copy, cherry-pick, import, include, link, or execute the old A4-1S
+  runner. Historical kernels may be used only as read-only semantic oracles;
+  V2 source must be self-contained and its provenance/crosswalk explicit.
+- Do not build, import, execute, or parity-test V2 source in `A4-V2-I`.
+- Do not edit, stage, commit, or describe untracked A4-V2-I source as evidence
+  during `A4-V2-P-ERRATUM`.
+- Do not rewrite the three parent protocol objects frozen at `f86a51d`; the
+  erratum is additive and supersedes only its explicitly named closure clauses.
 - Do not treat the narrow `24.170246892361 > 24` result as a general complexity
   lower bound or as noise that may be ignored.
 - Do not remove serialization from a primary timer without recording its full

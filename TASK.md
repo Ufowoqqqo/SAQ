@@ -2,27 +2,63 @@
 
 ## Current Research Milestone
 
-The bounded primary-source review and documentation-only V2 protocol design
-are complete. The review returned `GO_PROTOCOL_DESIGN`; the current maximum
-outcome is `PROTOCOL_READY_NOT_AUTHORIZED_FOR_EXECUTION`. This is a protocol
-milestone, not a synthetic gate result and not evidence that the direction is
-feasible on base data.
+The bounded primary-source review and V2 protocol design are complete. The
+review returned `GO_PROTOCOL_DESIGN`, and the original reviewed protocol
+remains byte-frozen at `f86a51d`. The user subsequently authorized `A4-V2-I`,
+but static source inspection exposed a terminal `P_parity` receipt/publication
+self-reference before any implementation commit or review pass. The user then
+explicitly authorized additive, documentation-only `A4-V2-P-ERRATUM`.
 
-Current authorization is documentation-only:
+Current authorization is erratum-only; the prior source authorization is
+paused for this documentation stage:
 
 ```text
 A4-V2-R     bounded primary-source review             COMPLETED_DOCUMENTATION
 A4-V2-D     cost/evidence-model go/no-go decision     GO_PROTOCOL_DESIGN
 A4-V2-P     preregistration/schema/contract            COMPLETED_DOCUMENTATION
-A4-V2-I     source implementation                      NOT_AUTHORIZED
+A4-V2-P-ERRATUM finite PAR-report closure correction   AUTHORIZED_IN_PROGRESS
+A4-V2-I     source implementation/static review         AUTHORIZED_PAUSED
 A4-V2-PAR   build and frozen parity execution          NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
 data        benchmark/base/query/index reads           NOT_AUTHORIZED
 ```
 
-Each future stage requires a separate explicit user authorization; one never
-implies the next. No current authorization permits a build, implementation,
-RNG, synthetic run, data read, or SAQ modification.
+The erratum stage permits only additive authority documents, static review,
+focused commits, push, and Meeting Summary Handoff. It permits no
+implementation edit, build, Python import, syntax/test command, RNG, synthetic
+run, generated scientific artifact, data read, or SAQ modification. Untracked
+implementation WIP remains nonevidence.
+
+## A4-V2-P-ERRATUM Deliverables
+
+1. A prose erratum binding parent protocol commit `f86a51d` and superseding
+   only the missing terminal-P closure clauses.
+2. A machine-readable erratum contract.
+3. A closed 15-key PAR-seal schema and canonical maximal-size witness.
+4. A composite authority manifest preserving the exact parent blobs.
+5. Independent static review of the exact committed erratum authority.
+6. Focused push and mandatory Meeting Summary Handoff.
+
+Its maximum outcome is `PROTOCOL_ERRATUM_INDEPENDENT_REVIEW_PASS`. It is not a
+source, parity, synthetic, or feasibility result.
+
+## A4-V2-I Deliverables
+
+1. A self-contained producer native implementation preserving the frozen
+   A4-1S scientific semantics and native-child work granularity.
+2. A new long-lived V2 supervisor implementing the 396-unit state machine,
+   timers, receipts, byte/resource ledgers, atomic bundle, and encode-only
+   evidence phase.
+3. A physically independent verifier implementation that shares no producer
+   solver, allocation/tie, rounding, block, packing, parser, or logical-record
+   encoder code.
+4. Separate archive and finite three-file trailer source.
+5. A source/provenance and implementation-binding crosswalk.
+6. Independent static review of the exact committed implementation source.
+
+The maximum stage outcome is
+`SOURCE_IMPLEMENTED_STATIC_REVIEW_PASS`. It authorizes nothing beyond asking
+whether to start `A4-V2-PAR`.
 
 ## Frozen V2 Outcome
 
@@ -73,9 +109,9 @@ future query/index work, if ever authorized
 5. `docs/saq_a4_v2_synthetic_construction_contract_2026_07_14.json`.
 6. `docs/saq_a4_v2_artifact_schema_2026_07_14.json`.
 
-Before these become authoritative, they must pass independent review, be
-committed in focused commits, and receive the mandatory Meeting Summary
-Handoff. Untracked drafts and WIP are never evidence.
+These protocol objects passed independent review, were committed in focused
+commits, and received the mandatory Meeting Summary Handoff before
+`A4-V2-I` authorization. Untracked drafts and WIP remain nonevidence.
 
 ## Review Boundaries
 
