@@ -36,29 +36,30 @@ That documentation-only stage ended at the reviewed protocol commit
 inspection exposed a terminal `P_parity` receipt/publication self-reference,
 so implementation stopped before a commit or review pass. On 2026-07-14 the
 user explicitly authorized the documentation-only `A4-V2-P-ERRATUM` stage.
-Its authority is recorded in
-`docs/saq_a4_v2_par_report_erratum_authorization_2026_07_14.md`.
+The corrected authority at `f13a383` passed three-track exact-commit review;
+the verdict is recorded in
+`docs/saq_a4_v2_par_report_timing_closure_erratum_independent_review_2026_07_14.md`.
 
-`A4-V2-I` remains the prior source authorization, but it is paused while the
-erratum is written and independently reviewed. It permits source and
-implementation-binding documentation for the V2
+`A4-V2-I` remains the prior source authorization and is ready to resume only
+after the erratum Meeting Summary Handoff. It was not resumed by the erratum
+review. It permits source and implementation-binding documentation for the V2
 producer, independent verifier, archive/finalizer, timers, ledgers, and later
 parity interfaces. It permits no build, compiler, Python import of the
 implementation, syntax/test command, native execution, parity fixture, RNG,
 synthetic event, generated artifact, benchmark/data read, or SAQ modification.
 `A4-V2-PAR` and `A4-V2-SRUN` remain separately unauthorized.
 
-`A4-V2-P-ERRATUM` permits only additive protocol-authority documents, branch
-status documents, focused commits, static independent review, push, and the
-required Meeting Summary Handoff. Do not edit or commit implementation WIP
-under that authorization.
+The completed `A4-V2-P-ERRATUM` permitted only additive protocol-authority
+documents, branch status documents, focused commits, static independent
+review, push, and the required Meeting Summary Handoff. Do not edit or commit
+implementation WIP under that authorization.
 
 ## Review And Protocol Outcome
 
 The bounded review returned `GO_PROTOCOL_DESIGN`. The original reviewed
-protocol remains byte-preserved at `f86a51d`. The erratum adds a composite
-authority without rewriting those parent blobs. The maximum erratum outcome
-is `PROTOCOL_ERRATUM_INDEPENDENT_REVIEW_PASS`; it is not a gate result. The
+protocol remains byte-preserved at `f86a51d`. The erratum adds a reviewed
+composite authority without rewriting those parent blobs. Its outcome is
+`PROTOCOL_ERRATUM_INDEPENDENT_REVIEW_PASS`; it is not a gate result. The
 parent authoritative documents are:
 
 - `docs/saq_a4_v2_primary_source_metadata_2026_07_14.json`;
@@ -67,6 +68,19 @@ parent authoritative documents are:
 - `docs/saq_a4_v2_synthetic_construction_preregistration_2026_07_14.md`;
 - `docs/saq_a4_v2_synthetic_construction_contract_2026_07_14.json`; and
 - `docs/saq_a4_v2_artifact_schema_2026_07_14.json`.
+
+The additive erratum protocol and composite-authority records are:
+
+- `docs/saq_a4_v2_par_report_erratum_authorization_2026_07_14.md`;
+- `docs/saq_a4_v2_par_report_timing_closure_erratum_2026_07_14.md`;
+- `docs/saq_a4_v2_par_report_timing_closure_erratum_2026_07_14.json`;
+- `docs/saq_a4_v2_par_report_seal_schema_2026_07_14.json`;
+- `docs/saq_a4_v2_par_report_seal_maximal_instance_2026_07_14.json`;
+- `docs/saq_a4_v2_protocol_authority_manifest_2026_07_14.json`.
+
+Their independent verdict is:
+
+- `docs/saq_a4_v2_par_report_timing_closure_erratum_independent_review_2026_07_14.md`.
 
 The positive object is an **A4-reference-equivalent four-arm diagnostic
 bundle** whose scientific interface was frozen before the old cost outcome at
@@ -92,8 +106,8 @@ boundary.
 Current stages remain separate:
 
 ```text
-A4-V2-P-ERRATUM documentation-only closure correction  AUTHORIZED_IN_PROGRESS
-A4-V2-I     source implementation only                 AUTHORIZED_PAUSED
+A4-V2-P-ERRATUM documentation-only closure correction  COMPLETED_REVIEW_PASS
+A4-V2-I     source implementation only                 AUTHORIZED_READY_TO_RESUME
 A4-V2-PAR   frozen build and parity execution only      NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event only  NOT_AUTHORIZED
 ```

@@ -7,27 +7,29 @@ review returned `GO_PROTOCOL_DESIGN`, and the original reviewed protocol
 remains byte-frozen at `f86a51d`. The user subsequently authorized `A4-V2-I`,
 but static source inspection exposed a terminal `P_parity` receipt/publication
 self-reference before any implementation commit or review pass. The user then
-explicitly authorized additive, documentation-only `A4-V2-P-ERRATUM`.
+explicitly authorized additive, documentation-only `A4-V2-P-ERRATUM`. The
+corrected authority at `f13a383` passed exact-commit measurement, schema, and
+Git-authority review.
 
-Current authorization is erratum-only; the prior source authorization is
-paused for this documentation stage:
+The erratum is complete. The prior source authorization remains available but
+was not resumed by this documentation stage:
 
 ```text
 A4-V2-R     bounded primary-source review             COMPLETED_DOCUMENTATION
 A4-V2-D     cost/evidence-model go/no-go decision     GO_PROTOCOL_DESIGN
 A4-V2-P     preregistration/schema/contract            COMPLETED_DOCUMENTATION
-A4-V2-P-ERRATUM finite PAR-report closure correction   AUTHORIZED_IN_PROGRESS
-A4-V2-I     source implementation/static review         AUTHORIZED_PAUSED
+A4-V2-P-ERRATUM finite PAR-report closure correction   COMPLETED_REVIEW_PASS
+A4-V2-I     source implementation/static review         AUTHORIZED_READY_TO_RESUME
 A4-V2-PAR   build and frozen parity execution          NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
 data        benchmark/base/query/index reads           NOT_AUTHORIZED
 ```
 
-The erratum stage permits only additive authority documents, static review,
-focused commits, push, and Meeting Summary Handoff. It permits no
-implementation edit, build, Python import, syntax/test command, RNG, synthetic
-run, generated scientific artifact, data read, or SAQ modification. Untracked
-implementation WIP remains nonevidence.
+The completed erratum stage permitted only additive authority documents,
+static review, focused commits, push, and Meeting Summary Handoff. It permitted
+no implementation edit, build, Python import, syntax/test command, RNG,
+synthetic run, generated scientific artifact, data read, or SAQ modification.
+Untracked implementation WIP remains nonevidence.
 
 ## A4-V2-P-ERRATUM Deliverables
 
@@ -39,8 +41,9 @@ implementation WIP remains nonevidence.
 5. Independent static review of the exact committed erratum authority.
 6. Focused push and mandatory Meeting Summary Handoff.
 
-Its maximum outcome is `PROTOCOL_ERRATUM_INDEPENDENT_REVIEW_PASS`. It is not a
-source, parity, synthetic, or feasibility result.
+Its outcome is `PROTOCOL_ERRATUM_INDEPENDENT_REVIEW_PASS` at reviewed target
+`f13a383a0085c456ed2f02d3ee9e041f1c70da6e`. It is not a source, parity,
+synthetic, or feasibility result.
 
 ## A4-V2-I Deliverables
 
@@ -112,6 +115,16 @@ future query/index work, if ever authorized
 These protocol objects passed independent review, were committed in focused
 commits, and received the mandatory Meeting Summary Handoff before
 `A4-V2-I` authorization. Untracked drafts and WIP remain nonevidence.
+
+The completed additive erratum deliverables are:
+
+1. `docs/saq_a4_v2_par_report_erratum_authorization_2026_07_14.md`.
+2. `docs/saq_a4_v2_par_report_timing_closure_erratum_2026_07_14.md`.
+3. `docs/saq_a4_v2_par_report_timing_closure_erratum_2026_07_14.json`.
+4. `docs/saq_a4_v2_par_report_seal_schema_2026_07_14.json`.
+5. `docs/saq_a4_v2_par_report_seal_maximal_instance_2026_07_14.json`.
+6. `docs/saq_a4_v2_protocol_authority_manifest_2026_07_14.json`.
+7. `docs/saq_a4_v2_par_report_timing_closure_erratum_independent_review_2026_07_14.md`.
 
 ## Review Boundaries
 
