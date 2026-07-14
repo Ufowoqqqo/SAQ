@@ -24,7 +24,8 @@ Current summary inventory:
 - `docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` is the current,
   unpresented successor draft. It queues `R07`, `R08`, `R10`, `R11`, and
   `R12`; its Attempt 4 scientific snapshot is
-  `saq-arbitrary-cardinality-feasibility-v2@f86a51d`.
+  `saq-arbitrary-cardinality-feasibility-v2@f13a383`, with the independent
+  erratum review at audited branch head `98e6999`.
 
 ## Current Attempt 4 Boundary
 
@@ -36,7 +37,8 @@ A4-1P FROZEN_NOT_AUTHORIZED / NOT_RUN
 A4-1S NO_GO_EXACT_SOLVER_COST / REVIEWED_TERMINAL
 A4-V2-R GO_PROTOCOL_DESIGN / REVIEWED
 A4-V2-P PROTOCOL_READY_NOT_AUTHORIZED_FOR_EXECUTION / REVIEWED
-A4-V2-I NOT_AUTHORIZED
+A4-V2-P-ERRATUM PROTOCOL_ERRATUM_INDEPENDENT_REVIEW_PASS
+A4-V2-I AUTHORIZED_READY_TO_RESUME / NO IMPLEMENTATION PASS
 A4-V2-PAR NOT_AUTHORIZED
 A4-V2-SRUN NOT_AUTHORIZED
 ```
@@ -52,10 +54,14 @@ complexity claim. There is no natural-data, block-VQ, ANN, or SAQ integration
 result. The A4-1S formulation is closed, the base gate was not run, and
 untracked files in an experiment worktree are not evidence.
 
-The V2 primary-source review is committed at `c4ccea3`, and the
-independently reviewed protocol is committed at `f86a51d`. V2 does not
-overturn the old stop. It replaces neither the old timer nor its decision;
-instead it preregisters a new internal synthetic comparative-instrument FOM:
+The V2 primary-source review is committed at `c4ccea3`, and the parent
+protocol is independently reviewed at `f86a51d`. Source-only A4-V2-I
+inspection then exposed a terminal-P receipt/publication self-reference before
+any implementation commit or review pass. The additive protocol correction is
+committed at `f13a383` and independently reviewed at branch head `98e6999`
+with verdict `PROTOCOL_ERRATUM_INDEPENDENT_REVIEW_PASS`. V2 does not overturn
+the old stop. It replaces neither the old timer nor its decision; instead it
+preregisters a new internal synthetic comparative-instrument FOM:
 
 ```text
 T_instrument = C_setup + C_core + C_bundle_io
@@ -65,16 +71,22 @@ PASS iff T_instrument <= 34,560,000,000 CPU microseconds
 Build, parity, evidence emission, independent replay, archive, memory, and
 bytes remain separately metered and mandatory. The old `5/2` projection does
 not transfer to this FOM, so the protocol makes no real-data, SAQ index-build,
-deployment-cost, ANN, or systems claim. No V2 implementation or execution
-stage is currently authorized.
+deployment-cost, ANN, or systems claim. The erratum adds one finite one-file
+`PAR_report` after terminal P without changing the parent blobs, scientific
+computation, FOM, threshold, parity/retry rules, or status precedence. Its
+5,171-byte maximal seal is a conservative syntactic schema bound, not an
+admissible resource observation. Source-only A4-V2-I is authorized to resume
+after this handoff, but build, import, syntax/test commands, parity, RNG,
+synthetic execution, data access, and SAQ changes remain unauthorized.
 
 ## Next Admissible Summary Work
 
-Wait for explicit user authorization on a source branch or for another source
-branch to produce a committed and independently reviewed protocol, gate
-result, or terminal decision. The next possible Attempt 4 stage is
-implementation-only `A4-V2-I`, but it is not currently authorized and would
-not authorize a build, parity, RNG, synthetic run, data read, or SAQ change.
+Wait for the source branch to produce a committed and independently reviewed
+A4-V2-I source/static-review milestone, or for another source branch to
+produce a committed and independently reviewed protocol, gate result, or
+terminal decision. A4-V2-I is authorized on its source branch but remains
+incomplete; it does not authorize a build, import, syntax/test command, parity,
+RNG, synthetic run, generated evidence, data read, or SAQ change.
 For the next handoff, re-read `AGENTS.md` and the registry, fetch, require this
 worktree to be clean and equal to its remote, record that remote commit, and
 acquire the mandatory common-directory summary lock before editing:
@@ -105,8 +117,8 @@ branch.
 ## Not Authorized Here
 
 - implementing or rerunning A4-1S, or opening its foreclosed base gate;
-- implementing or executing A4 V2 without a separately explicit named-stage
-  authorization;
+- implementing or executing A4 V2 on this summary branch; the source branch's
+  A4-V2-I authorization grants only source implementation and static review;
 - opening registered base, query, ground-truth, or index artifacts;
 - modifying SAQ/CAQ, index, estimator, packing, or search code;
 - expanding any source branch's experimental authorization; or
