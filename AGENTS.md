@@ -145,9 +145,31 @@ The maximum registered outcome is `GO_TO_SYSTEMS_PREREG`: evidence of a
 word-local base-data opportunity that permits writing a later systems/ANN
 protocol. It is not authorization to modify SAQ or inspect benchmark queries.
 The registered scalar objective uses exact rational SSE on binary32 inputs.
-If the same-shape synthetic projection puts that solver above the frozen cost
-ceiling, return `NO_GO_EXACT_SOLVER_COST`; do not substitute a floating-point
-objective or reduce the projection shape.
+If the same-shape registered exact construction-and-evidence pipeline exceeds
+the frozen cost ceiling, return `NO_GO_EXACT_SOLVER_COST`; do not substitute a
+floating-point objective or reduce the projection shape.
+
+## A4-1S Terminal Outcome
+
+The frozen full-shape cost-projection command reached its registered early-stop
+terminal on 2026-07-14 and returned `NO_GO_EXACT_SOLVER_COST`. Its scientific
+snapshot is `9ce1052`; the independent review and terminal decision are
+recorded in
+`docs/saq_attempt4_a4_1s_cost_projection_review_2026_07_13.md`.
+
+The first over-ceiling registered checkpoint occurred after publishing
+coordinate 60, leaving 61 complete scalar-coordinate shards. The timed region
+used `34,805,155,525 us`; the frozen `5/2` projection is
+`87,012,888,812.5 us`, above the `86,400,000,000 us` ceiling. This measures the
+whole frozen exact construction/evidence pipeline, including canonical shard
+serialization; it is not a scalar-solver-only or general complexity claim.
+
+This terminal result closes the current A4-1 formulation. Do not rerun it,
+shrink the shape, change precision or serialization, substitute a library or
+machine, or proceed to the real-base gate. Allocation, block, and encoding
+phases did not execute before the cost stop, so make no claim about them. The
+only authorized follow-up is the required Meeting Summary Handoff; no new
+scientific experiment or real-data access is authorized.
 
 ## Repository Layout
 
@@ -180,9 +202,11 @@ git diff --check
 git status --short --branch
 ```
 
-Before a scientific claim, rerun the exact frozen command from a clean output
-directory and record input provenance, command line, environment, runtime, and
-canonical output.
+For a still-authorized, nonterminal gate, rerun the exact frozen command from
+a clean output directory before a scientific claim and record input
+provenance, command line, environment, runtime, and canonical output. This
+general rule never overrides a recorded terminal no-rerun decision such as the
+A4-1S outcome above.
 
 ## Do-Not Rules
 

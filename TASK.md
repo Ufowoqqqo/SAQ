@@ -1,6 +1,6 @@
 # TASK.md
 
-## Active Research Question
+## Closed Research Question (Retained for Provenance)
 
 Test whether a fixed-rate ANN scan block wastes useful code capacity when each
 scalar factor is restricted to a power-of-two number of reconstruction levels.
@@ -18,7 +18,7 @@ change random access, SIMD scan, and worst-case storage.
 
 ## Current Decision
 
-`A4_1S_PASS_PARITY_REVIEWED_COST_PENDING`.
+`A4_1S_NO_GO_EXACT_SOLVER_COST_REVIEWED_TERMINAL`.
 
 A4-0 is complete with `PASS_INSTRUMENT_ONLY`. All seven deterministic tests
 and all frozen witness checks pass. The A4-1 base-data-only feasibility
@@ -54,15 +54,26 @@ parity run passed, and the six canonical evidence files are committed at
 `335837e`. Independent review is recorded in
 `docs/saq_attempt4_a4_1s_implementation_parity_review_2026_07_13.md` with
 verdict `PASS_PARITY`. This is instrument validation only, not the synthetic
-cost result or natural-data/ANN evidence. No cost projection has run. The next
-authorized step is the exact frozen full-shape synthetic cost command from the
-clean committed review checkpoint.
+cost result or natural-data/ANN evidence.
+
+The frozen full-shape cost projection ran from clean execution commit
+`d0d7057`. Its four canonical wrappers are committed at `9ce1052`, and the
+independent cost review is recorded in
+`docs/saq_attempt4_a4_1s_cost_projection_review_2026_07_13.md`. The runner
+completed the strict prefix of 61 scalar-coordinate shards and stopped after
+coordinate 60 crossed the frozen CPU lower bound. Final timed CPU was
+`34,805,155,525 us`; the frozen `5/2` projection is
+`87,012,888,812.5 us`, or `24.170246892361` CPU-hours, above the registered
+24-hour ceiling. Independent committed-evidence review accepted the terminal
+verdict `NO_GO_EXACT_SOLVER_COST`.
 
 Real base/centroid/cluster-id access, a natural-data adapter, the atomic base
 gate, benchmark queries, SAQ integration, and systems claims remain
-unauthorized. The next admissible work is only the exact frozen full-shape
-synthetic cost projection from a clean descendant of the reviewed parity
-checkpoint.
+unauthorized. This result closes the current A4-1 formulation under its frozen
+protocol. It does not authorize a rerun, smaller shape, approximate objective,
+serialization change, library/machine substitution, or parameter rescue. The
+only authorized follow-up is the required Meeting Summary Handoff; no new
+scientific experiment or real-base read is authorized.
 
 The coding primitive is not novel: entropy-constrained quantization,
 transform coding, adaptive product-code bit allocation, mixed scalar level
@@ -72,9 +83,12 @@ to establish an ANN-specific rate-distortion/scan advantage at unchanged
 fixed payload and controlled table/build work, not merely show that integer
 cardinalities form a larger feasible set than powers of two.
 
-## A4-1S: Authorized Synthetic Implementation Gate
+## A4-1S: Frozen Synthetic Implementation Gate (Terminal; Historical Sequence)
 
-Execute in this mandatory order:
+The following frozen sequence is retained only for provenance and must not be
+executed again. Steps 1--4 completed as recorded; step 5 reached its registered
+early-stop terminal after publishing coordinate 60; step 6 committed and
+independently reviewed that terminal evidence.
 
 1. Commit the A4-1S protocol before accepting or committing runner changes and
    before executing RNG.
@@ -90,11 +104,11 @@ Execute in this mandatory order:
 5. From the clean reviewed commit, run the full
    `PCG64(20260713) 8192 x 128 float32` projection with all 64 groups, both
    rates, all scalar `K=1..256` curves, all registered allocations, and all
-   eight block starts.
+   eight block starts, subject to the frozen atomic CPU early-stop rule.
 6. Commit and independently review the cost manifest, summary, and full-detail
    hash ledger.
 
-Before any RNG execution, the A4-1S protocol mechanically clarifies two
+Before its RNG execution, the A4-1S protocol mechanically clarified two
 implementation-evidence details without changing the scientific gate:
 
 - exhaustive allocation parity still executes all 2,433,600 ordered
@@ -128,8 +142,8 @@ base-data authorization.
 
 This stage is complete. It did not read benchmark query, ground-truth, or index
 artifacts and did not change the SAQ implementation. A4-1P subsequently froze
-the base-only protocol, and A4-1S is now the separately authorized synthetic
-implementation gate described above.
+the base-only protocol; A4-1S subsequently ran and closed with
+`NO_GO_EXACT_SOLVER_COST` as described above.
 
 1. Freeze the budget semantics and related-work boundary.
 2. Implement exact weighted 1D L2 quantization for every integer cardinality
@@ -207,9 +221,9 @@ fixed-rate database scan:  one table lookup per stored B_g-bit group
 ```
 
 These are first-stage reference costs, not optimized production bounds.
-A4-1P instead freezes exact rational SSE on binary32 inputs and an
-exact-arithmetic Monge-optimized native solver. Its separately authorized
-same-shape synthetic projection, rather than an assumed asymptotic speedup,
-decides whether that stricter solver fits the registered 24 CPU-hour budget.
-An over-budget projection returns `NO_GO_EXACT_SOLVER_COST`; it does not
-authorize a floating-point approximation or a reduced-shape rescue run.
+A4-1P instead froze exact rational SSE on binary32 inputs and an
+exact-arithmetic Monge-optimized native solver. A4-1S measured whether the
+registered same-shape exact construction-and-evidence pipeline, rather than an
+assumed asymptotic speedup, fit the 24 CPU-hour budget. It did not. The frozen
+`NO_GO_EXACT_SOLVER_COST` result does not authorize a floating-point
+approximation or a reduced-shape rescue run.
