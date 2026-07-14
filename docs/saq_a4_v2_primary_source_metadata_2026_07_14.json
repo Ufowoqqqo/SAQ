@@ -1,0 +1,284 @@
+{
+  "review_date": "2026-07-14",
+  "access_date": "2026-07-14",
+  "scope": "Cost-model and sufficient-evidence boundary for an A4-reference-equivalent four-arm synthetic comparative instrument; not a current-SAQ representation or index protocol",
+  "authorization": "Primary-source review and protocol writing only; no implementation, execution, synthetic RNG, or dataset access",
+  "search_bounds": {
+    "included_topics": [
+      "exact weighted one-dimensional quantization and Monge optimization",
+      "certifying and independently checkable computation",
+      "database-systems artifact reproducibility",
+      "phase-separated performance measurement and disclosure",
+      "ANN preprocessing, index-build, and query-cost separation",
+      "SAQ's own quantization-efficiency claim"
+    ],
+    "excluded_topics": [
+      "new arbitrary-cardinality quantizer variants",
+      "new datasets or benchmark outcomes",
+      "approximate or floating-point replacement objectives",
+      "post-outcome threshold, shape, machine, or library selection",
+      "a broad survey of generic reproducible-science tooling"
+    ],
+    "maximum_core_sources": 11
+  },
+  "discovery_queries": [
+    "Fast Exact k-Means k-Medians Bregman 1D arXiv 1701.07204",
+    "Wu 1991 Optimal quantization by matrix searching DOI",
+        "Blum Kannan Designing Programs that Check Their Work JACM DOI",
+    "ACM artifact review badging reproducibility official",
+    "SIGMOD availability reproducibility measurement protocol",
+        "official SAQ source repository serialized index layout",
+    "NIST FIPS 180-4 Secure Hash Standard",
+    "SPEC CPU 2017 run reporting rules timed validation",
+    "Principles for Automated and Reproducible Benchmarking DOI",
+    "ANN-Benchmarks build time index size query time",
+    "SAQ quantization time arXiv 2509.12086"
+  ],
+  "included_sources": [
+    {
+      "id": "S01",
+      "title": "SAQ: Pushing the Limits of Vector Quantization through Code Adjustment and Dimension Segmentation",
+      "authors": [
+        "Hui Li",
+        "Shiyuan Deng",
+        "Xiao Yan",
+        "Xiangyu Zhi",
+        "James Cheng"
+      ],
+            "year": 2026,
+      "venue": "ACM SIGMOD",
+      "stable_id": "doi:10.1145/3769824; arXiv:2509.12086v2",
+      "url": "https://arxiv.org/abs/2509.12086v2",
+      "source_type": "primary paper",
+      "reviewed_evidence": "Sections 3 and 5, especially the O(rD) code-adjustment analysis and Table 4 quantization-time boundary",
+      "supports": "The SAQ scientific efficiency claim concerns vector quantization/construction work under an explicitly stated inclusion boundary; it does not treat research-review JSON serialization as quantization time.",
+      "does_not_support": "It does not define an exact arbitrary-cardinality training protocol or justify a V2 cost threshold."
+    },
+    {
+      "id": "S02",
+      "title": "Optimal Quantization by Matrix Searching",
+      "authors": [
+        "Xiaolin Wu"
+      ],
+      "year": 1991,
+      "venue": "Journal of Algorithms 12(4):663-673",
+      "stable_id": "doi:10.1016/0196-6774(91)90039-2",
+      "url": "https://doi.org/10.1016/0196-6774(91)90039-2",
+      "metadata_url": "https://experts.mcmaster.ca/scholarly-works/1909122",
+      "source_type": "primary paper",
+      "reviewed_evidence": "Abstract and algorithmic complexity statement for histogram-weighted MSE quantization",
+      "supports": "Matrix searching reduces the classical discrete optimal K-level quantization DP from O(KN^2) to O(KN) in its arithmetic model; the algorithmic result is an optimum quantizer, not a canonical trace of every internal state.",
+      "does_not_support": "The O(KN) statement is not an arbitrary-precision rational bit-complexity or wall-time guarantee and does not include A4 evidence serialization."
+    },
+    {
+      "id": "S03",
+      "title": "Fast Exact k-Means, k-Medians and Bregman Divergence Clustering in 1D",
+      "authors": [
+        "Allan Grønlund",
+        "Kasper Green Larsen",
+        "Alexander Mathiasen",
+        "Jesper Sindahl Nielsen",
+        "Stefan Schneider",
+        "Mingzhou Song"
+      ],
+      "year": 2017,
+      "venue": "arXiv author manuscript",
+      "stable_id": "arXiv:1701.07204",
+      "url": "https://arxiv.org/abs/1701.07204",
+      "author_pdf": "https://cs.au.dk/~larsen/papers/1dkmeans.pdf",
+      "source_type": "primary paper",
+      "reviewed_evidence": "Sections 2-4, including recurrence, leftmost tie rule, complete totally monotone matrix, weighted extension, O(kn) time, and O(n) reporting space",
+      "supports": "An exact optimum curve and partition can be computed and reported without permanently materializing every predecessor row as verbose JSON; weighted one-dimensional squared loss retains the needed Monge structure.",
+      "does_not_support": "Paper-exact means globally optimal in its model, not A4's exact-rational bit semantics, binary32 collision rule, at-most-K rule, or custom recursive tie semantics."
+    },
+        {
+            "id": "S04",
+            "title": "Designing Programs that Check Their Work",
+            "authors": [
+                "Manuel Blum",
+                "Sampath Kannan"
+            ],
+            "year": 1995,
+            "venue": "Journal of the ACM 42(1):269-291",
+            "stable_id": "doi:10.1145/200836.200880",
+            "url": "https://doi.org/10.1145/200836.200880",
+            "author_bibliography": "https://projects.csail.mit.edu/jacm/References/blumk1995%3A269.html",
+            "source_type": "primary theory paper",
+            "reviewed_evidence": "Definition of a program checker and independently checking a program's output on a given instance",
+            "supports": "Correctness checking can be designed as a distinct computation over an input and output rather than treating a producer trace as self-authenticating.",
+            "does_not_support": "Its generic checking results do not prove that an A4 partition, digest, or predecessor subset is a sufficient optimality certificate; A4-specific soundness or full independent replay remains required."
+    },
+    {
+      "id": "S05",
+      "title": "Artifact Review and Badging - Current",
+      "authors": [
+        "Association for Computing Machinery"
+      ],
+      "year": 2020,
+      "venue": "ACM Publications Policy",
+            "stable_id": "ACM Artifact Review and Badging Version 1.1, 2020-08-24",
+      "url": "https://www.acm.org/publications/policies/artifact-review-and-badging-current",
+      "source_type": "official policy",
+      "reviewed_evidence": "Definitions of repeatability, reproducibility, replicability, functional artifacts, and independently reproduced results",
+      "supports": "Artifacts must be documented, consistent, complete for the paper's claim, exercisable, and independently auditable; result reproduction is a distinct activity from the original measured computation.",
+      "does_not_support": "It prescribes no A4 certificate schema, timer boundary, or numeric gate and does not permit omitting claim-relevant components."
+    },
+    {
+      "id": "S06",
+      "title": "ACM SIGMOD Availability and Reproducibility Initiative",
+      "authors": [
+        "ACM SIGMOD"
+      ],
+      "year": 2026,
+      "venue": "Official SIGMOD reproducibility guidance",
+      "stable_id": "official living guidance accessed 2026-07-14",
+      "url": "https://reproducibility.sigmod.org/",
+      "source_type": "official venue guidance",
+      "reviewed_evidence": "Artifact contents, independent reproduction, environment disclosure, and setup/run/cleanup experiment phases",
+      "supports": "A database-systems artifact should expose build environment, inputs, workload, measurement protocol, raw results, and programmable post-processing while documenting distinct setup, running, and cleanup phases.",
+      "does_not_support": "It does not require every internal DP state to be archived, and it does not say research-only packaging is algorithm runtime."
+    },
+    {
+      "id": "S07",
+      "title": "SAQ Official Source Artifact",
+      "authors": [
+        "Hui Li et al."
+      ],
+      "venue": "Official GitHub repository",
+      "stable_id": "git commit 2163ebcedd0ad9c9f4de326e6ca7a860f9eafe52",
+      "repository_url": "https://github.com/howarlii/saq.git",
+      "commit": "2163ebcedd0ad9c9f4de326e6ca7a860f9eafe52",
+      "commit_date": "2025-09-22",
+      "url": "https://github.com/howarlii/saq/tree/2163ebcedd0ad9c9f4de326e6ca7a860f9eafe52",
+      "source_type": "official primary source artifact",
+      "reviewed_evidence": "saqlib/quantization/saq_data.hpp, quantizer_data.hpp, cluster_data.hpp, cluster_packer.hpp, saqlib/index/ivf.hpp, caq/caq_encoder.hpp:172-245, caq/caq_estimator.hpp:56-60,190-216, fastscan/lut.hpp:121-125, and saq_estimator.hpp:28-47",
+      "evaluated_baseline": {
+        "repository_url": "git@github.com:Ufowoqqqo/SAQ.git",
+        "commit": "bc7829bdffecb17cec369e37c2f50a6c419af039",
+        "relationship": "descendant of the official commit with positive one-bit packing and padded-lane finite-min correctness fixes"
+      },
+      "supports": "The official serialized IVF representation retains SAQ configuration and segment/rotation metadata, cluster short factors and MSB-fastscan/lower-bit CAQ codes, per-vector rescale/error factors and ids, and rotated centroids. The unchanged encoder/estimator consumes an implicit per-vector uniform scalar grid and rescale rather than learned per-group reconstruction codebooks.",
+      "does_not_support": "A4's learned two-coordinate product/block codebooks and mixed-radix labels are neither byte-for-byte index fields nor consumable by the unchanged current-SAQ estimator; the V2 bundle cannot be called retained, deployable, or current-SAQ-compatible."
+    },
+    {
+      "id": "S08",
+      "title": "Secure Hash Standard (SHS), FIPS 180-4",
+      "authors": [
+        "National Institute of Standards and Technology"
+      ],
+      "year": 2015,
+      "venue": "Federal Information Processing Standard",
+      "stable_id": "doi:10.6028/NIST.FIPS.180-4",
+      "url": "https://csrc.nist.gov/pubs/fips/180-4/upd1/final",
+      "source_type": "official standard",
+      "reviewed_evidence": "SHA-256 message-digest definition and change-detection purpose",
+      "supports": "SHA-256 can bind a byte stream or logical-record encoding to a stable content identity and detect later byte changes.",
+      "does_not_support": "A matching digest does not prove that the computation was correct, that it ran, that the preimage is available, or that two producer/checker implementations are independent."
+    },
+    {
+      "id": "S09",
+      "title": "SPEC CPU 2017 Run and Reporting Rules",
+      "authors": [
+        "Standard Performance Evaluation Corporation"
+      ],
+            "year": 2021,
+            "venue": "Official SPEC CPU 2017 run and reporting rules",
+            "stable_id": "SPEC runrules.html revision 6644, 2021-09-13; living page accessed 2026-07-14",
+      "url": "https://www.spec.org/cpu2017/Docs/runrules.html",
+      "source_type": "official benchmark rules",
+      "reviewed_evidence": "Conditions of observation, repeat runs, output validation, untimed test/train workloads, timed ref workload, and disclosure rules",
+      "supports": "Correctness validation may be required in the same reportable workflow while remaining outside the named timed workload; all performance-relevant conditions and excluded work must still be disclosed.",
+      "does_not_support": "SPEC's workloads, median rule, and thresholds are benchmark-specific and cannot be copied as A4 scientific constants."
+    },
+    {
+      "id": "S10",
+      "title": "Principles for Automated and Reproducible Benchmarking",
+      "authors": [
+        "Tuomas Koskela",
+        "Ilektra Christidi",
+        "Mose Giordano",
+        "Emily Dubrovska",
+        "Jamie Quinn",
+        "Christopher Maynard",
+        "Dave Case",
+        "Kaan Olgu",
+        "Tom Deakin"
+      ],
+      "year": 2023,
+      "venue": "SC-W 2023",
+      "stable_id": "doi:10.1145/3624062.3624133",
+      "url": "https://doi.org/10.1145/3624062.3624133",
+      "open_pdf": "https://discovery.ucl.ac.uk/id/eprint/10215101/1/3624062.3624133.pdf",
+      "source_type": "primary benchmarking-methodology paper",
+      "reviewed_evidence": "Code-Build-Run-FOM-Analysis workflow, fixed platform description, component runtime, validation, and programmable post-processing",
+      "supports": "A reproducible benchmark should name the performance figure of merit and keep code, build, run, result extraction, and analysis as explicit stages rather than merging all work into one ambiguous timer.",
+      "does_not_support": "It supplies no A4 correctness certificate, exact-arithmetic rule, projection factor, or resource ceiling."
+    },
+    {
+      "id": "S11",
+      "title": "ANN-Benchmarks: A Benchmarking Tool for Approximate Nearest Neighbor Algorithms",
+      "authors": [
+        "Martin Aumueller",
+        "Erik Bernhardsson",
+        "Alexander Faithfull"
+      ],
+      "year": 2017,
+      "venue": "SISAP",
+      "stable_id": "doi:10.1007/978-3-319-68474-1_3; arXiv:1807.05614v2",
+      "url": "https://arxiv.org/abs/1807.05614",
+      "source_type": "primary ANN benchmarking paper",
+      "reviewed_evidence": "Table 1 and Sections 2.2, 3.1, and 3.4 on index build time, index size, query time, quality, and framework overhead",
+      "supports": "ANN evaluation separates preprocessing/index construction, index bytes, query work, and quality; it also explicitly removes text-protocol parsing when that overhead would make query timing unrepresentative.",
+      "does_not_support": "It does not justify excluding production-required model or index materialization, and its Docker/framework choices are not A4 numeric semantics."
+    }
+  ],
+  "candidate_disposition": [
+        {
+            "candidate": "McConnell et al., Certifying Algorithms",
+            "disposition": "deferred",
+            "reason": "Useful later synthesis of certificate/witness design, but Blum and Kannan is the primary program-checking source needed by this bounded review; V2 uses full independent replay rather than claiming a new compact certificate."
+    },
+    {
+      "candidate": "MLPerf Training Benchmark",
+      "disposition": "deferred",
+      "reason": "Useful time-to-quality precedent, but SPEC provides the clearer primary timed-versus-validation rule and ANN-Benchmarks is closer to the application domain."
+    },
+    {
+      "candidate": "Yap and Dube, The Exact Computation Paradigm; Shewchuk robust predicates; Neal exact summation",
+      "disposition": "deferred",
+      "reason": "Relevant to future exact-arithmetic implementation choices, but the authorized task does not change A4's exact rational objective or branch-authority semantics."
+    },
+    {
+      "candidate": "Chirigati et al., ReproZip",
+      "disposition": "deferred",
+      "reason": "Useful environment-packaging system, but ACM/SIGMOD guidance already covers the bounded reproducibility requirement and the official SAQ source is necessary to prevent an unsupported retained-index claim."
+    },
+    {
+      "candidate": "prior arbitrary-cardinality, entropy-constrained, and fractional-rate quantization papers",
+      "disposition": "inherited_not_reopened",
+      "reason": "Their novelty boundary remains preserved in saq-arbitrary-cardinality-analysis@f1b464b; this review asks only whether a new cost/evidence protocol is defensible."
+    }
+  ],
+  "local_predecessor_evidence": {
+    "source_branch": "saq-arbitrary-cardinality-analysis",
+    "terminal_snapshot": "f1b464b6803e0f435055b45891255be0129cb9be",
+    "cost_evidence_commit": "9ce105275d433c95d82557d3cbe1928916fa9ca8",
+    "protocol_path": "docs/saq_attempt4_a4_1s_synthetic_implementation_protocol_2026_07_13.md",
+    "review_path": "docs/saq_attempt4_a4_1s_cost_projection_review_2026_07_13.md",
+    "status": "NO_GO_EXACT_SOLVER_COST",
+    "preservation_rule": "The old result is terminal for its frozen pipeline and is not reinterpreted or rerun by this review.",
+    "preoutcome_representation_contract": {
+      "branch": "saq-arbitrary-cardinality-analysis",
+      "commit": "3aa2f6e219763cfe72218050e420766a5a0efbcb",
+      "subject": "Freeze A4-1 base-only feasibility protocol",
+      "path": "docs/saq_attempt4_a4_1_base_only_feasibility_preregistration_2026_07_13.md",
+      "reviewed_evidence": {
+        "lines_63_65": "heterogeneous-radix representation requires radix metadata, a new encoder, and a new scan kernel",
+        "lines_157_160": "the 128-coordinate panel is not a full-vector ANN representation",
+        "lines_429_465": "product/block labels, B4/B8 packing, reference decoding, and lookup semantics",
+        "lines_604_652": "codebook, radix, invalid-address, payload, and lookup byte accounting"
+      },
+      "relationship_to_outcome": "This contract predates the later cost result at 9ce105275d433c95d82557d3cbe1928916fa9ca8 and is the positive A4-reference equivalence target."
+    }
+  }
+}
