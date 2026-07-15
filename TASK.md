@@ -25,7 +25,8 @@ A4-V2-P-ERRATUM finite PAR-report closure correction   COMPLETED_REVIEW_PASS
 A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
 A4-V2-PAR   pre-build executable identity admission    ARTIFACT_INVALID / REVIEWED_TERMINAL
 A4-V2-I-R1  executable-identity source repair           COMPLETED_REVIEW_PASS
-A4-V2-CACHE-P cache/staging documentation protocol      EXACT_TARGET_REVIEW_PASS_PENDING_LIVE_CLOSURE
+A4-V2-CACHE-P cache/staging documentation protocol      COMPLETED_OPERATIONAL_PROTOCOL_CLOSURE
+A4-V2-CACHE-I generic source/schema/static review       AUTHORIZATION_TARGET_PENDING_COMMIT_REVIEW
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
 data        benchmark/base/query/index reads           NOT_AUTHORIZED
@@ -97,7 +98,7 @@ unmetered-cache-byte determinism question. It was not causal to the executable-
 identity failure and is outside I-R1. Do not add a bytecode admission policy or
 open PAR-R1 until the user separately authorizes a resolution.
 
-The user has now authorized only `A4-V2-CACHE-P`, recorded in
+The user previously authorized only `A4-V2-CACHE-P`, recorded in
 `docs/saq_a4_v2_cache_staging_policy_authorization_2026_07_15.md`. This stage
 must review official CPython cache semantics and committed local source, then
 produce a fail-closed protocol for bytecode determinism and bounded handling
@@ -124,11 +125,11 @@ tree SHA-256
 It passed three-track exact-commit independent review with no finding at LOW
 or above. The durable verdict is
 `docs/saq_a4_v2_cache_staging_disposition_protocol_independent_review_2026_07_15.md`.
-The exact target reaches `EXACT_TARGET_INDEPENDENT_REVIEW_PASS`. The stage
-remains `EXACT_TARGET_REVIEW_PASS_PENDING_LIVE_CLOSURE` until this direct-child
-review record is committed/pushed and its one-shot review-head closure
-succeeds; only then can it reach the conditional maximum
-`CACHE_STAGING_POLICY_REVIEW_PASS`.
+The exact target reached `EXACT_TARGET_INDEPENDENT_REVIEW_PASS`. At formation
+of the direct-child review record, the stage remained
+`EXACT_TARGET_REVIEW_PASS_PENDING_LIVE_CLOSURE` until that record could be
+committed/pushed and its one-shot review-head closure could succeed; only then
+could it reach the conditional maximum `CACHE_STAGING_POLICY_REVIEW_PASS`.
 
 ## A4-V2-CACHE-P Deliverables
 
@@ -143,12 +144,56 @@ succeeds; only then can it reach the conditional maximum
    and source-tree identity unchanged.
 5. Focused push and mandatory Meeting Summary Handoff, followed by a stop.
 
-Items 1--4 are complete for exact target `56210f8`. Item 5 now requires only
-the direct-child review commit/push, live review-head closure predicate, and
-mandatory Meeting Summary Handoff.
+Items 1--4 completed for exact target `56210f8`. At formation of the review
+record, item 5 still required the direct-child review commit/push, live review-
+head closure predicate, and mandatory Meeting Summary Handoff.
 
 Cleanup/source/environment work and `A4-V2-PAR-R1` each remain separately
 unauthorized after this documentation stage.
+
+The CACHE-P review record was subsequently committed and pushed at
+`249d5b8c1939acefbf12711790b3e791b019d560`; its live review-head closure and
+Meeting Summary Handoff completed. The live closure is operational and non-
+evidentiary.
+
+The user has now explicitly authorized only `A4-V2-CACHE-I`. Its additive
+receipt is
+`docs/saq_a4_v2_cache_implementation_authorization_2026_07_15.md`. Before any
+source edit, that authorization target must be committed, pushed, independently
+reviewed, and closed under the frozen no-clone equality predicates. CACHE-I
+then permits only the exact 37-file-source/38-executable-unit generic policy
+implementation, ten frozen generic JSON objects, four rebinding documents,
+AGENTS/TASK status, exact commits, static review, push, and Meeting Summary
+Handoff. Its maximum outcome is
+`GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS`.
+
+It permits no Python/import/syntax/build/test execution, clone, PREP token or
+attempt, PAR-R1, SRUN, quarantine read or cleanup, data access, environment
+mutation, or SAQ/CAQ change. PREP remains a separate future authorization.
+
+## A4-V2-CACHE-I Deliverables
+
+1. Add only `script/a4_v2_isolated_clone_prep.py` and
+   `script/a4_v2_cache_policy_verifier.py`; modify only the four existing
+   Python sources frozen by protocol section 5.1.
+2. Rebind the canonical implementation manifest from 35 to exactly 37 file
+   sources while preserving the canonical tree algorithm, 27 native/CMake
+   sources, four non-allowed Python sources, and all scientific behavior.
+3. Publish the ten closed generic schema/maximal/static/authority objects and
+   update only the four frozen existing authority documents.
+4. Bind one ASCII-only inline PREP bootstrap as the 38th executable unit and
+   close every import/call/open/mutation path statically.
+5. Publish a complete raw-byte parent-precedence partition proving frozen
+   status/retry/PAR-report components and limiting every delta to the exact
+   cache-governance allowlist.
+6. Commit and push exact authorization and implementation target/review pairs,
+   satisfy their separately registered no-clone probes, perform three-track
+   independent static review with zero LOW+ findings, and complete Meeting
+   Summary Handoff.
+
+The implementation target/review does not authorize PREP or establish clone
+readiness, parity, synthetic feasibility, an SAQ limitation, systems
+performance, novelty, or a method contribution.
 
 The completed erratum stage permitted only additive authority documents,
 static review, focused commits, push, and Meeting Summary Handoff. It permitted
@@ -336,8 +381,9 @@ Return `GO_PROTOCOL_DESIGN` only if all are supported before execution:
 The reviewed A4-V2-PAR terminal failure remains immutable. Completed
 `A4-V2-I-R1` does not change the status of the empty staging directory or
 ignored Python caches: they remain non-evidence and must not be synchronized
-or cleaned. The CACHE-P exact target review has passed; its focused review
-push, live review-head closure, and mandatory handoff remain in this session.
-There is no cleanup, cache-policy implementation, PREP, PAR-R1, SRUN, data, or
-SAQ authority; never infer one from the historical source review, failed
-invocation, repaired source, or documentation authorization.
+or cleaned. The CACHE-P review/push/closure/handoff sequence is complete.
+CACHE-I is now authorized only for its generic source/schema/static-review
+sequence. There is no quarantine access, cleanup, clone, PREP, PAR-R1, SRUN,
+data, or SAQ authority; never infer one from the historical source review,
+failed invocation, repaired source, policy protocol, or static source
+authorization.
