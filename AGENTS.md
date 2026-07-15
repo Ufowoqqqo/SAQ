@@ -40,14 +40,17 @@ The corrected authority at `f13a383` passed three-track exact-commit review;
 the verdict is recorded in
 `docs/saq_a4_v2_par_report_timing_closure_erratum_independent_review_2026_07_14.md`.
 
-`A4-V2-I` remains the prior source authorization and is ready to resume only
-after the erratum Meeting Summary Handoff. It was not resumed by the erratum
-review. It permits source and implementation-binding documentation for the V2
-producer, independent verifier, archive/finalizer, timers, ledgers, and later
-parity interfaces. It permits no build, compiler, Python import of the
-implementation, syntax/test command, native execution, parity fixture, RNG,
-synthetic event, generated artifact, benchmark/data read, or SAQ modification.
-`A4-V2-PAR` and `A4-V2-SRUN` remain separately unauthorized.
+After the erratum Meeting Summary Handoff, the prior `A4-V2-I` source
+authorization was resumed. Initial source commit `3a4f7c5` failed static
+review and remains failed/non-evidence. Corrected exact commit
+`482c401521460d1742ffe86c39db7130ed038a06` passed three-track independent
+static review; its verdict is recorded in
+`docs/saq_a4_v2_implementation_independent_review_2026_07_15.md`.
+`A4-V2-I` is complete at `SOURCE_IMPLEMENTED_STATIC_REVIEW_PASS`. No compiler,
+build, Python import, syntax/test command, native execution, parity fixture,
+RNG, synthetic event, generated artifact, benchmark/data read, or SAQ
+modification occurred. `A4-V2-PAR` and `A4-V2-SRUN` remain separately
+unauthorized.
 
 The completed `A4-V2-P-ERRATUM` permitted only additive protocol-authority
 documents, branch status documents, focused commits, static independent
@@ -107,13 +110,25 @@ Current stages remain separate:
 
 ```text
 A4-V2-P-ERRATUM documentation-only closure correction  COMPLETED_REVIEW_PASS
-A4-V2-I     source implementation only                 AUTHORIZED_READY_TO_RESUME
+A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
 A4-V2-PAR   frozen build and parity execution only      NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event only  NOT_AUTHORIZED
 ```
 
 Authorization for one stage never implies the next. No stage above permits
 benchmark/base/query/index reads or SAQ modification.
+
+The authoritative implementation-stage documents are:
+
+- `docs/saq_a4_v2_implementation_authorization_2026_07_14.md`;
+- `docs/saq_a4_v2_implementation_binding_2026_07_14.md`;
+- `docs/saq_a4_v2_implementation_manifest_2026_07_14.json`;
+- `docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md`; and
+- `docs/saq_a4_v2_implementation_independent_review_2026_07_15.md`.
+
+The source pass is artifact readiness only. It is not a PAR result, synthetic
+gate, SAQ limitation result, method contribution, or systems-performance
+claim. The only possible next stage is a separately authorized `A4-V2-PAR`.
 
 ## Prior A4-1S Result
 

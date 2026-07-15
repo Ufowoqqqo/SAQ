@@ -2,24 +2,24 @@
 
 ## Current Research Milestone
 
-The bounded primary-source review and V2 protocol design are complete. The
-review returned `GO_PROTOCOL_DESIGN`, and the original reviewed protocol
-remains byte-frozen at `f86a51d`. The user subsequently authorized `A4-V2-I`,
-but static source inspection exposed a terminal `P_parity` receipt/publication
-self-reference before any implementation commit or review pass. The user then
-explicitly authorized additive, documentation-only `A4-V2-P-ERRATUM`. The
-corrected authority at `f13a383` passed exact-commit measurement, schema, and
-Git-authority review.
+The bounded primary-source review, V2 protocol design, additive timing-closure
+erratum, and source-only implementation stage are complete. The original
+reviewed protocol remains byte-frozen at `f86a51d`; corrected composite
+authority `f13a383` passed exact-commit measurement, schema, and Git-authority
+review. After that handoff, the prior `A4-V2-I` authorization resumed.
 
-The erratum is complete. The prior source authorization remains available but
-was not resumed by this documentation stage:
+Initial implementation commit `3a4f7c5` failed static review and remains
+failed/non-evidence. Corrected exact commit
+`482c401521460d1742ffe86c39db7130ed038a06` passed three independent
+exact-commit static reviews with no remaining issue at LOW or above. The
+maximum authorized source-only outcome is therefore reached:
 
 ```text
 A4-V2-R     bounded primary-source review             COMPLETED_DOCUMENTATION
 A4-V2-D     cost/evidence-model go/no-go decision     GO_PROTOCOL_DESIGN
 A4-V2-P     preregistration/schema/contract            COMPLETED_DOCUMENTATION
 A4-V2-P-ERRATUM finite PAR-report closure correction   COMPLETED_REVIEW_PASS
-A4-V2-I     source implementation/static review         AUTHORIZED_READY_TO_RESUME
+A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
 A4-V2-PAR   build and frozen parity execution          NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
 data        benchmark/base/query/index reads           NOT_AUTHORIZED
@@ -60,8 +60,8 @@ synthetic, or feasibility result.
 6. Independent static review of the exact committed implementation source.
 
 The maximum stage outcome is
-`SOURCE_IMPLEMENTED_STATIC_REVIEW_PASS`. It authorizes nothing beyond asking
-whether to start `A4-V2-PAR`.
+`SOURCE_IMPLEMENTED_STATIC_REVIEW_PASS`; exact commit `482c401` reached that
+outcome. It authorizes nothing beyond asking whether to start `A4-V2-PAR`.
 
 ## Frozen V2 Outcome
 
@@ -126,6 +126,20 @@ The completed additive erratum deliverables are:
 6. `docs/saq_a4_v2_protocol_authority_manifest_2026_07_14.json`.
 7. `docs/saq_a4_v2_par_report_timing_closure_erratum_independent_review_2026_07_14.md`.
 
+The completed source-only implementation deliverables are:
+
+1. exact corrected source commit
+   `482c401521460d1742ffe86c39db7130ed038a06`;
+2. `docs/saq_a4_v2_implementation_binding_2026_07_14.md`;
+3. `docs/saq_a4_v2_implementation_manifest_2026_07_14.json`;
+4. `docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md`; and
+5. `docs/saq_a4_v2_implementation_independent_review_2026_07_15.md`.
+
+The manifest binds 35 exact source identities and source-tree SHA-256
+`d5b8374ff2bfb967e0fbf758e2012029356ef779122681ed4a5a9d901e727cc7`.
+No implementation was imported, built, syntax-checked, tested, or executed;
+no scientific artifact was generated.
+
 ## Review Boundaries
 
 The review is limited to the closest work needed to decide the protocol:
@@ -159,8 +173,7 @@ Return `GO_PROTOCOL_DESIGN` only if all are supported before execution:
 - the resulting study could falsify an ANN-relevant opportunity rather than
   merely demonstrate faster artifact production.
 
-Stop after independent review, focused commits, push, and Meeting Summary
-Handoff. The earlier explicit A4-V2-I authorization then remains available but
-is not resumed as part of this erratum stage. `A4-V2-PAR` and `A4-V2-SRUN`
-still require separate explicit authorization; never infer either from
-protocol publication.
+After the focused implementation-review commit, push and Meeting Summary
+Handoff, stop and ask whether to authorize `A4-V2-PAR`. `A4-V2-PAR` and
+`A4-V2-SRUN` still require separate explicit authorization; never infer either
+from source readiness, protocol publication, or static review.
