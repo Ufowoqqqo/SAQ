@@ -24,8 +24,8 @@ Current summary inventory:
 - `docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` is the current,
   unpresented successor draft. It queues `R07`, `R08`, `R10`, `R11`, and
   `R12`; its Attempt 4 scientific snapshot is
-  `saq-arbitrary-cardinality-feasibility-v2@482c401`, with the independent
-  source review at audited branch head `4ce2e69`.
+  `saq-arbitrary-cardinality-feasibility-v2@30dfada`, with the independently
+  reviewed terminal status at audited branch head `fd5367e`.
 
 ## Current Attempt 4 Boundary
 
@@ -39,7 +39,7 @@ A4-V2-R GO_PROTOCOL_DESIGN / REVIEWED
 A4-V2-P PROTOCOL_READY_NOT_AUTHORIZED_FOR_EXECUTION / REVIEWED
 A4-V2-P-ERRATUM PROTOCOL_ERRATUM_INDEPENDENT_REVIEW_PASS
 A4-V2-I SOURCE_IMPLEMENTED_STATIC_REVIEW_PASS
-A4-V2-PAR NOT_AUTHORIZED
+A4-V2-PAR ARTIFACT_INVALID / REVIEWED_TERMINAL_NO_VALID_PAR_AUTHORITY
 A4-V2-SRUN NOT_AUTHORIZED
 ```
 
@@ -76,21 +76,27 @@ deployment-cost, ANN, or systems claim. The erratum adds one finite one-file
 computation, FOM, threshold, parity/retry rules, or status precedence. Its
 5,171-byte maximal seal is a conservative syntactic schema bound, not an
 admissible resource observation. Initial implementation commit `3a4f7c5`
-failed static review and remains non-evidence. Corrected exact source commit
-`482c401` and its 35-source manifest passed three independent static-only
-reviews, recorded at branch head `4ce2e69`, with verdict
-`SOURCE_IMPLEMENTED_STATIC_REVIEW_PASS`. No implementation was imported,
-built, syntax-checked, tested, or executed. Build/parity, RNG, synthetic
-execution, data access, and SAQ changes remain unauthorized.
+failed static review and remains non-evidence. Corrected source `482c401` and
+its 35-source manifest reached static review only.
+
+The user then explicitly authorized A4-V2-PAR at reviewed execution base
+`2e983a0`. Its one frozen invocation returned exit `3` and frozen status
+`ARTIFACT_INVALID` before any B/P worker: `/bin/python` was a symlink rejected
+by the no-follow leader-identity read. No build, NumPy authority, PCG64
+fixture, parity case, receipt, ledger, build manifest, parity summary,
+artifact index, or seal was produced. Terminal result `30dfada` passed three-
+track independent review at branch head `fd5367e`. It establishes no valid PAR
+authority and no scientific decision. Empty staging and ignored caches are
+WIP/non-evidence.
 
 ## Next Admissible Summary Work
 
-The next source-branch decision is whether the user explicitly authorizes
-`A4-V2-PAR`. This summary handoff does not grant that authority. Until such a
-decision, wait for another committed and independently reviewed protocol,
-gate result, or terminal decision. A4-V2-I completion does not authorize a
-build, import, syntax/test command, parity, RNG, synthetic run, generated
-evidence, data read, or SAQ change.
+There is no active source-branch execution authority. Any correction requires
+a new clean source commit, independent source review, and a new explicit user
+authorization for the affected PAR stage. This summary handoff grants none of
+those. `A4-V2-SRUN`, data reads, generated scientific evidence, and SAQ changes
+remain unauthorized.
+
 For the next handoff, re-read `AGENTS.md` and the registry, fetch, require this
 worktree to be clean and equal to its remote, record that remote commit, and
 acquire the mandatory common-directory summary lock before editing:
@@ -121,8 +127,9 @@ branch.
 ## Not Authorized Here
 
 - implementing or rerunning A4-1S, or opening its foreclosed base gate;
-- implementing or executing A4 V2 on this summary branch; source-only
-  A4-V2-I is complete, while A4-V2-PAR and A4-V2-SRUN remain unauthorized;
+- implementing or executing A4 V2 on this summary branch; A4-V2-PAR is a
+  reviewed terminal `ARTIFACT_INVALID` with no valid PAR authority, and
+  repair, rerun, A4-V2-SRUN, data, and SAQ work remain unauthorized;
 - opening registered base, query, ground-truth, or index artifacts;
 - modifying SAQ/CAQ, index, estimator, packing, or search code;
 - expanding any source branch's experimental authorization; or
