@@ -72,7 +72,10 @@ decision. The terminal facts are recorded in
 build, parity fixture, RNG, B/P receipt, artifact index, or seal was produced.
 The empty staging directory and ignored Python caches are quarantined WIP,
 not evidence. Do not rerun, substitute another Python path, clean for retry,
-or repair source under this authorization.
+or repair source under this authorization. Exact terminal target `30dfada`
+passed three-track independent review with no finding at LOW or above; its
+review is
+`docs/saq_a4_v2_par_prebuild_artifact_identity_failure_independent_review_2026_07_15.md`.
 
 The completed `A4-V2-P-ERRATUM` permitted only additive protocol-authority
 documents, branch status documents, focused commits, static independent
@@ -133,7 +136,7 @@ Current stages remain separate:
 ```text
 A4-V2-P-ERRATUM documentation-only closure correction  COMPLETED_REVIEW_PASS
 A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
-A4-V2-PAR   pre-build executable identity admission     ARTIFACT_INVALID / STOPPED
+A4-V2-PAR   pre-build executable identity admission     ARTIFACT_INVALID / REVIEWED_TERMINAL
 A4-V2-SRUN  one logical synthetic admission event only  NOT_AUTHORIZED
 ```
 
@@ -148,10 +151,11 @@ The authoritative implementation-stage documents are:
 - `docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md`; and
 - `docs/saq_a4_v2_implementation_independent_review_2026_07_15.md`.
 
-The PAR authorization and terminal pre-build failure records are:
+The PAR authorization and reviewed terminal pre-build failure records are:
 
-- `docs/saq_a4_v2_par_authorization_2026_07_15.md`; and
-- `docs/saq_a4_v2_par_prebuild_artifact_identity_failure_2026_07_15.md`.
+- `docs/saq_a4_v2_par_authorization_2026_07_15.md`;
+- `docs/saq_a4_v2_par_prebuild_artifact_identity_failure_2026_07_15.md`; and
+- `docs/saq_a4_v2_par_prebuild_artifact_identity_failure_independent_review_2026_07_15.md`.
 
 The source pass remains a historical static-review result only. The attempted
 PAR launch falsified executable artifact readiness before build; it is not a

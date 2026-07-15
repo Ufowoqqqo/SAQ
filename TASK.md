@@ -20,7 +20,7 @@ A4-V2-D     cost/evidence-model go/no-go decision     GO_PROTOCOL_DESIGN
 A4-V2-P     preregistration/schema/contract            COMPLETED_DOCUMENTATION
 A4-V2-P-ERRATUM finite PAR-report closure correction   COMPLETED_REVIEW_PASS
 A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
-A4-V2-PAR   pre-build executable identity admission    ARTIFACT_INVALID / STOPPED
+A4-V2-PAR   pre-build executable identity admission    ARTIFACT_INVALID / REVIEWED_TERMINAL
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
 data        benchmark/base/query/index reads           NOT_AUTHORIZED
 ```
@@ -39,6 +39,10 @@ leader-identity read uses `O_NOFOLLOW` and that path object is a symlink. It
 did not build, collect NumPy authority, generate PCG64 fixtures, create a B/P
 receipt, or publish a manifest, index, summary, or seal. The terminal record is
 `docs/saq_a4_v2_par_prebuild_artifact_identity_failure_2026_07_15.md`.
+
+Exact terminal target `30dfada` passed three-track independent review with no
+finding at LOW or above. The durable review is
+`docs/saq_a4_v2_par_prebuild_artifact_identity_failure_independent_review_2026_07_15.md`.
 
 There is no valid PAR authority and no scientific decision. The empty staging
 directory and five ignored Python caches are quarantined non-evidence. Do not
@@ -102,9 +106,10 @@ NO_SCIENTIFIC_DECISION
 It is not `PASS_PARITY`, a parity mismatch, a resource observation, or evidence
 about arbitrary-cardinality quantization. The in-conductor external-signal
 retry rule does not apply, and the consumed one-event authorization grants no
-second top-level invocation. Any correction requires a new clean source
-commit, independent review, and new explicit authorization for the affected
-PAR stage.
+second top-level invocation. Exact target `30dfada` is independently reviewed
+terminal evidence only for that failure classification. Any correction
+requires a new clean source commit, independent review, and new explicit
+authorization for the affected PAR stage.
 
 ## Frozen V2 Outcome
 
