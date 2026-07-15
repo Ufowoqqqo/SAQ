@@ -24,6 +24,115 @@ Before proposing another idea, review the closest primary work and state what
 it already solves, what gap remains, and why the proposal is not a direct
 composition.
 
+## Token, Context, And Review Efficiency
+
+Treat model context, reviewer attention, wall time, and generated code as
+research resources. Optimize for new decision-relevant evidence per token, not
+for the amount of code, documentation, or review traffic produced.
+
+Before starting a substantial implementation or review, record:
+
+1. the smallest falsifiable question and the cheapest decisive check;
+2. the expected scientific-core files and an approximate line-count range;
+3. the support/evidence machinery required and why existing tools are
+   insufficient; and
+4. a concrete stop condition and the next user checkpoint.
+
+### Implementation And Validation Discipline
+
+- Freeze hypotheses, inputs, thresholds, and decision rules before observing
+  outcomes. Do not interpret preregistration as a reason to postpone basic
+  compilation, syntax checks, or tiny deterministic tests unless the user has
+  explicitly authorized a source-only stage that forbids them.
+- When execution is explicitly forbidden, implement only the smallest static
+  skeleton needed for review. Before uncompiled or unimported source exceeds
+  1,000 net new lines, stop and ask the user whether to authorize a cheap
+  compile/syntax/parity checkpoint; state clearly that correctness and even
+  executability remain unknown.
+- Pause for user confirmation when support, evidence, orchestration, or
+  failure-handling code exceeds either 2,000 net new lines or twice the size of
+  the scientific algorithmic core. Report the ratio and justify why a simpler
+  standard tool cannot satisfy the claim.
+- Prefer existing build systems, test frameworks, resource monitors,
+  content-addressed manifests, and archival tools. Do not create a custom
+  transaction, process-supervision, crash-consistency, or evidence framework
+  for a one-shot research gate without an explicit user-approved necessity and
+  line-count estimate.
+- Prioritize early falsification. A cheap compile, parity, cost, or tiny
+  synthetic gate should precede production hardening, exhaustive evidence
+  serialization, and rare failure-path engineering whenever authorization
+  permits it.
+
+### Multi-Agent And Review Limits
+
+- Use at most one implementation owner and one independent reviewer for one
+  workstream. A third concurrent reviewer requires explicit user approval and
+  a disjoint, bounded question that cannot be handled by the first reviewer.
+- Subagents must not spawn further subagents unless the user explicitly asks
+  for recursive delegation. Do not create reviewer trees.
+- Give each reviewer a fixed file/function scope, checklist, and terminal
+  deliverable. Reviewers should return one consolidated finding list with
+  severity and exact locations, not maintain an open-ended conversation.
+- Review an immutable commit or explicitly named snapshot. Do not patch the
+  reviewed tree while reviewers are still reading it. Collect findings, apply
+  one batched repair, commit the result, and then perform at most one bounded
+  rereview of that new snapshot.
+- Do not run concurrent reviewers over the same large source tree. Do not send
+  the same source or diff repeatedly between agents; communicate findings and
+  stable file/commit references instead.
+- Reviewers report to the implementation owner, not to one another. Avoid
+  peer-to-peer finding negotiation and repeated follow-up messages; the owner
+  consolidates duplicates and resolves contradictions once at the checkpoint.
+- Permit at most two review--repair--rereview cycles per checkpoint. After the
+  second cycle, stop with the remaining blocker/high/medium findings and ask
+  the user whether another cycle is worth its expected cost. Low-severity
+  hardening goes to a backlog unless it affects the current claim.
+- A repair that introduces a new mechanism or materially expands the state
+  space requires a fresh scope/cost justification. Do not recursively harden
+  the hardening machinery.
+
+### Context And Tool-Use Hygiene
+
+- Read a large file completely at most once per review phase. Thereafter use
+  `git diff`, hashes, `rg`, and targeted line ranges; do not repeatedly reread
+  unchanged files or full generated artifacts.
+- Keep inter-agent messages concise: finding, severity, evidence location,
+  consequence, and proposed minimal fix. Do not paste large source excerpts or
+  replay full protocol context when a commit and line reference suffice.
+- Treat repeated context compaction as a stop signal. After two compactions in
+  one bounded stage, produce a checkpoint summary and return control to the
+  user instead of automatically continuing.
+- If 60 minutes, 50 tool calls, or 500 net changed lines pass without new
+  decision-relevant evidence, stop and report what consumed the work, what was
+  learned, and whether continuation remains justified.
+- Do not confuse cached-input tokens with free work. Repeatedly carrying a huge
+  context through many small reasoning turns is still wasteful even when cache
+  accounting discounts it.
+
+### Long-Running Commands
+
+- During a long-running command, do not poll frequently. Prefer a blocking wait
+  or one long poll. If a check is necessary, check every 2--5 minutes.
+- When state has not changed, do not return to reasoning, repeat-read logs, or
+  send a status message. Resume only on completion, failure, a meaningful
+  milestone, or required human intervention.
+
+### Mandatory Checkpoints
+
+At every user checkpoint, report concisely:
+
+- current commit/worktree and dirty diff statistics;
+- scientific evidence gained, separately from code or tooling produced;
+- active processes and agents;
+- unresolved findings by severity;
+- whether anything has compiled, executed, or been independently reproduced;
+- approximate implementation/support-code ratio; and
+- the smallest next action, expected cost, and stop condition.
+
+If no new scientific evidence was produced, say so directly. Code volume,
+protocol detail, static review effort, and generated artifacts are not proxies
+for research progress.
+
 ## CO-0 Outcome
 
 **The finite-round CAQ direction stopped at CO-0A.** The pinned official
