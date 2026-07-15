@@ -595,6 +595,85 @@ def _read_regular_nofollow(path: Path) -> bytes:
         os.close(descriptor)
 
 
+_CURRENT_CPYTHON_IDENTITY: tuple[str, int] | None = None
+
+
+def _current_cpython_identity() -> tuple[str, int]:
+    """Hash the running image while proving ``sys.executable`` names it."""
+
+    global _CURRENT_CPYTHON_IDENTITY
+    if _CURRENT_CPYTHON_IDENTITY is not None:
+        return _CURRENT_CPYTHON_IDENTITY
+    executable = sys.executable
+    if (
+        not isinstance(executable, str)
+        or not executable
+        or not os.path.isabs(executable)
+        or os.path.normpath(executable) != executable
+    ):
+        raise OSError("current CPython executable path is not normalized absolute")
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
+    image_fd = os.open("/proc/self/exe", flags)
+    try:
+        named_fd = os.open(executable, flags)
+    except BaseException:
+        os.close(image_fd)
+        raise
+    try:
+        image_before = os.fstat(image_fd)
+        named_before = os.fstat(named_fd)
+        stable_fields = (
+            "st_dev",
+            "st_ino",
+            "st_mode",
+            "st_size",
+            "st_mtime_ns",
+            "st_ctime_ns",
+        )
+        if (
+            not stat.S_ISREG(image_before.st_mode)
+            or not stat.S_ISREG(named_before.st_mode)
+            or image_before.st_size <= 0
+            or image_before.st_size > (1 << 30)
+            or image_before.st_dev != named_before.st_dev
+            or image_before.st_ino != named_before.st_ino
+        ):
+            raise OSError("current CPython path does not identify the running image")
+        digest = hashlib.sha256()
+        remaining = image_before.st_size
+        while remaining:
+            chunk = os.read(image_fd, min(1 << 20, remaining))
+            if not chunk:
+                raise OSError("current CPython image ended before its fstat size")
+            digest.update(chunk)
+            remaining -= len(chunk)
+        if os.read(image_fd, 1):
+            raise OSError("current CPython image grew during identity read")
+        image_after = os.fstat(image_fd)
+        if any(
+            getattr(image_before, field) != getattr(image_after, field)
+            for field in stable_fields
+        ):
+            raise OSError("current CPython image changed during identity read")
+    finally:
+        try:
+            os.close(named_fd)
+        finally:
+            os.close(image_fd)
+    named_after_fd = os.open(executable, flags)
+    try:
+        named_after = os.fstat(named_after_fd)
+    finally:
+        os.close(named_after_fd)
+    if any(
+        getattr(image_after, field) != getattr(named_after, field)
+        for field in stable_fields
+    ):
+        raise OSError("current CPython executable path changed during identity read")
+    _CURRENT_CPYTHON_IDENTITY = (digest.hexdigest(), image_after.st_size)
+    return _CURRENT_CPYTHON_IDENTITY
+
+
 def _sealed(relative: str) -> dict[str, Any]:
     payload = _read_regular_nofollow(REPOSITORY_ROOT / relative)
     return {
@@ -2375,8 +2454,7 @@ def run_par(
         peak_rss_bytes=0,
         utc=_utc_for_monotonic(start_wall_nanoseconds),
     )
-    leader_binary = _read_regular_nofollow(Path(sys.executable))
-    leader_binary_sha256 = _sha256(leader_binary)
+    leader_binary_sha256, leader_binary_size_bytes = _current_cpython_identity()
     outer_argv = list(sys.argv)
     outer_argv_sha256 = _sha256(_canonical_body(outer_argv))
     preflight_pid = os.getpid()
@@ -2387,7 +2465,7 @@ def run_par(
         "host_environment": host_environment,
         "implementation_commit": implementation_commit,
         "leader_binary_sha256": leader_binary_sha256,
-        "leader_binary_size_bytes": len(leader_binary),
+        "leader_binary_size_bytes": leader_binary_size_bytes,
         "numpy_authority": numpy_authority,
         "tool_paths": [CMAKE_BINARY, NINJA_BINARY, CXX_BINARY],
     }

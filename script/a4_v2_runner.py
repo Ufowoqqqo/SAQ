@@ -644,7 +644,7 @@ def _git_source_identity() -> tuple[str, str, str, bytes]:
         "parent_preregistration_identity": "docs/saq_a4_v2_synthetic_construction_preregistration_2026_07_14.md",
         "contract_identity": "docs/saq_a4_v2_synthetic_construction_contract_2026_07_14.json",
         "artifact_schema_identity": "docs/saq_a4_v2_artifact_schema_2026_07_14.json",
-        "authorization_identity": "docs/saq_a4_v2_implementation_authorization_2026_07_14.md",
+        "authorization_identity": "docs/saq_a4_v2_executable_identity_source_repair_authorization_2026_07_15.md",
         "implementation_binding_identity": "docs/saq_a4_v2_implementation_binding_2026_07_14.md",
         "source_provenance_identity": "docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md",
     }
@@ -1283,6 +1283,105 @@ def _read_regular_nofollow(path: Path, maximum_bytes: int) -> bytes:
         return bytes(payload)
     finally:
         os.close(descriptor)
+
+
+_CURRENT_CPYTHON_IDENTITY: tuple[str, int] | None = None
+
+
+def _uncached_current_cpython_identity(executable: str) -> tuple[str, int]:
+    """Read one stable running image after pathname validation."""
+
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
+    image_fd = os.open("/proc/self/exe", flags)
+    try:
+        try:
+            named_fd = os.open(executable, flags)
+        except OSError as error:
+            _fail("ARTIFACT_INVALID", f"cannot open current CPython path: {error}")
+        try:
+            image_before = os.fstat(image_fd)
+            named_before = os.fstat(named_fd)
+            stable_fields = (
+                "st_dev",
+                "st_ino",
+                "st_mode",
+                "st_size",
+                "st_mtime_ns",
+                "st_ctime_ns",
+            )
+            if (
+                not stat.S_ISREG(image_before.st_mode)
+                or not stat.S_ISREG(named_before.st_mode)
+                or image_before.st_size <= 0
+                or image_before.st_size > (1 << 30)
+                or image_before.st_dev != named_before.st_dev
+                or image_before.st_ino != named_before.st_ino
+            ):
+                _fail(
+                    "ARTIFACT_INVALID",
+                    "current CPython path does not identify the running image",
+                )
+            digest = hashlib.sha256()
+            remaining = image_before.st_size
+            while remaining:
+                chunk = os.read(image_fd, min(1 << 20, remaining))
+                if not chunk:
+                    _fail(
+                        "ARTIFACT_INVALID",
+                        "current CPython image ended before its fstat size",
+                    )
+                digest.update(chunk)
+                remaining -= len(chunk)
+            if os.read(image_fd, 1):
+                _fail("ARTIFACT_INVALID", "current CPython image grew during read")
+            image_after = os.fstat(image_fd)
+            if any(
+                getattr(image_before, field) != getattr(image_after, field)
+                for field in stable_fields
+            ):
+                _fail("ARTIFACT_INVALID", "current CPython image changed during read")
+        finally:
+            os.close(named_fd)
+    finally:
+        os.close(image_fd)
+    try:
+        named_after_fd = os.open(executable, flags)
+    except OSError as error:
+        _fail("ARTIFACT_INVALID", f"cannot reopen current CPython path: {error}")
+    try:
+        named_after = os.fstat(named_after_fd)
+    finally:
+        os.close(named_after_fd)
+    if any(
+        getattr(image_after, field) != getattr(named_after, field)
+        for field in stable_fields
+    ):
+        _fail("ARTIFACT_INVALID", "current CPython path changed during identity read")
+    return digest.hexdigest(), image_after.st_size
+
+
+def _current_cpython_identity() -> tuple[str, int]:
+    """Return a stable identity for the interpreter image running this process."""
+
+    global _CURRENT_CPYTHON_IDENTITY
+    if _CURRENT_CPYTHON_IDENTITY is not None:
+        return _CURRENT_CPYTHON_IDENTITY
+    executable = sys.executable
+    if (
+        not isinstance(executable, str)
+        or not executable
+        or not os.path.isabs(executable)
+        or os.path.normpath(executable) != executable
+    ):
+        _fail("ARTIFACT_INVALID", "current CPython path is not normalized absolute")
+    try:
+        identity = _uncached_current_cpython_identity(executable)
+    except SupervisorFailure:
+        raise
+    except OSError as error:
+        _fail("ARTIFACT_INVALID", f"cannot establish current CPython identity: {error}")
+    _CURRENT_CPYTHON_IDENTITY = identity
+    return _CURRENT_CPYTHON_IDENTITY
 
 
 def _numpy_distribution_authority() -> dict[str, Any]:
@@ -2070,7 +2169,7 @@ def _load_par_seal(
     expected_argv = _sha256(evidence.canonical_body(outer_argv))
     leader_binary_sha256 = environment_preimage.get("leader_binary_sha256")
     leader_binary_size_bytes = environment_preimage.get("leader_binary_size_bytes")
-    current_leader_binary = _read_regular_nofollow(Path(sys.executable), 1 << 30)
+    current_leader_sha256, current_leader_size_bytes = _current_cpython_identity()
     current_numpy_authority = _numpy_distribution_authority()
     build_producer = build_manifest_document.get("producer")
     build_verifier = build_manifest_document.get("verifier")
@@ -2112,8 +2211,8 @@ def _load_par_seal(
         or not isinstance(leader_binary_size_bytes, int)
         or isinstance(leader_binary_size_bytes, bool)
         or leader_binary_size_bytes <= 0
-        or leader_binary_sha256 != _sha256(current_leader_binary)
-        or leader_binary_size_bytes != len(current_leader_binary)
+        or leader_binary_sha256 != current_leader_sha256
+        or leader_binary_size_bytes != current_leader_size_bytes
         or numpy_authority != current_numpy_authority
         or build_manifest_document.get("logical_run_id") != expected_logical
         or build_manifest_document.get("environment_sha256") != expected_environment
@@ -2760,7 +2859,7 @@ class InstrumentMeter:
         self.logical_run_id = ""
         self.execution_commit = ""
         self.environment_sha256 = ""
-        self.binary_sha256 = _sha256(Path(sys.executable).read_bytes())
+        self.binary_sha256 = _current_cpython_identity()[0]
         self.attempt_start_cpu = start_cpu
         self.attempt_start_wall = start_wall
 
@@ -4363,7 +4462,7 @@ def _external_wrapper(
     for attempt in range(2):
         start = boundary.snapshot
         start_utc = boundary.utc
-        receipt_binary_sha256 = _sha256(Path(sys.executable).read_bytes())
+        receipt_binary_sha256 = _current_cpython_identity()[0]
         control_payload = evidence.canonical_document(
             control_factory(start_utc, start.wall_nanoseconds, tuple(receipts))
         )
@@ -5175,7 +5274,7 @@ def _emit_in_inherited_process_body(
         start = boundary.snapshot
         start_utc = boundary.utc
         prior_emit_ledger = byte_ledger.phase_object("E_emit")
-        receipt_binary_sha256 = _sha256(Path(sys.executable).read_bytes())
+        receipt_binary_sha256 = _current_cpython_identity()[0]
         try:
             read_fd, write_fd = os.pipe()
         except OSError as error:

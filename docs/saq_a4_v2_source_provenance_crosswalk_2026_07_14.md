@@ -75,12 +75,12 @@ against the V2 protocol rather than judged by textual similarity:
 | V2 source | New responsibility |
 | --- | --- |
 | `script/run_arbitrary_cardinality_a4_v2.py` | first-action integer timing bootstrap |
-| `script/a4_v2_runner.py` | one supervisor, attempt lifecycle, sticky terminal-resource observation, irreversible visible-bundle fail-stop, full byte-level prelaunch replay, strict I--P--R--E Git admission, phase dispatch and finite finalizer |
+| `script/a4_v2_runner.py` | one supervisor, attempt lifecycle, sticky terminal-resource observation, irreversible visible-bundle fail-stop, full byte-level prelaunch replay, strict I--P--R--E Git admission, phase dispatch and finite finalizer; I-R1 adds one per-process stable running-CPython identity for PAR admission and Python-family receipts |
 | `script/a4_v2_producer.py` | 396-unit prefix state, unpublished-invalid-unit boundary, exact phase ownership, and prevalidated atomic bundle publication |
 | `script/a4_v2_producer_wire.py` | producer-only strict native interchange parser |
 | `script/a4_v2_evidence.py` | encode-only producer evidence publication, prepublication byte reservation, and write-only F trailer |
-| `script/a4_v2_parity.py` | later marker-bound build/PAR conductor, fresh-worker natural RSS-dominance admission, exact B/P retry ledger, five helper fixtures plus 64 production cases, and finite `PAR_report` closure |
-| `script/a4_v2_verifier.py` | standalone independent replay supervisor and verifier-summary publisher |
+| `script/a4_v2_parity.py` | later marker-bound build/PAR conductor, fresh-worker natural RSS-dominance admission, exact B/P retry ledger, five helper fixtures plus 64 production cases, finite `PAR_report` closure, and I-R1 stable running-CPython leader identity |
+| `script/a4_v2_verifier.py` | standalone independent replay supervisor and verifier-summary publisher; I-R1 adds a verifier-local positional-read implementation of the running-CPython identity contract |
 | `research/a4_v2_verifier/exact_reference.*` | disjoint full-shape exact solver and direct rational-to-IEEE conversion |
 | `research/a4_v2_verifier/parity_cli.*` | exhaustive bounded scalar authority, exact helper semantics, and independent production-axis/block replay |
 | `research/a4_v2_verifier/representation_parity.cpp` | independent allocation-order, packing, lookup, and 2,433,600-decision parity authority |
@@ -92,6 +92,13 @@ against the V2 protocol rather than judged by textual similarity:
 The old `script/a4_1s_runner.py`, `script/a4_1s_artifacts.py`, cost-projection
 state, shard writers, finalizer, generated JSON, and tests are absent. V2 has
 no import, include, link, symlink, subprocess, or filesystem path to them.
+
+The three I-R1 additions have no A4-1S scientific counterpart.  They repair
+only the artifact identity mechanism exposed by the reviewed pre-build
+failure: literal `/proc/self/exe` identifies the already-running image,
+`sys.executable` must name the same regular inode, and generic artifact reads
+retain their previous no-follow semantics.  They do not change a solver,
+fixture, RNG stream, representation, timer, receipt schema, or gate rule.
 
 The PAR block input constructor preserves the historical deterministic
 64-case fixture recipe in new source; it does not load a predecessor artifact.

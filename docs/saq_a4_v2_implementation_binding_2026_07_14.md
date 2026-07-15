@@ -68,6 +68,12 @@ manifest and separately carries `parent_preregistration_identity`,
 memo path and the later execution-authority binding path stated in Section
 8.1; it never places either object inside the immutable PAR tree.
 
+For the additive `A4-V2-I-R1` correction, `authorization_identity` names
+`docs/saq_a4_v2_executable_identity_source_repair_authorization_2026_07_15.md`.
+That receipt inherits and narrows the original implementation authority; it
+does not rewrite the parent protocol, add a manifest field, or authorize an
+execution event.
+
 The producer and verifier are separate process families, build targets,
 source directories, Python modules, wire parsers, and record encoders. The
 verifier may share only the three normative documents, frozen input bytes,
@@ -441,6 +447,19 @@ array. Producer/verifier native-child identities and argv are additionally
 bound by the reviewed build manifest and phase-specific child inventory. A
 single summary hash is never presented as the identity of multiple unlisted
 executables.
+
+The CPython leader identity is acquired from a bounded full read of a stable
+descriptor opened on literal `/proc/self/exe`.  The intentionally followed,
+normalized absolute `sys.executable` pathname must open as the same nonempty
+regular inode before the read and must reopen with the same device, inode,
+mode, size, modification time, and change time after it.  The running-image
+descriptor must retain those same fields across an EOF-checked read capped at
+one GiB.  Its SHA-256 and size are cached once per process and supply every
+CPython leader/admission/receipt identity in that process.  This dedicated
+rule does not alter the no-follow readers for documents, artifacts, trees, or
+native binaries.  The independent verifier implements the same contract with
+its own positional-read code rather than importing the conductor or runner
+helper.
 
 UTC strings use RFC 3339 UTC with six fractional decimal digits and terminal
 `Z`. Linux `ru_maxrss` is multiplied by 1,024 exactly to obtain bytes.

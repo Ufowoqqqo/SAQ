@@ -149,7 +149,7 @@ Current stages remain separate:
 A4-V2-P-ERRATUM documentation-only closure correction  COMPLETED_REVIEW_PASS
 A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
 A4-V2-PAR   pre-build executable identity admission     ARTIFACT_INVALID / REVIEWED_TERMINAL
-A4-V2-I-R1  executable-identity source repair           AUTHORIZED_STATIC_ONLY
+A4-V2-I-R1  executable-identity source repair           IMPLEMENTED_AWAITING_STATIC_REVIEW
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event only  NOT_AUTHORIZED
 ```
@@ -174,8 +174,9 @@ The PAR authorization and reviewed terminal pre-build failure records are:
 The source pass remains a historical static-review result only. The attempted
 PAR launch falsified executable artifact readiness before build; it is not a
 parity result, synthetic gate, SAQ limitation result, method contribution, or
-systems-performance claim. `A4-V2-I-R1` is active only for source repair and
-static review. There is no active cleanup, PAR, SRUN, data, or SAQ execution
+systems-performance claim. `A4-V2-I-R1` now has a focused source correction
+awaiting exact-commit static review; it is not evidence until that review
+passes. There is no active cleanup, PAR, SRUN, data, or SAQ execution
 authorization.
 
 ## Prior A4-1S Result

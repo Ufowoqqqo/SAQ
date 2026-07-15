@@ -21,7 +21,7 @@ A4-V2-P     preregistration/schema/contract            COMPLETED_DOCUMENTATION
 A4-V2-P-ERRATUM finite PAR-report closure correction   COMPLETED_REVIEW_PASS
 A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
 A4-V2-PAR   pre-build executable identity admission    ARTIFACT_INVALID / REVIEWED_TERMINAL
-A4-V2-I-R1  executable-identity source repair           AUTHORIZED_STATIC_ONLY
+A4-V2-I-R1  executable-identity source repair           IMPLEMENTED_AWAITING_STATIC_REVIEW
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
 data        benchmark/base/query/index reads           NOT_AUTHORIZED
@@ -81,6 +81,11 @@ remains unauthorized.
 
 The maximum result is `SOURCE_REPAIR_STATIC_REVIEW_PASS`. It is not parity,
 artifact execution readiness, scientific evidence, or a method claim.
+
+The bounded three-file correction is now implemented together with its
+binding, provenance, and manifest rebinding, but remains WIP until committed
+and independently exact-reviewed.  No source-level pass may be claimed from
+the implementation commit alone.
 
 The five quarantined bytecode files expose a separate import-cost and
 unmetered-cache-byte determinism question. It was not causal to the executable-

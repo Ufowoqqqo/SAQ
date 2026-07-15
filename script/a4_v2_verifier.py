@@ -1502,6 +1502,102 @@ def read_immutable_external(path: Path, description: str, *, maximum_bytes: int)
     return bytes(payload)
 
 
+_CURRENT_CPYTHON_IDENTITY: tuple[str, int] | None = None
+
+
+def _uncached_current_cpython_identity(executable: str) -> tuple[str, int]:
+    """Read one executing image with verifier-local positional I/O."""
+
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
+    running_fd = os.open("/proc/self/exe", flags)
+    try:
+        try:
+            alias_fd = os.open(executable, flags)
+        except OSError as error:
+            raise VerificationContractError(
+                f"cannot open named CPython executable: {error}"
+            ) from error
+        try:
+            initial = os.fstat(running_fd)
+            alias = os.fstat(alias_fd)
+            frozen = (
+                "st_dev",
+                "st_ino",
+                "st_mode",
+                "st_size",
+                "st_mtime_ns",
+                "st_ctime_ns",
+            )
+            if (
+                not stat.S_ISREG(initial.st_mode)
+                or not stat.S_ISREG(alias.st_mode)
+                or initial.st_size <= 0
+                or initial.st_size > (1 << 30)
+                or (initial.st_dev, initial.st_ino) != (alias.st_dev, alias.st_ino)
+            ):
+                _fail("named CPython executable is not the running regular image")
+            digest = hashlib.sha256()
+            offset = 0
+            while offset < initial.st_size:
+                chunk = os.pread(
+                    running_fd, min(1 << 20, initial.st_size - offset), offset
+                )
+                if not chunk:
+                    _fail("executing CPython image ended before its recorded size")
+                digest.update(chunk)
+                offset += len(chunk)
+            if os.pread(running_fd, 1, initial.st_size):
+                _fail("executing CPython image grew during independent read")
+            final = os.fstat(running_fd)
+            if any(
+                getattr(initial, field) != getattr(final, field) for field in frozen
+            ):
+                _fail("executing CPython image mutated during independent read")
+        finally:
+            os.close(alias_fd)
+    finally:
+        os.close(running_fd)
+    try:
+        alias_after_fd = os.open(executable, flags)
+    except OSError as error:
+        raise VerificationContractError(
+            f"cannot reopen named CPython executable: {error}"
+        ) from error
+    try:
+        alias_after = os.fstat(alias_after_fd)
+    finally:
+        os.close(alias_after_fd)
+    if any(getattr(final, field) != getattr(alias_after, field) for field in frozen):
+        _fail("named CPython executable changed during independent identity read")
+    return digest.hexdigest(), final.st_size
+
+
+def current_cpython_identity() -> tuple[str, int]:
+    """Independently identify the executing image and its named CPython alias."""
+
+    global _CURRENT_CPYTHON_IDENTITY
+    if _CURRENT_CPYTHON_IDENTITY is not None:
+        return _CURRENT_CPYTHON_IDENTITY
+    executable = sys.executable
+    if (
+        not isinstance(executable, str)
+        or not executable
+        or not os.path.isabs(executable)
+        or os.path.normpath(executable) != executable
+    ):
+        _fail("current CPython pathname is not normalized absolute")
+    try:
+        identity = _uncached_current_cpython_identity(executable)
+    except VerificationContractError:
+        raise
+    except OSError as error:
+        raise VerificationContractError(
+            f"cannot establish current CPython identity: {error}"
+        ) from error
+    _CURRENT_CPYTHON_IDENTITY = identity
+    return _CURRENT_CPYTHON_IDENTITY
+
+
 def _require_mapping(value: Any, description: str) -> Mapping[str, Any]:
     if not isinstance(value, dict):
         _fail(f"{description} is not an object")
@@ -1806,7 +1902,7 @@ def _validate_source_manifest(
             "docs/saq_a4_v2_artifact_schema_2026_07_14.json"
         ),
         "authorization_identity": (
-            "docs/saq_a4_v2_implementation_authorization_2026_07_14.md"
+            "docs/saq_a4_v2_executable_identity_source_repair_authorization_2026_07_15.md"
         ),
         "implementation_binding_identity": (
             "docs/saq_a4_v2_implementation_binding_2026_07_14.md"
@@ -3061,10 +3157,8 @@ def _validate_par_build_run_authority(build: Mapping[str, Any]) -> None:
     )
     if leader_size == 0:
         _fail("PAR CPython leader is empty")
-    leader_bytes = read_immutable_external(
-        Path(sys.executable), "current CPython leader", maximum_bytes=1 << 30
-    )
-    if len(leader_bytes) != leader_size or sha256_bytes(leader_bytes) != leader_sha256:
+    current_leader_sha256, current_leader_size = current_cpython_identity()
+    if current_leader_size != leader_size or current_leader_sha256 != leader_sha256:
         _fail("PAR CPython leader bytes differ from the current execution authority")
     environment_sha256 = sha256_bytes(canonical_json_without_lf(environment))
     if _require_sha256(build["environment_sha256"], "PAR environment SHA-256") != environment_sha256:
