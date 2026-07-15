@@ -25,7 +25,7 @@ A4-V2-P-ERRATUM finite PAR-report closure correction   COMPLETED_REVIEW_PASS
 A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
 A4-V2-PAR   pre-build executable identity admission    ARTIFACT_INVALID / REVIEWED_TERMINAL
 A4-V2-I-R1  executable-identity source repair           COMPLETED_REVIEW_PASS
-A4-V2-CACHE-P cache/staging documentation protocol      CANDIDATE_PENDING_EXACT_COMMIT_REVIEW
+A4-V2-CACHE-P cache/staging documentation protocol      EXACT_TARGET_REVIEW_PASS_PENDING_LIVE_CLOSURE
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
 data        benchmark/base/query/index reads           NOT_AUTHORIZED
@@ -106,22 +106,29 @@ residuals, edit implementation source, change the future runtime environment,
 import/build/test/run anything, or open PAR-R1. Its maximum outcome is
 `CACHE_STAGING_POLICY_REVIEW_PASS`.
 
-The bounded review returns
+The bounded review returned
 `GO_SANITIZED_REMOTE_ISOLATION_PROTOCOL_REQUIRED / NO_GO_DIRECT_PAR_R1` and
-has formed this focused target candidate:
+formed these focused target objects:
 
 1. `docs/saq_a4_v2_cache_staging_primary_sources_2026_07_15.json`;
 2. `docs/saq_a4_v2_cache_staging_primary_source_review_2026_07_15.md`;
 3. `docs/saq_a4_v2_cache_staging_disposition_protocol_2026_07_15.md`; and
 4. `docs/saq_a4_v2_cache_staging_disposition_contract_2026_07_15.json`.
 
-The candidate changes only those four paths plus `AGENTS.md` and `TASK.md`,
-preserves implementation-manifest Git blob
+Exact target commit `56210f8f81557ed7a2521bf7f13c9f937396da29`
+changes only those four paths plus `AGENTS.md` and `TASK.md`, preserves
+implementation-manifest Git blob
 `2aa64e50dad19626711e0dd90c038704ac73e328`, the exact 35 sources, and source-
 tree SHA-256
 `8d8b5d3f8990e5d360e0a617d157a8b934c14d0f37b69f399bcc62c71f98360a`.
-It remains `CANDIDATE_PENDING_EXACT_COMMIT_REVIEW`; its prior WIP-content
-reviews are not exact-commit evidence.
+It passed three-track exact-commit independent review with no finding at LOW
+or above. The durable verdict is
+`docs/saq_a4_v2_cache_staging_disposition_protocol_independent_review_2026_07_15.md`.
+The exact target reaches `EXACT_TARGET_INDEPENDENT_REVIEW_PASS`. The stage
+remains `EXACT_TARGET_REVIEW_PASS_PENDING_LIVE_CLOSURE` until this direct-child
+review record is committed/pushed and its one-shot review-head closure
+succeeds; only then can it reach the conditional maximum
+`CACHE_STAGING_POLICY_REVIEW_PASS`.
 
 ## A4-V2-CACHE-P Deliverables
 
@@ -136,9 +143,9 @@ reviews are not exact-commit evidence.
    and source-tree identity unchanged.
 5. Focused push and mandatory Meeting Summary Handoff, followed by a stop.
 
-Items 1--3 are present in the candidate. Items 4--5 remain pending the exact
-target commit and push, its mandatory remote-equality closure, exact-commit
-independent review, direct-child review commit and push, and handoff.
+Items 1--4 are complete for exact target `56210f8`. Item 5 now requires only
+the direct-child review commit/push, live review-head closure predicate, and
+mandatory Meeting Summary Handoff.
 
 Cleanup/source/environment work and `A4-V2-PAR-R1` each remain separately
 unauthorized after this documentation stage.
@@ -329,8 +336,8 @@ Return `GO_PROTOCOL_DESIGN` only if all are supported before execution:
 The reviewed A4-V2-PAR terminal failure remains immutable. Completed
 `A4-V2-I-R1` does not change the status of the empty staging directory or
 ignored Python caches: they remain non-evidence and must not be synchronized
-or cleaned. Only focused `A4-V2-CACHE-P` candidate commit/review/push/handoff
-work is active. There is no cleanup, cache-policy implementation, PREP,
-PAR-R1, SRUN, data, or SAQ authority; never infer one from the historical
-source review, failed invocation, repaired source, or documentation
-authorization.
+or cleaned. The CACHE-P exact target review has passed; its focused review
+push, live review-head closure, and mandatory handoff remain in this session.
+There is no cleanup, cache-policy implementation, PREP, PAR-R1, SRUN, data, or
+SAQ authority; never infer one from the historical source review, failed
+invocation, repaired source, or documentation authorization.
