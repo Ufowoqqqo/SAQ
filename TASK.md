@@ -26,7 +26,7 @@ A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
 A4-V2-PAR   pre-build executable identity admission    ARTIFACT_INVALID / REVIEWED_TERMINAL
 A4-V2-I-R1  executable-identity source repair           COMPLETED_REVIEW_PASS
 A4-V2-CACHE-P cache/staging documentation protocol      COMPLETED_OPERATIONAL_PROTOCOL_CLOSURE
-A4-V2-CACHE-I generic source/schema/static review       AUTHORIZATION_TARGET_PENDING_COMMIT_REVIEW
+A4-V2-CACHE-I generic source/schema/static review       AUTHORIZATION_EXACT_TARGET_REVIEW_PASS_PENDING_REVIEW_RECORD_CLOSURE
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
 data        benchmark/base/query/index reads           NOT_AUTHORIZED
@@ -194,6 +194,19 @@ mutation, or SAQ/CAQ change. PREP remains a separate future authorization.
 The implementation target/review does not authorize PREP or establish clone
 readiness, parity, synthetic feasibility, an SAQ limitation, systems
 performance, novelty, or a method contribution.
+
+Exact authorization target
+`4f38ca9e056e2a8e40f5f966407a6bc6ddb51b5d` is the direct child of the pushed
+CACHE-P review head, changes exactly the authorization receipt plus
+`AGENTS.md` and `TASK.md`, and preserves the manifest blob and complete
+35-source tree. Three independent exact-target reviews found no LOW+ issue.
+The durable review is
+`docs/saq_a4_v2_cache_implementation_authorization_independent_review_2026_07_15.md`.
+
+The target reaches `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`. Before source
+changes, commit/push this direct-child review, satisfy its live review-head
+closure, and perform the distinct implementation-parent admission probe whose
+result must be frozen in the additive cache-authority manifest.
 
 The completed erratum stage permitted only additive authority documents,
 static review, focused commits, push, and Meeting Summary Handoff. It permitted

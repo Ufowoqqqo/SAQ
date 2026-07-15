@@ -152,6 +152,19 @@ The maximum outcome is
 `GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS`. PREP authorization remains a
 separate future user instruction.
 
+Exact authorization target
+`4f38ca9e056e2a8e40f5f966407a6bc6ddb51b5d` is the direct child of
+`249d5b8c1939acefbf12711790b3e791b019d560`, changes exactly the additive
+authorization plus `AGENTS.md` and `TASK.md`, and preserves manifest blob
+`2aa64e50dad19626711e0dd90c038704ac73e328` and the 35-source tree. Three-track
+exact-target review found no issue at LOW or above; its durable verdict is
+`docs/saq_a4_v2_cache_implementation_authorization_independent_review_2026_07_15.md`.
+The authorization target reaches `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`.
+Before any implementation edit, its direct-child review must be committed and
+pushed, the live review-head closure must succeed, and the distinct
+implementation-parent admission probe must be recorded in the later additive
+cache-authority manifest.
+
 The completed `A4-V2-P-ERRATUM` permitted only additive protocol-authority
 documents, branch status documents, focused commits, static independent
 review, push, and the required Meeting Summary Handoff. Do not edit or commit
@@ -214,7 +227,7 @@ A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
 A4-V2-PAR   pre-build executable identity admission     ARTIFACT_INVALID / REVIEWED_TERMINAL
 A4-V2-I-R1  executable-identity source repair           COMPLETED_REVIEW_PASS
 A4-V2-CACHE-P cache/staging documentation protocol      COMPLETED_OPERATIONAL_PROTOCOL_CLOSURE
-A4-V2-CACHE-I generic source/schema/static review       AUTHORIZATION_TARGET_PENDING_COMMIT_REVIEW
+A4-V2-CACHE-I generic source/schema/static review       AUTHORIZATION_EXACT_TARGET_REVIEW_PASS_PENDING_REVIEW_RECORD_CLOSURE
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event only  NOT_AUTHORIZED
 ```
