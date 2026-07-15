@@ -12,7 +12,10 @@ Initial implementation commit `3a4f7c5` failed static review and remains
 failed/non-evidence. Corrected exact commit
 `482c401521460d1742ffe86c39db7130ed038a06` passed three independent
 exact-commit static reviews with no remaining issue at LOW or above. The
-maximum authorized source-only outcome is therefore reached:
+later exact source-repair commit
+`e48df4523f99c085cfcb83623664054b5f9ae6f7` also passed three independent
+exact-commit reviews with no issue at LOW or above. The maximum authorized
+source-only outcomes are therefore reached:
 
 ```text
 A4-V2-R     bounded primary-source review             COMPLETED_DOCUMENTATION
@@ -21,7 +24,7 @@ A4-V2-P     preregistration/schema/contract            COMPLETED_DOCUMENTATION
 A4-V2-P-ERRATUM finite PAR-report closure correction   COMPLETED_REVIEW_PASS
 A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
 A4-V2-PAR   pre-build executable identity admission    ARTIFACT_INVALID / REVIEWED_TERMINAL
-A4-V2-I-R1  executable-identity source repair           IMPLEMENTED_AWAITING_STATIC_REVIEW
+A4-V2-I-R1  executable-identity source repair           COMPLETED_REVIEW_PASS
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
 data        benchmark/base/query/index reads           NOT_AUTHORIZED
@@ -82,10 +85,11 @@ remains unauthorized.
 The maximum result is `SOURCE_REPAIR_STATIC_REVIEW_PASS`. It is not parity,
 artifact execution readiness, scientific evidence, or a method claim.
 
-The bounded three-file correction is now implemented together with its
-binding, provenance, and manifest rebinding, but remains WIP until committed
-and independently exact-reviewed.  No source-level pass may be claimed from
-the implementation commit alone.
+The bounded three-file correction, binding, provenance, and manifest
+rebinding passed exact-commit independent review. The durable verdict is
+`docs/saq_a4_v2_executable_identity_source_repair_independent_review_2026_07_15.md`.
+Its source-tree SHA-256 is
+`8d8b5d3f8990e5d360e0a617d157a8b934c14d0f37b69f399bcc62c71f98360a`.
 
 The five quarantined bytecode files expose a separate import-cost and
 unmetered-cache-byte determinism question. It was not causal to the executable-
@@ -230,6 +234,18 @@ The manifest binds 35 exact source identities and source-tree SHA-256
 No implementation was imported, built, syntax-checked, tested, or executed;
 no scientific artifact was generated.
 
+The completed executable-identity source-repair deliverables are:
+
+1. additive authorization
+   `docs/saq_a4_v2_executable_identity_source_repair_authorization_2026_07_15.md`;
+2. exact repaired source commit
+   `e48df4523f99c085cfcb83623664054b5f9ae6f7`; and
+3. `docs/saq_a4_v2_executable_identity_source_repair_independent_review_2026_07_15.md`.
+
+This reaches `SOURCE_REPAIR_STATIC_REVIEW_PASS` only. No implementation was
+imported, syntax-checked, built, tested, or executed, and no PAR/scientific
+artifact was generated.
+
 ## Review Boundaries
 
 The review is limited to the closest work needed to decide the protocol:
@@ -263,9 +279,9 @@ Return `GO_PROTOCOL_DESIGN` only if all are supported before execution:
 - the resulting study could falsify an ANN-relevant opportunity rather than
   merely demonstrate faster artifact production.
 
-The reviewed A4-V2-PAR terminal failure remains immutable. During the active
-`A4-V2-I-R1` stage, the empty staging directory and ignored Python caches
-remain non-evidence and must not be synchronized or cleaned. Only focused
-source repair and static review are active. There is no PAR-R1, SRUN, data, or
-SAQ authority; never infer one from the historical source review, failed
+The reviewed A4-V2-PAR terminal failure remains immutable. Completed
+`A4-V2-I-R1` does not change the status of the empty staging directory or
+ignored Python caches: they remain non-evidence and must not be synchronized
+or cleaned. There is no active cache-policy, PAR-R1, SRUN, data, or SAQ
+authority; never infer one from the historical source review, failed
 invocation, or repaired source.
