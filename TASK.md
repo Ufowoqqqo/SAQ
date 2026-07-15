@@ -25,6 +25,7 @@ A4-V2-P-ERRATUM finite PAR-report closure correction   COMPLETED_REVIEW_PASS
 A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
 A4-V2-PAR   pre-build executable identity admission    ARTIFACT_INVALID / REVIEWED_TERMINAL
 A4-V2-I-R1  executable-identity source repair           COMPLETED_REVIEW_PASS
+A4-V2-CACHE-P cache/staging documentation protocol      AUTHORIZED_DOCUMENTATION_ONLY
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
 data        benchmark/base/query/index reads           NOT_AUTHORIZED
@@ -95,6 +96,31 @@ The five quarantined bytecode files expose a separate import-cost and
 unmetered-cache-byte determinism question. It was not causal to the executable-
 identity failure and is outside I-R1. Do not add a bytecode admission policy or
 open PAR-R1 until the user separately authorizes a resolution.
+
+The user has now authorized only `A4-V2-CACHE-P`, recorded in
+`docs/saq_a4_v2_cache_staging_policy_authorization_2026_07_15.md`. This stage
+must review official CPython cache semantics and committed local source, then
+produce a fail-closed protocol for bytecode determinism and bounded handling
+of the named residuals. It must not read bytecode payloads, clean or alter the
+residuals, edit implementation source, change the future runtime environment,
+import/build/test/run anything, or open PAR-R1. Its maximum outcome is
+`CACHE_STAGING_POLICY_REVIEW_PASS`.
+
+## A4-V2-CACHE-P Deliverables
+
+1. Bounded official-primary-source and local-static review of Python cache
+   read/write behavior and the current A4-V2 import/admission chain.
+2. A fail-closed protocol specifying exact residual inventory, no-follow
+   identity/disposition rules, cache-mode binding and runtime attestation,
+   error precedence, and complete preparation/runtime byte and cost ledgers.
+3. A machine-readable contract and explicit determination of whether a later
+   minimal implementation/preparation stage is required.
+4. Exact-commit independent review proving the 35-source closure, manifest,
+   and source-tree identity unchanged.
+5. Focused push and mandatory Meeting Summary Handoff, followed by a stop.
+
+Cleanup/source/environment work and `A4-V2-PAR-R1` each remain separately
+unauthorized after this documentation stage.
 
 The completed erratum stage permitted only additive authority documents,
 static review, focused commits, push, and Meeting Summary Handoff. It permitted
@@ -282,6 +308,7 @@ Return `GO_PROTOCOL_DESIGN` only if all are supported before execution:
 The reviewed A4-V2-PAR terminal failure remains immutable. Completed
 `A4-V2-I-R1` does not change the status of the empty staging directory or
 ignored Python caches: they remain non-evidence and must not be synchronized
-or cleaned. There is no active cache-policy, PAR-R1, SRUN, data, or SAQ
-authority; never infer one from the historical source review, failed
-invocation, or repaired source.
+or cleaned. Only the documentation-only `A4-V2-CACHE-P` review/protocol stage
+is active. There is no cleanup, cache-policy implementation, PAR-R1, SRUN,
+data, or SAQ authority; never infer one from the historical source review,
+failed invocation, repaired source, or documentation authorization.

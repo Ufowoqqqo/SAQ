@@ -97,6 +97,18 @@ the verdict is recorded in
 `docs/saq_a4_v2_executable_identity_source_repair_independent_review_2026_07_15.md`.
 `A4-V2-I-R1` is complete at `SOURCE_REPAIR_STATIC_REVIEW_PASS`.
 
+After being told that the next admissible step was a separately authorized
+documentation-only bytecode-cache determinism and bounded residual-handling
+protocol, with corrected PAR still requiring another authorization, the user
+instructed `授权`. This is narrowly bound as `A4-V2-CACHE-P`. Its receipt is
+`docs/saq_a4_v2_cache_staging_policy_authorization_2026_07_15.md`. It permits
+only bounded official-source/local-static review, protocol and contract
+documents, exact-commit review, push, and Meeting Summary Handoff. It permits
+no bytecode-payload read, cleanup, source/environment change, import, build,
+test, PAR-R1, SRUN, data access, or SAQ modification. The maximum outcome is
+`CACHE_STAGING_POLICY_REVIEW_PASS`; any later implementation/preparation and
+`A4-V2-PAR-R1` remain separately unauthorized.
+
 The completed `A4-V2-P-ERRATUM` permitted only additive protocol-authority
 documents, branch status documents, focused commits, static independent
 review, push, and the required Meeting Summary Handoff. Do not edit or commit
@@ -158,6 +170,7 @@ A4-V2-P-ERRATUM documentation-only closure correction  COMPLETED_REVIEW_PASS
 A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
 A4-V2-PAR   pre-build executable identity admission     ARTIFACT_INVALID / REVIEWED_TERMINAL
 A4-V2-I-R1  executable-identity source repair           COMPLETED_REVIEW_PASS
+A4-V2-CACHE-P cache/staging documentation protocol      AUTHORIZED_DOCUMENTATION_ONLY
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event only  NOT_AUTHORIZED
 ```
@@ -319,6 +332,14 @@ tree preimage without importing repository Python. It must not delete or read
 the contents of the quarantined bytecode files or remove the empty staging
 directory.
 
+`A4-V2-CACHE-P` is documentation-only. Verification is limited to official
+primary-source review, committed local static inspection, structured-document
+parsing without repository Python, exact Git/blob/tree identities, hashes,
+byte sizes, diff/whitespace checks, and independent review. It may not read a
+quarantined bytecode payload, remove or alter a residual, edit implementation
+source, mutate the future execution environment, import, build, test, or run
+PAR.
+
 The one authorized `A4-V2-PAR` invocation used the following exact command
 from clean reviewed execution base `2e983a0`:
 
@@ -344,6 +365,8 @@ were committed and independently reviewed. No failure result authorizes SRUN.
 - Do not repair the executable-identity path under the consumed PAR authority.
   Only the additive `A4-V2-I-R1` source/static-review authority permits the
   bounded correction; it grants no cleanup, build, parity, or retry.
+- Do not infer cleanup, cache-policy implementation, environment mutation, or
+  PAR-R1 authority from the documentation-only `A4-V2-CACHE-P` receipt.
 - Do not continue from PAR to `A4-V2-SRUN` without a later explicit user
   authorization, even if every parity fixture passes.
 - Do not copy, cherry-pick, import, include, link, or execute the old A4-1S
