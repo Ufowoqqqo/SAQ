@@ -183,15 +183,28 @@ incrementing its unit index. All failed-tail CPU, wall, RSS, and cleanup stay
 in the terminal C receipt; `CONTROL_INVALID` is additionally derived from that
 receipt even when every control in the retained prefix is true.
 
+Every other candidate unit is also tentative until its post-child cumulative
+operational sample passes. Only then may the supervisor advance both its
+retained `ProducerState` and receipt completed-unit index. An operational
+crossing at that boundary keeps both objects at the prior complete prefix;
+the candidate's already charged CPU, wall, RSS, child work, and cleanup remain
+in the terminal receipt but its scientific record is not emitted.
+
 The setup and whole-directory bundle-publication units are supervisor units.
 Only U395 publishes `bundle/`; individual bundle files are not independently
 published scientific prefixes.
 
 Bundle bytes and their global ceiling are validated and reserved before the
-no-replace directory rename.  Immediately after that rename the producer sets
-an irreversible supervisor marker; the remaining parent-directory fsync and
-ledger commit contain no protocol validation.  If any failure occurs after
-the target becomes physically visible but before U395 is admitted, the
+no-replace directory rename. One SIGINT guard covers reservation, staging
+fsync, no-replace rename, the local visibility flag and irreversible marker,
+parent-directory fsync, and the already-validated ledger commit. Any
+transaction error is captured into the C terminal guard before reservation
+cancellation or descriptor cleanup. The C terminal closure also probes
+`bundle/` independently with no-follow semantics. Any
+visible entry before an admitted U395 forces
+`ARTIFACT_INVALID/ATOMICALLY_PUBLISHED` and fail-stop; marker/path
+disagreement is likewise artifact-invalid. If any failure occurs after the
+target becomes physically visible but before U395 is admitted, the
 terminal C receipt uses `ARTIFACT_INVALID` and
 `staging_disposition=ATOMICALLY_PUBLISHED`, the retained scientific prefix
 remains U394, and the supervisor exits without E, V, archive, retry, or any
@@ -203,24 +216,105 @@ attempt therefore closes both namespaces explicitly: if that sibling still
 exists as a real directory, the supervisor first charges its complete tree as
 deleted partial bytes and then removes it. It never applies that cleanup to
 the no-longer-staging `bundle/` target after a successful rename.
+Target probing and the two staging cleanups are a one-shot terminal action.
+If later receipt construction must re-enter the terminal finalizer, it reuses
+the sticky disposition and cleanup-validity result; it does not rescan or
+redelete either namespace.
+
+An inventory error while closing either C staging namespace is not rescued by
+physical deletion. If a special node prevents complete no-follow regular-file
+accounting, the owned tree may be safely removed, but cleanup accounting is
+marked incomplete and the run fail-stops before E. This prevents uncounted
+regular siblings, peak-live bytes, or a hidden 16 GiB temporary-byte crossing
+from entering a downstream artifact.
 
 Resource-cap observations made at a terminal C boundary, after failed-tail
-cleanup and receipt work have been charged, are sticky.  A simultaneous
-higher-precedence failure such as `CONTROL_INVALID` retains its declared
-status, but cannot make `resource_complete_through_verifier` true; absent the
-visible-publication fail-stop above, the archive receives that independent
-resource-incomplete operand. The final decision carries the same sticky fact
-forward, adds the independently reconciled archive-phase CPU, wall, RSS, and
-byte ceilings, and derives `resource_complete_through_archive` from that
-combined boolean rather than from the winning status label.
+cleanup and receipt work have been charged, are sticky. The frozen receipt has
+only one `exit_reason`, however, and therefore cannot independently encode a
+nonnumeric Resource observation hidden by a simultaneous higher-precedence
+`ARTIFACT_INVALID`, `IMPLEMENTATION_INVALID`, or `CONTROL_INVALID`. Such a
+compound C failure is fail-stop before E, V, archive, or F; it is never passed
+downstream as a boolean that archive cannot reconstruct. This conservative
+fail-stop also applies when the Resource fact is numerically derivable: the
+implementation does not split compound C failures into two runtime policies.
+When Resource is the winning receipt reason, the existing downstream
+reconciliation remains valid. The final decision adds the independently
+reconciled archive-phase CPU, wall, RSS, and byte ceilings without inventing
+an unregistered receipt side channel.
 
-Concretely, after constructing a terminal C receipt the supervisor takes one
-fresh process-family snapshot, applies the sticky cap check, and extends that
-same just-closed receipt and boundary through the fresh CPU, wall, and RSS
-values. The incremental CPU is attributed once to the current C owner and
-`last_cpu` advances to the same boundary, so a retry or E starts after—not
-before—that tail. This makes the producer-attempt cap independently
-recomputable from receipts without charging the tail again downstream.
+Concretely, the supervisor appends exactly one terminal C receipt and keeps
+SIGINT blocked. A first fresh process-family observation seals failed-tail
+cleanup (and, on a terminal attempt, descriptor 197 closure) into that
+receipt. The supervisor then performs the exact-visible-U395,
+downstream-admission, U000, and compound-failure checks. The final root-commit
+operation takes a preliminary cap-classification snapshot, performs the
+proposed final invariant checks, then takes the contiguous commit snapshot
+that extends the receipt. Only the first tail snapshot and final commit
+snapshot advance the receipt boundary; the preliminary snapshot neither
+appends nor charges an interval. A cap that first crosses at the commit
+snapshot is monotone and is classified once before handoff. The incremental
+CPU is attributed once to the current C owner and `last_cpu` advances to the
+final root boundary, so a retry or E starts after—not before—that work. A
+retry is permitted only when the first sealed result still says exact
+`EXTERNAL_INTERRUPTION/DISCARDED` with no Resource fact. This makes the
+producer-attempt cap independently recomputable without charging C root
+closure work again downstream.
+
+The terminal guard retains the frozen unblocked CPython entry mask, and a
+failed bundle guard transfers that original mask rather than nesting a second
+blocked mask. Retry release rejects any still-active bundle guard or saved
+mask that already contains SIGINT, then verifies the unblocked/default
+CPython contract inside attempt 1's owning handler. Final C completion does
+not create an unowned restore window: it transfers the still-blocked guard
+and original unblocked mask directly to E. E's first fork consumes pending
+SIGINT, gives its child the original unblocked mask, and owns the parent's
+restore/recovery edge. A handoff owner is installed before root-to-E argument
+preparation and remains active through all fallible E pre-fork setup. Any
+pre-fork exception explicitly restores the original mask, or fail-stops with
+the handoff owner still active and SIGINT still blocked if restoration itself
+fails. After a successful fork the already-defined parent recovery path takes
+ownership without an intervening fallible setup step. Thus neither a retry
+transition nor a transaction cleanup error can silently carry blocked SIGINT
+semantics into E or V.
+
+A physically visible bundle is admissible downstream only when that unique
+terminal receipt is exactly
+`C_bundle_io/U395/PHASE_COMPLETE/ATOMICALLY_PUBLISHED`. Any other reason,
+phase, unit, or disposition paired with a visible bundle is artifact-invalid
+and fail-stop. The independently recorded primary-cap operand may still make
+the final decision a cost no-go after a normal U395 `PHASE_COMPLETE`; it does
+not rewrite that successful publication receipt.
+
+Each capable producer-native launch uses the same parent-before-launch SIGINT
+guard. The exec child installs `SIG_DFL` and unblocks SIGINT; the parent first
+observes terminal state with `waitid(...,WNOWAIT)`, then blocks and performs the
+unique `wait4`. On a failed native unit that mask remains owned through
+nofollow output/stderr admission, staging cleanup, the C terminal sample, and
+receipt append. A positive native exit is implementation-invalid even when a
+lower-precedence Resource or stream failure is simultaneous. Resource remains
+sticky independently, and a raw native signal is retryable only after both C
+staging namespaces are proven physically absent and the receipt says
+`DISCARDED`.
+
+Meter samples commit attribution and `last_cpu` together under a deferred
+SIGINT mask. Phase switches commit the closing receipt, boundary, new phase
+start fields, byte-ledger phase, and owner as one transition. Unit admission
+likewise advances the receipt index, retained `ProducerState`, and terminal
+stop flags together; a pre-commit signal keeps the prior prefix, while a
+commit/restore-edge signal retains the fully committed new prefix and records
+Resource. Temporary-byte admission commits live ownership, created bytes,
+peak-live bytes, and its ceiling check under the same rule. These guards are
+measurement integrity, not additional scientific work.
+
+The frozen C receipt vocabulary has no Evidence terminal reason. Producer
+native launch, diagnostic, temporary-file, or cleanup transport failures that
+would otherwise be evidence-incomplete are implementation-invalid at C,
+before any producer evidence exists. The only registered failure statuses
+admitted in C are `ARTIFACT_INVALID`, `IMPLEMENTATION_INVALID`,
+`CONTROL_INVALID`, and `RESOURCE_INCOMPLETE_NO_DECISION`; every other
+registered but out-of-phase status is implementation-invalid. Artifact and
+Resource retain their higher/lower precedence as registered; archive therefore
+never has to reinterpret an out-of-vocabulary C status.
 
 ## 6. Frozen interchange and counters
 
@@ -417,12 +511,161 @@ runtime relaxation of either seal-size guard.
 
 Every publisher reserves the global research-evidence or bundle bytes before
 its no-replace rename.  A child publisher receives the already charged global
-operand and rejects overflow before publication.  Separately launched
-B/P workers and E/V/archive receipts report that process family's own
-`wait4`/`getrusage` peak RSS; B/P additionally satisfy the natural-dominance
-proof above. The long-lived producer phases retain their explicitly labelled
-shared-cumulative scope. No cumulative child peak or pre-attempt supervisor
-peak is relabelled as a current child phase peak.
+operand and rejects overflow before publication. The exact reviewed B/P
+research-evidence bytes are bound once as a sealed global baseline before E;
+they participate in every later prepublication/global cap comparison but are
+inserted only once when the final per-phase objects merge.
+
+Separately launched B/P workers report the process family's own
+`wait4`/`getrusage` peak RSS and additionally satisfy the natural-dominance
+proof above. For E/V/archive, a receipt records the maximum of the waited
+family's peak and the terminal supervisor SELF+CHILDREN high-water mark. This
+conservative envelope includes parent-side response parsing, output
+validation, and cleanup, so those operations cannot cross 24 GiB invisibly.
+It is an operational hard-cap witness, not a claim of exact phase-local memory
+attribution: an earlier cumulative high-water mark may be repeated, but an
+earlier crossing would already have stopped at its own boundary. Long-lived C
+phases retain their explicitly labelled shared-cumulative scope.
+
+The verifier and archive wrappers use a frozen typed exit channel: code `2`
+means `EVIDENCE_INCOMPLETE_NO_DECISION`, code `3` is reserved for a registered
+prepublication `RESOURCE_INCOMPLETE_NO_DECISION`, code `4` means
+`ARTIFACT_INVALID`, code `5` means `IMPLEMENTATION_INVALID`, and code `6`
+relays an external signal from the verifier's nested native child so the phase
+may use its sole restart. Any other unexpected positive code is implementation
+invalid. Thus a child-only global CPU or evidence-byte stop
+cannot be demoted merely because the parent did not independently observe the
+same operand before reaping it. Code `3` is prepublication-only: if its target
+is already visible, the parent records an implementation invariant failure
+instead of accepting the resource classification. Target visibility controls
+the receipt disposition and retry prohibition; it does not otherwise erase a
+more specific child status. A parent-observed cap crossing is merged with the
+child status by the frozen precedence order.
+
+Every launched E, V, or archive family leader is reaped before its terminal
+receipt is constructed. Response transport, canonical output, exact
+phase-interface identities, byte-ledger admission, staging disposition, and
+owned-stream cleanup are all resolved before the terminal snapshot and are
+folded into that same receipt. In particular, V's exact native binary, argv,
+status, summary size, and summary-hash response is checked inside the V
+boundary; it cannot leave a successful V receipt and charge failed validation
+to archive. A post-launch parent failure enters one atomic deferred-SIGINT
+recovery section, closes its inherited control descriptors, kills if
+necessary, and must-reaps the child before proceeding, so an open parent pipe
+writer cannot prevent response EOF and a second SIGINT cannot escape between
+those operations.
+
+The Python V/archive wrapper launch has no fork-to-interpreter SIGINT race.
+Prelaunch first requires SIGINT to be unblocked with CPython's default
+interrupt handler; an inherited blocked mask or custom handler is a failed
+precondition, not a runtime variant.
+The supervisor blocks SIGINT immediately before `Popen`, the child inherits
+that mask, and the wrapper installs `SIG_DFL` and unblocks before argparse or
+phase work. The parent restores its own mask immediately after `Popen`; a
+parent SIGINT at that edge enters the ordinary kill/reap Resource path. E uses
+the same parent-before-fork mask, then installs `SIG_DFL` and restores the
+prior mask in the child before any evidence work.
+
+At terminal handoff, the parent first observes the exact child with
+`waitid(P_PID,...,WEXITED|WNOWAIT)`, blocks SIGINT while the child is still
+waitable, and only then performs the unique `wait4`. SIGINT remains blocked
+through response and output validation, ledger mutation, cleanup, required
+post-cleanup validation, the terminal snapshot, and receipt append. Pending
+SIGINT is synchronously consumed and folded into that receipt as
+`RESOURCE_INCOMPLETE_NO_DECISION`; it prohibits retry and archive's terminal
+resource-return exception. The prior mask is restored only after the receipt
+exists. E uses the identical post-terminal handoff. Thus a launched attempt
+cannot be asynchronously torn between reap and receipt construction, while a
+pre-terminal SIGINT retains the existing prompt kill/reap behavior.
+If that normal terminal handoff itself is interrupted or fails, recovery
+atomically blocks SIGINT before issuing SIGKILL and enters a must-reap `wait4`
+loop; further SIGINT remains pending and is folded into the Resource receipt
+only after the unique child usage has been collected. A second SIGINT cannot
+escape with a launched child still waitable.
+
+Wrapper stdout and stderr are no-follow regular files, admitted to the byte
+ledger before allocation, and each has an exact 1 MiB transport ceiling.
+Published JSON is no-follow statted and its complete visible size is recorded
+as one atomic ledger mutation before a read; the read is then bounded by the
+4 GiB research-evidence ceiling and proves stable descriptor/path identity.
+The producer-native diagnostic path retains the complete stderr file size in
+the ledger but reads only a stable 4 KiB prefix. No diagnostic truncation
+allocates the untruncated file.
+
+The nested V native exchange does not use `communicate()` and has no private
+16 MiB result threshold. A nonblocking selector writes the at-most-1 MiB
+canonical request while draining stdout and stderr concurrently in 64 KiB
+chunks, and runs the registered CPU/wall/RSS publication-reserve watchdog at
+least once per second even under continuous I/O. Stderr is never accumulated:
+the wrapper retains only its integer byte count, SHA-256 state, and one chunk.
+Stdout is retained only up to
+`4 GiB - prior_research_evidence_bytes`, where the prior operand has already
+been proven equal to exact PAR plus the five producer-evidence files. Every
+schema-valid response and final verifier summary reuse identical canonical
+`decision_counts_observed` and `discrepancies` subtrees, while the summary has
+the larger fixed envelope; the implementation asserts
+`summary_size >= native_stdout_size` before applying the ordinary registered
+prepublication evidence cap. Thus crossing this drain budget proves that no
+admissible summary can be published and is the existing Resource result, not a
+new scientific ceiling. Failure cleanup closes the three pipes and must-reaps
+the process group without an unbounded diagnostic drain.
+
+Any failed E/V/archive or producer staging tree admitted for discard is
+inventoried only after its child has terminated. The root must be a real
+directory opened with `O_DIRECTORY|O_NOFOLLOW`; recursion stays on verified
+directory fds, and every child is opened relative to its parent with
+`O_NOFOLLOW` and revalidated by device/inode/mode/size/timestamps. Every member
+must be a real directory or regular file. A symlink, device, socket, FIFO, or
+other special node is artifact-invalid rather than silently omitted or charged
+through a target outside the owned tree.
+
+All publication targets, phase staging roots, wrapper work directories, and
+owned streams use no-follow presence probes, so a broken symlink is never
+mistaken for absence. `DISCARDED` is written only after target absence and the
+physical absence of every applicable staging/work namespace are confirmed;
+an unknown or retained entry uses `NONE` and cannot authorize retry. A
+non-directory regular staging root is charged as created/deleted partial bytes
+before unlink; links and special nodes are classified without following their
+targets and then safely unlinked when possible.
+
+The inherited E child has a separate bounded typed response: explicit
+artifact, implementation, resource, or evidence failures retain their
+status, while an unknown exception or an out-of-vocabulary status is
+implementation invalid. A partial response left by a raw external signal is
+discarded rather than parsed as a scientific failure. Response, staging, and
+child-byte-ledger errors are delayed only until the E receipt and parent cap
+merge have been formed; E still stops immediately afterward. For an already
+visible E publication, the response must contain the exact ordered five-file
+identity inventory, and its file-size sum, `total_bytes`, net created-minus-
+discarded bytes, retry-history created/deleted/peak fields, and research-
+evidence bytes must agree. V independently
+requires the supervisor's prior research-evidence operand to equal the exact
+reviewed PAR bytes plus the sizes of the five producer-evidence files it
+opened and validated. For an already visible external output, the parent
+records created, peak-live, and research-
+evidence/archive bytes as one complete ledger mutation before reporting any
+postpublication byte-cap crossing. Thus the archive-only resource return
+cannot omit the published archive bytes.
+
+For V, only code `6` proves that the verifier wrapper cleaned up and reaped its
+nested native process before requesting the one restart. A raw signal death of
+the wrapper cannot prove that fact because the native runs in its own process
+group; it is supervisor/unreaped-child loss and therefore RESOURCE with no
+retry. E and archive have no nested capable child and retain their one raw-
+signal restart.
+
+If a successful archive publication is complete but the parent's
+postpublication byte accounting or terminal sample first crosses a registered
+phase/global resource ceiling, its local receipt is
+`RESOURCE_INCOMPLETE_NO_DECISION/ATOMICALLY_PUBLISHED` and returns the already
+complete archive body to the terminal publisher. F then freezes
+`resource_complete_through_archive=false`. E or V cannot use this exception
+because their missing downstream inputs would prevent a complete wrapper.
+Eligibility is set only by the complete atomic archive-byte ledger mutation
+or the terminal CPU/wall/RSS/study-cap comparison, and only after canonical
+output, identity response, stream cleanup, and the exact pre-F tree validator
+all succeed. Control/stream failures, oversized or invalid output, an
+interrupted validator, or supervisor SIGINT can never use this exception.
 
 ## 9. Checkpoint and file-count bindings
 
@@ -448,6 +691,55 @@ verifier summary. Its `attempt_ledger` and
 is chronological by start instant with phase/attempt ties; the second is
 phase order then attempt id.
 
+Before reading those files, the independent archive enumerates the artifact
+root without following links. At that instant the only permitted root members
+are `evidence/`, `verifier/`, optional `bundle/`, and the active registered
+`.e_archive_body.staging/`; their memberships are exactly five, one, optional
+four, and the two wrapper streams respectively, and every leaf is regular.
+After archive publication the parent removes the wrapper streams and staging
+directory, then re-enumerates the exact root—now including only the one-file
+`archive/` directory—before taking the archive terminal snapshot and receipt.
+This closes complete pre-F membership inside `E_archive_body`; F consumes the
+in-memory archive object and identity without rereading, reparsing, restatting,
+or rehashing the archive body.
+
+The archive independently reconstructs status inputs rather than trusting the
+supervisor booleans. C receipt reasons determine sticky artifact and
+implementation validity, combine with evidence-derived controls for control
+validity, and make any explicit C resource-stop receipt resource-incomplete in
+addition to the numeric CPU/wall/RSS/byte recomputation. Both `true` and
+`false` are admissible when they match those facts: in particular, a valid
+retained prefix may be archived as an `ARTIFACT_INVALID` failure wrapper after
+a later unpublished temporary-file boundary failure. Either direction of a
+receipt/status mismatch rejects archive publication. A published bundle is a
+separate hard invariant: it requires exactly one atomically published
+`C_bundle_io` receipt with `PHASE_COMPLETE` at U395 and cannot coexist with a C
+artifact-failure receipt. Any higher-precedence terminal C status also remains
+the causal process status if a later E, V, archive, or trailer operation fails;
+the later local receipt or error is still classified on its own facts. Within
+each producer attempt, only its last C receipt may be terminal; every earlier C
+receipt is an unpublished `PHASE_COMPLETE` phase boundary. Attempt 1 exists
+only after attempt 0 ends as a discarded `EXTERNAL_INTERRUPTION`, and a
+published U395 receipt is the last C receipt of the final attempt. Completed
+prefix indices are monotone within each attempt, but attempt 1 restarts at U0;
+therefore its retained terminal prefix—not the maximum discarded attempt-0
+prefix—binds the producer manifest and every E/V/archive checkpoint. Each
+attempt's phase inventory is a consecutive prefix of
+`C_setup,C_core,C_bundle_io`; their completed-index ranges are respectively
+`0`, `0..394`, and `394..395` for any event that reaches the evidence
+boundary. A pre-U000 failure has no encodable prefix and stops before E/V or
+archive. A final unpublished success reason is
+forbidden: `PHASE_COMPLETE` is terminal only for the atomically published U395
+bundle; primary/representation stops use `NONE`, terminal failures use
+`DISCARDED`, and a lone final attempt-0 interruption is admissible only when
+its same receipt ledger proves the registered resource trigger. A nonterminal
+phase boundary closes only after U000 for `C_setup` and U394 for `C_core`.
+If the primary inequality first crosses at admitted U395, the receipt remains
+`PHASE_COMPLETE/ATOMICALLY_PUBLISHED`; the separately retained cap operand
+then produces the cost no-go rather than relabelling a complete publication.
+Receipts are contiguous within an attempt, and attempt 1 starts at the exact
+terminal UTC boundary of attempt 0; attempts never interleave.
+
 The final artifact index contains every archive pre-trailer identity plus
 `archive/archive_body.json`, `final/resource_ledger.json`, and
 `final/decision.json`; it excludes itself. Its `producer_commit` is the clean
@@ -464,6 +756,11 @@ not hashed inside the event.  Publication writes those three already encoded
 payloads, fsyncs, no-replace renames, fsyncs the parent, closes the publication
 descriptors, and terminates through a direct silent process exit with no
 post-publication comparison, Python return path, or status print.
+Every fallible parent/staging open, mkdir, write, prepublication fsync, and
+descriptor close before that terminal rename is a typed
+`EVIDENCE_INCOMPLETE_NO_DECISION` operation and preserves any higher-priority
+sticky status. Once the no-replace rename begins, the frozen direct-exit path
+remains the only authority; it performs no recoverable Python work.
 
 Bundle-manifest child paths are bundle-relative. Every archive/index
 `file_identity.path` is artifact-root-relative. Implementations must not mix

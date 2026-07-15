@@ -14,12 +14,14 @@ from __future__ import annotations
 import argparse
 import ctypes
 import datetime as datetime_module
+import errno
 import hashlib
 import importlib.metadata
 import json
 import os
 import platform
 import re
+import signal
 import shutil
 import ssl
 import stat
@@ -295,6 +297,19 @@ STATUS_ORDER = (
     "NO_GO_SYNTHETIC_INSTRUMENT_COST",
     "PASS_SYNTHETIC_INSTRUMENT_GATE_ONLY",
 )
+C_FAILURE_STATUSES = frozenset(
+    {
+        "ARTIFACT_INVALID",
+        "IMPLEMENTATION_INVALID",
+        "CONTROL_INVALID",
+        "RESOURCE_INCOMPLETE_NO_DECISION",
+    }
+)
+CHILD_EVIDENCE_FAILURE_EXIT_CODE = 2
+CHILD_RESOURCE_FAILURE_EXIT_CODE = 3
+CHILD_ARTIFACT_FAILURE_EXIT_CODE = 4
+CHILD_IMPLEMENTATION_FAILURE_EXIT_CODE = 5
+CHILD_EXTERNAL_INTERRUPTION_EXIT_CODE = 6
 ATTRIBUTION_NAMES = (
     "C_setup",
     "C_shared_fit",
@@ -2273,6 +2288,20 @@ class ByteLedger:
         self.entries = {phase: PhaseBytes() for phase in PHASE_ORDER}
         self.live: dict[Path, int] = {}
         self.bundle_reservations: dict[str, int] = {}
+        self.sealed_research_evidence_bytes = 0
+
+    def bind_sealed_research_evidence(self, byte_count: int) -> None:
+        if (
+            not isinstance(byte_count, int)
+            or isinstance(byte_count, bool)
+            or byte_count < 0
+            or self.sealed_research_evidence_bytes != 0
+            or any(item.evidence_archive for item in self.entries.values())
+        ):
+            _fail("IMPLEMENTATION_INVALID", "invalid sealed evidence-byte baseline")
+        self.sealed_research_evidence_bytes = byte_count
+        if byte_count > EVIDENCE_LIMIT:
+            _fail("RESOURCE_INCOMPLETE_NO_DECISION", "sealed evidence exceeds byte ceiling")
 
     def switch(self, phase: str) -> None:
         self.phase = phase
@@ -2284,22 +2313,72 @@ class ByteLedger:
         if live > TEMPORARY_LIMIT:
             _fail("RESOURCE_INCOMPLETE_NO_DECISION", "owned temporary-byte ceiling crossed")
 
-    def note_created(self, path: Path) -> None:
-        if path.is_dir():
-            return
+    def note_created(
+        self,
+        path: Path,
+        expected_metadata: os.stat_result | None = None,
+    ) -> None:
         try:
-            size = path.stat().st_size
+            metadata = os.stat(path, follow_symlinks=False)
         except OSError as error:
             _fail("ARTIFACT_INVALID", f"cannot stat created temporary {path}: {error}")
+        if stat.S_ISDIR(metadata.st_mode):
+            return
+        if not stat.S_ISREG(metadata.st_mode):
+            _fail("ARTIFACT_INVALID", f"created temporary is not regular: {path}")
+        if expected_metadata is not None:
+            stable_fields = (
+                "st_dev",
+                "st_ino",
+                "st_mode",
+                "st_size",
+                "st_mtime_ns",
+                "st_ctime_ns",
+            )
+            if any(
+                getattr(expected_metadata, field) != getattr(metadata, field)
+                for field in stable_fields
+            ):
+                _fail(
+                    "ARTIFACT_INVALID",
+                    f"created temporary identity changed before admission: {path}",
+                )
+        size = metadata.st_size
         if path in self.live:
             _fail("IMPLEMENTATION_INVALID", f"temporary path counted twice: {path}")
-        self.live[path] = size
-        self.entries[self.phase].created += size
-        self._refresh_peak()
+        previous, interrupted = _block_sigint_for_critical_section()
+        try:
+            self.live[path] = size
+            self.entries[self.phase].created += size
+            self._refresh_peak()
+        except BaseException:
+            _restore_sigint_after_receipt(previous)
+            raise
+        if _restore_sigint_after_receipt(previous):
+            interrupted = True
+        if interrupted:
+            raise KeyboardInterrupt("temporary-byte admission interrupted at commit edge")
 
     def note_deleted(self, path: Path) -> None:
         if path not in self.live:
             _fail("IMPLEMENTATION_INVALID", f"deleted temporary was not owned: {path}")
+        previous, interrupted = _block_sigint_for_critical_section()
+        try:
+            del self.live[path]
+        except BaseException:
+            _restore_sigint_after_receipt(previous)
+            raise
+        if _restore_sigint_after_receipt(previous):
+            interrupted = True
+        if interrupted:
+            raise KeyboardInterrupt("temporary deletion interrupted at commit edge")
+
+    def note_discarded_file(self, path: Path) -> None:
+        """Commit deletion of one admitted partial regular-file artifact."""
+
+        if path not in self.live:
+            _fail("IMPLEMENTATION_INVALID", f"discarded file was not owned: {path}")
+        self.entries[self.phase].deleted_partial += self.live[path]
         del self.live[path]
 
     def reserve_bundle(self, byte_count: int) -> None:
@@ -2341,7 +2420,11 @@ class ByteLedger:
             if "evidence.staging" in path.parts:
                 del self.live[path]
         self.entries[self.phase].evidence_archive += byte_count
-        if sum(item.evidence_archive for item in self.entries.values()) > EVIDENCE_LIMIT:
+        if (
+            self.sealed_research_evidence_bytes
+            + sum(item.evidence_archive for item in self.entries.values())
+            > EVIDENCE_LIMIT
+        ):
             _fail("RESOURCE_INCOMPLETE_NO_DECISION", "evidence/archive byte ceiling crossed")
 
     def atomic_external_file(self, phase: str, byte_count: int) -> None:
@@ -2349,13 +2432,19 @@ class ByteLedger:
         entry.created += byte_count
         conservative_live = sum(self.live.values()) + byte_count
         entry.maximum_live = max(entry.maximum_live, conservative_live)
+        entry.evidence_archive += byte_count
+        evidence_total = self.sealed_research_evidence_bytes + sum(
+            item.evidence_archive for item in self.entries.values()
+        )
+        # The external no-replace rename is already visible when the parent
+        # records these bytes.  Account the complete immutable file first so
+        # a terminal archive resource receipt cannot understate publication.
         if conservative_live > TEMPORARY_LIMIT:
             _fail(
                 "RESOURCE_INCOMPLETE_NO_DECISION",
                 "owned temporary-byte ceiling crossed at external publication",
             )
-        entry.evidence_archive += byte_count
-        if sum(item.evidence_archive for item in self.entries.values()) > EVIDENCE_LIMIT:
+        if evidence_total > EVIDENCE_LIMIT:
             _fail("RESOURCE_INCOMPLETE_NO_DECISION", "evidence/archive byte ceiling crossed")
 
     def replace_phase(self, phase: str, value: Mapping[str, Any]) -> None:
@@ -2400,7 +2489,8 @@ class ByteLedger:
         self.entries[phase] = candidate
         if (
             sum(item.bundle for item in self.entries.values()) > BUNDLE_LIMIT
-            or sum(item.evidence_archive for item in self.entries.values())
+            or self.sealed_research_evidence_bytes
+            + sum(item.evidence_archive for item in self.entries.values())
             > EVIDENCE_LIMIT
         ):
             self.entries[phase] = prior
@@ -2417,26 +2507,197 @@ class ByteLedger:
             "research_evidence_archive_bytes": item.evidence_archive,
         }
 
+    def _regular_tree_inventory(self, path: Path) -> list[tuple[Path, int]]:
+        """Inventory one terminated-child tree without following any link."""
+
+        stable_fields = (
+            "st_dev",
+            "st_ino",
+            "st_mode",
+            "st_size",
+            "st_mtime_ns",
+            "st_ctime_ns",
+        )
+
+        def require_same_identity(
+            expected: os.stat_result,
+            observed: os.stat_result,
+            description: str,
+        ) -> None:
+            if any(
+                getattr(expected, field) != getattr(observed, field)
+                for field in stable_fields
+            ):
+                _fail("ARTIFACT_INVALID", f"owned tree identity changed: {description}")
+
+        try:
+            root_named = os.stat(path, follow_symlinks=False)
+        except FileNotFoundError:
+            return []
+        except OSError as error:
+            _fail("ARTIFACT_INVALID", f"cannot stat owned tree {path}: {error}")
+        if not stat.S_ISDIR(root_named.st_mode):
+            _fail("ARTIFACT_INVALID", f"owned tree root is not a real directory: {path}")
+
+        directory_flags = (
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_DIRECTORY", 0)
+            | getattr(os, "O_NOFOLLOW", 0)
+        )
+        file_flags = os.O_PATH | getattr(os, "O_CLOEXEC", 0) | getattr(
+            os, "O_NOFOLLOW", 0
+        )
+        try:
+            root_fd = os.open(path, directory_flags)
+        except OSError as error:
+            _fail("ARTIFACT_INVALID", f"cannot open owned tree {path}: {error}")
+        result: list[tuple[Path, int]] = []
+
+        def visit(directory_fd: int, directory: Path) -> None:
+            directory_before = os.fstat(directory_fd)
+            try:
+                with os.scandir(directory_fd) as iterator:
+                    entries = sorted(
+                        iterator,
+                        key=lambda item: item.name.encode("utf-8"),
+                    )
+                for entry in entries:
+                    metadata = entry.stat(follow_symlinks=False)
+                    child = directory / entry.name
+                    if stat.S_ISDIR(metadata.st_mode):
+                        child_fd: int | None = None
+                        try:
+                            child_fd = os.open(
+                                entry.name,
+                                directory_flags,
+                                dir_fd=directory_fd,
+                            )
+                            opened = os.fstat(child_fd)
+                            require_same_identity(metadata, opened, str(child))
+                            visit(child_fd, child)
+                            after = os.fstat(child_fd)
+                            named_after = os.stat(
+                                entry.name,
+                                dir_fd=directory_fd,
+                                follow_symlinks=False,
+                            )
+                            require_same_identity(opened, after, str(child))
+                            require_same_identity(opened, named_after, str(child))
+                        finally:
+                            active_error = sys.exc_info()[0] is not None
+                            if child_fd is not None:
+                                try:
+                                    os.close(child_fd)
+                                except OSError as error:
+                                    if not active_error:
+                                        _fail(
+                                            "ARTIFACT_INVALID",
+                                            f"cannot close owned directory {child}: {error}",
+                                        )
+                    elif stat.S_ISREG(metadata.st_mode):
+                        child_fd = None
+                        try:
+                            child_fd = os.open(
+                                entry.name,
+                                file_flags,
+                                dir_fd=directory_fd,
+                            )
+                            opened = os.fstat(child_fd)
+                            named_after = os.stat(
+                                entry.name,
+                                dir_fd=directory_fd,
+                                follow_symlinks=False,
+                            )
+                            require_same_identity(metadata, opened, str(child))
+                            require_same_identity(opened, named_after, str(child))
+                            result.append((child, opened.st_size))
+                        finally:
+                            active_error = sys.exc_info()[0] is not None
+                            if child_fd is not None:
+                                try:
+                                    os.close(child_fd)
+                                except OSError as error:
+                                    if not active_error:
+                                        _fail(
+                                            "ARTIFACT_INVALID",
+                                            f"cannot close owned file {child}: {error}",
+                                        )
+                    else:
+                        _fail(
+                            "ARTIFACT_INVALID",
+                            f"owned tree contains a link or special node: {child}",
+                        )
+                directory_after = os.fstat(directory_fd)
+                require_same_identity(
+                    directory_before,
+                    directory_after,
+                    str(directory),
+                )
+            except SupervisorFailure:
+                raise
+            except (OSError, UnicodeError) as error:
+                _fail(
+                    "ARTIFACT_INVALID",
+                    f"cannot inventory owned tree directory {directory}: {error}",
+                )
+
+        try:
+            root_opened = os.fstat(root_fd)
+            require_same_identity(root_named, root_opened, str(path))
+            visit(root_fd, path)
+            root_after = os.fstat(root_fd)
+            root_named_after = os.stat(path, follow_symlinks=False)
+            require_same_identity(root_opened, root_after, str(path))
+            require_same_identity(root_opened, root_named_after, str(path))
+        except SupervisorFailure:
+            raise
+        except OSError as error:
+            _fail("ARTIFACT_INVALID", f"owned tree root changed: {path}: {error}")
+        finally:
+            active_error = sys.exc_info()[0] is not None
+            try:
+                os.close(root_fd)
+            except OSError as error:
+                if not active_error:
+                    _fail(
+                        "ARTIFACT_INVALID",
+                        f"cannot close owned tree root {path}: {error}",
+                    )
+        return result
+
     def discard_tree(self, path: Path) -> None:
-        total = 0
-        if path.exists():
-            for child in path.rglob("*"):
-                if child.is_file():
-                    size = child.stat().st_size
-                    total += size
-                    if child not in self.live:
-                        self.entries[self.phase].created += size
+        inventory = self._regular_tree_inventory(path)
+        inventory_by_path = dict(inventory)
+        tracked = {
+            child: size
+            for child, size in self.live.items()
+            if child == path or path in child.parents
+        }
+        if set(tracked) - set(inventory_by_path) or any(
+            inventory_by_path[child] != size for child, size in tracked.items()
+        ):
+            _fail(
+                "ARTIFACT_INVALID",
+                f"owned tree differs from its admitted live-byte identities: {path}",
+            )
+        total = sum(size for _, size in inventory)
+        for child, size in inventory:
+            if child not in self.live:
+                self.entries[self.phase].created += size
         self.entries[self.phase].deleted_partial += total
         for child in tuple(self.live):
             if child == path or path in child.parents:
                 del self.live[child]
 
     def admit_tree(self, path: Path) -> None:
-        if not path.exists():
-            return
-        for child in path.rglob("*"):
-            if child.is_file() and child not in self.live:
-                size = child.stat().st_size
+        for child, size in self._regular_tree_inventory(path):
+            if child in self.live and self.live[child] != size:
+                _fail(
+                    "ARTIFACT_INVALID",
+                    f"owned temporary changed size before tree admission: {child}",
+                )
+            if child not in self.live:
                 self.live[child] = size
                 self.entries[self.phase].created += size
         self._refresh_peak()
@@ -2444,6 +2705,11 @@ class ByteLedger:
     def objects(self, sealed: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
         if self.bundle_reservations:
             _fail("IMPLEMENTATION_INVALID", "unresolved bundle-byte reservation")
+        if (
+            sum(item["research_evidence_archive_bytes"] for item in sealed)
+            != self.sealed_research_evidence_bytes
+        ):
+            _fail("IMPLEMENTATION_INVALID", "sealed evidence-byte baseline changed")
         sealed_by_phase = {item["phase"]: dict(item) for item in sealed}
         result = []
         for phase in PHASE_ORDER:
@@ -2508,49 +2774,86 @@ class InstrumentMeter:
         delta = value.cpu_microseconds - self.last_cpu
         if delta < 0:
             _fail("IMPLEMENTATION_INVALID", "cumulative CPU clock regressed")
-        self.attribution[owner_override or self.owner] += delta
-        self.last_cpu = value.cpu_microseconds
+        previous, interrupted = _block_sigint_for_critical_section()
+        try:
+            self.attribution[owner_override or self.owner] += delta
+            self.last_cpu = value.cpu_microseconds
+        except BaseException:
+            _restore_sigint_after_receipt(previous)
+            raise
+        if _restore_sigint_after_receipt(previous):
+            interrupted = True
+        if interrupted:
+            raise KeyboardInterrupt("instrument sample interrupted at commit edge")
         return value
 
     def _close(self, value: ResourceSnapshot, reason: str, disposition: str = "NONE") -> None:
         if not self.logical_run_id:
             _fail("IMPLEMENTATION_INVALID", "instrument meter closed before identity binding")
-        end_utc = _utc_now()
-        self.receipts.append(
-            {
-                "argv_sha256": self.argv_sha256,
-                "attempt_id": self.producer_attempt_id,
-                "binary_sha256": self.binary_sha256,
-                "completed_unit_index": self.last_completed_unit,
-                "cpu_microseconds": value.cpu_microseconds - self.phase_start_cpu,
-                "end_utc": end_utc,
-                "environment_sha256": self.environment_sha256,
-                "execution_commit": self.execution_commit,
-                "exit_reason": reason,
-                "logical_run_id": self.logical_run_id,
-                "peak_rss_bytes": value.peak_rss_bytes,
-                "phase": self.phase,
-                "staging_disposition": disposition,
-                "start_utc": self.phase_start_utc,
-                "wall_nanoseconds": value.wall_nanoseconds - self.phase_start_wall,
-            }
-        )
-        self.boundary = PhaseBoundary(value, end_utc)
+        previous, interrupted = _block_sigint_for_critical_section()
+        try:
+            end_utc = _utc_now()
+            self.receipts.append(
+                {
+                    "argv_sha256": self.argv_sha256,
+                    "attempt_id": self.producer_attempt_id,
+                    "binary_sha256": self.binary_sha256,
+                    "completed_unit_index": self.last_completed_unit,
+                    "cpu_microseconds": value.cpu_microseconds - self.phase_start_cpu,
+                    "end_utc": end_utc,
+                    "environment_sha256": self.environment_sha256,
+                    "execution_commit": self.execution_commit,
+                    "exit_reason": reason,
+                    "logical_run_id": self.logical_run_id,
+                    "peak_rss_bytes": value.peak_rss_bytes,
+                    "phase": self.phase,
+                    "staging_disposition": disposition,
+                    "start_utc": self.phase_start_utc,
+                    "wall_nanoseconds": value.wall_nanoseconds - self.phase_start_wall,
+                }
+            )
+            self.boundary = PhaseBoundary(value, end_utc)
+        except BaseException:
+            _restore_sigint_after_receipt(previous)
+            raise
+        if _restore_sigint_after_receipt(previous):
+            interrupted = True
+        if interrupted:
+            raise KeyboardInterrupt("instrument receipt interrupted at commit edge")
 
     def switch(self, phase: str, owner: str) -> None:
         value = self.sample()
-        if phase != self.phase:
-            self._close(value, "PHASE_COMPLETE")
-            self.phase = phase
-            self.phase_start_cpu = value.cpu_microseconds
-            self.phase_start_wall = value.wall_nanoseconds
-            self.phase_start_utc = self.boundary.utc
-            self.bytes.switch(phase)
-        self.owner = owner
+        previous, interrupted = _block_sigint_for_critical_section()
+        try:
+            if phase != self.phase:
+                self._close(value, "PHASE_COMPLETE")
+                self.phase = phase
+                self.phase_start_cpu = value.cpu_microseconds
+                self.phase_start_wall = value.wall_nanoseconds
+                self.phase_start_utc = self.boundary.utc
+                self.bytes.switch(phase)
+            self.owner = owner
+        except BaseException:
+            _restore_sigint_after_receipt(previous)
+            raise
+        if _restore_sigint_after_receipt(previous):
+            interrupted = True
+        if interrupted:
+            raise KeyboardInterrupt("instrument phase switch interrupted at commit edge")
 
     def checkpoint(self, unit_index: int) -> ResourceSnapshot:
-        self.last_completed_unit = unit_index
-        return self.sample()
+        previous, interrupted = _block_sigint_for_critical_section()
+        try:
+            self.last_completed_unit = unit_index
+            value = self.sample()
+        except BaseException:
+            _restore_sigint_after_receipt(previous)
+            raise
+        if _restore_sigint_after_receipt(previous):
+            interrupted = True
+        if interrupted:
+            raise KeyboardInterrupt("instrument checkpoint interrupted at commit edge")
+        return value
 
     def close_current(self, reason: str, disposition: str = "NONE") -> None:
         value = self.sample()
@@ -2607,10 +2910,6 @@ class InstrumentMeter:
         self.attempt_start_wall = value.wall_nanoseconds
         self.bytes.switch("C_setup")
 
-    def instrument_cpu(self) -> int:
-        return _snapshot().cpu_microseconds - self.start_cpu
-
-
 class SupervisorHooks:
     def __init__(
         self,
@@ -2631,46 +2930,489 @@ class SupervisorHooks:
         self.resource_incomplete = False
         self.publication_became_visible = False
         self.child_count = 0
+        self.terminal_sigint_mask: set[signal.Signals] | None = None
+        self.terminal_sigint_observed = False
+        self.bundle_publication_sigint_mask: set[signal.Signals] | None = None
+        self.terminal_finalized = False
+        self.terminal_receipt_index: int | None = None
+        self.terminal_cleanup_complete = False
+        self.terminal_closure_valid = True
+        self.terminal_disposition = "NONE"
+        self.terminal_cleanup_started = False
+        self.terminal_tail_observation_attempted = False
+        self.terminal_tail_extended = False
+        self.terminal_root_extension_attempted = False
+        self.terminal_root_extended = False
+        self.terminal_known_status: str | None = None
 
     def switch(self, phase: str, owner: str) -> None:
         self.meter.switch(phase, owner)
+
+    def retain_terminal_sigint_mask(
+        self,
+        previous: set[signal.Signals],
+        interrupted: bool,
+    ) -> None:
+        if self.terminal_sigint_mask is not None:
+            _fail("IMPLEMENTATION_INVALID", "duplicate C terminal SIGINT mask")
+        self.terminal_sigint_mask = previous
+        self.terminal_sigint_observed = (
+            self.terminal_sigint_observed or interrupted
+        )
+        if _consume_deferred_sigint():
+            self.terminal_sigint_observed = True
+        if self.terminal_sigint_observed:
+            self.resource_incomplete = True
+
+    def begin_terminal_closure(self) -> bool:
+        if self.terminal_sigint_mask is None:
+            previous, interrupted = _block_sigint_for_critical_section()
+            self.terminal_sigint_mask = previous
+            self.terminal_sigint_observed = (
+                self.terminal_sigint_observed or interrupted
+            )
+        if _consume_deferred_sigint():
+            self.terminal_sigint_observed = True
+        if self.terminal_sigint_observed:
+            self.resource_incomplete = True
+        return self.terminal_sigint_observed
+
+    def observe_terminal_closure(self) -> bool:
+        """Fold pending SIGINT into C state without releasing the C mask."""
+
+        if self.terminal_sigint_mask is None:
+            _fail("IMPLEMENTATION_INVALID", "C terminal SIGINT mask is absent")
+        if _consume_deferred_sigint():
+            self.terminal_sigint_observed = True
+        if self.terminal_sigint_observed:
+            self.resource_incomplete = True
+        return self.terminal_sigint_observed
+
+    def release_terminal_closure(self) -> bool:
+        """Release C only after the root decision is committed.
+
+        A delivery at the restore edge is immediately reblocked so the caller
+        can patch the existing receipt and fail-stop without an async window.
+        """
+
+        interrupted = _consume_deferred_sigint()
+        if interrupted:
+            self.terminal_sigint_observed = True
+            self.resource_incomplete = True
+        previous = self.terminal_sigint_mask
+        if previous is None:
+            _fail("IMPLEMENTATION_INVALID", "C terminal SIGINT mask is absent")
+        if self.bundle_publication_sigint_mask is not None:
+            _fail(
+                "IMPLEMENTATION_INVALID",
+                "bundle publication SIGINT guard remains active at C release",
+            )
+        if signal.SIGINT in previous:
+            _fail(
+                "IMPLEMENTATION_INVALID",
+                "C terminal guard did not retain the frozen unblocked entry mask",
+            )
+        self.terminal_sigint_mask = None
+        if _restore_sigint_after_receipt(previous):
+            interrupted = True
+        if interrupted:
+            retained_previous, retained_interrupted = (
+                _block_sigint_for_critical_section()
+            )
+            self.terminal_sigint_mask = retained_previous
+            self.terminal_sigint_observed = True
+            self.resource_incomplete = True
+            if retained_interrupted or _consume_deferred_sigint():
+                self.terminal_sigint_observed = True
+        else:
+            try:
+                current = signal.pthread_sigmask(signal.SIG_BLOCK, set())
+                current_handler = signal.getsignal(signal.SIGINT)
+            except (OSError, RuntimeError, ValueError) as error:
+                retained_previous, retained_interrupted = (
+                    _block_sigint_for_critical_section()
+                )
+                self.retain_terminal_sigint_mask(
+                    retained_previous,
+                    retained_interrupted,
+                )
+                _fail(
+                    "IMPLEMENTATION_INVALID",
+                    f"cannot verify post-C SIGINT contract: {error}",
+                )
+            if (
+                signal.SIGINT in current
+                or current_handler is not signal.default_int_handler
+            ):
+                retained_previous, retained_interrupted = (
+                    _block_sigint_for_critical_section()
+                )
+                self.retain_terminal_sigint_mask(
+                    retained_previous,
+                    retained_interrupted,
+                )
+                _fail(
+                    "IMPLEMENTATION_INVALID",
+                    "C release did not restore the frozen unblocked SIGINT contract",
+                )
+        return interrupted
+
+    def detach_terminal_mask_for_emit(self) -> "_EmitHandoffOwner":
+        """Transfer the still-blocked C guard directly to E's first fork."""
+
+        def fail_preserving_terminal_status(candidate: str, detail: str) -> NoReturn:
+            self.terminal_closure_valid = False
+            merged = _c_failure_status(candidate)
+            if self.terminal_known_status in C_FAILURE_STATUSES:
+                merged = _status_min(merged, self.terminal_known_status)
+            if (
+                self.terminal_receipt_index is not None
+                and self.terminal_receipt_index == len(self.meter.receipts) - 1
+            ):
+                receipt = self.meter.receipts[self.terminal_receipt_index]
+                existing = str(receipt["exit_reason"])
+                if existing in STATUS_ORDER:
+                    merged = _status_min(_c_failure_status(existing), merged)
+                receipt["exit_reason"] = merged
+            _fail(merged, detail)
+
+        if self.terminal_sigint_mask is None:
+            fail_preserving_terminal_status(
+                "IMPLEMENTATION_INVALID",
+                "C terminal SIGINT mask is absent",
+            )
+        if self.bundle_publication_sigint_mask is not None:
+            fail_preserving_terminal_status(
+                "IMPLEMENTATION_INVALID",
+                "bundle publication SIGINT guard remains active at E handoff",
+            )
+        try:
+            deferred_sigint = _consume_deferred_sigint()
+        except BaseException as error:
+            fail_preserving_terminal_status(
+                error.status
+                if isinstance(error, SupervisorFailure)
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+                if isinstance(error, (KeyboardInterrupt, SystemExit))
+                else "IMPLEMENTATION_INVALID",
+                f"cannot consume C-to-E deferred SIGINT: {error}",
+            )
+        if deferred_sigint:
+            self.terminal_sigint_observed = True
+            self.resource_incomplete = True
+            fail_preserving_terminal_status(
+                "ARTIFACT_INVALID"
+                if self.publication_became_visible
+                else "RESOURCE_INCOMPLETE_NO_DECISION",
+                "C-to-E handoff observed a deferred supervisor SIGINT",
+            )
+        previous = self.terminal_sigint_mask
+        if signal.SIGINT in previous:
+            fail_preserving_terminal_status(
+                "IMPLEMENTATION_INVALID",
+                "C-to-E handoff did not retain an unblocked entry mask",
+            )
+        try:
+            current = signal.pthread_sigmask(signal.SIG_BLOCK, set())
+            current_handler = signal.getsignal(signal.SIGINT)
+        except (OSError, RuntimeError, ValueError) as error:
+            fail_preserving_terminal_status(
+                "IMPLEMENTATION_INVALID",
+                f"cannot verify C-to-E SIGINT handoff: {error}",
+            )
+        if (
+            signal.SIGINT not in current
+            or current_handler is not signal.default_int_handler
+        ):
+            fail_preserving_terminal_status(
+                "IMPLEMENTATION_INVALID",
+                "C-to-E handoff lacks blocked/default supervisor SIGINT state",
+            )
+        handoff_owner = _EmitHandoffOwner(previous)
+        self.terminal_sigint_mask = None
+        return handoff_owner
+
+    def begin_bundle_publication_commit(self) -> bool:
+        if self.bundle_publication_sigint_mask is not None:
+            _fail("IMPLEMENTATION_INVALID", "duplicate bundle publication guard")
+        previous, interrupted = _block_sigint_for_critical_section()
+        self.bundle_publication_sigint_mask = previous
+        if _consume_deferred_sigint():
+            interrupted = True
+        if interrupted:
+            self.resource_incomplete = True
+        return interrupted
+
+    def finish_bundle_publication_commit(self) -> bool:
+        if self.bundle_publication_sigint_mask is None:
+            _fail("IMPLEMENTATION_INVALID", "bundle publication guard is absent")
+        interrupted = _consume_deferred_sigint()
+        previous = self.bundle_publication_sigint_mask
+        if _restore_sigint_after_receipt(previous):
+            interrupted = True
+        self.bundle_publication_sigint_mask = None
+        if interrupted:
+            self.resource_incomplete = True
+        return interrupted
 
     def invoke_native(self, arguments: Sequence[str]) -> None:
         argv = ("/proc/self/fd/197", *arguments)
         stderr_path = self.attempt_root / f"native_stderr_{self.child_count:03d}.log"
         self.child_count += 1
         self.meter.sample()
-        with stderr_path.open("xb", buffering=0) as stderr_file:
-            process = subprocess.Popen(
-                argv,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=stderr_file,
-                env=_child_environment(),
-                pass_fds=(197,),
-                close_fds=True,
-            )
-            result = _wait4_integer(process.pid)
+        process: subprocess.Popen[bytes] | None = None
+        result: WaitResult | None = None
+        post_reap_mask: set[signal.Signals] | None = None
+        launch_mask: set[signal.Signals] | None = None
+        supervisor_interrupted = False
+        parent_status: str | None = None
+        parent_details: list[str] = []
+
+        def record_parent_failure(status: str, detail: str) -> None:
+            nonlocal parent_status
+            resolved = _c_failure_status(status)
+            parent_status = _status_min(parent_status, resolved)
+            parent_details.append(detail)
+            if resolved == "RESOURCE_INCOMPLETE_NO_DECISION":
+                self.resource_incomplete = True
+
+        stderr_file = None
+        try:
+            stderr_file = stderr_path.open("xb", buffering=0)
+            launch_mask, launch_interrupted = _block_sigint_for_critical_section()
+            if _consume_deferred_sigint():
+                launch_interrupted = True
+            if launch_interrupted:
+                _restore_sigint_after_receipt(launch_mask)
+                raise KeyboardInterrupt("producer native interrupted before launch")
+            try:
+                process = subprocess.Popen(
+                    argv,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=stderr_file,
+                    env=_child_environment(),
+                    pass_fds=(197,),
+                    close_fds=True,
+                    preexec_fn=_prepare_native_child_sigint,
+                )
+            finally:
+                if _consume_deferred_sigint():
+                    launch_interrupted = True
+                if _restore_sigint_after_receipt(launch_mask):
+                    launch_interrupted = True
+            if launch_interrupted:
+                raise KeyboardInterrupt("producer native interrupted at launch edge")
+            (
+                result,
+                post_reap_mask,
+                terminal_edge_interrupted,
+            ) = _wait4_with_deferred_postreap_sigint(process.pid)
+            supervisor_interrupted = terminal_edge_interrupted
             process.returncode = result.exit_code
-            os.fsync(stderr_file.fileno())
+        except BaseException as error:
+            recovery_mask, recovery_interrupted = (
+                _block_sigint_for_critical_section()
+            )
+            if _consume_deferred_sigint():
+                recovery_interrupted = True
+            supervisor_interrupted = (
+                supervisor_interrupted or recovery_interrupted
+            )
+            retained_recovery_mask = (
+                launch_mask
+                if signal.SIGINT in recovery_mask and launch_mask is not None
+                else recovery_mask
+            )
+            if process is not None and result is None:
+                (
+                    result,
+                    post_reap_mask,
+                    terminal_edge_interrupted,
+                    kill_error,
+                ) = _kill_and_must_reap_while_sigint_blocked(
+                    process.pid,
+                    retained_recovery_mask,
+                    recovery_interrupted,
+                )
+                supervisor_interrupted = (
+                    supervisor_interrupted or terminal_edge_interrupted
+                )
+                process.returncode = result.exit_code
+                if kill_error is not None:
+                    record_parent_failure(
+                        "IMPLEMENTATION_INVALID",
+                        f"producer native termination reported: {kill_error}",
+                    )
+            elif process is None:
+                self.retain_terminal_sigint_mask(
+                    retained_recovery_mask,
+                    recovery_interrupted,
+                )
+            elif post_reap_mask is None:
+                post_reap_mask = retained_recovery_mask
+            if isinstance(error, (KeyboardInterrupt, SystemExit)):
+                supervisor_interrupted = True
+                status = "RESOURCE_INCOMPLETE_NO_DECISION"
+            elif isinstance(error, SupervisorFailure):
+                status = error.status
+            elif isinstance(error, OSError):
+                status = "EVIDENCE_INCOMPLETE_NO_DECISION"
+            else:
+                status = "IMPLEMENTATION_INVALID"
+            record_parent_failure(status, f"producer native supervisor failed: {error}")
+        finally:
+            if stderr_file is not None:
+                try:
+                    os.fsync(stderr_file.fileno())
+                except OSError as error:
+                    record_parent_failure(
+                        "EVIDENCE_INCOMPLETE_NO_DECISION",
+                        f"producer native stderr fsync failed: {error}",
+                    )
+                try:
+                    stderr_file.close()
+                except OSError as error:
+                    record_parent_failure(
+                        "EVIDENCE_INCOMPLETE_NO_DECISION",
+                        f"producer native stderr close failed: {error}",
+                    )
+
         output_path = Path(arguments[-1])
-        if output_path.exists():
-            self.bytes.note_created(output_path)
-        elif result.exit_code == 0:
-            _fail("IMPLEMENTATION_INVALID", "successful native child omitted its output")
-        self.bytes.note_created(stderr_path)
-        detail = stderr_path.read_bytes()[:4096]
-        stderr_path.unlink()
-        self.bytes.note_deleted(stderr_path)
-        if result.exit_code < 0:
+        try:
+            output_metadata = os.stat(output_path, follow_symlinks=False)
+        except FileNotFoundError:
+            if result is not None and result.exit_code == 0:
+                record_parent_failure(
+                    "IMPLEMENTATION_INVALID",
+                    "successful native child omitted its output",
+                )
+        except OSError as error:
+            record_parent_failure(
+                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                f"cannot stat producer native output: {error}",
+            )
+        else:
+            try:
+                self.bytes.note_created(output_path, output_metadata)
+            except SupervisorFailure as error:
+                record_parent_failure(error.status, error.detail)
+
+        stderr_metadata: os.stat_result | None = None
+        try:
+            stderr_metadata = os.stat(stderr_path, follow_symlinks=False)
+        except OSError as error:
+            record_parent_failure(
+                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                f"cannot stat producer native stderr: {error}",
+            )
+        if stderr_metadata is not None:
+            try:
+                self.bytes.note_created(stderr_path, stderr_metadata)
+            except SupervisorFailure as error:
+                record_parent_failure(error.status, error.detail)
+                stderr_metadata = None
+        detail = b""
+        try:
+            if stderr_metadata is not None:
+                detail = _read_regular_file_prefix(
+                    stderr_path,
+                    4096,
+                    "producer native stderr",
+                    stderr_metadata,
+                )
+        except SupervisorFailure as error:
+            record_parent_failure(error.status, error.detail)
+        finally:
+            stream_known, stream_present, stream_cleanup_metadata = (
+                _probe_entry_nofollow(
+                    stderr_path,
+                    "producer native stderr cleanup",
+                    record_parent_failure,
+                )
+            )
+            if stream_present:
+                if (
+                    stream_cleanup_metadata is None
+                    or not stat.S_ISREG(stream_cleanup_metadata.st_mode)
+                ):
+                    record_parent_failure(
+                        "ARTIFACT_INVALID",
+                        "producer native stderr became non-regular before cleanup",
+                    )
+                try:
+                    stderr_path.unlink()
+                    if stderr_path in self.bytes.live:
+                        self.bytes.note_deleted(stderr_path)
+                except SupervisorFailure as error:
+                    record_parent_failure(error.status, error.detail)
+                except OSError as error:
+                    record_parent_failure(
+                        "EVIDENCE_INCOMPLETE_NO_DECISION",
+                        f"cannot clean producer native stderr: {error}",
+                    )
+            elif not stream_known:
+                record_parent_failure(
+                    "EVIDENCE_INCOMPLETE_NO_DECISION",
+                    "producer native stderr cleanup presence is unknown",
+                )
+
+        if post_reap_mask is not None and _consume_deferred_sigint():
+            supervisor_interrupted = True
+        if supervisor_interrupted:
+            record_parent_failure(
+                "RESOURCE_INCOMPLETE_NO_DECISION",
+                "producer native supervisor SIGINT observed after child launch",
+            )
+        if result is not None and result.exit_code > 0:
+            record_parent_failure(
+                "IMPLEMENTATION_INVALID",
+                f"native child failed {result.exit_code}: {detail!r}",
+            )
+        terminal_failure = (
+            result is None
+            or parent_status is not None
+            or (result is not None and result.exit_code != 0)
+        )
+        if post_reap_mask is not None:
+            if terminal_failure:
+                self.retain_terminal_sigint_mask(
+                    post_reap_mask,
+                    supervisor_interrupted,
+                )
+                post_reap_mask = None
+            else:
+                if _restore_sigint_after_receipt(post_reap_mask):
+                    supervisor_interrupted = True
+                    previous, _ = (
+                        _block_sigint_for_critical_section()
+                    )
+                    self.retain_terminal_sigint_mask(
+                        previous,
+                        True,
+                    )
+                    record_parent_failure(
+                        "RESOURCE_INCOMPLETE_NO_DECISION",
+                        "producer native supervisor SIGINT observed at restore edge",
+                    )
+                post_reap_mask = None
+        if result is None:
+            self.meter.sample()
+            _fail(
+                parent_status or "IMPLEMENTATION_INVALID",
+                "; ".join(parent_details) or "producer native has no wait receipt",
+            )
+        if result.exit_code < 0 or supervisor_interrupted:
             self.meter.sample("C_interrupted_tail")
             self.meter.owner = "C_interrupted_tail"
+        else:
+            self.meter.sample()
+        if parent_status is not None:
+            _fail(parent_status, "; ".join(parent_details))
+        if result.exit_code < 0:
             raise ExternalInterruption(
                 f"native child killed by signal {-result.exit_code}: {detail!r}"
             )
-        self.meter.sample()
-        if result.exit_code != 0:
-            _fail("IMPLEMENTATION_INVALID", f"native child failed {result.exit_code}: {detail!r}")
 
     def _resource_violation_detail(self, value: ResourceSnapshot) -> str | None:
         attempt_cpu = value.cpu_microseconds - self.meter.attempt_start_cpu
@@ -2702,22 +3444,92 @@ class SupervisorHooks:
         return self.resource_incomplete
 
     def complete_unit(self, unit_index: int, state: producer.ProducerState) -> bool:
-        self.last_state = state
-        value = self.meter.checkpoint(unit_index)
+        prior_index = (
+            self.last_state.last_completed_unit_index
+            if self.last_state is not None
+            else -1
+        )
+        if (
+            unit_index != prior_index + 1
+            or self.meter.last_completed_unit != prior_index
+            or state.last_completed_unit_index != unit_index
+            or state.completed_unit_count != unit_index + 1
+        ):
+            _fail("IMPLEMENTATION_INVALID", "producer unit admission is not contiguous")
+        value = self.meter.sample()
         self._operational_check(value)
-        if self.meter.instrument_cpu() > PRIMARY_CAP:
-            self.cap_crossed = True
-            return True
-        if not state.representation_valid:
-            self.representation_stop = True
-            return True
-        return False
+        # The candidate unit becomes an atomic scientific prefix only after
+        # the registered operational checks pass.  A crossing therefore
+        # leaves both state and the receipt index at the prior complete unit.
+        previous, interrupted = _block_sigint_for_critical_section()
+        if _consume_deferred_sigint():
+            interrupted = True
+        if interrupted:
+            self.retain_terminal_sigint_mask(previous, True)
+            _fail(
+                "RESOURCE_INCOMPLETE_NO_DECISION",
+                "producer unit admission interrupted before prefix commit",
+            )
+        try:
+            self.meter.last_completed_unit = unit_index
+            self.last_state = state
+            if value.cpu_microseconds - self.meter.start_cpu > PRIMARY_CAP:
+                self.cap_crossed = True
+            if not state.representation_valid:
+                self.representation_stop = True
+            should_stop = self.cap_crossed or self.representation_stop
+        except BaseException:
+            _restore_sigint_after_receipt(previous)
+            raise
+        if _consume_deferred_sigint():
+            interrupted = True
+        if interrupted:
+            self.retain_terminal_sigint_mask(previous, True)
+            _fail(
+                "RESOURCE_INCOMPLETE_NO_DECISION",
+                "producer unit admission interrupted after atomic prefix commit",
+            )
+        if _restore_sigint_after_receipt(previous):
+            interrupted = True
+        if interrupted:
+            terminal_previous, _ = _block_sigint_for_critical_section()
+            self.retain_terminal_sigint_mask(terminal_previous, True)
+            _fail(
+                "RESOURCE_INCOMPLETE_NO_DECISION",
+                "producer unit admission interrupted at restore edge",
+            )
+        return should_stop
 
     def fail_unpublished_unit(self, status: str, detail: str) -> NoReturn:
         """Close a failed unit at the prior complete prefix, never at its index."""
 
-        if status not in STATUS_ORDER or self.last_state is None:
-            _fail("IMPLEMENTATION_INVALID", "invalid unpublished-unit failure")
+        resolved_input = _c_failure_status(status)
+        self.terminal_known_status = _status_min(
+            self.terminal_known_status,
+            resolved_input,
+        )
+        if resolved_input == "RESOURCE_INCOMPLETE_NO_DECISION":
+            self.resource_incomplete = True
+        try:
+            self.begin_terminal_closure()
+        except BaseException as error:
+            candidate = (
+                error.status
+                if isinstance(error, SupervisorFailure)
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+                if isinstance(error, (KeyboardInterrupt, SystemExit))
+                else "IMPLEMENTATION_INVALID"
+            )
+            candidate = _c_failure_status(candidate)
+            _fail(
+                _status_min(self.terminal_known_status, candidate),
+                f"cannot enter unpublished-unit terminal closure: {error}",
+            )
+        if status not in C_FAILURE_STATUSES or self.last_state is None:
+            _fail(
+                _status_min(self.terminal_known_status, "IMPLEMENTATION_INVALID"),
+                "invalid unpublished-unit failure",
+            )
         prior_index = self.last_state.last_completed_unit_index
         value = self.meter.checkpoint(prior_index)
         resource_error: SupervisorFailure | None = None
@@ -2725,12 +3537,12 @@ class SupervisorHooks:
             self._operational_check(value)
         except SupervisorFailure as error:
             resource_error = error
-        if self.meter.instrument_cpu() > PRIMARY_CAP:
+        if value.cpu_microseconds - self.meter.start_cpu > PRIMARY_CAP:
             self.cap_crossed = True
         resolved_status = (
-            _status_min(status, resource_error.status)
+            _status_min(resolved_input, _c_failure_status(resource_error.status))
             if resource_error is not None
-            else status
+            else resolved_input
         )
         raise producer.ProducerFailure(
             resolved_status,
@@ -2738,6 +3550,133 @@ class SupervisorHooks:
             if resource_error is None
             else f"{detail}; {resource_error.detail}",
         )
+
+    def fail_completed_unit(
+        self,
+        status: str,
+        detail: str,
+        state: producer.ProducerState,
+    ) -> NoReturn:
+        """Raise a typed failure after its unit prefix is already admitted."""
+
+        resolved_input = _c_failure_status(status)
+        self.terminal_known_status = _status_min(
+            self.terminal_known_status,
+            resolved_input,
+        )
+        if resolved_input == "RESOURCE_INCOMPLETE_NO_DECISION":
+            self.resource_incomplete = True
+        try:
+            self.begin_terminal_closure()
+        except BaseException as error:
+            candidate = (
+                error.status
+                if isinstance(error, SupervisorFailure)
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+                if isinstance(error, (KeyboardInterrupt, SystemExit))
+                else "IMPLEMENTATION_INVALID"
+            )
+            candidate = _c_failure_status(candidate)
+            _fail(
+                _status_min(self.terminal_known_status, candidate),
+                f"cannot enter completed-unit terminal closure: {error}",
+            )
+        if (
+            status not in C_FAILURE_STATUSES
+            or self.last_state is None
+            or state is not self.last_state
+            or state.last_completed_unit_index != self.meter.last_completed_unit
+        ):
+            _fail(
+                _status_min(self.terminal_known_status, "IMPLEMENTATION_INVALID"),
+                "invalid completed-unit failure",
+            )
+        raise producer.ProducerFailure(resolved_input, detail)
+
+    def capture_producer_terminal(self, error: BaseException) -> None:
+        """Seal every producer-body failure before it crosses into the runner."""
+
+        original_status = getattr(error, "status", None)
+        if isinstance(error, ExternalInterruption):
+            # This is the deliberate raw-signal transport event.  Its frozen
+            # receipt reason is EXTERNAL_INTERRUPTION, outside STATUS_ORDER,
+            # and must remain eligible for the one exact retry.
+            original_status = None
+        elif original_status not in C_FAILURE_STATUSES:
+            original_status = (
+                "RESOURCE_INCOMPLETE_NO_DECISION"
+                if isinstance(error, (KeyboardInterrupt, SystemExit))
+                else "IMPLEMENTATION_INVALID"
+            )
+        if original_status in C_FAILURE_STATUSES:
+            self.terminal_known_status = _status_min(
+                self.terminal_known_status,
+                original_status,
+            )
+        if original_status == "RESOURCE_INCOMPLETE_NO_DECISION":
+            self.resource_incomplete = True
+        if isinstance(error, (KeyboardInterrupt, SystemExit)):
+            self.terminal_sigint_observed = True
+
+        def fail_preserving_original(candidate: str, detail: str) -> NoReturn:
+            self.terminal_closure_valid = False
+            resolved = _c_failure_status(candidate)
+            if resolved == "RESOURCE_INCOMPLETE_NO_DECISION":
+                self.resource_incomplete = True
+            _fail(_status_min(self.terminal_known_status, resolved), detail)
+
+        if (
+            self.terminal_sigint_mask is None
+            and self.bundle_publication_sigint_mask is not None
+        ):
+            try:
+                current = signal.pthread_sigmask(signal.SIG_BLOCK, set())
+            except (OSError, RuntimeError, ValueError) as mask_error:
+                fail_preserving_original(
+                    "IMPLEMENTATION_INVALID",
+                    f"cannot transfer bundle SIGINT guard: {mask_error}",
+                )
+            if signal.SIGINT in current:
+                self.terminal_sigint_mask = self.bundle_publication_sigint_mask
+                self.bundle_publication_sigint_mask = None
+                try:
+                    deferred_sigint = _consume_deferred_sigint()
+                except BaseException as mask_error:
+                    fail_preserving_original(
+                        mask_error.status
+                        if isinstance(mask_error, SupervisorFailure)
+                        else "RESOURCE_INCOMPLETE_NO_DECISION"
+                        if isinstance(mask_error, (KeyboardInterrupt, SystemExit))
+                        else "IMPLEMENTATION_INVALID",
+                        f"cannot consume transferred bundle SIGINT: {mask_error}",
+                    )
+                if deferred_sigint:
+                    self.terminal_sigint_observed = True
+            else:
+                try:
+                    self.begin_terminal_closure()
+                except BaseException as mask_error:
+                    fail_preserving_original(
+                        mask_error.status
+                        if isinstance(mask_error, SupervisorFailure)
+                        else "RESOURCE_INCOMPLETE_NO_DECISION"
+                        if isinstance(mask_error, (KeyboardInterrupt, SystemExit))
+                        else "IMPLEMENTATION_INVALID",
+                        f"cannot replace stale bundle SIGINT guard: {mask_error}",
+                    )
+                self.bundle_publication_sigint_mask = None
+        else:
+            try:
+                self.begin_terminal_closure()
+            except BaseException as mask_error:
+                fail_preserving_original(
+                    mask_error.status
+                    if isinstance(mask_error, SupervisorFailure)
+                    else "RESOURCE_INCOMPLETE_NO_DECISION"
+                    if isinstance(mask_error, (KeyboardInterrupt, SystemExit))
+                    else "IMPLEMENTATION_INVALID",
+                    f"cannot enter captured producer terminal closure: {mask_error}",
+                )
 
     def note_created_temporary(self, path: Path) -> None:
         self.bytes.note_created(path)
@@ -2806,6 +3745,39 @@ def _status_min(current: str | None, candidate: str) -> str:
     if current is None:
         return candidate
     return min((current, candidate), key=STATUS_ORDER.index)
+
+
+def _c_failure_status(candidate: object) -> str:
+    """Map any out-of-phase C failure vocabulary to Implementation."""
+
+    return (
+        candidate
+        if isinstance(candidate, str) and candidate in C_FAILURE_STATUSES
+        else "IMPLEMENTATION_INVALID"
+    )
+
+
+def _fail_preserving_prior_status(
+    prior_status: str | None, candidate_status: str, detail: str
+) -> NoReturn:
+    """Raise the highest-precedence known status without rewriting its cause."""
+
+    _fail(_status_min(prior_status, candidate_status), detail)
+
+
+def _run_preserving_prior_status(prior_status: str | None, operation: Any) -> Any:
+    """Keep a terminal producer fact sticky across a downstream operation."""
+
+    try:
+        return operation()
+    except (SupervisorFailure, evidence.EvidenceFailure) as error:
+        resolved = _status_min(prior_status, error.status)
+        if resolved == error.status:
+            raise
+        raise SupervisorFailure(
+            resolved,
+            f"{error.detail}; prior terminal status {prior_status} retains precedence",
+        ) from error
 
 
 def _sorted_receipts(receipts: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
@@ -2884,7 +3856,7 @@ def _phase_receipt(
         "execution_commit": commit,
         "exit_reason": reason,
         "logical_run_id": logical_run_id,
-        "peak_rss_bytes": child_usage.peak_rss_bytes,
+        "peak_rss_bytes": max(child_usage.peak_rss_bytes, end.peak_rss_bytes),
         "phase": phase,
         "staging_disposition": disposition,
         "start_utc": start_utc,
@@ -2900,6 +3872,143 @@ def _reserve_fixed_descriptor(source: int, target: int) -> None:
         os.set_inheritable(target, True)
 
 
+def _block_sigint_before_external_exec() -> None:
+    """Keep wrapper SIGINT pending until reviewed child entry code owns it."""
+
+    signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGINT})
+
+
+def _prepare_native_child_sigint() -> None:
+    """Give the exec'd C++ child raw, unblocked SIGINT semantics."""
+
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    signal.pthread_sigmask(signal.SIG_UNBLOCK, {signal.SIGINT})
+
+
+def _block_sigint_for_critical_section() -> tuple[set[signal.Signals], bool]:
+    """Enter a short launch or receipt-critical section without async tearing."""
+
+    interrupted = False
+    while True:
+        try:
+            previous = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGINT})
+            if interrupted:
+                # The frozen entry contract says SIGINT was unblocked.  If a
+                # prior atomic block completed just as KeyboardInterrupt was
+                # delivered, the retry reports the newly blocked mask; remove
+                # that one bit to reconstruct the true entry mask.
+                previous.discard(signal.SIGINT)
+            return previous, interrupted
+        except KeyboardInterrupt:
+            interrupted = True
+        except (OSError, RuntimeError, ValueError) as error:
+            _fail(
+                "IMPLEMENTATION_INVALID",
+                f"cannot defer terminal SIGINT while constructing a receipt: {error}",
+            )
+
+
+def _wait4_with_deferred_postreap_sigint(
+    pid: int,
+) -> tuple[WaitResult, set[signal.Signals], bool]:
+    """Observe terminal state without reaping, defer SIGINT, then reap exactly once."""
+
+    observed = os.waitid(os.P_PID, pid, os.WEXITED | os.WNOWAIT)
+    if observed is None or observed.si_pid != pid:
+        _fail("IMPLEMENTATION_INVALID", "waitid returned a foreign child identity")
+    previous, interrupted = _block_sigint_for_critical_section()
+    # A wait4 failure propagates with SIGINT still blocked so the caller can
+    # enter its close/kill/must-reap recovery without a second-signal window.
+    usage = _wait4_integer(pid)
+    return usage, previous, interrupted
+
+
+def _kill_and_must_reap_while_sigint_blocked(
+    pid: int,
+    previous: set[signal.Signals],
+    interrupted: bool,
+    before_kill_while_blocked: Any | None = None,
+) -> tuple[WaitResult, set[signal.Signals], bool, str | None]:
+    """Close, kill, and must-reap after the caller has already blocked SIGINT."""
+
+    if _consume_deferred_sigint():
+        interrupted = True
+    recovery_error: str | None = None
+    if before_kill_while_blocked is not None:
+        try:
+            before_kill_while_blocked()
+        except BaseException as error:
+            # Never abandon a launched child because recovery cleanup itself
+            # failed.  Preserve the error, then kill and must-reap first.
+            recovery_error = f"pre-kill recovery cleanup failed: {error}"
+    try:
+        os.kill(pid, signal.SIGKILL)
+    except ProcessLookupError:
+        kill_error = None
+    except OSError as error:
+        kill_error = str(error)
+    else:
+        kill_error = None
+    while True:
+        try:
+            usage = _wait4_integer(pid)
+            break
+        except InterruptedError:
+            continue
+        except ChildProcessError as error:
+            _fail(
+                "IMPLEMENTATION_INVALID",
+                f"launched child {pid} became unaccountably non-waitable: {error}",
+            )
+        except OSError as error:
+            if error.errno == errno.EINTR:
+                continue
+            _fail(
+                "IMPLEMENTATION_INVALID",
+                f"cannot reap launched child {pid}: {error}",
+            )
+    if _consume_deferred_sigint():
+        interrupted = True
+    combined_error = "; ".join(
+        item for item in (recovery_error, kill_error) if item is not None
+    ) or None
+    return usage, previous, interrupted, combined_error
+
+
+def _consume_deferred_sigint() -> bool:
+    """Consume one pending SIGINT while it is blocked from asynchronous delivery."""
+
+    try:
+        if signal.SIGINT not in signal.sigpending():
+            return False
+        observed = signal.sigwait({signal.SIGINT})
+    except (OSError, RuntimeError, ValueError) as error:
+        _fail(
+            "IMPLEMENTATION_INVALID",
+            f"cannot inspect deferred terminal SIGINT: {error}",
+        )
+    if observed != signal.SIGINT:
+        _fail("IMPLEMENTATION_INVALID", "sigwait consumed a foreign signal")
+    return True
+
+
+def _restore_sigint_after_receipt(previous: set[signal.Signals]) -> bool:
+    """Restore the pre-attempt mask and report a delivery at the restore edge."""
+
+    interrupted = False
+    while True:
+        try:
+            signal.pthread_sigmask(signal.SIG_SETMASK, previous)
+            return interrupted
+        except KeyboardInterrupt:
+            interrupted = True
+        except (OSError, RuntimeError, ValueError) as error:
+            _fail(
+                "IMPLEMENTATION_INVALID",
+                f"cannot restore SIGINT mask after receipt construction: {error}",
+            )
+
+
 def _require_control_descriptors_free() -> None:
     for descriptor in (197, 198, 199):
         try:
@@ -2907,6 +4016,316 @@ def _require_control_descriptors_free() -> None:
         except OSError:
             continue
         raise PreconditionFailure(f"frozen control descriptor {descriptor} is already open")
+
+
+def _require_supervisor_sigint_contract() -> None:
+    """Freeze the unblocked CPython SIGINT semantics used by phase boundaries."""
+
+    try:
+        current_mask = signal.pthread_sigmask(signal.SIG_BLOCK, set())
+        current_handler = signal.getsignal(signal.SIGINT)
+    except (OSError, RuntimeError, ValueError) as error:
+        raise PreconditionFailure(f"cannot inspect supervisor SIGINT state: {error}") from error
+    if signal.SIGINT in current_mask:
+        raise PreconditionFailure("supervisor SIGINT is blocked at prelaunch")
+    if current_handler is not signal.default_int_handler:
+        raise PreconditionFailure("supervisor SIGINT handler is not CPython default")
+
+
+def _read_bounded_regular_file(
+    path: Path,
+    maximum_bytes: int,
+    description: str,
+    oversize_status: str,
+    expected_metadata: os.stat_result | None = None,
+) -> bytes:
+    descriptor: int | None = None
+    identity_descriptor: int | None = None
+    try:
+        identity_descriptor = os.open(
+            path,
+            os.O_PATH
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+        )
+        before = os.fstat(identity_descriptor)
+        if not stat.S_ISREG(before.st_mode):
+            _fail("ARTIFACT_INVALID", f"{description} is not a regular file")
+        if before.st_size > maximum_bytes:
+            _fail(oversize_status, f"{description} exceeds its frozen byte ceiling")
+        descriptor = os.open(
+            f"/proc/self/fd/{identity_descriptor}",
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NONBLOCK", 0),
+        )
+        require_opened = os.fstat(descriptor)
+        stable_fields = (
+            "st_dev",
+            "st_ino",
+            "st_mode",
+            "st_size",
+            "st_mtime_ns",
+            "st_ctime_ns",
+        )
+        if expected_metadata is not None and any(
+            getattr(expected_metadata, field) != getattr(before, field)
+            for field in stable_fields
+        ):
+            _fail(
+                "ARTIFACT_INVALID",
+                f"{description} differs from its byte-ledger identity",
+            )
+        if any(
+            getattr(before, field) != getattr(require_opened, field)
+            for field in stable_fields
+        ):
+            _fail("ARTIFACT_INVALID", f"{description} identity reopen mismatch")
+        payload = bytearray()
+        while len(payload) < before.st_size:
+            chunk = os.read(
+                descriptor, min(1 << 20, before.st_size - len(payload))
+            )
+            if not chunk:
+                _fail("EVIDENCE_INCOMPLETE_NO_DECISION", f"{description} ended early")
+            payload.extend(chunk)
+        if os.read(descriptor, 1):
+            _fail("ARTIFACT_INVALID", f"{description} grew during bounded read")
+        after = os.fstat(descriptor)
+        named = os.stat(path, follow_symlinks=False)
+        identity_after = os.fstat(identity_descriptor)
+        if any(
+            getattr(before, field) != getattr(after, field)
+            or getattr(before, field) != getattr(identity_after, field)
+            or getattr(before, field) != getattr(named, field)
+            for field in stable_fields
+        ):
+            _fail("ARTIFACT_INVALID", f"{description} changed during bounded read")
+        return bytes(payload)
+    except SupervisorFailure:
+        raise
+    except OSError as error:
+        _fail(
+            "EVIDENCE_INCOMPLETE_NO_DECISION",
+            f"cannot read bounded {description}: {error}",
+        )
+    finally:
+        active_error = sys.exc_info()[0] is not None
+        if descriptor is not None:
+            try:
+                os.close(descriptor)
+            except OSError as error:
+                if not active_error:
+                    _fail(
+                        "EVIDENCE_INCOMPLETE_NO_DECISION",
+                        f"cannot close bounded {description}: {error}",
+                    )
+        if identity_descriptor is not None:
+            try:
+                os.close(identity_descriptor)
+            except OSError as error:
+                if not active_error:
+                    _fail(
+                        "EVIDENCE_INCOMPLETE_NO_DECISION",
+                        f"cannot close bounded {description} identity: {error}",
+                    )
+
+
+def _read_regular_file_prefix(
+    path: Path,
+    prefix_bytes: int,
+    description: str,
+    expected_metadata: os.stat_result | None = None,
+) -> bytes:
+    """Read only a diagnostic prefix while proving a stable regular file."""
+
+    descriptor: int | None = None
+    identity_descriptor: int | None = None
+    try:
+        identity_descriptor = os.open(
+            path,
+            os.O_PATH
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+        )
+        before = os.fstat(identity_descriptor)
+        if not stat.S_ISREG(before.st_mode):
+            _fail("ARTIFACT_INVALID", f"{description} is not a regular file")
+        stable_fields = (
+            "st_dev",
+            "st_ino",
+            "st_mode",
+            "st_size",
+            "st_mtime_ns",
+            "st_ctime_ns",
+        )
+        if expected_metadata is not None and any(
+            getattr(expected_metadata, field) != getattr(before, field)
+            for field in stable_fields
+        ):
+            _fail(
+                "ARTIFACT_INVALID",
+                f"{description} differs from its byte-ledger identity",
+            )
+        descriptor = os.open(
+            f"/proc/self/fd/{identity_descriptor}",
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NONBLOCK", 0),
+        )
+        reopened = os.fstat(descriptor)
+        expected = min(before.st_size, prefix_bytes)
+        payload = bytearray()
+        while len(payload) < expected:
+            chunk = os.read(descriptor, expected - len(payload))
+            if not chunk:
+                _fail(
+                    "EVIDENCE_INCOMPLETE_NO_DECISION",
+                    f"{description} ended before its diagnostic prefix",
+                )
+            payload.extend(chunk)
+        after = os.fstat(descriptor)
+        named = os.stat(path, follow_symlinks=False)
+        identity_after = os.fstat(identity_descriptor)
+        if any(
+            getattr(before, field) != getattr(reopened, field)
+            or getattr(before, field) != getattr(identity_after, field)
+            or getattr(before, field) != getattr(after, field)
+            or getattr(before, field) != getattr(named, field)
+            for field in stable_fields
+        ):
+            _fail("ARTIFACT_INVALID", f"{description} changed during prefix read")
+        return bytes(payload)
+    except SupervisorFailure:
+        raise
+    except OSError as error:
+        _fail(
+            "EVIDENCE_INCOMPLETE_NO_DECISION",
+            f"cannot read {description} prefix: {error}",
+        )
+    finally:
+        active_error = sys.exc_info()[0] is not None
+        if descriptor is not None:
+            try:
+                os.close(descriptor)
+            except OSError as error:
+                if not active_error:
+                    _fail(
+                        "EVIDENCE_INCOMPLETE_NO_DECISION",
+                        f"cannot close {description} prefix: {error}",
+                    )
+        if identity_descriptor is not None:
+            try:
+                os.close(identity_descriptor)
+            except OSError as error:
+                if not active_error:
+                    _fail(
+                        "EVIDENCE_INCOMPLETE_NO_DECISION",
+                        f"cannot close {description} prefix identity: {error}",
+                    )
+
+
+def _probe_entry_nofollow(
+    path: Path,
+    description: str,
+    record_failure: Any,
+) -> tuple[bool, bool, os.stat_result | None]:
+    """Return (known, present, metadata) without hiding a broken symlink."""
+
+    try:
+        return True, True, os.lstat(path)
+    except FileNotFoundError:
+        return True, False, None
+    except OSError as error:
+        record_failure(
+            "EVIDENCE_INCOMPLETE_NO_DECISION",
+            f"{description} no-follow presence check failed: {error}",
+        )
+        return False, False, None
+
+
+def _cleanup_owned_staging(
+    path: Path,
+    phase: str,
+    byte_ledger: ByteLedger,
+    record_failure: Any,
+) -> bool:
+    """Best-effort account and remove a terminated child's staging entry."""
+
+    known, present, metadata = _probe_entry_nofollow(
+        path,
+        f"{phase} staging",
+        record_failure,
+    )
+    if not known:
+        return False
+    if not present:
+        return True
+    assert metadata is not None
+    byte_ledger.switch(phase)
+    if stat.S_ISDIR(metadata.st_mode):
+        try:
+            byte_ledger.admit_tree(path)
+        except SupervisorFailure as error:
+            record_failure(error.status, error.detail)
+        except OSError as error:
+            record_failure(
+                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                f"{phase} staging inventory failed: {error}",
+            )
+        try:
+            byte_ledger.discard_tree(path)
+        except SupervisorFailure as error:
+            record_failure(error.status, error.detail)
+        except OSError as error:
+            record_failure(
+                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                f"{phase} staging ledger cleanup failed: {error}",
+            )
+        try:
+            shutil.rmtree(path)
+        except OSError as error:
+            record_failure(
+                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                f"{phase} staging physical cleanup failed: {error}",
+            )
+    else:
+        record_failure(
+            "ARTIFACT_INVALID",
+            f"{phase} staging root is not a real directory",
+        )
+        if stat.S_ISREG(metadata.st_mode):
+            try:
+                byte_ledger.note_created(path, metadata)
+            except SupervisorFailure as error:
+                record_failure(error.status, error.detail)
+        try:
+            path.unlink()
+        except OSError as error:
+            record_failure(
+                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                f"{phase} non-directory staging cleanup failed: {error}",
+            )
+        else:
+            if path in byte_ledger.live:
+                try:
+                    byte_ledger.note_discarded_file(path)
+                except SupervisorFailure as error:
+                    record_failure(error.status, error.detail)
+
+    final_known, final_present, _ = _probe_entry_nofollow(
+        path,
+        f"{phase} post-cleanup staging",
+        record_failure,
+    )
+    if final_known and not final_present:
+        return True
+    if final_known:
+        record_failure(
+            "EVIDENCE_INCOMPLETE_NO_DECISION",
+            f"{phase} staging remains after cleanup",
+        )
+    return False
 
 
 def _external_wrapper(
@@ -2923,7 +4342,11 @@ def _external_wrapper(
     environment_sha: str,
     bytes_: ByteLedger,
     initial_boundary: PhaseBoundary,
+    prior_study_cpu_microseconds: int,
     response_pipe: bool = False,
+    allow_published_resource_return: bool = False,
+    success_validator: Any | None = None,
+    post_cleanup_validator: Any | None = None,
 ) -> tuple[
     list[dict[str, Any]],
     bytes,
@@ -2932,7 +4355,7 @@ def _external_wrapper(
     Mapping[str, Any],
     PhaseBoundary,
 ]:
-    """Launch a fixed-argv wrapper with canonical control on fd 198."""
+    """Launch, reap, classify, and receipt one fixed-argv external phase."""
 
     receipts: list[dict[str, Any]] = []
     fixed_argv = tuple(argv)
@@ -2956,127 +4379,646 @@ def _external_wrapper(
             _reserve_fixed_descriptor(response_write, 199)
             response_write = 199
         pass_descriptors = (198, 199) if response_pipe else (198,)
-        with stdout_path.open("xb", buffering=0) as stdout_file, stderr_path.open(
-            "xb", buffering=0
-        ) as stderr_file:
-            process = subprocess.Popen(
-                fixed_argv,
-                stdin=subprocess.DEVNULL,
-                stdout=stdout_file,
-                stderr=stderr_file,
-                env=_child_environment(),
-                pass_fds=pass_descriptors,
-                close_fds=True,
+
+        parent_status: str | None = None
+        parent_details: list[str] = []
+        nonresource_validation_failure = False
+        post_cleanup_valid = post_cleanup_validator is None
+
+        def record_parent_failure(status: str, detail: str) -> None:
+            nonlocal parent_status, nonresource_validation_failure
+            resolved = status if status in STATUS_ORDER else "IMPLEMENTATION_INVALID"
+            parent_status = _status_min(parent_status, resolved)
+            parent_details.append(detail)
+            if resolved != "RESOURCE_INCOMPLETE_NO_DECISION":
+                nonresource_validation_failure = True
+
+        process: subprocess.Popen[bytes] | None = None
+        usage: WaitResult | None = None
+        post_reap_mask: set[signal.Signals] | None = None
+        launch_mask: set[signal.Signals] | None = None
+        supervisor_interrupted = False
+        resource_return_eligible = False
+
+        def close_recovery_controls() -> None:
+            nonlocal response_read
+            # Recovery invokes this callback only after SIGINT is blocked.
+            # Define it before launch so the exception path can enter the
+            # block/close/kill/must-reap helper as its first child action.
+            for descriptor in (
+                198,
+                199 if response_pipe else -1,
+                request_write,
+            ):
+                if descriptor < 0:
+                    continue
+                try:
+                    os.close(descriptor)
+                except OSError as error:
+                    if error.errno != errno.EBADF:
+                        record_parent_failure(
+                            "EVIDENCE_INCOMPLETE_NO_DECISION",
+                            f"{phase} recovery control close failed: {error}",
+                        )
+            if response_read is not None:
+                try:
+                    os.close(response_read)
+                except OSError as error:
+                    if error.errno != errno.EBADF:
+                        record_parent_failure(
+                            "EVIDENCE_INCOMPLETE_NO_DECISION",
+                            f"{phase} recovery response close failed: {error}",
+                        )
+                response_read = None
+
+        try:
+            with stdout_path.open("xb", buffering=0) as stdout_file, stderr_path.open(
+                "xb", buffering=0
+            ) as stderr_file:
+                launch_mask, launch_interrupted = (
+                    _block_sigint_for_critical_section()
+                )
+                if _consume_deferred_sigint():
+                    launch_interrupted = True
+                if launch_interrupted:
+                    _restore_sigint_after_receipt(launch_mask)
+                    raise KeyboardInterrupt(
+                        f"{phase} supervisor interrupted before child launch"
+                    )
+                try:
+                    process = subprocess.Popen(
+                        fixed_argv,
+                        stdin=subprocess.DEVNULL,
+                        stdout=stdout_file,
+                        stderr=stderr_file,
+                        env=_child_environment(),
+                        pass_fds=pass_descriptors,
+                        close_fds=True,
+                        preexec_fn=_block_sigint_before_external_exec,
+                    )
+                finally:
+                    if _consume_deferred_sigint():
+                        launch_interrupted = True
+                    if _restore_sigint_after_receipt(launch_mask):
+                        launch_interrupted = True
+                if launch_interrupted:
+                    raise KeyboardInterrupt(
+                        f"{phase} supervisor interrupted at child launch"
+                    )
+                os.close(198)
+                if response_pipe:
+                    os.close(199)
+                try:
+                    offset = 0
+                    while offset < len(control_payload):
+                        written = os.write(request_write, control_payload[offset:])
+                        if written <= 0:
+                            record_parent_failure(
+                                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                                f"{phase} control short write",
+                            )
+                            break
+                        offset += written
+                except OSError as error:
+                    record_parent_failure(
+                        "EVIDENCE_INCOMPLETE_NO_DECISION",
+                        f"{phase} control write failed: {error}",
+                    )
+                finally:
+                    try:
+                        os.close(request_write)
+                    except OSError as error:
+                        record_parent_failure(
+                            "EVIDENCE_INCOMPLETE_NO_DECISION",
+                            f"{phase} control descriptor close failed: {error}",
+                        )
+                (
+                    usage,
+                    post_reap_mask,
+                    terminal_edge_interrupted,
+                ) = _wait4_with_deferred_postreap_sigint(process.pid)
+                supervisor_interrupted = terminal_edge_interrupted
+                process.returncode = usage.exit_code
+                for stream_name, stream in (("stdout", stdout_file), ("stderr", stderr_file)):
+                    try:
+                        os.fsync(stream.fileno())
+                    except OSError as error:
+                        record_parent_failure(
+                            "EVIDENCE_INCOMPLETE_NO_DECISION",
+                            f"{phase} {stream_name} fsync failed: {error}",
+                        )
+        except BaseException as parent_error:
+            recovery_mask, recovery_interrupted = (
+                _block_sigint_for_critical_section()
             )
-            os.close(198)
-            if response_pipe:
-                os.close(199)
-            offset = 0
-            while offset < len(control_payload):
-                written = os.write(request_write, control_payload[offset:])
-                if written <= 0:
-                    _fail("EVIDENCE_INCOMPLETE_NO_DECISION", f"{phase} control short write")
-                offset += written
-            os.close(request_write)
-            usage = _wait4_integer(process.pid)
-            process.returncode = usage.exit_code
-            os.fsync(stdout_file.fileno())
-            os.fsync(stderr_file.fileno())
-        response = b""
+            if _consume_deferred_sigint():
+                recovery_interrupted = True
+            supervisor_interrupted = (
+                supervisor_interrupted or recovery_interrupted
+            )
+            retained_recovery_mask = (
+                launch_mask
+                if signal.SIGINT in recovery_mask and launch_mask is not None
+                else recovery_mask
+            )
+            if process is None:
+                close_recovery_controls()
+                _fail(
+                    "RESOURCE_INCOMPLETE_NO_DECISION"
+                    if recovery_interrupted
+                    or isinstance(parent_error, (KeyboardInterrupt, SystemExit))
+                    else "IMPLEMENTATION_INVALID",
+                    f"{phase} child could not be launched: {parent_error}",
+                )
+            if usage is None:
+                (
+                    usage,
+                    post_reap_mask,
+                    terminal_edge_interrupted,
+                    kill_error,
+                ) = _kill_and_must_reap_while_sigint_blocked(
+                    process.pid,
+                    retained_recovery_mask,
+                    recovery_interrupted,
+                    close_recovery_controls,
+                )
+                supervisor_interrupted = (
+                    supervisor_interrupted or terminal_edge_interrupted
+                )
+                process.returncode = usage.exit_code
+                if kill_error is not None:
+                    record_parent_failure(
+                        "IMPLEMENTATION_INVALID",
+                        f"{phase} child termination reported: {kill_error}",
+                    )
+            else:
+                if post_reap_mask is None:
+                    post_reap_mask = retained_recovery_mask
+                close_recovery_controls()
+            record_parent_failure(
+                "RESOURCE_INCOMPLETE_NO_DECISION"
+                if isinstance(parent_error, (KeyboardInterrupt, SystemExit))
+                else parent_error.status
+                if isinstance(parent_error, SupervisorFailure)
+                else "IMPLEMENTATION_INVALID",
+                f"{phase} parent failed after launch: {parent_error}",
+            )
+            if isinstance(parent_error, (KeyboardInterrupt, SystemExit)):
+                supervisor_interrupted = True
+
+        if usage is None or post_reap_mask is None:
+            _fail("RESOURCE_INCOMPLETE_NO_DECISION", f"{phase} child has no wait receipt")
+
+        response = bytearray()
         if response_read is not None:
-            while True:
-                chunk = os.read(response_read, 1 << 20)
-                if not chunk:
-                    break
-                response += chunk
-                if len(response) > 1 << 20:
-                    _fail("EVIDENCE_INCOMPLETE_NO_DECISION", f"{phase} response too large")
-            os.close(response_read)
-        stdout_payload = stdout_path.read_bytes()
-        stderr_payload = stderr_path.read_bytes()
+            try:
+                while True:
+                    chunk = os.read(response_read, 1 << 20)
+                    if not chunk:
+                        break
+                    response.extend(chunk)
+                    if len(response) > 1 << 20:
+                        record_parent_failure(
+                            "EVIDENCE_INCOMPLETE_NO_DECISION",
+                            f"{phase} response exceeds 1 MiB",
+                        )
+                        break
+            except OSError as error:
+                record_parent_failure(
+                    "EVIDENCE_INCOMPLETE_NO_DECISION",
+                    f"{phase} response read failed: {error}",
+                )
+            finally:
+                try:
+                    os.close(response_read)
+                except OSError as error:
+                    record_parent_failure(
+                        "EVIDENCE_INCOMPLETE_NO_DECISION",
+                        f"{phase} response descriptor close failed: {error}",
+                    )
+
         bytes_.switch(phase)
-        bytes_.note_created(stdout_path)
-        bytes_.note_created(stderr_path)
+        stream_metadata: dict[str, os.stat_result] = {}
+        for stream_name, path in (("stdout", stdout_path), ("stderr", stderr_path)):
+            try:
+                metadata = os.stat(path, follow_symlinks=False)
+                bytes_.note_created(path, metadata)
+                stream_metadata[stream_name] = metadata
+            except SupervisorFailure as error:
+                record_parent_failure(error.status, error.detail)
+            except OSError as error:
+                record_parent_failure(
+                    "EVIDENCE_INCOMPLETE_NO_DECISION",
+                    f"{phase} {stream_name} identity stat failed: {error}",
+                )
+
+        stdout_payload = b""
+        stderr_payload = b""
+        for stream_name, path in (("stdout", stdout_path), ("stderr", stderr_path)):
+            if stream_name not in stream_metadata:
+                continue
+            try:
+                payload = _read_bounded_regular_file(
+                    path,
+                    1 << 20,
+                    f"{phase} {stream_name}",
+                    "IMPLEMENTATION_INVALID",
+                    stream_metadata.get(stream_name),
+                )
+                if stream_name == "stdout":
+                    stdout_payload = payload
+                else:
+                    stderr_payload = payload
+            except SupervisorFailure as error:
+                record_parent_failure(error.status, error.detail)
+        if usage.exit_code == 0 and stderr_payload:
+            record_parent_failure(
+                "IMPLEMENTATION_INVALID",
+                f"{phase} successful child emitted stderr",
+            )
+        if usage.exit_code == 0 and response_pipe and stdout_payload:
+            record_parent_failure(
+                "IMPLEMENTATION_INVALID",
+                f"{phase} successful identity-pipe child emitted stdout",
+            )
+
         target = artifact_root / published_directory
         staging = artifact_root / f"{published_directory}.staging"
+        target_known, target_present, target_metadata = _probe_entry_nofollow(
+            target,
+            f"{phase} publication target",
+            record_parent_failure,
+        )
+        publication_visible = target_known and target_present
+        publication_target_real = (
+            publication_visible
+            and target_metadata is not None
+            and stat.S_ISDIR(target_metadata.st_mode)
+        )
+        if publication_visible and not publication_target_real:
+            record_parent_failure(
+                "ARTIFACT_INVALID",
+                f"{phase} publication target is not a real directory",
+            )
         output_payload = b""
         output_object: Mapping[str, Any] = {}
-        if usage.exit_code == 0:
+        output_valid = False
+        if usage.exit_code == 0 and publication_target_real:
             output_path = artifact_root / published_file
-            if not output_path.is_file():
-                _fail("EVIDENCE_INCOMPLETE_NO_DECISION", f"{phase} omitted published output")
-            output_payload = output_path.read_bytes()
-            _sha256(output_payload)
-            parsed_output = _parse_json_document(
-                output_payload, f"{phase} published output", True
+            try:
+                output_metadata = os.stat(output_path, follow_symlinks=False)
+            except FileNotFoundError:
+                record_parent_failure(
+                    "EVIDENCE_INCOMPLETE_NO_DECISION",
+                    f"{phase} omitted published output",
+                )
+            except OSError as error:
+                record_parent_failure(
+                    "EVIDENCE_INCOMPLETE_NO_DECISION",
+                    f"{phase} published output stat failed: {error}",
+                )
+            else:
+                if not stat.S_ISREG(output_metadata.st_mode):
+                    record_parent_failure(
+                        "ARTIFACT_INVALID",
+                        f"{phase} published output is not a regular file",
+                    )
+                else:
+                    try:
+                        bytes_.atomic_external_file(phase, output_metadata.st_size)
+                    except SupervisorFailure as error:
+                        record_parent_failure(error.status, error.detail)
+                        if error.status == "RESOURCE_INCOMPLETE_NO_DECISION":
+                            resource_return_eligible = True
+                    try:
+                        output_payload = _read_bounded_regular_file(
+                            output_path,
+                            EVIDENCE_LIMIT,
+                            f"{phase} published output",
+                            "RESOURCE_INCOMPLETE_NO_DECISION",
+                            output_metadata,
+                        )
+                        parsed_output = _parse_json_document(
+                            output_payload, f"{phase} published output", True
+                        )
+                        if not isinstance(parsed_output, dict):
+                            _fail(
+                                "ARTIFACT_INVALID",
+                                f"{phase} published output is not an object",
+                            )
+                        output_object = parsed_output
+                        output_valid = True
+                    except SupervisorFailure as error:
+                        record_parent_failure(error.status, error.detail)
+        if usage.exit_code == 0 and not publication_visible:
+            record_parent_failure(
+                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                f"{phase} exited successfully without a visible target",
             )
-            if not isinstance(parsed_output, dict):
-                _fail("EVIDENCE_INCOMPLETE_NO_DECISION", f"{phase} output is not an object")
-            output_object = parsed_output
-            bytes_.atomic_external_file(phase, len(output_payload))
-        elif staging.exists():
-            bytes_.admit_tree(staging)
-        response_payload = response or stdout_payload
+
+        response_payload = bytes(response) if response_pipe else stdout_payload
         response_object: Mapping[str, Any] = {}
-        if usage.exit_code == 0 and response_payload:
-            parsed_response = _parse_json_document(
-                response_payload, f"{phase} control response", True
+        response_valid = False
+        if usage.exit_code == 0:
+            if not response_payload:
+                record_parent_failure(
+                    "EVIDENCE_INCOMPLETE_NO_DECISION",
+                    f"{phase} omitted its required control response",
+                )
+            else:
+                try:
+                    parsed_response = _parse_json_document(
+                        response_payload, f"{phase} control response", True
+                    )
+                    if not isinstance(parsed_response, dict):
+                        record_parent_failure(
+                            "EVIDENCE_INCOMPLETE_NO_DECISION",
+                            f"{phase} response transport is not an object",
+                        )
+                    else:
+                        response_object = parsed_response
+                        response_valid = True
+                except SupervisorFailure as error:
+                    record_parent_failure(
+                        "EVIDENCE_INCOMPLETE_NO_DECISION",
+                        f"{phase} response transport is invalid: {error.detail}",
+                    )
+            if response_pipe and response_valid:
+                if set(response_object) != {"sha256", "size_bytes"}:
+                    record_parent_failure(
+                        "EVIDENCE_INCOMPLETE_NO_DECISION",
+                        f"{phase} identity response has a partial shape",
+                    )
+                    response_valid = False
+            if response_pipe and response_valid and output_valid:
+                if (
+                    response_object.get("sha256") != _sha256(output_payload)
+                    or response_object.get("size_bytes") != len(output_payload)
+                ):
+                    record_parent_failure(
+                        "ARTIFACT_INVALID",
+                        f"{phase} identity response mismatch",
+                    )
+                    response_valid = False
+            if response_valid and output_valid and success_validator is not None:
+                try:
+                    success_validator(
+                        response_object,
+                        output_payload,
+                        output_object,
+                    )
+                except SupervisorFailure as error:
+                    record_parent_failure(error.status, error.detail)
+                    response_valid = False
+                except BaseException as error:
+                    record_parent_failure(
+                        "RESOURCE_INCOMPLETE_NO_DECISION"
+                        if isinstance(error, (KeyboardInterrupt, SystemExit))
+                        else "IMPLEMENTATION_INVALID",
+                        f"{phase} success-interface validator failed: {error}",
+                    )
+                    response_valid = False
+
+        _, precleanup_staging_present, _ = _probe_entry_nofollow(
+            staging,
+            f"{phase} pre-cleanup staging",
+            record_parent_failure,
+        )
+        if publication_visible and precleanup_staging_present:
+            record_parent_failure(
+                "ARTIFACT_INVALID",
+                f"{phase} left staging beside a published target",
             )
-            if not isinstance(parsed_response, dict):
-                _fail("EVIDENCE_INCOMPLETE_NO_DECISION", f"{phase} response is not an object")
-            response_object = parsed_response
-        if response_pipe and usage.exit_code == 0 and (
-            set(response_object) != {"sha256", "size_bytes"}
-            or response_object.get("sha256") != _sha256(output_payload)
-            or response_object.get("size_bytes") != len(output_payload)
-        ):
-            _fail("ARTIFACT_INVALID", f"{phase} identity response mismatch")
+        staging_absent_confirmed = _cleanup_owned_staging(
+            staging,
+            phase,
+            bytes_,
+            record_parent_failure,
+        )
+
         for path in (stdout_path, stderr_path):
-            path.unlink()
-            bytes_.note_deleted(path)
-        work.rmdir()
-        interrupted_after_publication = usage.exit_code != 0 and target.exists()
-        if usage.exit_code != 0 and staging.exists():
-            bytes_.discard_tree(staging)
-            shutil.rmtree(staging)
-        end = _snapshot()
-        end_utc = _utc_now()
-        boundary = PhaseBoundary(end, end_utc)
-        disposition = "ATOMICALLY_PUBLISHED" if usage.exit_code == 0 else "DISCARDED"
-        reason = (
+            stream_known, stream_present, stream_cleanup_metadata = (
+                _probe_entry_nofollow(
+                    path,
+                    f"{phase} owned stream cleanup",
+                    record_parent_failure,
+                )
+            )
+            if not stream_known or not stream_present:
+                continue
+            if (
+                stream_cleanup_metadata is None
+                or not stat.S_ISREG(stream_cleanup_metadata.st_mode)
+            ):
+                record_parent_failure(
+                    "ARTIFACT_INVALID",
+                    f"{phase} owned stream became non-regular before cleanup",
+                )
+            try:
+                path.unlink()
+                if path in bytes_.live:
+                    bytes_.note_deleted(path)
+            except SupervisorFailure as error:
+                record_parent_failure(error.status, error.detail)
+            except OSError as error:
+                record_parent_failure(
+                    "EVIDENCE_INCOMPLETE_NO_DECISION",
+                    f"{phase} stream cleanup failed: {error}",
+                )
+        try:
+            work.rmdir()
+        except OSError as error:
+            record_parent_failure(
+                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                f"{phase} work-directory cleanup failed: {error}",
+            )
+        work_known, work_present, _ = _probe_entry_nofollow(
+            work,
+            f"{phase} post-cleanup work directory",
+            record_parent_failure,
+        )
+        work_absent_confirmed = work_known and not work_present
+        if work_known and work_present:
+            record_parent_failure(
+                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                f"{phase} work directory remains after cleanup",
+            )
+        if (
+            usage.exit_code == 0
+            and post_cleanup_validator is not None
+            and not nonresource_validation_failure
+        ):
+            try:
+                post_cleanup_validator()
+                post_cleanup_valid = True
+            except SupervisorFailure as error:
+                record_parent_failure(error.status, error.detail)
+            except BaseException as error:
+                record_parent_failure(
+                    "RESOURCE_INCOMPLETE_NO_DECISION"
+                    if isinstance(error, (KeyboardInterrupt, SystemExit))
+                    else "IMPLEMENTATION_INVALID",
+                    f"{phase} post-cleanup validator failed: {error}",
+                )
+
+        if _consume_deferred_sigint():
+            supervisor_interrupted = True
+        if supervisor_interrupted:
+            record_parent_failure(
+                "RESOURCE_INCOMPLETE_NO_DECISION",
+                f"{phase} supervisor SIGINT observed after child terminal state",
+            )
+
+        raw_wrapper_signal = usage.exit_code < 0
+        clean_nested_interruption = (
+            phase == "V_replay"
+            and usage.exit_code == CHILD_EXTERNAL_INTERRUPTION_EXIT_CODE
+        )
+        retryable_interruption = clean_nested_interruption or (
+            raw_wrapper_signal and phase != "V_replay"
+        )
+        child_interrupted = raw_wrapper_signal or clean_nested_interruption
+        child_reason = (
             "PHASE_COMPLETE"
             if usage.exit_code == 0
+            else "RESOURCE_INCOMPLETE_NO_DECISION"
+            if raw_wrapper_signal and phase == "V_replay"
             else "EXTERNAL_INTERRUPTION"
-            if usage.exit_code < 0
+            if retryable_interruption
+            else "RESOURCE_INCOMPLETE_NO_DECISION"
+            if usage.exit_code == CHILD_RESOURCE_FAILURE_EXIT_CODE
             else "EVIDENCE_INCOMPLETE_NO_DECISION"
-        )
-        receipts.append(
-            _phase_receipt(
-                phase=phase,
-                attempt_id=attempt,
-                argv=fixed_argv,
-                binary_sha256=receipt_binary_sha256,
-                start=start,
-                start_utc=start_utc,
-                end=end,
-                end_utc=end_utc,
-                child_usage=usage,
-                completed_unit=completed_unit,
-                reason=reason,
-                disposition=disposition,
-                logical_run_id=logical_run_id,
-                commit=commit,
-                environment_sha=environment_sha,
-            )
+            if usage.exit_code == CHILD_EVIDENCE_FAILURE_EXIT_CODE
+            else "ARTIFACT_INVALID"
+            if usage.exit_code == CHILD_ARTIFACT_FAILURE_EXIT_CODE
+            else "IMPLEMENTATION_INVALID"
         )
         if (
-            sum(item["cpu_microseconds"] for item in receipts) > PER_PHASE_CPU_LIMIT
-            or sum(item["wall_nanoseconds"] for item in receipts) > PER_PHASE_WALL_LIMIT
+            usage.exit_code == CHILD_RESOURCE_FAILURE_EXIT_CODE
+            and publication_visible
         ):
-            _fail("RESOURCE_INCOMPLETE_NO_DECISION", f"{phase} operational ceiling crossed")
-        if max(item["peak_rss_bytes"] for item in receipts) > RSS_LIMIT:
-            _fail("RESOURCE_INCOMPLETE_NO_DECISION", f"{phase} RSS ceiling crossed")
-        if usage.exit_code == 0:
+            child_reason = "IMPLEMENTATION_INVALID"
+        if retryable_interruption and publication_visible:
+            child_reason = "RESOURCE_INCOMPLETE_NO_DECISION"
+        if parent_status is not None:
+            child_reason = (
+                _status_min(child_reason, parent_status)
+                if child_reason in STATUS_ORDER
+                else parent_status
+            )
+        if attempt == 1 and retryable_interruption:
+            child_reason = (
+                _status_min(
+                    child_reason,
+                    "RESOURCE_INCOMPLETE_NO_DECISION",
+                )
+                if child_reason in STATUS_ORDER
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+            )
+
+        try:
+            end = _snapshot()
+        except (OSError, KeyboardInterrupt, SystemExit) as error:
+            snapshot_status = _status_min(parent_status, "IMPLEMENTATION_INVALID")
+            if isinstance(error, (KeyboardInterrupt, SystemExit)):
+                snapshot_status = _status_min(
+                    parent_status, "RESOURCE_INCOMPLETE_NO_DECISION"
+                )
+            if child_reason in STATUS_ORDER:
+                snapshot_status = _status_min(snapshot_status, child_reason)
+            _fail(
+                snapshot_status,
+                f"{phase} terminal resource snapshot failed after child reap: {error}",
+            )
+        end_utc = _utc_now()
+        boundary = PhaseBoundary(end, end_utc)
+
+        staging_disposition = (
+            "ATOMICALLY_PUBLISHED"
+            if publication_visible
+            else "DISCARDED"
+            if (
+                target_known
+                and not target_present
+                and staging_absent_confirmed
+                and work_absent_confirmed
+            )
+            else "NONE"
+        )
+        candidate_receipt = _phase_receipt(
+            phase=phase,
+            attempt_id=attempt,
+            argv=fixed_argv,
+            binary_sha256=receipt_binary_sha256,
+            start=start,
+            start_utc=start_utc,
+            end=end,
+            end_utc=end_utc,
+            child_usage=usage,
+            completed_unit=completed_unit,
+            reason=child_reason,
+            disposition=staging_disposition,
+            logical_run_id=logical_run_id,
+            commit=commit,
+            environment_sha=environment_sha,
+        )
+        candidate_receipts = (*receipts, candidate_receipt)
+        parent_resource_crossed = (
+            sum(item["cpu_microseconds"] for item in candidate_receipts)
+            > PER_PHASE_CPU_LIMIT
+            or sum(item["wall_nanoseconds"] for item in candidate_receipts)
+            > PER_PHASE_WALL_LIMIT
+            or max(item["peak_rss_bytes"] for item in candidate_receipts) > RSS_LIMIT
+            or prior_study_cpu_microseconds
+            + sum(item["cpu_microseconds"] for item in candidate_receipts)
+            > STUDY_CPU_LIMIT
+        )
+        if parent_resource_crossed:
+            resource_return_eligible = True
+            candidate_receipt["exit_reason"] = (
+                _status_min(
+                    str(candidate_receipt["exit_reason"]),
+                    "RESOURCE_INCOMPLETE_NO_DECISION",
+                )
+                if candidate_receipt["exit_reason"] in STATUS_ORDER
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+            )
+        receipts.append(candidate_receipt)
+
+        if _consume_deferred_sigint():
+            supervisor_interrupted = True
+        if _restore_sigint_after_receipt(post_reap_mask):
+            supervisor_interrupted = True
+        post_reap_mask = None
+        if supervisor_interrupted:
+            current_reason = str(candidate_receipt["exit_reason"])
+            candidate_receipt["exit_reason"] = (
+                _status_min(current_reason, "RESOURCE_INCOMPLETE_NO_DECISION")
+                if current_reason in STATUS_ORDER
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+            )
+            if not any("supervisor SIGINT" in item for item in parent_details):
+                parent_details.append(
+                    f"{phase} supervisor SIGINT observed at receipt boundary"
+                )
+
+        local_detail = "; ".join(parent_details) or (
+            f"{phase} child exit {usage.exit_code}: {stderr_payload[:4096]!r}"
+        )
+        phase_contract_complete = (
+            usage.exit_code == 0
+            and publication_visible
+            and publication_target_real
+            and staging_absent_confirmed
+            and work_absent_confirmed
+            and output_valid
+            and response_valid
+            and post_cleanup_valid
+            and not supervisor_interrupted
+            and not nonresource_validation_failure
+        )
+        final_reason = str(candidate_receipt["exit_reason"])
+        if phase_contract_complete and final_reason == "PHASE_COMPLETE":
             return (
                 receipts,
                 response_payload,
@@ -3085,11 +5027,33 @@ def _external_wrapper(
                 output_object,
                 boundary,
             )
-        if interrupted_after_publication:
-            _fail("RESOURCE_INCOMPLETE_NO_DECISION", f"{phase} interrupted after publication")
-        if usage.exit_code > 0:
-            _fail("EVIDENCE_INCOMPLETE_NO_DECISION", f"{phase} failed: {stderr_payload[:4096]!r}")
-    raise SupervisorFailure("RESOURCE_INCOMPLETE_NO_DECISION", f"{phase} interrupted twice")
+        if (
+            phase_contract_complete
+            and final_reason == "RESOURCE_INCOMPLETE_NO_DECISION"
+            and allow_published_resource_return
+            and resource_return_eligible
+        ):
+            return (
+                receipts,
+                response_payload,
+                output_payload,
+                response_object,
+                output_object,
+                boundary,
+            )
+        if (
+            child_interrupted
+            and final_reason == "EXTERNAL_INTERRUPTION"
+            and staging_disposition == "DISCARDED"
+        ):
+            continue
+        _fail(
+            final_reason
+            if final_reason in STATUS_ORDER
+            else "IMPLEMENTATION_INVALID",
+            local_detail,
+        )
+    _fail("RESOURCE_INCOMPLETE_NO_DECISION", f"{phase} interrupted twice")
 
 
 def _write_pipe_document(descriptor: int, value: Mapping[str, Any]) -> None:
@@ -3102,7 +5066,7 @@ def _write_pipe_document(descriptor: int, value: Mapping[str, Any]) -> None:
         offset += written
 
 
-def _read_pipe_document(descriptor: int, description: str) -> Mapping[str, Any]:
+def _read_pipe_payload(descriptor: int, description: str) -> bytes:
     payload = bytearray()
     while True:
         chunk = os.read(descriptor, 1 << 16)
@@ -3111,12 +5075,83 @@ def _read_pipe_document(descriptor: int, description: str) -> Mapping[str, Any]:
         payload.extend(chunk)
         if len(payload) > 4 * 1024 * 1024:
             _fail("EVIDENCE_INCOMPLETE_NO_DECISION", f"{description} exceeds 4 MiB")
-    if not payload:
-        return {}
-    return _parse_json_document(bytes(payload), description, True)
+    return bytes(payload)
 
 
-def _emit_in_inherited_process(
+class _EmitHandoffOwner:
+    """Restore C's original mask if E fails before a successful first fork."""
+
+    def __init__(self, previous: set[signal.Signals]) -> None:
+        self.previous = previous
+        self.active = True
+        self.descriptors: set[int] = set()
+        self.cleanup_error: str | None = None
+
+    def own_descriptors(self, *descriptors: int) -> None:
+        if self.active:
+            self.descriptors.update(descriptors)
+
+    def restore(self) -> bool:
+        if not self.active:
+            return False
+        close_errors: list[str] = []
+        for descriptor in tuple(self.descriptors):
+            try:
+                os.close(descriptor)
+            except OSError as error:
+                if error.errno != errno.EBADF:
+                    close_errors.append(f"fd {descriptor}: {error}")
+        self.descriptors.clear()
+        if close_errors:
+            self.cleanup_error = "; ".join(close_errors)
+        # Retain ownership until the mask restore itself succeeds.  A restore
+        # failure is fail-stop with SIGINT still blocked and this owner still
+        # active, so no caller can mistake a failed handoff for a release.
+        interrupted = _restore_sigint_after_receipt(self.previous)
+        self.active = False
+        return interrupted
+
+    def transfer_to_fork_parent(self) -> None:
+        if not self.active:
+            _fail("IMPLEMENTATION_INVALID", "E handoff owner transferred twice")
+        self.descriptors.clear()
+        self.active = False
+
+
+def _restore_emit_handoff_after_error(
+    owner: _EmitHandoffOwner,
+    error: BaseException,
+) -> None:
+    if not owner.active:
+        return
+    restore_interrupted = owner.restore()
+    existing = getattr(error, "status", None)
+    if owner.cleanup_error is not None:
+        status = (
+            _status_min(existing, "IMPLEMENTATION_INVALID")
+            if existing in STATUS_ORDER
+            else "IMPLEMENTATION_INVALID"
+        )
+        _fail(
+            status,
+            "E pre-fork handoff descriptor cleanup failed: "
+            f"{owner.cleanup_error}; original error: {error}",
+        )
+    if restore_interrupted:
+        status = (
+            _status_min(existing, "RESOURCE_INCOMPLETE_NO_DECISION")
+            if existing in STATUS_ORDER
+            else "RESOURCE_INCOMPLETE_NO_DECISION"
+            if isinstance(error, (KeyboardInterrupt, SystemExit))
+            else "IMPLEMENTATION_INVALID"
+        )
+        _fail(
+            status,
+            f"E pre-fork handoff failed at a SIGINT restore edge: {error}",
+        )
+
+
+def _emit_in_inherited_process_body(
     *,
     state: producer.ProducerState,
     artifact_root: Path,
@@ -3129,6 +5164,7 @@ def _emit_in_inherited_process(
     logical_run_id: str,
     commit: str,
     environment_sha: str,
+    handoff_owner: _EmitHandoffOwner,
 ) -> tuple[list[dict[str, Any]], int, PhaseBoundary]:
     """Fork E_emit with COW state; no detail checkpoint crosses the boundary."""
 
@@ -3138,11 +5174,137 @@ def _emit_in_inherited_process(
     for attempt in range(2):
         start = boundary.snapshot
         start_utc = boundary.utc
+        prior_emit_ledger = byte_ledger.phase_object("E_emit")
         receipt_binary_sha256 = _sha256(Path(sys.executable).read_bytes())
-        read_fd, write_fd = os.pipe()
-        pre_fork = _snapshot()
-        pid = os.fork()
+        try:
+            read_fd, write_fd = os.pipe()
+        except OSError as error:
+            _fail(
+                "RESOURCE_INCOMPLETE_NO_DECISION",
+                f"E_emit response pipe could not be created: {error}",
+            )
+        handoff_owner.own_descriptors(read_fd, write_fd)
+        try:
+            pre_fork = _snapshot()
+        except OSError as error:
+            for descriptor in (read_fd, write_fd):
+                try:
+                    os.close(descriptor)
+                except OSError:
+                    pass
+            _fail(
+                "IMPLEMENTATION_INVALID",
+                f"E_emit pre-fork resource snapshot failed: {error}",
+            )
+        parent_status: str | None = None
+        parent_details: list[str] = []
+        nonresource_validation_failure = False
+        post_reap_mask: set[signal.Signals] | None = None
+        supervisor_interrupted = False
+
+        def record_parent_failure(status: str, detail: str) -> None:
+            nonlocal parent_status, nonresource_validation_failure
+            resolved = status if status in STATUS_ORDER else "IMPLEMENTATION_INVALID"
+            parent_status = _status_min(parent_status, resolved)
+            parent_details.append(detail)
+            if resolved != "RESOURCE_INCOMPLETE_NO_DECISION":
+                nonresource_validation_failure = True
+
+        if handoff_owner.active:
+            fork_mask = handoff_owner.previous
+            try:
+                inherited_mask = signal.pthread_sigmask(signal.SIG_BLOCK, set())
+            except (OSError, RuntimeError, ValueError) as error:
+                _fail(
+                    "IMPLEMENTATION_INVALID",
+                    f"cannot inspect inherited C-to-E SIGINT mask: {error}",
+                )
+            if signal.SIGINT not in inherited_mask or signal.SIGINT in fork_mask:
+                _fail(
+                    "IMPLEMENTATION_INVALID",
+                    "E did not receive the frozen blocked-to-unblocked handoff",
+                )
+            fork_interrupted = False
+        else:
+            fork_mask, fork_interrupted = _block_sigint_for_critical_section()
+        if _consume_deferred_sigint():
+            fork_interrupted = True
+        if fork_interrupted:
+            if handoff_owner.active:
+                handoff_owner.restore()
+                if handoff_owner.cleanup_error is not None:
+                    _fail(
+                        "IMPLEMENTATION_INVALID",
+                        "E pre-fork interrupted cleanup failed: "
+                        f"{handoff_owner.cleanup_error}",
+                    )
+            else:
+                _restore_sigint_after_receipt(fork_mask)
+            for descriptor in (read_fd, write_fd):
+                try:
+                    os.close(descriptor)
+                except OSError:
+                    pass
+            _fail(
+                "RESOURCE_INCOMPLETE_NO_DECISION",
+                "E_emit supervisor interrupted before fork",
+            )
+        response_payload = b""
+        parent_stage = "fork-mask restoration"
+        write_fd_open = True
+        read_fd_open = True
+        usage: WaitResult | None = None
+
+        def close_inherited_response_endpoints() -> None:
+            nonlocal write_fd_open, read_fd_open
+            # Recovery invokes this callback only after SIGINT is blocked.
+            # Defining it before fork lets the launched parent enter its
+            # recovery owner without any intervening setup.
+            for descriptor_name, descriptor, is_open in (
+                ("write", write_fd, write_fd_open),
+                ("read", read_fd, read_fd_open),
+            ):
+                if not is_open:
+                    continue
+                try:
+                    os.close(descriptor)
+                except OSError as close_error:
+                    record_parent_failure(
+                        "EVIDENCE_INCOMPLETE_NO_DECISION",
+                        f"E_emit inherited {descriptor_name}-descriptor "
+                        f"close failed: {close_error}",
+                    )
+                if descriptor_name == "write":
+                    write_fd_open = False
+                else:
+                    read_fd_open = False
+
+        try:
+            pid = os.fork()
+        except OSError as error:
+            _consume_deferred_sigint()
+            if handoff_owner.active:
+                handoff_owner.restore()
+                if handoff_owner.cleanup_error is not None:
+                    _fail(
+                        "IMPLEMENTATION_INVALID",
+                        "E pre-fork fork-failure cleanup failed: "
+                        f"{handoff_owner.cleanup_error}",
+                    )
+            else:
+                _restore_sigint_after_receipt(fork_mask)
+            for descriptor in (read_fd, write_fd):
+                try:
+                    os.close(descriptor)
+                except OSError:
+                    pass
+            _fail(
+                "RESOURCE_INCOMPLETE_NO_DECISION",
+                f"E_emit child could not be forked: {error}",
+            )
         if pid == 0:
+            signal.signal(signal.SIGINT, signal.SIG_DFL)
+            signal.pthread_sigmask(signal.SIG_SETMASK, fork_mask)
             try:
                 os.close(read_fd)
                 child_start = _snapshot()
@@ -3204,8 +5366,8 @@ def _emit_in_inherited_process(
                 os.close(write_fd)
                 os._exit(0)
             except BaseException as error:
-                status = getattr(error, "status", "EVIDENCE_INCOMPLETE_NO_DECISION")
-                detail = getattr(error, "detail", str(error))
+                status = getattr(error, "status", "IMPLEMENTATION_INVALID")
+                detail = str(getattr(error, "detail", str(error)))[:4096]
                 try:
                     _write_pipe_document(
                         write_fd,
@@ -3214,86 +5376,671 @@ def _emit_in_inherited_process(
                     os.close(write_fd)
                 finally:
                     os._exit(2)
-        os.close(write_fd)
-        usage = _wait4_integer(pid)
-        response = _read_pipe_document(read_fd, "E_emit inherited response")
-        os.close(read_fd)
+        try:
+            if handoff_owner.active:
+                handoff_owner.transfer_to_fork_parent()
+            if _consume_deferred_sigint():
+                fork_interrupted = True
+            if _restore_sigint_after_receipt(fork_mask):
+                fork_interrupted = True
+            if fork_interrupted:
+                raise KeyboardInterrupt("E_emit interrupted at fork boundary")
+
+            parent_stage = "inherited write-descriptor close"
+            os.close(write_fd)
+            write_fd_open = False
+            parent_stage = "inherited response drain"
+            response_payload = _read_pipe_payload(
+                read_fd, "E_emit inherited response"
+            )
+            parent_stage = "inherited read-descriptor close"
+            os.close(read_fd)
+            read_fd_open = False
+            parent_stage = "terminal wait handoff"
+            (
+                usage,
+                post_reap_mask,
+                terminal_edge_interrupted,
+            ) = _wait4_with_deferred_postreap_sigint(pid)
+            supervisor_interrupted = (
+                supervisor_interrupted or terminal_edge_interrupted
+            )
+        except BaseException as error:
+            recovery_mask, recovery_interrupted = (
+                _block_sigint_for_critical_section()
+            )
+            if _consume_deferred_sigint():
+                recovery_interrupted = True
+            if usage is None:
+                retained_mask = (
+                    fork_mask
+                    if signal.SIGINT in recovery_mask
+                    else recovery_mask
+                )
+                (
+                    usage,
+                    post_reap_mask,
+                    terminal_edge_interrupted,
+                    kill_error,
+                ) = _kill_and_must_reap_while_sigint_blocked(
+                    pid,
+                    retained_mask,
+                    recovery_interrupted,
+                    close_inherited_response_endpoints,
+                )
+            else:
+                close_inherited_response_endpoints()
+                terminal_edge_interrupted = recovery_interrupted
+                kill_error = None
+                if post_reap_mask is None:
+                    post_reap_mask = (
+                        fork_mask
+                        if signal.SIGINT in recovery_mask
+                        else recovery_mask
+                    )
+            supervisor_interrupted = (
+                supervisor_interrupted
+                or terminal_edge_interrupted
+                or recovery_interrupted
+                or isinstance(error, (KeyboardInterrupt, SystemExit))
+            )
+            record_parent_failure(
+                "RESOURCE_INCOMPLETE_NO_DECISION"
+                if isinstance(error, (KeyboardInterrupt, SystemExit))
+                else error.status
+                if isinstance(error, SupervisorFailure)
+                else "EVIDENCE_INCOMPLETE_NO_DECISION"
+                if isinstance(error, OSError) and parent_stage != "terminal wait handoff"
+                else "IMPLEMENTATION_INVALID",
+                f"E_emit supervisor failed during {parent_stage}: {error}",
+            )
+            if kill_error is not None:
+                record_parent_failure(
+                    "IMPLEMENTATION_INVALID",
+                    f"E_emit child termination reported: {kill_error}",
+                )
+        if post_reap_mask is None:
+            _fail(
+                "RESOURCE_INCOMPLETE_NO_DECISION",
+                "E_emit child has no deferred terminal receipt boundary",
+            )
         target = artifact_root / "evidence"
         staging = artifact_root / "evidence.staging"
-        if usage.exit_code == 0:
-            if response.get("ok") is not True or not isinstance(
-                response.get("byte_ledger"), dict
-            ):
-                _fail(
+        target_known, target_present, target_metadata = _probe_entry_nofollow(
+            target,
+            "E_emit publication target",
+            record_parent_failure,
+        )
+        publication_visible = target_known and target_present
+        publication_target_real = (
+            publication_visible
+            and target_metadata is not None
+            and stat.S_ISDIR(target_metadata.st_mode)
+        )
+        if publication_visible and not publication_target_real:
+            record_parent_failure(
+                "ARTIFACT_INVALID",
+                "E_emit publication target is not a real directory",
+            )
+        response: Any = {}
+        response_transport_valid = False
+        if usage.exit_code >= 0 and response_payload:
+            try:
+                response = _parse_json_document(
+                    response_payload, "E_emit inherited response", True
+                )
+                response_transport_valid = True
+            except SupervisorFailure as error:
+                record_parent_failure(
                     "EVIDENCE_INCOMPLETE_NO_DECISION",
-                    "E_emit success response is malformed",
+                    f"E_emit inherited response is invalid: {error.detail}",
                 )
-            byte_ledger.replace_phase("E_emit", response["byte_ledger"])
-        else:
-            if target.exists():
-                _fail(
-                    "RESOURCE_INCOMPLETE_NO_DECISION",
-                    "E_emit died after atomic publication",
-                )
-            if staging.exists():
-                byte_ledger.switch("E_emit")
-                byte_ledger.discard_tree(staging)
-                shutil.rmtree(staging)
-        end = _snapshot()
-        end_utc = _utc_now()
-        boundary = PhaseBoundary(end, end_utc)
-        exit_reason = (
+        expected_t_instrument = sum(
+            item["cpu_microseconds"]
+            for item in raw_instrument_receipts
+            if item["phase"] in {"C_setup", "C_core", "C_bundle_io"}
+        )
+        expected_evidence_identities = (
+            (
+                "evidence/scalar_optimum_records.jsonl",
+                "scalar_optimum_records",
+                "scalar_optimum_v2-jsonl",
+            ),
+            (
+                "evidence/allocation_summary.json",
+                "allocation_summary",
+                "allocation_summary_v2",
+            ),
+            (
+                "evidence/block_trajectories.jsonl",
+                "block_trajectories",
+                "block_metadata_v2-or-block_start_v2-jsonl",
+            ),
+            (
+                "evidence/encoding_summary.json",
+                "encoding_summary",
+                "encoding_summary_v2",
+            ),
+            (
+                "evidence/producer_manifest.json",
+                "producer_manifest",
+                "producer_manifest_v2",
+            ),
+        )
+        response_files = response.get("files") if isinstance(response, dict) else None
+        files_valid = (
+            isinstance(response_files, list)
+            and len(response_files) == len(expected_evidence_identities)
+        )
+        response_file_total = 0
+        if files_valid:
+            for item, expected_identity in zip(
+                response_files, expected_evidence_identities
+            ):
+                if not (
+                    isinstance(item, dict)
+                    and set(item)
+                    == {
+                        "path",
+                        "producing_phase",
+                        "role",
+                        "schema",
+                        "sha256",
+                        "size_bytes",
+                    }
+                    and (
+                        item["path"],
+                        item["role"],
+                        item["schema"],
+                    )
+                    == expected_identity
+                    and item["producing_phase"] == "E_emit"
+                    and isinstance(item["sha256"], str)
+                    and re.fullmatch(r"[0-9a-f]{64}", item["sha256"]) is not None
+                    and isinstance(item["size_bytes"], int)
+                    and not isinstance(item["size_bytes"], bool)
+                    and item["size_bytes"] >= 0
+                ):
+                    files_valid = False
+                    break
+                response_file_total += item["size_bytes"]
+        response_ledger = (
+            response.get("byte_ledger") if isinstance(response, dict) else None
+        )
+        ledger_numeric_names = {
+            "created_temporary_bytes",
+            "deleted_partial_bytes",
+            "maximum_live_owned_temporary_bytes",
+            "permanent_intermediate_bundle_bytes",
+            "research_evidence_archive_bytes",
+        }
+        ledger_shape_valid = (
+            isinstance(response_ledger, dict)
+            and set(response_ledger) == {*ledger_numeric_names, "phase"}
+            and response_ledger.get("phase") == "E_emit"
+            and all(
+                isinstance(response_ledger.get(name), int)
+                and not isinstance(response_ledger.get(name), bool)
+                and response_ledger.get(name, -1) >= 0
+                for name in ledger_numeric_names
+            )
+        )
+        response_total = response.get("total_bytes") if isinstance(response, dict) else None
+        ledger_reconciles = (
+            ledger_shape_valid
+            and prior_emit_ledger["created_temporary_bytes"]
+            == prior_emit_ledger["deleted_partial_bytes"]
+            and prior_emit_ledger["permanent_intermediate_bundle_bytes"] == 0
+            and prior_emit_ledger["research_evidence_archive_bytes"] == 0
+            and isinstance(response_total, int)
+            and not isinstance(response_total, bool)
+            and response_total == response_file_total
+            and response_total <= EVIDENCE_LIMIT
+            and response_ledger["created_temporary_bytes"]
+            == prior_emit_ledger["created_temporary_bytes"] + response_total
+            and response_ledger["deleted_partial_bytes"]
+            == prior_emit_ledger["deleted_partial_bytes"]
+            and response_ledger["maximum_live_owned_temporary_bytes"]
+            == max(
+                prior_emit_ledger["maximum_live_owned_temporary_bytes"],
+                response_total,
+            )
+            and response_ledger["permanent_intermediate_bundle_bytes"]
+            == prior_emit_ledger["permanent_intermediate_bundle_bytes"]
+            and response_ledger["research_evidence_archive_bytes"]
+            == prior_emit_ledger["research_evidence_archive_bytes"]
+            + response_total
+        )
+        success_response_valid = (
+            response_transport_valid
+            and isinstance(response, dict)
+            and set(response)
+            == {
+                "byte_ledger",
+                "directory",
+                "files",
+                "ok",
+                "t_instrument_cpu_microseconds",
+                "total_bytes",
+            }
+            and response.get("ok") is True
+            and response.get("directory") == "evidence"
+            and files_valid
+            and ledger_reconciles
+            and isinstance(response.get("t_instrument_cpu_microseconds"), int)
+            and not isinstance(response.get("t_instrument_cpu_microseconds"), bool)
+            and response.get("t_instrument_cpu_microseconds")
+            == expected_t_instrument
+        )
+        if usage.exit_code == 0 and not success_response_valid:
+            record_parent_failure(
+                "IMPLEMENTATION_INVALID"
+                if response_transport_valid
+                else "EVIDENCE_INCOMPLETE_NO_DECISION",
+                "E_emit success response is malformed",
+            )
+        failure_response_shape_valid = (
+            isinstance(response, dict)
+            and set(response) == {"detail", "ok", "status"}
+            and response.get("ok") is False
+            and isinstance(response.get("detail"), str)
+            and isinstance(response.get("status"), str)
+        )
+        allowed_failure_statuses = {
+            "ARTIFACT_INVALID",
+            "EVIDENCE_INCOMPLETE_NO_DECISION",
+            "IMPLEMENTATION_INVALID",
+            "RESOURCE_INCOMPLETE_NO_DECISION",
+        }
+        failure_response_valid = (
+            failure_response_shape_valid
+            and response.get("status") in allowed_failure_statuses
+        )
+        if usage.exit_code == 2 and not failure_response_valid:
+            record_parent_failure(
+                "IMPLEMENTATION_INVALID"
+                if response_transport_valid
+                else "EVIDENCE_INCOMPLETE_NO_DECISION",
+                "E_emit failure response is outside its frozen typed channel"
+                if failure_response_shape_valid
+                else "E_emit failure response is malformed",
+            )
+        if usage.exit_code == 0 and not publication_visible:
+            record_parent_failure(
+                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                "E_emit exited successfully without a visible evidence target",
+            )
+        byte_ledger_replaced = False
+        if (
+            usage.exit_code == 0
+            and success_response_valid
+            and publication_target_real
+        ):
+            try:
+                byte_ledger.replace_phase("E_emit", response["byte_ledger"])
+                byte_ledger_replaced = True
+            except SupervisorFailure as error:
+                record_parent_failure(error.status, error.detail)
+        _, precleanup_staging_present, _ = _probe_entry_nofollow(
+            staging,
+            "E_emit pre-cleanup staging",
+            record_parent_failure,
+        )
+        if publication_visible and precleanup_staging_present:
+            record_parent_failure(
+                "ARTIFACT_INVALID",
+                "E_emit left staging beside a published target",
+            )
+        staging_absent_confirmed = _cleanup_owned_staging(
+            staging,
+            "E_emit",
+            byte_ledger,
+            record_parent_failure,
+        )
+        if _consume_deferred_sigint():
+            supervisor_interrupted = True
+        if supervisor_interrupted:
+            record_parent_failure(
+                "RESOURCE_INCOMPLETE_NO_DECISION",
+                "E_emit supervisor SIGINT observed after child terminal state",
+            )
+
+        child_reason = (
             "PHASE_COMPLETE"
             if usage.exit_code == 0
+            else "EVIDENCE_INCOMPLETE_NO_DECISION"
+            if usage.exit_code == 2 and not failure_response_valid
             else "EXTERNAL_INTERRUPTION"
             if usage.exit_code < 0
-            else str(response.get("status", "EVIDENCE_INCOMPLETE_NO_DECISION"))
+            else str(response["status"])
+            if usage.exit_code == 2
+            else "IMPLEMENTATION_INVALID"
         )
-        receipts.append(
-            _phase_receipt(
-                phase="E_emit",
-                attempt_id=attempt,
-                argv=fixed_argv,
-                binary_sha256=receipt_binary_sha256,
-                start=start,
-                start_utc=start_utc,
-                end=end,
-                end_utc=end_utc,
-                child_usage=usage,
-                completed_unit=state.last_completed_unit_index,
-                reason=exit_reason,
-                disposition="ATOMICALLY_PUBLISHED" if usage.exit_code == 0 else "DISCARDED",
-                logical_run_id=logical_run_id,
-                commit=commit,
-                environment_sha=environment_sha,
+        if usage.exit_code < 0 and publication_visible:
+            child_reason = "RESOURCE_INCOMPLETE_NO_DECISION"
+        if parent_status is not None:
+            child_reason = (
+                _status_min(child_reason, parent_status)
+                if child_reason in STATUS_ORDER
+                else parent_status
             )
+        if attempt == 1 and usage.exit_code < 0:
+            child_reason = (
+                _status_min(child_reason, "RESOURCE_INCOMPLETE_NO_DECISION")
+                if child_reason in STATUS_ORDER
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+            )
+        try:
+            end = _snapshot()
+        except (OSError, KeyboardInterrupt, SystemExit) as error:
+            candidate_status = (
+                "RESOURCE_INCOMPLETE_NO_DECISION"
+                if isinstance(error, (KeyboardInterrupt, SystemExit))
+                else "IMPLEMENTATION_INVALID"
+            )
+            snapshot_status = _status_min(parent_status, candidate_status)
+            if child_reason in STATUS_ORDER:
+                snapshot_status = _status_min(snapshot_status, child_reason)
+            _fail(
+                snapshot_status,
+                f"E_emit terminal resource snapshot failed after child reap: {error}",
+            )
+        end_utc = _utc_now()
+        boundary = PhaseBoundary(end, end_utc)
+        phase_contract_complete = (
+            usage.exit_code == 0
+            and success_response_valid
+            and publication_visible
+            and publication_target_real
+            and staging_absent_confirmed
+            and byte_ledger_replaced
+            and not supervisor_interrupted
+            and not nonresource_validation_failure
         )
-        if (
-            sum(item["cpu_microseconds"] for item in receipts) > PER_PHASE_CPU_LIMIT
-            or sum(item["wall_nanoseconds"] for item in receipts) > PER_PHASE_WALL_LIMIT
+        staging_disposition = (
+            "ATOMICALLY_PUBLISHED"
+            if publication_visible
+            else "DISCARDED"
+            if target_known and not target_present and staging_absent_confirmed
+            else "NONE"
+        )
+        candidate_receipt = _phase_receipt(
+            phase="E_emit",
+            attempt_id=attempt,
+            argv=fixed_argv,
+            binary_sha256=receipt_binary_sha256,
+            start=start,
+            start_utc=start_utc,
+            end=end,
+            end_utc=end_utc,
+            child_usage=usage,
+            completed_unit=state.last_completed_unit_index,
+            reason=child_reason,
+            disposition=staging_disposition,
+            logical_run_id=logical_run_id,
+            commit=commit,
+            environment_sha=environment_sha,
+        )
+        candidate_receipts = (*receipts, candidate_receipt)
+        parent_resource_crossed = (
+            sum(item["cpu_microseconds"] for item in candidate_receipts)
+            > PER_PHASE_CPU_LIMIT
+            or sum(item["wall_nanoseconds"] for item in candidate_receipts)
+            > PER_PHASE_WALL_LIMIT
             or sealed_cpu
-            + sum(
-                item["cpu_microseconds"]
-                for item in raw_instrument_receipts
-                if item["phase"] in {"C_setup", "C_core", "C_bundle_io"}
-            )
-            + sum(item["cpu_microseconds"] for item in receipts)
+            + expected_t_instrument
+            + sum(item["cpu_microseconds"] for item in candidate_receipts)
             > STUDY_CPU_LIMIT
-            or max(item["peak_rss_bytes"] for item in receipts) > RSS_LIMIT
+            or max(item["peak_rss_bytes"] for item in candidate_receipts)
+            > RSS_LIMIT
+        )
+        if parent_resource_crossed:
+            current_reason = str(candidate_receipt["exit_reason"])
+            candidate_receipt["exit_reason"] = (
+                _status_min(current_reason, "RESOURCE_INCOMPLETE_NO_DECISION")
+                if current_reason in STATUS_ORDER
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+            )
+        receipts.append(candidate_receipt)
+        if _consume_deferred_sigint():
+            supervisor_interrupted = True
+        if _restore_sigint_after_receipt(post_reap_mask):
+            supervisor_interrupted = True
+        post_reap_mask = None
+        if supervisor_interrupted:
+            current_reason = str(candidate_receipt["exit_reason"])
+            candidate_receipt["exit_reason"] = (
+                _status_min(current_reason, "RESOURCE_INCOMPLETE_NO_DECISION")
+                if current_reason in STATUS_ORDER
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+            )
+            if not any("supervisor SIGINT" in item for item in parent_details):
+                parent_details.append(
+                    "E_emit supervisor SIGINT observed at receipt boundary"
+                )
+        final_reason = str(candidate_receipt["exit_reason"])
+        if phase_contract_complete and final_reason == "PHASE_COMPLETE":
+            return receipts, expected_t_instrument, boundary
+        if (
+            usage.exit_code < 0
+            and final_reason == "EXTERNAL_INTERRUPTION"
+            and staging_disposition == "DISCARDED"
         ):
-            _fail("RESOURCE_INCOMPLETE_NO_DECISION", "E_emit operational ceiling crossed")
-        if usage.exit_code == 0:
-            return receipts, int(response["t_instrument_cpu_microseconds"]), boundary
-        if usage.exit_code > 0:
-            status = str(response.get("status", "EVIDENCE_INCOMPLETE_NO_DECISION"))
-            detail = str(response.get("detail", "E_emit child failed"))
-            _fail(status if status in STATUS_ORDER else "EVIDENCE_INCOMPLETE_NO_DECISION", detail)
+            continue
+        detail = "; ".join(parent_details) or (
+            str(response.get("detail", "E_emit child failed"))
+            if usage.exit_code == 2 and failure_response_valid
+            else "E_emit operational ceiling crossed"
+            if final_reason == "RESOURCE_INCOMPLETE_NO_DECISION"
+            else "E_emit success response/publication is malformed"
+            if usage.exit_code == 0
+            else f"E_emit child exit {usage.exit_code}"
+        )
+        _fail(
+            final_reason if final_reason in STATUS_ORDER else "IMPLEMENTATION_INVALID",
+            detail,
+        )
     _fail("RESOURCE_INCOMPLETE_NO_DECISION", "E_emit process interrupted twice")
+
+
+def _emit_in_inherited_process(
+    *,
+    state: producer.ProducerState,
+    artifact_root: Path,
+    context_base: Mapping[str, Any],
+    raw_instrument_receipts: Sequence[Mapping[str, Any]],
+    byte_ledger: ByteLedger,
+    checkpoint_start: ResourceSnapshot,
+    checkpoint_utc: str,
+    sealed_cpu: int,
+    logical_run_id: str,
+    commit: str,
+    environment_sha: str,
+    handoff_owner: _EmitHandoffOwner,
+) -> tuple[list[dict[str, Any]], int, PhaseBoundary]:
+    """Own C's blocked mask until E's first fork or an explicit restore."""
+
+    try:
+        return _emit_in_inherited_process_body(
+            state=state,
+            artifact_root=artifact_root,
+            context_base=context_base,
+            raw_instrument_receipts=raw_instrument_receipts,
+            byte_ledger=byte_ledger,
+            checkpoint_start=checkpoint_start,
+            checkpoint_utc=checkpoint_utc,
+            sealed_cpu=sealed_cpu,
+            logical_run_id=logical_run_id,
+            commit=commit,
+            environment_sha=environment_sha,
+            handoff_owner=handoff_owner,
+        )
+    except BaseException as error:
+        _restore_emit_handoff_after_error(handoff_owner, error)
+        raise
 
 
 def _input_file_count(state: producer.ProducerState, include_evidence: bool) -> int:
     bundle = len(state.bundle.files) if state.bundle is not None else 0
     return bundle + (5 if include_evidence else 0)
+
+
+def _require_exact_final_input_tree(root: Path, bundle_published: bool) -> None:
+    expected = {
+        "archive": {"archive_body.json"},
+        "evidence": {
+            "allocation_summary.json",
+            "block_trajectories.jsonl",
+            "encoding_summary.json",
+            "producer_manifest.json",
+            "scalar_optimum_records.jsonl",
+        },
+        "verifier": {"verifier_summary.json"},
+    }
+    if bundle_published:
+        expected["bundle"] = {
+            "codes_b04.bin",
+            "codes_b08.bin",
+            "models.json",
+            "representation_manifest.json",
+        }
+    stable_fields = (
+        "st_dev",
+        "st_ino",
+        "st_mode",
+        "st_size",
+        "st_mtime_ns",
+        "st_ctime_ns",
+    )
+
+    def require_same(
+        expected_metadata: os.stat_result,
+        observed_metadata: os.stat_result,
+        description: str,
+    ) -> None:
+        if any(
+            getattr(expected_metadata, field) != getattr(observed_metadata, field)
+            for field in stable_fields
+        ):
+            _fail("ARTIFACT_INVALID", f"pre-F identity changed: {description}")
+
+    directory_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    leaf_flags = os.O_PATH | getattr(os, "O_CLOEXEC", 0) | getattr(
+        os, "O_NOFOLLOW", 0
+    )
+    root_fd: int | None = None
+    try:
+        root_named = os.stat(root, follow_symlinks=False)
+        root_fd = os.open(root, directory_flags)
+        root_opened = os.fstat(root_fd)
+        require_same(root_named, root_opened, str(root))
+        with os.scandir(root_fd) as root_entries:
+            observed_root = {entry.name: entry for entry in root_entries}
+        if set(observed_root) != set(expected) or any(
+            not stat.S_ISDIR(entry.stat(follow_symlinks=False).st_mode)
+            for entry in observed_root.values()
+        ):
+            _fail("ARTIFACT_INVALID", "pre-F artifact-root membership is not exact")
+        for directory, expected_files in expected.items():
+            directory_fd: int | None = None
+            try:
+                entry_metadata = observed_root[directory].stat(follow_symlinks=False)
+                directory_fd = os.open(
+                    directory,
+                    directory_flags,
+                    dir_fd=root_fd,
+                )
+                opened_metadata = os.fstat(directory_fd)
+                require_same(entry_metadata, opened_metadata, directory)
+                with os.scandir(directory_fd) as child_entries:
+                    observed_children = {
+                        entry.name: entry for entry in child_entries
+                    }
+                if set(observed_children) != expected_files:
+                    _fail(
+                        "ARTIFACT_INVALID",
+                        f"pre-F {directory} membership is not exact",
+                    )
+                for name, entry in observed_children.items():
+                    leaf_metadata = entry.stat(follow_symlinks=False)
+                    if not stat.S_ISREG(leaf_metadata.st_mode):
+                        _fail(
+                            "ARTIFACT_INVALID",
+                            f"pre-F {directory}/{name} is not regular",
+                        )
+                    leaf_fd = os.open(name, leaf_flags, dir_fd=directory_fd)
+                    try:
+                        opened_leaf = os.fstat(leaf_fd)
+                        named_leaf = os.stat(
+                            name,
+                            dir_fd=directory_fd,
+                            follow_symlinks=False,
+                        )
+                        require_same(
+                            leaf_metadata,
+                            opened_leaf,
+                            f"{directory}/{name}",
+                        )
+                        require_same(
+                            opened_leaf,
+                            named_leaf,
+                            f"{directory}/{name}",
+                        )
+                    finally:
+                        active_error = sys.exc_info()[0] is not None
+                        try:
+                            os.close(leaf_fd)
+                        except OSError as error:
+                            if not active_error:
+                                _fail(
+                                    "ARTIFACT_INVALID",
+                                    f"cannot close exact pre-F leaf "
+                                    f"{directory}/{name}: {error}",
+                                )
+                directory_after = os.fstat(directory_fd)
+                directory_named_after = os.stat(
+                    directory,
+                    dir_fd=root_fd,
+                    follow_symlinks=False,
+                )
+                require_same(opened_metadata, directory_after, directory)
+                require_same(opened_metadata, directory_named_after, directory)
+            finally:
+                active_error = sys.exc_info()[0] is not None
+                if directory_fd is not None:
+                    try:
+                        os.close(directory_fd)
+                    except OSError as error:
+                        if not active_error:
+                            _fail(
+                                "ARTIFACT_INVALID",
+                                f"cannot close exact pre-F directory "
+                                f"{directory}: {error}",
+                            )
+        root_after = os.fstat(root_fd)
+        root_named_after = os.stat(root, follow_symlinks=False)
+        require_same(root_opened, root_after, str(root))
+        require_same(root_opened, root_named_after, str(root))
+    except SupervisorFailure:
+        raise
+    except OSError as error:
+        _fail("ARTIFACT_INVALID", f"cannot validate exact pre-F input tree: {error}")
+    finally:
+        active_error = sys.exc_info()[0] is not None
+        if root_fd is not None:
+            try:
+                os.close(root_fd)
+            except OSError as error:
+                if not active_error:
+                    _fail(
+                        "ARTIFACT_INVALID",
+                        f"cannot close exact pre-F root: {error}",
+                    )
 
 
 def _observe_closed_producer_terminal(
@@ -3312,27 +6059,595 @@ def _discard_producer_staging(
     artifact_root: Path,
     attempt_root: Path,
     byte_ledger: ByteLedger,
-) -> None:
+    record_failure: Any,
+) -> bool:
     """Ledger and remove both unpublished producer staging namespaces."""
 
     bundle_staging = artifact_root / "bundle.staging"
-    try:
-        metadata = os.lstat(bundle_staging)
-    except FileNotFoundError:
-        pass
-    except OSError as error:
-        _fail("ARTIFACT_INVALID", f"cannot inspect bundle staging: {error}")
-    else:
-        if not stat.S_ISDIR(metadata.st_mode):
-            _fail("ARTIFACT_INVALID", "bundle staging is not a real directory")
-        byte_ledger.discard_tree(bundle_staging)
-        try:
-            shutil.rmtree(bundle_staging)
-        except OSError as error:
-            _fail("ARTIFACT_INVALID", f"cannot discard bundle staging: {error}")
+    phase = byte_ledger.phase
+    bundle_absent = _cleanup_owned_staging(
+        bundle_staging,
+        phase,
+        byte_ledger,
+        record_failure,
+    )
+    attempt_absent = _cleanup_owned_staging(
+        attempt_root,
+        phase,
+        byte_ledger,
+        record_failure,
+    )
+    return bundle_absent and attempt_absent
 
-    byte_ledger.discard_tree(attempt_root)
-    producer.discard_attempt_root(attempt_root)
+
+def _finalize_producer_attempt(
+    *,
+    hooks: SupervisorHooks,
+    meter: InstrumentMeter,
+    artifact_root: Path,
+    attempt_root: Path,
+    byte_ledger: ByteLedger,
+    reason: str,
+    disposition: str,
+) -> tuple[str, bool, str, bool]:
+    """Close C cleanup, sticky resources, receipt, and SIGINT as one boundary."""
+
+    if hooks.terminal_finalized:
+        def merged_finalized_status(candidate: str) -> str:
+            merged = _c_failure_status(candidate)
+            for existing in (reason, hooks.terminal_known_status):
+                if existing in STATUS_ORDER:
+                    merged = _status_min(merged, _c_failure_status(existing))
+            if (
+                hooks.terminal_receipt_index is not None
+                and hooks.terminal_receipt_index == len(meter.receipts) - 1
+            ):
+                existing = str(
+                    meter.receipts[hooks.terminal_receipt_index]["exit_reason"]
+                )
+                if existing in STATUS_ORDER:
+                    merged = _status_min(merged, _c_failure_status(existing))
+            return merged
+
+        try:
+            terminal_interrupted = hooks.begin_terminal_closure()
+        except BaseException as error:
+            hooks.terminal_closure_valid = False
+            _fail(
+                merged_finalized_status(
+                    error.status
+                    if isinstance(error, SupervisorFailure)
+                    else "RESOURCE_INCOMPLETE_NO_DECISION"
+                    if isinstance(error, (KeyboardInterrupt, SystemExit))
+                    else "IMPLEMENTATION_INVALID"
+                ),
+                f"cannot re-enter C terminal closure: {error}",
+            )
+        if (
+            hooks.terminal_receipt_index is None
+            or hooks.terminal_receipt_index != len(meter.receipts) - 1
+        ):
+            _fail(
+                merged_finalized_status("IMPLEMENTATION_INVALID"),
+                "C terminal receipt guard is inconsistent",
+            )
+        receipt = meter.receipts[hooks.terminal_receipt_index]
+        merged_existing = str(receipt["exit_reason"])
+        if reason in STATUS_ORDER:
+            normalized_reason = _c_failure_status(reason)
+            merged_existing = (
+                _status_min(_c_failure_status(merged_existing), normalized_reason)
+                if merged_existing in STATUS_ORDER
+                else normalized_reason
+            )
+        if terminal_interrupted:
+            hooks.resource_incomplete = True
+            merged_existing = (
+                _status_min(
+                    merged_existing,
+                    "RESOURCE_INCOMPLETE_NO_DECISION",
+                )
+                if merged_existing in STATUS_ORDER
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+            )
+        receipt["exit_reason"] = merged_existing
+        try:
+            terminal_interrupted = hooks.observe_terminal_closure()
+        except BaseException as error:
+            hooks.terminal_closure_valid = False
+            merged_existing = merged_finalized_status(
+                error.status
+                if isinstance(error, SupervisorFailure)
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+                if isinstance(error, (KeyboardInterrupt, SystemExit))
+                else "IMPLEMENTATION_INVALID"
+            )
+            receipt["exit_reason"] = merged_existing
+            _fail(
+                merged_existing,
+                f"cannot observe re-entered C terminal closure: {error}",
+            )
+        if terminal_interrupted:
+            hooks.resource_incomplete = True
+            merged_existing = (
+                _status_min(
+                    merged_existing,
+                    "RESOURCE_INCOMPLETE_NO_DECISION",
+                )
+                if merged_existing in STATUS_ORDER
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+            )
+            receipt["exit_reason"] = merged_existing
+        return (
+            merged_existing,
+            hooks.resource_incomplete,
+            hooks.terminal_disposition,
+            hooks.terminal_cleanup_complete,
+        )
+
+    normalized_reason = _c_failure_status(reason) if reason in STATUS_ORDER else reason
+    merged_reason = (
+        _status_min(normalized_reason, hooks.terminal_known_status)
+        if normalized_reason in STATUS_ORDER
+        and hooks.terminal_known_status in C_FAILURE_STATUSES
+        else hooks.terminal_known_status
+        if hooks.terminal_known_status in C_FAILURE_STATUSES
+        else normalized_reason
+    )
+    cleanup_in_progress = False
+    cleanup_accounting_complete = True
+
+    def record_failure(status: str, detail: str) -> None:
+        nonlocal merged_reason, cleanup_accounting_complete
+        resolved = _c_failure_status(status)
+        merged_reason = (
+            _status_min(merged_reason, resolved)
+            if merged_reason in STATUS_ORDER
+            else resolved
+        )
+        if resolved == "RESOURCE_INCOMPLETE_NO_DECISION":
+            hooks.resource_incomplete = True
+        if cleanup_in_progress:
+            cleanup_accounting_complete = False
+
+    try:
+        terminal_interrupted = hooks.begin_terminal_closure()
+    except BaseException as error:
+        hooks.terminal_closure_valid = False
+        record_failure(
+            error.status
+            if isinstance(error, SupervisorFailure)
+            else "RESOURCE_INCOMPLETE_NO_DECISION"
+            if isinstance(error, (KeyboardInterrupt, SystemExit))
+            else "IMPLEMENTATION_INVALID",
+            f"cannot enter C terminal closure: {error}",
+        )
+        _fail(
+            merged_reason
+            if merged_reason in STATUS_ORDER
+            else "IMPLEMENTATION_INVALID",
+            "C terminal closure could not be entered",
+        )
+    if terminal_interrupted:
+        record_failure(
+            "RESOURCE_INCOMPLETE_NO_DECISION",
+            "C supervisor SIGINT observed before terminal cleanup",
+        )
+    receipt_count_before = len(meter.receipts)
+    observed_disposition = disposition
+    try:
+        if not hooks.terminal_cleanup_started:
+            hooks.terminal_cleanup_started = True
+            bundle_known, bundle_present, bundle_metadata = _probe_entry_nofollow(
+                artifact_root / "bundle",
+                "C bundle publication target",
+                record_failure,
+            )
+            bundle_admitted = (
+                hooks.last_state is not None
+                and hooks.last_state.last_completed_unit_index == 395
+                and hooks.last_state.bundle is not None
+            )
+            if not bundle_known:
+                observed_disposition = "NONE"
+                hooks.terminal_closure_valid = False
+            elif bundle_present:
+                hooks.publication_became_visible = True
+                observed_disposition = "ATOMICALLY_PUBLISHED"
+                if (
+                    bundle_metadata is None
+                    or not stat.S_ISDIR(bundle_metadata.st_mode)
+                ):
+                    record_failure(
+                        "ARTIFACT_INVALID",
+                        "C bundle publication target is not a real directory",
+                    )
+                    hooks.terminal_closure_valid = False
+                if not bundle_admitted:
+                    record_failure(
+                        "ARTIFACT_INVALID",
+                        "C bundle target is visible before U395 admission",
+                    )
+                    hooks.terminal_closure_valid = False
+            elif bundle_admitted or hooks.publication_became_visible:
+                record_failure(
+                    "ARTIFACT_INVALID",
+                    "C bundle publication marker disagrees with target visibility",
+                )
+                hooks.terminal_closure_valid = False
+            cleanup_in_progress = True
+            try:
+                try:
+                    staging_absent = _discard_producer_staging(
+                        artifact_root,
+                        attempt_root,
+                        byte_ledger,
+                        record_failure,
+                    )
+                except BaseException as error:
+                    staging_absent = False
+                    record_failure(
+                        error.status
+                        if isinstance(error, SupervisorFailure)
+                        else "IMPLEMENTATION_INVALID",
+                        f"C terminal staging cleanup failed: {error}",
+                    )
+            finally:
+                cleanup_in_progress = False
+            if (
+                observed_disposition != "ATOMICALLY_PUBLISHED"
+                and disposition == "DISCARDED"
+                and not staging_absent
+            ):
+                observed_disposition = "NONE"
+            hooks.terminal_closure_valid = (
+                hooks.terminal_closure_valid
+                and staging_absent
+                and cleanup_accounting_complete
+            )
+            hooks.terminal_cleanup_complete = hooks.terminal_closure_valid
+            hooks.terminal_disposition = observed_disposition
+        else:
+            observed_disposition = hooks.terminal_disposition
+            if not hooks.terminal_cleanup_complete:
+                hooks.terminal_closure_valid = False
+        try:
+            meter.close_current(merged_reason, observed_disposition)
+        except BaseException as error:
+            hooks.terminal_closure_valid = False
+            record_failure(
+                error.status
+                if isinstance(error, SupervisorFailure)
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+                if isinstance(error, (KeyboardInterrupt, SystemExit))
+                else "IMPLEMENTATION_INVALID",
+                f"C terminal receipt construction failed: {error}",
+            )
+        if len(meter.receipts) == receipt_count_before + 1:
+            hooks.terminal_finalized = True
+            hooks.terminal_receipt_index = len(meter.receipts) - 1
+            hooks.terminal_cleanup_complete = hooks.terminal_closure_valid
+            hooks.terminal_disposition = observed_disposition
+        if len(meter.receipts) == receipt_count_before + 1:
+            meter.receipts[-1]["exit_reason"] = merged_reason
+            meter.receipts[-1]["staging_disposition"] = observed_disposition
+    finally:
+        try:
+            terminal_interrupted = hooks.observe_terminal_closure()
+        except BaseException as error:
+            hooks.terminal_closure_valid = False
+            record_failure(
+                error.status
+                if isinstance(error, SupervisorFailure)
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+                if isinstance(error, (KeyboardInterrupt, SystemExit))
+                else "IMPLEMENTATION_INVALID",
+                f"cannot observe C terminal receipt boundary: {error}",
+            )
+            terminal_interrupted = False
+        if terminal_interrupted:
+            record_failure(
+                "RESOURCE_INCOMPLETE_NO_DECISION",
+                "C supervisor SIGINT observed at terminal receipt boundary",
+            )
+        if len(meter.receipts) == receipt_count_before + 1:
+            meter.receipts[-1]["exit_reason"] = merged_reason
+            meter.receipts[-1]["staging_disposition"] = observed_disposition
+    if len(meter.receipts) != receipt_count_before + 1:
+        _fail(
+            merged_reason if merged_reason in STATUS_ORDER else "IMPLEMENTATION_INVALID",
+            "C terminal receipt could not be constructed",
+        )
+    hooks.terminal_cleanup_complete = hooks.terminal_closure_valid
+    hooks.terminal_disposition = observed_disposition
+    return (
+        merged_reason,
+        hooks.resource_incomplete,
+        observed_disposition,
+        hooks.terminal_cleanup_complete,
+    )
+
+
+def _seal_producer_terminal_tail(
+    hooks: SupervisorHooks,
+    meter: InstrumentMeter,
+) -> tuple[str, bool, bool]:
+    """Extend the unique C receipt after all root-owned terminal work."""
+
+    def merged_known_status(candidate: str) -> str:
+        merged = _c_failure_status(candidate)
+        if hooks.terminal_known_status in C_FAILURE_STATUSES:
+            merged = _status_min(merged, hooks.terminal_known_status)
+        if (
+            hooks.terminal_receipt_index is not None
+            and hooks.terminal_receipt_index == len(meter.receipts) - 1
+        ):
+            existing = str(meter.receipts[hooks.terminal_receipt_index]["exit_reason"])
+            if existing in STATUS_ORDER:
+                merged = _status_min(merged, _c_failure_status(existing))
+        return merged
+
+    try:
+        hooks.begin_terminal_closure()
+    except BaseException as error:
+        hooks.terminal_closure_valid = False
+        _fail(
+            merged_known_status(
+                error.status
+                if isinstance(error, SupervisorFailure)
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+                if isinstance(error, (KeyboardInterrupt, SystemExit))
+                else "IMPLEMENTATION_INVALID"
+            ),
+            f"cannot enter C terminal-tail closure: {error}",
+        )
+    if (
+        not hooks.terminal_finalized
+        or hooks.terminal_receipt_index is None
+        or hooks.terminal_receipt_index != len(meter.receipts) - 1
+    ):
+        hooks.terminal_closure_valid = False
+        _fail(
+            merged_known_status("IMPLEMENTATION_INVALID"),
+            "C terminal receipt is not uniquely addressable",
+        )
+    receipt = meter.receipts[hooks.terminal_receipt_index]
+    reason = str(receipt["exit_reason"])
+    if hooks.terminal_tail_observation_attempted:
+        if not hooks.terminal_tail_extended:
+            hooks.terminal_closure_valid = False
+        return reason, hooks.resource_incomplete, hooks.terminal_closure_valid
+    hooks.terminal_tail_observation_attempted = True
+    try:
+        if _observe_closed_producer_terminal(hooks, meter):
+            reason = (
+                _status_min(
+                    _c_failure_status(reason),
+                    "RESOURCE_INCOMPLETE_NO_DECISION",
+                )
+                if reason in STATUS_ORDER
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+            )
+        hooks.terminal_tail_extended = True
+    except BaseException as error:
+        hooks.terminal_closure_valid = False
+        candidate = (
+            error.status
+            if isinstance(error, SupervisorFailure)
+            else "RESOURCE_INCOMPLETE_NO_DECISION"
+            if isinstance(error, (KeyboardInterrupt, SystemExit))
+            else "IMPLEMENTATION_INVALID"
+        )
+        candidate = _c_failure_status(candidate)
+        if candidate == "RESOURCE_INCOMPLETE_NO_DECISION":
+            hooks.resource_incomplete = True
+        reason = (
+            _status_min(_c_failure_status(reason), merged_known_status(candidate))
+            if reason in STATUS_ORDER
+            else merged_known_status(candidate)
+        )
+    try:
+        terminal_interrupted = hooks.observe_terminal_closure()
+    except BaseException as error:
+        hooks.terminal_closure_valid = False
+        candidate = (
+            error.status
+            if isinstance(error, SupervisorFailure)
+            else "RESOURCE_INCOMPLETE_NO_DECISION"
+            if isinstance(error, (KeyboardInterrupt, SystemExit))
+            else "IMPLEMENTATION_INVALID"
+        )
+        candidate = _c_failure_status(candidate)
+        if candidate == "RESOURCE_INCOMPLETE_NO_DECISION":
+            hooks.resource_incomplete = True
+        reason = (
+            _status_min(_c_failure_status(reason), merged_known_status(candidate))
+            if reason in STATUS_ORDER
+            else merged_known_status(candidate)
+        )
+        terminal_interrupted = False
+    if terminal_interrupted:
+        reason = (
+            _status_min(
+                _c_failure_status(reason),
+                "RESOURCE_INCOMPLETE_NO_DECISION",
+            )
+            if reason in STATUS_ORDER
+            else "RESOURCE_INCOMPLETE_NO_DECISION"
+        )
+    receipt["exit_reason"] = reason
+    return reason, hooks.resource_incomplete, hooks.terminal_closure_valid
+
+
+def _commit_producer_root_and_handoff(
+    hooks: SupervisorHooks,
+    meter: InstrumentMeter,
+    high_status: str | None,
+    preexisting_failure: str | None,
+    preexisting_details: Sequence[str],
+) -> tuple[_EmitHandoffOwner, str, bool]:
+    """Commit the final C boundary, validate it, and transfer ownership to E."""
+
+    def merged_known_status(candidate: str) -> str:
+        merged = _c_failure_status(candidate)
+        for existing in (
+            high_status,
+            preexisting_failure,
+            hooks.terminal_known_status,
+        ):
+            if existing in STATUS_ORDER:
+                merged = _status_min(merged, _c_failure_status(existing))
+        if (
+            hooks.terminal_receipt_index is not None
+            and hooks.terminal_receipt_index == len(meter.receipts) - 1
+        ):
+            existing = str(meter.receipts[hooks.terminal_receipt_index]["exit_reason"])
+            if existing in STATUS_ORDER:
+                merged = _status_min(merged, _c_failure_status(existing))
+        return merged
+
+    try:
+        hooks.begin_terminal_closure()
+    except BaseException as error:
+        hooks.terminal_closure_valid = False
+        _fail(
+            merged_known_status(
+                error.status
+                if isinstance(error, SupervisorFailure)
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+                if isinstance(error, (KeyboardInterrupt, SystemExit))
+                else "IMPLEMENTATION_INVALID"
+            ),
+            f"cannot enter C final root closure: {error}",
+        )
+    if (
+        not hooks.terminal_finalized
+        or hooks.terminal_receipt_index is None
+        or hooks.terminal_receipt_index != len(meter.receipts) - 1
+        or not hooks.terminal_tail_extended
+    ):
+        hooks.terminal_closure_valid = False
+        _fail(
+            merged_known_status("IMPLEMENTATION_INVALID"),
+            "C root extension lacks a sealed receipt",
+        )
+    receipt = meter.receipts[hooks.terminal_receipt_index]
+    reason = str(receipt["exit_reason"])
+    if hooks.terminal_root_extension_attempted:
+        _fail(
+            merged_known_status("IMPLEMENTATION_INVALID"),
+            "C root handoff was attempted twice",
+        )
+    hooks.terminal_root_extension_attempted = True
+
+    def merge_resource() -> None:
+        nonlocal reason
+        if hooks.resource_incomplete:
+            reason = (
+                _status_min(
+                    _c_failure_status(reason),
+                    "RESOURCE_INCOMPLETE_NO_DECISION",
+                )
+                if reason in STATUS_ORDER
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+            )
+
+    def validate_final_state() -> tuple[str | None, list[str]]:
+        status = (
+            _c_failure_status(preexisting_failure)
+            if preexisting_failure is not None
+            else None
+        )
+        details = list(preexisting_details)
+
+        def record(candidate: str, detail: str) -> None:
+            nonlocal status
+            status = _status_min(status, _c_failure_status(candidate))
+            details.append(detail)
+
+        if not hooks.terminal_closure_valid:
+            record(
+                high_status or "IMPLEMENTATION_INVALID",
+                "C terminal closure is incomplete at root commit",
+            )
+        if hooks.publication_became_visible and (
+            receipt.get("phase") != "C_bundle_io"
+            or receipt.get("completed_unit_index") != 395
+            or reason != "PHASE_COMPLETE"
+            or receipt.get("staging_disposition") != "ATOMICALLY_PUBLISHED"
+        ):
+            record(
+                "ARTIFACT_INVALID",
+                "visible bundle lacks the final exact U395 C receipt",
+            )
+        effective_high = high_status
+        if reason in STATUS_ORDER:
+            effective_high = _status_min(
+                effective_high,
+                _c_failure_status(reason),
+            )
+        if (
+            hooks.resource_incomplete
+            and effective_high
+            in {"ARTIFACT_INVALID", "IMPLEMENTATION_INVALID", "CONTROL_INVALID"}
+        ):
+            record(
+                effective_high,
+                "final C root commit exposed a compound failure",
+            )
+        return status, details
+
+    try:
+        preliminary = _snapshot()
+        hooks.observe_terminal_resources(preliminary)
+        hooks.observe_terminal_closure()
+        merge_resource()
+        receipt["exit_reason"] = reason
+        # Perform all status/visibility/compound validation before the final
+        # snapshot.  A cap that first crosses at that snapshot is monotone and
+        # is reclassified once below; no further scientific work follows.
+        preliminary_reason = reason
+        preliminary_resource = hooks.resource_incomplete
+        preliminary_validation = validate_final_state()
+        final_snapshot = _snapshot()
+        hooks.observe_terminal_resources(final_snapshot)
+        hooks.observe_terminal_closure()
+        merge_resource()
+        meter.extend_closed_terminal(final_snapshot)
+        hooks.terminal_root_extended = True
+    except BaseException as error:
+        hooks.terminal_closure_valid = False
+        candidate = (
+            error.status
+            if isinstance(error, SupervisorFailure)
+            else "RESOURCE_INCOMPLETE_NO_DECISION"
+            if isinstance(error, (KeyboardInterrupt, SystemExit))
+            else "IMPLEMENTATION_INVALID"
+        )
+        candidate = _c_failure_status(candidate)
+        if candidate == "RESOURCE_INCOMPLETE_NO_DECISION":
+            hooks.resource_incomplete = True
+        reason = (
+            _status_min(_c_failure_status(reason), candidate)
+            if reason in STATUS_ORDER
+            else candidate
+        )
+        receipt["exit_reason"] = reason
+        _fail(
+            merged_known_status(reason),
+            f"C final root observation failed: {error}",
+        )
+    receipt["exit_reason"] = reason
+    failure_status, failure_details = (
+        preliminary_validation
+        if reason == preliminary_reason
+        and hooks.resource_incomplete == preliminary_resource
+        else validate_final_state()
+    )
+    if failure_status is not None:
+        _fail(failure_status, "; ".join(failure_details))
+    handoff_owner = hooks.detach_terminal_mask_for_emit()
+    return handoff_owner, reason, hooks.resource_incomplete
 
 
 def _phase_resource_objects(receipts: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
@@ -3407,6 +6722,7 @@ def _run_srun(start_cpu: int, start_wall: int, artifact_root_argument: str) -> i
     if not root.is_dir() or any(root.iterdir()):
         raise PreconditionFailure("artifact root must be an existing empty directory")
     _require_control_descriptors_free()
+    _require_supervisor_sigint_contract()
     byte_ledger = ByteLedger()
     meter = InstrumentMeter(start_cpu, start_wall, byte_ledger, tuple(sys.argv))
     # Git/source/PAR reads launch only non-capable git helpers.  The frozen
@@ -3421,6 +6737,9 @@ def _run_srun(start_cpu: int, start_wall: int, artifact_root_argument: str) -> i
         par_seal,
         par_review_binding,
     ) = _load_par_seal(commit, source_tree, implementation_manifest_payload)
+    byte_ledger.bind_sealed_research_evidence(
+        sum(item["research_evidence_archive_bytes"] for item in par_byte_entries)
+    )
     observed_utc = _utc_now()
     inventory = _process_inventory()
     prelaunch, self_start = _prelaunch_observation(
@@ -3488,64 +6807,245 @@ def _run_srun(start_cpu: int, start_wall: int, artifact_root_argument: str) -> i
     interruption_count = 0
     cap_crossed = False
     fatal_visible_publication: str | None = None
+    c_terminal_cleanup_complete = True
+    c_release_interrupted = False
+    c_release_status: str | None = None
+    retry_release_hooks: SupervisorHooks | None = None
+
+    def enter_c_handler_terminal(
+        owner: SupervisorHooks,
+        known_status: str | None,
+        context: str,
+    ) -> None:
+        if known_status is not None:
+            known_status = _c_failure_status(known_status)
+            owner.terminal_known_status = _status_min(
+                owner.terminal_known_status,
+                known_status,
+            )
+            if known_status == "RESOURCE_INCOMPLETE_NO_DECISION":
+                owner.resource_incomplete = True
+        try:
+            owner.begin_terminal_closure()
+        except BaseException as closure_error:
+            candidate = (
+                closure_error.status
+                if isinstance(closure_error, SupervisorFailure)
+                else "RESOURCE_INCOMPLETE_NO_DECISION"
+                if isinstance(closure_error, (KeyboardInterrupt, SystemExit))
+                else "IMPLEMENTATION_INVALID"
+            )
+            candidate = _c_failure_status(candidate)
+            if candidate == "RESOURCE_INCOMPLETE_NO_DECISION":
+                owner.resource_incomplete = True
+            _fail(
+                _status_min(owner.terminal_known_status, candidate),
+                f"cannot enter C terminal handler for {context}: {closure_error}",
+            )
+
     producer_descriptor = os.open(
         PRODUCER_NATIVE, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
     )
     _reserve_fixed_descriptor(producer_descriptor, 197)
     for attempt in range(2):
         attempt_root = root / "attempt.staging"
-        attempt_root.mkdir()
-        hooks = SupervisorHooks(attempt, attempt_root, meter, byte_ledger, sealed_cpu)
+        next_hooks = SupervisorHooks(
+            attempt,
+            attempt_root,
+            meter,
+            byte_ledger,
+            sealed_cpu,
+        )
+        hooks = next_hooks
         try:
+            if retry_release_hooks is not None:
+                prior_hooks = retry_release_hooks
+                hooks = next_hooks
+                try:
+                    retry_release_interrupted = (
+                        prior_hooks.release_terminal_closure()
+                    )
+                except BaseException as release_error:
+                    hooks = prior_hooks
+                    c_release_interrupted = True
+                    release_status = (
+                        release_error.status
+                        if isinstance(release_error, SupervisorFailure)
+                        else "RESOURCE_INCOMPLETE_NO_DECISION"
+                        if isinstance(release_error, (KeyboardInterrupt, SystemExit))
+                        else "IMPLEMENTATION_INVALID"
+                    )
+                    release_status = _c_failure_status(release_status)
+                    enter_c_handler_terminal(
+                        prior_hooks,
+                        release_status,
+                        "retry release failure",
+                    )
+                    c_release_status = _status_min(
+                        c_release_status,
+                        release_status,
+                    )
+                    if release_status == "RESOURCE_INCOMPLETE_NO_DECISION":
+                        resource_incomplete_observed = True
+                    high_status = _status_min(high_status, release_status)
+                    state = prior_hooks.last_state
+                    _finalize_producer_attempt(
+                        hooks=prior_hooks,
+                        meter=meter,
+                        artifact_root=root,
+                        attempt_root=attempt_root,
+                        byte_ledger=byte_ledger,
+                        reason=release_status,
+                        disposition=prior_hooks.terminal_disposition,
+                    )
+                    break
+                if retry_release_interrupted:
+                    hooks = prior_hooks
+                    c_release_interrupted = True
+                    c_release_status = _status_min(
+                        c_release_status,
+                        "RESOURCE_INCOMPLETE_NO_DECISION",
+                    )
+                    resource_incomplete_observed = True
+                    high_status = _status_min(
+                        high_status,
+                        "RESOURCE_INCOMPLETE_NO_DECISION",
+                    )
+                    _finalize_producer_attempt(
+                        hooks=prior_hooks,
+                        meter=meter,
+                        artifact_root=root,
+                        attempt_root=attempt_root,
+                        byte_ledger=byte_ledger,
+                        reason="RESOURCE_INCOMPLETE_NO_DECISION",
+                        disposition=prior_hooks.terminal_disposition,
+                    )
+                    break
+                retry_release_hooks = None
+            attempt_root.mkdir()
             state = producer.run_attempt(hooks, root)
             cap_crossed = hooks.cap_crossed
-            _discard_producer_staging(root, attempt_root, byte_ledger)
-            meter.close_current(
-                "PRIMARY_CAP_STOP"
+            terminal_reason = (
+                "PHASE_COMPLETE"
+                if state.full_shape_complete
+                else "PRIMARY_CAP_STOP"
                 if hooks.cap_crossed
                 else "REPRESENTATION_STOP"
                 if hooks.representation_stop
-                else "PHASE_COMPLETE",
-                "ATOMICALLY_PUBLISHED" if state.bundle is not None else "NONE",
+                else "PHASE_COMPLETE"
             )
-            if _observe_closed_producer_terminal(hooks, meter):
+            (
+                closed_reason,
+                terminal_resource,
+                _,
+                c_terminal_cleanup_complete,
+            ) = _finalize_producer_attempt(
+                hooks=hooks,
+                meter=meter,
+                artifact_root=root,
+                attempt_root=attempt_root,
+                byte_ledger=byte_ledger,
+                reason=terminal_reason,
+                disposition=(
+                    "ATOMICALLY_PUBLISHED" if state.bundle is not None else "NONE"
+                ),
+            )
+            if closed_reason in STATUS_ORDER:
+                high_status = _status_min(high_status, closed_reason)
+            if terminal_resource:
                 resource_incomplete_observed = True
                 high_status = _status_min(
                     high_status, "RESOURCE_INCOMPLETE_NO_DECISION"
                 )
             break
         except ExternalInterruption:
+            enter_c_handler_terminal(hooks, None, "external interruption")
             interruption_count += 1
             state = hooks.last_state
-            _discard_producer_staging(root, attempt_root, byte_ledger)
-            meter.close_current("EXTERNAL_INTERRUPTION", "DISCARDED")
-            if _observe_closed_producer_terminal(hooks, meter):
+            (
+                closed_reason,
+                terminal_resource,
+                observed_disposition,
+                c_terminal_cleanup_complete,
+            ) = (
+                _finalize_producer_attempt(
+                    hooks=hooks,
+                    meter=meter,
+                    artifact_root=root,
+                    attempt_root=attempt_root,
+                    byte_ledger=byte_ledger,
+                    reason=(
+                        "RESOURCE_INCOMPLETE_NO_DECISION"
+                        if interruption_count >= 2
+                        else "EXTERNAL_INTERRUPTION"
+                    ),
+                    disposition="DISCARDED",
+                )
+            )
+            if closed_reason in STATUS_ORDER:
+                high_status = _status_min(high_status, closed_reason)
+            if terminal_resource:
                 resource_incomplete_observed = True
+            if (
+                closed_reason != "EXTERNAL_INTERRUPTION"
+                or observed_disposition != "DISCARDED"
+            ):
+                break
+            if interruption_count >= 2:
                 high_status = _status_min(
                     high_status, "RESOURCE_INCOMPLETE_NO_DECISION"
                 )
-                break
-            if interruption_count >= 2:
-                high_status = _status_min(high_status, "RESOURCE_INCOMPLETE_NO_DECISION")
                 resource_incomplete_observed = True
                 break
+            (
+                closed_reason,
+                terminal_resource,
+                c_terminal_cleanup_complete,
+            ) = _seal_producer_terminal_tail(hooks, meter)
+            if closed_reason in STATUS_ORDER:
+                high_status = _status_min(high_status, closed_reason)
+            if terminal_resource:
+                resource_incomplete_observed = True
+            if (
+                not c_terminal_cleanup_complete
+                or closed_reason != "EXTERNAL_INTERRUPTION"
+                or observed_disposition != "DISCARDED"
+                or terminal_resource
+            ):
+                break
             meter.begin_retry()
+            retry_release_hooks = hooks
             continue
         except producer.ProducerFailure as error:
+            producer_status = _c_failure_status(error.status)
+            enter_c_handler_terminal(hooks, producer_status, "producer failure")
             state = hooks.last_state
             publication_visible = (
                 isinstance(error, producer.BundlePublicationVisibleFailure)
                 or hooks.publication_became_visible
             )
-            high_status = _status_min(high_status, error.status)
-            if error.status == "RESOURCE_INCOMPLETE_NO_DECISION":
+            high_status = _status_min(high_status, producer_status)
+            if producer_status == "RESOURCE_INCOMPLETE_NO_DECISION":
                 resource_incomplete_observed = True
-            _discard_producer_staging(root, attempt_root, byte_ledger)
-            meter.close_current(
-                error.status,
-                "ATOMICALLY_PUBLISHED" if publication_visible else "DISCARDED",
+            (
+                closed_reason,
+                terminal_resource,
+                _,
+                c_terminal_cleanup_complete,
+            ) = _finalize_producer_attempt(
+                hooks=hooks,
+                meter=meter,
+                artifact_root=root,
+                attempt_root=attempt_root,
+                byte_ledger=byte_ledger,
+                reason=producer_status,
+                disposition=(
+                    "ATOMICALLY_PUBLISHED" if publication_visible else "DISCARDED"
+                ),
             )
-            if _observe_closed_producer_terminal(hooks, meter):
+            if closed_reason in STATUS_ORDER:
+                high_status = _status_min(high_status, closed_reason)
+            if terminal_resource:
                 resource_incomplete_observed = True
                 high_status = _status_min(
                     high_status, "RESOURCE_INCOMPLETE_NO_DECISION"
@@ -3554,21 +7054,36 @@ def _run_srun(start_cpu: int, start_wall: int, artifact_root_argument: str) -> i
                 fatal_visible_publication = error.detail
             break
         except SupervisorFailure as error:
+            supervisor_status = _c_failure_status(error.status)
+            enter_c_handler_terminal(hooks, supervisor_status, "supervisor failure")
             state = hooks.last_state
             publication_visible = hooks.publication_became_visible
-            high_status = _status_min(high_status, error.status)
+            high_status = _status_min(high_status, supervisor_status)
             # ByteLedger ceilings raise directly rather than through
             # SupervisorHooks._operational_check(), so preserve their
             # resource-incomplete result independently of the terminal
             # CPU/wall/RSS sample below.
-            if error.status == "RESOURCE_INCOMPLETE_NO_DECISION":
+            if supervisor_status == "RESOURCE_INCOMPLETE_NO_DECISION":
                 resource_incomplete_observed = True
-            _discard_producer_staging(root, attempt_root, byte_ledger)
-            meter.close_current(
-                error.status,
-                "ATOMICALLY_PUBLISHED" if publication_visible else "DISCARDED",
+            (
+                closed_reason,
+                terminal_resource,
+                _,
+                c_terminal_cleanup_complete,
+            ) = _finalize_producer_attempt(
+                hooks=hooks,
+                meter=meter,
+                artifact_root=root,
+                attempt_root=attempt_root,
+                byte_ledger=byte_ledger,
+                reason=supervisor_status,
+                disposition=(
+                    "ATOMICALLY_PUBLISHED" if publication_visible else "DISCARDED"
+                ),
             )
-            if _observe_closed_producer_terminal(hooks, meter):
+            if closed_reason in STATUS_ORDER:
+                high_status = _status_min(high_status, closed_reason)
+            if terminal_resource:
                 resource_incomplete_observed = True
                 high_status = _status_min(
                     high_status, "RESOURCE_INCOMPLETE_NO_DECISION"
@@ -3576,16 +7091,69 @@ def _run_srun(start_cpu: int, start_wall: int, artifact_root_argument: str) -> i
             if publication_visible:
                 fatal_visible_publication = error.detail
             break
-        except Exception as error:
+        except (KeyboardInterrupt, SystemExit) as error:
+            enter_c_handler_terminal(
+                hooks,
+                "RESOURCE_INCOMPLETE_NO_DECISION",
+                "supervisor interruption",
+            )
+            state = hooks.last_state
+            publication_visible = hooks.publication_became_visible
+            high_status = _status_min(
+                high_status, "RESOURCE_INCOMPLETE_NO_DECISION"
+            )
+            resource_incomplete_observed = True
+            (
+                closed_reason,
+                terminal_resource,
+                _,
+                c_terminal_cleanup_complete,
+            ) = _finalize_producer_attempt(
+                hooks=hooks,
+                meter=meter,
+                artifact_root=root,
+                attempt_root=attempt_root,
+                byte_ledger=byte_ledger,
+                reason="RESOURCE_INCOMPLETE_NO_DECISION",
+                disposition=(
+                    "ATOMICALLY_PUBLISHED" if publication_visible else "DISCARDED"
+                ),
+            )
+            if closed_reason in STATUS_ORDER:
+                high_status = _status_min(high_status, closed_reason)
+            if terminal_resource:
+                resource_incomplete_observed = True
+            if publication_visible:
+                fatal_visible_publication = str(error)
+            break
+        except BaseException as error:
+            enter_c_handler_terminal(
+                hooks,
+                "IMPLEMENTATION_INVALID",
+                "untyped implementation failure",
+            )
             state = hooks.last_state
             publication_visible = hooks.publication_became_visible
             high_status = _status_min(high_status, "IMPLEMENTATION_INVALID")
-            _discard_producer_staging(root, attempt_root, byte_ledger)
-            meter.close_current(
-                "IMPLEMENTATION_INVALID",
-                "ATOMICALLY_PUBLISHED" if publication_visible else "DISCARDED",
+            (
+                closed_reason,
+                terminal_resource,
+                _,
+                c_terminal_cleanup_complete,
+            ) = _finalize_producer_attempt(
+                hooks=hooks,
+                meter=meter,
+                artifact_root=root,
+                attempt_root=attempt_root,
+                byte_ledger=byte_ledger,
+                reason="IMPLEMENTATION_INVALID",
+                disposition=(
+                    "ATOMICALLY_PUBLISHED" if publication_visible else "DISCARDED"
+                ),
             )
-            if _observe_closed_producer_terminal(hooks, meter):
+            if closed_reason in STATUS_ORDER:
+                high_status = _status_min(high_status, closed_reason)
+            if terminal_resource:
                 resource_incomplete_observed = True
                 high_status = _status_min(
                     high_status, "RESOURCE_INCOMPLETE_NO_DECISION"
@@ -3594,32 +7162,152 @@ def _run_srun(start_cpu: int, start_wall: int, artifact_root_argument: str) -> i
             if publication_visible:
                 fatal_visible_publication = str(error)
             break
-    os.close(197)
+    c_root_status: str | None = None
+    c_root_details: list[str] = []
+
+    def record_c_root_failure(status: str, detail: str) -> None:
+        nonlocal c_root_status
+        resolved = _c_failure_status(status)
+        c_root_status = _status_min(c_root_status, resolved)
+        c_root_details.append(detail)
+
+    try:
+        os.close(197)
+    except OSError as error:
+        record_c_root_failure(
+            "IMPLEMENTATION_INVALID",
+            f"cannot close frozen producer descriptor: {error}",
+        )
+    if (
+        hooks is not None
+        and hooks.publication_became_visible
+        and (
+            state is None
+            or state.last_completed_unit_index != 395
+            or state.bundle is None
+        )
+    ):
+        fatal_visible_publication = (
+            fatal_visible_publication
+            or "independent no-follow target probe observed bundle before U395"
+        )
     if fatal_visible_publication is not None:
-        _fail(
+        record_c_root_failure(
             "ARTIFACT_INVALID",
             "bundle target is physically visible but U395 was not admitted; "
             f"downstream observation is forbidden: {fatal_visible_publication}",
         )
+    if not c_terminal_cleanup_complete:
+        record_c_root_failure(
+            high_status or "IMPLEMENTATION_INVALID",
+            "C terminal staging could not be proven absent; downstream observation "
+            "is forbidden",
+        )
+    if hooks is None:
+        record_c_root_failure(
+            "IMPLEMENTATION_INVALID",
+            "C terminal hooks were not constructed",
+        )
+    else:
+        (
+            closed_reason,
+            terminal_resource,
+            c_terminal_cleanup_complete,
+        ) = _seal_producer_terminal_tail(hooks, meter)
+        if closed_reason in STATUS_ORDER:
+            high_status = _status_min(high_status, closed_reason)
+        if terminal_resource:
+            resource_incomplete_observed = True
+        if not c_terminal_cleanup_complete:
+            record_c_root_failure(
+                high_status or "IMPLEMENTATION_INVALID",
+                "C terminal tail could not be completely observed",
+            )
+        if hooks.terminal_receipt_index is None:
+            record_c_root_failure(
+                "IMPLEMENTATION_INVALID",
+                "C terminal receipt index is absent",
+            )
+        else:
+            c_receipt = meter.receipts[hooks.terminal_receipt_index]
+            if hooks.publication_became_visible and (
+                c_receipt.get("phase") != "C_bundle_io"
+                or c_receipt.get("completed_unit_index") != 395
+                or c_receipt.get("exit_reason") != "PHASE_COMPLETE"
+                or c_receipt.get("staging_disposition")
+                != "ATOMICALLY_PUBLISHED"
+            ):
+                record_c_root_failure(
+                    "ARTIFACT_INVALID",
+                    "visible bundle lacks the exact U395 C_bundle_io/"
+                    "PHASE_COMPLETE/ATOMICALLY_PUBLISHED receipt",
+                )
+    if (
+        resource_incomplete_observed
+        and high_status
+        in {"ARTIFACT_INVALID", "IMPLEMENTATION_INVALID", "CONTROL_INVALID"}
+    ):
+        record_c_root_failure(
+            high_status,
+            "compound C failure is fail-stop before E/V/archive because the frozen "
+            "single-axis receipt cannot independently encode a hidden resource bit",
+        )
     if state is None or state.input_identity is None:
-        _fail("EVIDENCE_INCOMPLETE_NO_DECISION", "no complete U000 prefix is available")
-
-    emit_start = meter.boundary.snapshot
-    emit_start_utc = meter.boundary.utc
-    byte_ledger.switch("E_emit")
-    emit_receipts, t_instrument, emit_boundary = _emit_in_inherited_process(
-        state=state,
-        artifact_root=root,
-        context_base=emit_context_base,
-        raw_instrument_receipts=(*par_receipts, *meter.receipts),
-        byte_ledger=byte_ledger,
-        checkpoint_start=emit_start,
-        checkpoint_utc=emit_start_utc,
-        sealed_cpu=sealed_cpu,
-        logical_run_id=logical_run_id,
-        commit=commit,
-        environment_sha=environment_identity["environment_sha256"],
+        record_c_root_failure(
+            _status_min(high_status, "EVIDENCE_INCOMPLETE_NO_DECISION"),
+            "no complete U000 prefix is available",
+        )
+    if c_release_interrupted:
+        record_c_root_failure(
+            c_release_status or "RESOURCE_INCOMPLETE_NO_DECISION",
+            "C retry release was interrupted",
+        )
+    if hooks is None:
+        _fail("IMPLEMENTATION_INVALID", "C terminal hooks are absent at release")
+    if c_release_interrupted:
+        _fail(
+            c_root_status or c_release_status or "RESOURCE_INCOMPLETE_NO_DECISION",
+            "; ".join(c_root_details) or "C retry release failed",
+        )
+    (
+        emit_handoff_owner,
+        closed_reason,
+        terminal_resource,
+    ) = _commit_producer_root_and_handoff(
+        hooks,
+        meter,
+        high_status,
+        c_root_status,
+        c_root_details,
     )
+    try:
+        if closed_reason in STATUS_ORDER:
+            high_status = _status_min(high_status, closed_reason)
+        if terminal_resource:
+            resource_incomplete_observed = True
+        emit_start = meter.boundary.snapshot
+        emit_start_utc = meter.boundary.utc
+        byte_ledger.switch("E_emit")
+        emit_receipts, t_instrument, emit_boundary = _run_preserving_prior_status(
+            high_status,
+            lambda: _emit_in_inherited_process(
+                state=state,
+                artifact_root=root,
+                context_base=emit_context_base,
+                raw_instrument_receipts=(*par_receipts, *meter.receipts),
+                byte_ledger=byte_ledger,
+                checkpoint_start=emit_start,
+                checkpoint_utc=emit_start_utc,
+                sealed_cpu=sealed_cpu,
+                logical_run_id=logical_run_id,
+                commit=commit,
+                environment_sha=environment_identity["environment_sha256"],
+                handoff_owner=emit_handoff_owner,
+            ),
+        )
+    except BaseException as error:
+        _restore_emit_handoff_after_error(emit_handoff_owner, error)
+        raise
     instrument_receipts = _sorted_receipts((*par_receipts, *meter.receipts))
     cap_crossed = cap_crossed or t_instrument > PRIMARY_CAP
 
@@ -3630,6 +7318,41 @@ def _run_srun(start_cpu: int, start_wall: int, artifact_root_argument: str) -> i
     prior_research_evidence = sum(
         item["research_evidence_archive_bytes"] for item in bytes_before_verifier
     )
+    expected_native_argv = ["/proc/self/fd/197", "verify-canonical-request"]
+
+    def validate_verifier_success(
+        response: Mapping[str, Any],
+        verifier_summary_payload: bytes,
+        verifier_summary: Mapping[str, Any],
+    ) -> None:
+        verification_status = str(verifier_summary.get("status"))
+        if set(response) != {
+            "native_binary_sha256",
+            "native_binary_size_bytes",
+            "native_child_argv",
+            "native_child_argv_sha256",
+            "status",
+            "verifier_summary_sha256",
+            "verifier_summary_size_bytes",
+        } or (
+            response["native_binary_sha256"]
+            != par_seal["verifier_native"]["sha256"]
+            or response["native_binary_size_bytes"]
+            != par_seal["verifier_native"]["size_bytes"]
+            or response["native_child_argv"] != expected_native_argv
+            or response["native_child_argv_sha256"]
+            != _sha256(evidence.canonical_body(expected_native_argv))
+            or response["status"] != verification_status
+            or response["verifier_summary_sha256"]
+            != _sha256(verifier_summary_payload)
+            or response["verifier_summary_size_bytes"]
+            != len(verifier_summary_payload)
+        ):
+            _fail(
+                "IMPLEMENTATION_INVALID",
+                "verifier response identity/status mismatch",
+            )
+
     (
         verifier_receipts,
         _verifier_response_payload,
@@ -3637,69 +7360,53 @@ def _run_srun(start_cpu: int, start_wall: int, artifact_root_argument: str) -> i
         verifier_response,
         verifier_summary,
         verifier_boundary,
-    ) = _external_wrapper(
-        phase="V_replay",
-        argv=(
-            sys.executable,
-            str(VERIFIER_WRAPPER),
-            "verify-canonical-request",
-            "--control-fd",
-            "198",
+    ) = _run_preserving_prior_status(
+        high_status,
+        lambda: _external_wrapper(
+            phase="V_replay",
+            argv=(
+                sys.executable,
+                str(VERIFIER_WRAPPER),
+                "verify-canonical-request",
+                "--control-fd",
+                "198",
+            ),
+            control_factory=lambda start_utc, start_monotonic, prior_attempts: {
+                "artifact_root": str(root),
+                "build_manifest": _sealed_read_request(par_seal["build_manifest"]),
+                "logical_run_id": logical_run_id,
+                "native_verifier": _sealed_read_request(par_seal["verifier_native"]),
+                "par_review_binding": _sealed_read_request(par_review_binding),
+                "phase_start_monotonic_ns": start_monotonic,
+                "prior_phase_receipts": _sorted_receipts(
+                    (*receipts_before_verifier, *prior_attempts)
+                ),
+                "prior_research_evidence_bytes": prior_research_evidence,
+                "prior_study_cpu_microseconds": sum(
+                    item["cpu_microseconds"]
+                    for item in (*receipts_before_verifier, *prior_attempts)
+                ),
+                "protocol": _sealed_read_request(par_seal["protocol"]),
+                "schema": _sealed_read_request(par_seal["schema"]),
+                "source_manifest": _sealed_read_request(par_seal["source_manifest"]),
+                "start_utc": start_utc,
+            },
+            artifact_root=root,
+            published_directory="verifier",
+            published_file="verifier/verifier_summary.json",
+            completed_unit=state.last_completed_unit_index,
+            logical_run_id=logical_run_id,
+            commit=commit,
+            environment_sha=environment_identity["environment_sha256"],
+            bytes_=byte_ledger,
+            initial_boundary=emit_boundary,
+            prior_study_cpu_microseconds=sum(
+                item["cpu_microseconds"] for item in receipts_before_verifier
+            ),
+            success_validator=validate_verifier_success,
         ),
-        control_factory=lambda start_utc, start_monotonic, prior_attempts: {
-            "artifact_root": str(root),
-            "build_manifest": _sealed_read_request(par_seal["build_manifest"]),
-            "logical_run_id": logical_run_id,
-            "native_verifier": _sealed_read_request(par_seal["verifier_native"]),
-            "par_review_binding": _sealed_read_request(
-                par_review_binding
-            ),
-            "phase_start_monotonic_ns": start_monotonic,
-            "prior_phase_receipts": _sorted_receipts(
-                (*receipts_before_verifier, *prior_attempts)
-            ),
-            "prior_research_evidence_bytes": prior_research_evidence,
-            "prior_study_cpu_microseconds": sum(
-                item["cpu_microseconds"]
-                for item in (*receipts_before_verifier, *prior_attempts)
-            ),
-            "protocol": _sealed_read_request(par_seal["protocol"]),
-            "schema": _sealed_read_request(par_seal["schema"]),
-            "source_manifest": _sealed_read_request(par_seal["source_manifest"]),
-            "start_utc": start_utc,
-        },
-        artifact_root=root,
-        published_directory="verifier",
-        published_file="verifier/verifier_summary.json",
-        completed_unit=state.last_completed_unit_index,
-        logical_run_id=logical_run_id,
-        commit=commit,
-        environment_sha=environment_identity["environment_sha256"],
-        bytes_=byte_ledger,
-        initial_boundary=emit_boundary,
     )
     verification_status = str(verifier_summary.get("status"))
-    expected_native_argv = ["/proc/self/fd/197", "verify-canonical-request"]
-    if set(verifier_response) != {
-        "native_binary_sha256",
-        "native_binary_size_bytes",
-        "native_child_argv",
-        "native_child_argv_sha256",
-        "status",
-        "verifier_summary_sha256",
-        "verifier_summary_size_bytes",
-    } or (
-        verifier_response["native_binary_sha256"] != par_seal["verifier_native"]["sha256"]
-        or verifier_response["native_binary_size_bytes"]
-        != par_seal["verifier_native"]["size_bytes"]
-        or verifier_response["native_child_argv"] != expected_native_argv
-        or verifier_response["native_child_argv_sha256"]
-        != _sha256(evidence.canonical_body(expected_native_argv))
-        or verifier_response["status"] != verification_status
-        or verifier_response["verifier_summary_sha256"] != _sha256(verifier_payload)
-        or verifier_response["verifier_summary_size_bytes"] != len(verifier_payload)
-    ):
-        _fail("VERIFICATION_INVALID", "verifier response identity/status mismatch")
 
     receipts_through_verifier = _sorted_receipts(
         (*instrument_receipts, *emit_receipts, *verifier_receipts)
@@ -3785,28 +7492,36 @@ def _run_srun(start_cpu: int, start_wall: int, artifact_root_argument: str) -> i
         archive_identity_reply,
         archive_body,
         _archive_boundary,
-    ) = _external_wrapper(
-        phase="E_archive_body",
-        argv=(
-            sys.executable,
-            str(ARCHIVE_WRAPPER),
-            "publish-canonical-request",
-            "--control-fd",
-            "198",
-            "--identity-pipe-fd",
-            "199",
+    ) = _run_preserving_prior_status(
+        high_status,
+        lambda: _external_wrapper(
+            phase="E_archive_body",
+            argv=(
+                sys.executable,
+                str(ARCHIVE_WRAPPER),
+                "publish-canonical-request",
+                "--control-fd",
+                "198",
+                "--identity-pipe-fd",
+                "199",
+            ),
+            control_factory=archive_control,
+            artifact_root=root,
+            published_directory="archive",
+            published_file="archive/archive_body.json",
+            completed_unit=state.last_completed_unit_index,
+            logical_run_id=logical_run_id,
+            commit=commit,
+            environment_sha=environment_identity["environment_sha256"],
+            bytes_=byte_ledger,
+            initial_boundary=verifier_boundary,
+            prior_study_cpu_microseconds=prior_study_cpu,
+            response_pipe=True,
+            allow_published_resource_return=True,
+            post_cleanup_validator=lambda: _require_exact_final_input_tree(
+                root, state.bundle is not None
+            ),
         ),
-        control_factory=archive_control,
-        artifact_root=root,
-        published_directory="archive",
-        published_file="archive/archive_body.json",
-        completed_unit=state.last_completed_unit_index,
-        logical_run_id=logical_run_id,
-        commit=commit,
-        environment_sha=environment_identity["environment_sha256"],
-        bytes_=byte_ledger,
-        initial_boundary=verifier_boundary,
-        response_pipe=True,
     )
     all_receipts = _sorted_receipts((*receipts_through_verifier, *archive_receipts))
 
@@ -3822,7 +7537,11 @@ def _run_srun(start_cpu: int, start_wall: int, artifact_root_argument: str) -> i
     phase_bytes = byte_ledger.objects(par_byte_entries)
     attribution = dict(meter.attribution)
     if sum(attribution.values()) != t_instrument:
-        _fail("IMPLEMENTATION_INVALID", "instrument attribution does not reconcile")
+        _fail_preserving_prior_status(
+            final_status,
+            "IMPLEMENTATION_INVALID",
+            "instrument attribution does not reconcile",
+        )
     phase_resources = _phase_resource_objects(all_receipts)
     t_study = sum(item["cpu_microseconds"] for item in all_receipts)
     byte_global = {
@@ -3947,12 +7666,20 @@ def _run_srun(start_cpu: int, start_wall: int, artifact_root_argument: str) -> i
     )
     pretrailer = archive_body.get("pretrailer_files")
     if not isinstance(pretrailer, list):
-        _fail("ARTIFACT_INVALID", "archive body lacks pretrailer file inventory")
+        _fail_preserving_prior_status(
+            final_status,
+            "ARTIFACT_INVALID",
+            "archive body lacks pretrailer file inventory",
+        )
     index_files = [dict(item) for item in pretrailer]
     index_files.extend((archive_identity, resource_identity, decision_identity))
     index_files.sort(key=lambda item: item["path"].encode("utf-8"))
     if len({item["path"] for item in index_files}) != len(index_files):
-        _fail("ARTIFACT_INVALID", "artifact-index paths are duplicated")
+        _fail_preserving_prior_status(
+            final_status,
+            "ARTIFACT_INVALID",
+            "artifact-index paths are duplicated",
+        )
     artifact_index = {
         "artifact_kind": "a4_artifact_index",
         "files": index_files,
@@ -3960,8 +7687,11 @@ def _run_srun(start_cpu: int, start_wall: int, artifact_root_argument: str) -> i
         "schema_version": 1,
     }
     artifact_index_payload = evidence.canonical_document(artifact_index)
-    evidence.publish_final_trailer(
-        root, resource_payload, decision_payload, artifact_index_payload
+    _run_preserving_prior_status(
+        final_status,
+        lambda: evidence.publish_final_trailer(
+            root, resource_payload, decision_payload, artifact_index_payload
+        ),
     )
     # The final publisher is a direct-exit terminal operation.  If a defect
     # ever lets it return, do not execute a Python return path after rename.
@@ -4009,6 +7739,13 @@ def main(start_cpu_microseconds: int, start_wall_nanoseconds: int) -> int:
         return 3
     except evidence.EvidenceFailure as error:
         print(f"{error.status}: {error.detail}", file=sys.stderr)
+        return 3
+    except (KeyboardInterrupt, SystemExit):
+        print(
+            "RESOURCE_INCOMPLETE_NO_DECISION: supervisor interrupted outside a "
+            "published terminal boundary",
+            file=sys.stderr,
+        )
         return 3
     except OSError as error:
         print(f"ARTIFACT_INVALID: {error}", file=sys.stderr)

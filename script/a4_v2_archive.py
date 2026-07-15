@@ -29,6 +29,7 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import signal
 import stat
 import sys
 import time
@@ -132,9 +133,59 @@ if _GETRUSAGE is not None:
 class ArchiveContractError(RuntimeError):
     """A frozen archive, receipt, schema, or publication invariant failed."""
 
+    status = "ARTIFACT_INVALID"
+
+    def __init__(self, detail: str):
+        super().__init__(detail)
+        self.detail = detail
+
+
+class ArchiveImplementationError(ArchiveContractError):
+    """The reviewed archive, supervisor ledger, or timer violated its contract."""
+
+    status = "IMPLEMENTATION_INVALID"
+
+
+class ArchiveEvidenceError(ArchiveContractError):
+    """Archive publication or its required identity response is incomplete."""
+
+    status = "EVIDENCE_INCOMPLETE_NO_DECISION"
+
+
+class ArchiveResourceError(ArchiveContractError):
+    """A registered archive or global publication ceiling was crossed."""
+
+
+    status = "RESOURCE_INCOMPLETE_NO_DECISION"
+
 
 def _fail(message: str) -> NoReturn:
     raise ArchiveContractError(message)
+
+
+def _implementation_fail(message: str) -> NoReturn:
+    raise ArchiveImplementationError(message)
+
+
+def _evidence_fail(message: str) -> NoReturn:
+    raise ArchiveEvidenceError(message)
+
+
+def _resource_fail(message: str) -> NoReturn:
+    raise ArchiveResourceError(message)
+
+
+def _run_as_archive_implementation(operation: Any) -> Any:
+    """Classify supervisor-ledger and archive-construction invariant failures."""
+
+    try:
+        return operation()
+    except ArchiveResourceError:
+        raise
+    except ArchiveContractError as error:
+        raise ArchiveImplementationError(error.detail) from error
+    except OSError as error:
+        raise ArchiveImplementationError(str(error)) from error
 
 
 def _reject_float(token: str) -> NoReturn:
@@ -524,6 +575,106 @@ def _artifact_entry_exists(root: Path, relative: str) -> bool:
         os.close(root_descriptor)
 
 
+def _require_exact_regular_directory(
+    root: Path, directory: str, expected_names: set[str]
+) -> None:
+    root_descriptor = _open_artifact_root(root)
+    directory_descriptor: int | None = None
+    try:
+        directory_descriptor = os.open(
+            directory,
+            os.O_RDONLY
+            | getattr(os, "O_DIRECTORY", 0)
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+            dir_fd=root_descriptor,
+        )
+        observed_names = os.listdir(directory_descriptor)
+        if len(observed_names) != len(set(observed_names)) or set(
+            observed_names
+        ) != expected_names:
+            _fail(f"{directory} directory membership is not exact")
+        for name in expected_names:
+            metadata = os.stat(
+                name, dir_fd=directory_descriptor, follow_symlinks=False
+            )
+            if not stat.S_ISREG(metadata.st_mode):
+                _fail(f"{directory}/{name} is not a regular no-follow file")
+    except ArchiveContractError:
+        raise
+    except OSError as error:
+        raise ArchiveContractError(
+            f"cannot validate exact {directory} directory membership: {error}"
+        ) from error
+    finally:
+        active_error = sys.exc_info()[0] is not None
+        close_errors = []
+        if directory_descriptor is not None:
+            try:
+                os.close(directory_descriptor)
+            except OSError as error:
+                close_errors.append(f"{directory} descriptor: {error}")
+        try:
+            os.close(root_descriptor)
+        except OSError as error:
+            close_errors.append(f"root descriptor: {error}")
+        if close_errors and not active_error:
+            raise ArchiveImplementationError(
+                "cannot close exact-directory descriptors: "
+                + "; ".join(close_errors)
+            )
+
+
+def _validate_prearchive_tree(root: Path) -> bool:
+    root_descriptor = _open_artifact_root(root)
+    try:
+        observed_names = os.listdir(root_descriptor)
+        observed = set(observed_names)
+        without_bundle = {".e_archive_body.staging", "evidence", "verifier"}
+        with_bundle = {*without_bundle, "bundle"}
+        if len(observed_names) != len(observed) or frozenset(observed) not in (
+            frozenset(without_bundle),
+            frozenset(with_bundle),
+        ):
+            _fail("pre-archive artifact-root membership is not exact")
+        for name in observed:
+            metadata = os.stat(name, dir_fd=root_descriptor, follow_symlinks=False)
+            if not stat.S_ISDIR(metadata.st_mode):
+                _fail(f"pre-archive root member is not a real directory: {name}")
+    except ArchiveContractError:
+        raise
+    except OSError as error:
+        raise ArchiveContractError(
+            f"cannot validate pre-archive artifact-root membership: {error}"
+        ) from error
+    finally:
+        active_error = sys.exc_info()[0] is not None
+        try:
+            os.close(root_descriptor)
+        except OSError as error:
+            if not active_error:
+                raise ArchiveImplementationError(
+                    f"cannot close pre-archive root descriptor: {error}"
+                ) from error
+    _require_exact_regular_directory(
+        root,
+        "evidence",
+        {relative.removeprefix("evidence/") for relative in EVIDENCE_PATHS},
+    )
+    _require_exact_regular_directory(root, "verifier", {"verifier_summary.json"})
+    _require_exact_regular_directory(
+        root, ".e_archive_body.staging", {"stdout", "stderr"}
+    )
+    bundle_present = "bundle" in observed
+    if bundle_present:
+        _require_exact_regular_directory(
+            root,
+            "bundle",
+            {relative.removeprefix("bundle/") for relative in BUNDLE_PATHS},
+        )
+    return bundle_present
+
+
 def read_immutable_artifact(root: Path, relative: str, *, maximum_bytes: int) -> bytes:
     root_descriptor = _open_artifact_root(root)
     try:
@@ -832,6 +983,7 @@ def _load_prior_files(
     bool,
     bool,
 ]:
+    bundle_directory_present = _validate_prearchive_tree(root)
     payloads: dict[str, bytes] = {}
     for relative in EVIDENCE_PATHS:
         payloads[relative] = read_immutable_artifact(
@@ -947,6 +1099,8 @@ def _load_prior_files(
     ]
 
     if manifest["bundle_published"]:
+        if not bundle_directory_present:
+            _fail("manifest claims a bundle but the exact bundle directory is absent")
         for relative in BUNDLE_PATHS:
             payloads[relative] = read_immutable_artifact(
                 root, relative, maximum_bytes=268_435_456
@@ -1008,7 +1162,7 @@ def _load_prior_files(
                 ),
             ]
         )
-    elif _artifact_entry_exists(root, "bundle"):
+    elif bundle_directory_present:
         _fail("bundle directory exists although manifest says unpublished")
 
     verifier_payload = read_immutable_artifact(
@@ -1114,16 +1268,17 @@ def _validate_prior_archive_attempt_receipts(
             _fail("prior archive receipt has a different logical_run_id")
         if receipt["completed_unit_index"] != checkpoint["last_completed_unit_index"]:
             _fail("prior archive receipt has a different completed prefix")
-        if receipt["staging_disposition"] == "ATOMICALLY_PUBLISHED":
-            _fail("a prior archive retry receipt already claims publication")
+        if (
+            receipt["exit_reason"] != "EXTERNAL_INTERRUPTION"
+            or receipt["staging_disposition"] != "DISCARDED"
+        ):
+            _fail("prior archive retry lacks its frozen interrupted attempt")
         if _parse_utc(receipt["end_utc"], "prior archive end") < _parse_utc(
             receipt["start_utc"], "prior archive start"
         ):
             _fail("prior archive receipt ends before it starts")
-        if _parse_utc(receipt["end_utc"], "prior archive end") > _parse_utc(
-            checkpoint["start_utc"], "archive checkpoint start"
-        ):
-            _fail("prior archive receipt overlaps the successful attempt checkpoint")
+        if receipt["end_utc"] != checkpoint["start_utc"]:
+            _fail("archive retry does not start at the attempt-0 boundary")
     return (
         sum(receipt["cpu_microseconds"] for receipt in receipts),
         sum(receipt["wall_nanoseconds"] for receipt in receipts),
@@ -1263,6 +1418,16 @@ def _validate_receipts(
             _fail(f"phase {phase} lacks its frozen terminal disposition")
         if any(receipt["staging_disposition"] == "ATOMICALLY_PUBLISHED" for receipt in receipts[:-1]):
             _fail(f"phase {phase} has a published nonterminal retry attempt")
+        if phase in {"E_emit", "V_replay"} and any(
+            receipt["exit_reason"] != "EXTERNAL_INTERRUPTION"
+            or receipt["staging_disposition"] != "DISCARDED"
+            for receipt in receipts[:-1]
+        ):
+            _fail(f"phase {phase} retry lacks its frozen interrupted attempt")
+        if phase in {"E_emit", "V_replay"} and len(receipts) == 2 and (
+            receipts[0]["end_utc"] != receipts[1]["start_utc"]
+        ):
+            _fail(f"phase {phase} retry does not start at the attempt-0 boundary")
 
     t_instrument = sum(
         receipt["cpu_microseconds"]
@@ -1273,6 +1438,12 @@ def _validate_receipts(
         receipt["cpu_microseconds"] for receipt in phase_receipts
     )
     resource_complete = True
+    if any(
+        receipt["exit_reason"] == "RESOURCE_INCOMPLETE_NO_DECISION"
+        for receipt in phase_receipts
+        if receipt["phase"] in {"C_setup", "C_core", "C_bundle_io"}
+    ):
+        resource_complete = False
     for phase in ("B_build", "P_parity", "E_emit", "V_replay"):
         receipts = [receipt for receipt in phase_receipts if receipt["phase"] == phase]
         if (
@@ -1407,32 +1578,178 @@ def _validate_request_and_build_body(
         phase: [receipt for receipt in phase_receipts if receipt["phase"] == phase]
         for phase in PREARCHIVE_PHASES
     }
-    terminal_control_invalid = any(
-        receipt["exit_reason"] == "CONTROL_INVALID"
+    c_receipts = [
+        receipt
         for phase in ("C_setup", "C_core", "C_bundle_io")
         for receipt in by_phase[phase]
+    ]
+    allowed_c_exit_reasons = {
+        "ARTIFACT_INVALID",
+        "CONTROL_INVALID",
+        "EXTERNAL_INTERRUPTION",
+        "IMPLEMENTATION_INVALID",
+        "PHASE_COMPLETE",
+        "PRIMARY_CAP_STOP",
+        "REPRESENTATION_STOP",
+        "RESOURCE_INCOMPLETE_NO_DECISION",
+    }
+    if any(
+        receipt["exit_reason"] not in allowed_c_exit_reasons
+        for receipt in c_receipts
+    ):
+        _fail("archive C receipt has a nonfrozen exit reason")
+    producer_attempts = sorted({receipt["attempt_id"] for receipt in c_receipts})
+    if producer_attempts not in ([0], [0, 1]):
+        _fail("producer attempt ids are not the frozen contiguous set")
+    c_receipts_by_attempt = {
+        attempt: [
+            receipt for receipt in c_receipts if receipt["attempt_id"] == attempt
+        ]
+        for attempt in producer_attempts
+    }
+    for attempt, attempt_receipts in c_receipts_by_attempt.items():
+        if any(
+            prior["end_utc"] != following["start_utc"]
+            for prior, following in zip(
+                attempt_receipts, attempt_receipts[1:]
+            )
+        ):
+            _fail("archive C phase boundaries are not temporally contiguous")
+        observed_phases = [receipt["phase"] for receipt in attempt_receipts]
+        if observed_phases != ["C_setup", "C_core", "C_bundle_io"][: len(observed_phases)]:
+            _fail("archive C attempt phases are not a prefix from C_setup")
+        phase_bounds = {
+            "C_setup": (0, 0),
+            "C_core": (0, 394),
+            "C_bundle_io": (394, 395),
+        }
+        if any(
+            not (
+                phase_bounds[receipt["phase"]][0]
+                <= receipt["completed_unit_index"]
+                <= phase_bounds[receipt["phase"]][1]
+            )
+            for receipt in attempt_receipts
+        ):
+            _fail("archive C receipt prefix is outside its frozen phase range")
+        if any(
+            following["completed_unit_index"]
+            < prior["completed_unit_index"]
+            for prior, following in zip(
+                attempt_receipts, attempt_receipts[1:]
+            )
+        ):
+            _fail("archive C completed prefix regresses within one attempt")
+        if any(
+            receipt["exit_reason"] != "PHASE_COMPLETE"
+            or receipt["staging_disposition"] != "NONE"
+            for receipt in attempt_receipts[:-1]
+        ):
+            _fail("archive C attempt continued after a terminal receipt")
+        if any(
+            receipt["completed_unit_index"]
+            != {"C_setup": 0, "C_core": 394}[receipt["phase"]]
+            for receipt in attempt_receipts[:-1]
+        ):
+            _fail("archive C phase boundary closes at the wrong unit")
+        if attempt == 0 and producer_attempts == [0, 1] and (
+            attempt_receipts[-1]["exit_reason"] != "EXTERNAL_INTERRUPTION"
+            or attempt_receipts[-1]["staging_disposition"] != "DISCARDED"
+        ):
+            _fail("archive producer retry lacks its frozen interrupted attempt")
+    if producer_attempts == [0, 1] and (
+        c_receipts_by_attempt[0][-1]["end_utc"]
+        != c_receipts_by_attempt[1][0]["start_utc"]
+    ):
+        _fail("archive producer retry does not start at the attempt-0 boundary")
+    published_c_receipts = [
+        receipt
+        for receipt in c_receipts
+        if receipt["staging_disposition"] == "ATOMICALLY_PUBLISHED"
+    ]
+    final_c_receipt = c_receipts_by_attempt[producer_attempts[-1]][-1]
+    if manifest["bundle_published"]:
+        if len(published_c_receipts) != 1 or (
+            published_c_receipts[0]["phase"] != "C_bundle_io"
+            or published_c_receipts[0]["exit_reason"] != "PHASE_COMPLETE"
+            or published_c_receipts[0]["completed_unit_index"] != 395
+            or published_c_receipts[0] is not final_c_receipt
+        ):
+            _fail("published bundle lacks its unique successful U395 receipt")
+    elif published_c_receipts:
+        _fail("C receipt claims a visible unpublished bundle")
+    terminal_control_invalid = any(
+        receipt["exit_reason"] == "CONTROL_INVALID"
+        for receipt in c_receipts
     )
+    terminal_artifact_invalid = any(
+        receipt["exit_reason"] == "ARTIFACT_INVALID"
+        for receipt in c_receipts
+    )
+    terminal_implementation_invalid = any(
+        receipt["exit_reason"] == "IMPLEMENTATION_INVALID"
+        for receipt in c_receipts
+    )
+    if manifest["bundle_published"] and terminal_artifact_invalid:
+        _fail("published bundle cannot be archived as a C artifact failure")
     if any(
         receipt["completed_unit_index"] != -1
         for phase in ("B_build", "P_parity")
         for receipt in by_phase[phase]
     ):
         _fail("B/P receipt claims a scientific completed-unit index")
-    if any(
-        receipt["completed_unit_index"] > manifest["last_completed_unit_index"]
-        for phase in ("C_setup", "C_core", "C_bundle_io")
-        for receipt in by_phase[phase]
+    if (
+        c_receipts_by_attempt[producer_attempts[-1]][-1][
+            "completed_unit_index"
+        ]
+        != manifest["last_completed_unit_index"]
     ):
-        _fail("C receipt exceeds the published producer prefix")
-    if max(
-        (
-            receipt["completed_unit_index"]
-            for phase in ("C_setup", "C_core", "C_bundle_io")
-            for receipt in by_phase[phase]
-        ),
-        default=-1,
-    ) != manifest["last_completed_unit_index"]:
-        _fail("C receipts do not close at the published producer prefix")
+        _fail("final C attempt does not close at the published producer prefix")
+    c_study_cpu = sum(
+        receipt["cpu_microseconds"]
+        for receipt in phase_receipts
+        if receipt["phase"]
+        in {"B_build", "P_parity", "C_setup", "C_core", "C_bundle_io"}
+    )
+    final_attempt_receipts = c_receipts_by_attempt[producer_attempts[-1]]
+    final_external_has_resource_trigger = (
+        sum(receipt["cpu_microseconds"] for receipt in final_attempt_receipts)
+        > PHASE_CPU_CAP_MICROSECONDS
+        or sum(receipt["wall_nanoseconds"] for receipt in final_attempt_receipts)
+        > PHASE_WALL_CAP_NANOSECONDS
+        or max(receipt["peak_rss_bytes"] for receipt in final_attempt_receipts)
+        > PEAK_RSS_CAP_BYTES
+        or c_study_cpu > STUDY_CPU_CAP_MICROSECONDS
+    )
+    if manifest["bundle_published"]:
+        allowed_final = (
+            final_c_receipt["exit_reason"] == "PHASE_COMPLETE"
+            and final_c_receipt["staging_disposition"] == "ATOMICALLY_PUBLISHED"
+            and final_c_receipt["phase"] == "C_bundle_io"
+            and final_c_receipt["completed_unit_index"] == 395
+        )
+    elif final_c_receipt["exit_reason"] in {
+        "PRIMARY_CAP_STOP",
+        "REPRESENTATION_STOP",
+    }:
+        allowed_final = final_c_receipt["staging_disposition"] == "NONE"
+    elif final_c_receipt["exit_reason"] in {
+        "ARTIFACT_INVALID",
+        "CONTROL_INVALID",
+        "IMPLEMENTATION_INVALID",
+        "RESOURCE_INCOMPLETE_NO_DECISION",
+    }:
+        allowed_final = final_c_receipt["staging_disposition"] == "DISCARDED"
+    elif final_c_receipt["exit_reason"] == "EXTERNAL_INTERRUPTION":
+        allowed_final = (
+            producer_attempts == [0]
+            and final_c_receipt["staging_disposition"] == "DISCARDED"
+            and final_external_has_resource_trigger
+        )
+    else:
+        allowed_final = False
+    if not allowed_final:
+        _fail("archive final C receipt has an impossible terminal disposition")
     if any(
         receipt["completed_unit_index"] != manifest["last_completed_unit_index"]
         for phase in ("E_emit", "V_replay")
@@ -1480,6 +1797,12 @@ def _validate_request_and_build_body(
         _fail("archive primary_cap_pass mismatch")
     if status_inputs["verification_pass"] != (verifier["status"] == "VERIFIED"):
         _fail("archive verification_pass mismatch")
+    if status_inputs["artifact_valid"] != (not terminal_artifact_invalid):
+        _fail("archive artifact_valid differs from terminal C receipts")
+    if status_inputs["implementation_valid"] != (
+        not terminal_implementation_invalid
+    ):
+        _fail("archive implementation_valid differs from terminal C receipts")
     if status_inputs["control_valid"] != (
         derived_control_valid and not terminal_control_invalid
     ):
@@ -1490,8 +1813,6 @@ def _validate_request_and_build_body(
         _fail("archive representation_valid differs from evidence-derived representation checks")
     if status_inputs["resource_complete_through_verifier"] != resource_complete:
         _fail("archive resource_complete_through_verifier differs from recomputed ceilings")
-    if status_inputs["artifact_valid"] is not True:
-        _fail("validated archive inputs cannot be marked artifact-invalid")
     if not status_inputs["producer_evidence_complete"]:
         _fail("archive cannot publish with producer evidence marked incomplete")
     if not status_inputs["verifier_summary_complete"]:
@@ -1514,19 +1835,28 @@ def _validate_request_and_build_body(
 def _write_all(descriptor: int, payload: bytes) -> None:
     offset = 0
     while offset < len(payload):
-        written = os.write(descriptor, payload[offset:])
+        try:
+            written = os.write(descriptor, payload[offset:])
+        except OSError as error:
+            raise ArchiveEvidenceError(
+                f"cannot write archive output: {error}"
+            ) from error
         if written <= 0:
-            _fail("short write")
+            _evidence_fail("short write while publishing archive output")
         offset += written
 
 
 def _current_process_resource_usage() -> tuple[int, int]:
     if _GETRUSAGE is None:
-        _fail("getrusage is unavailable for archive prepublication ceiling checks")
+        _implementation_fail(
+            "getrusage is unavailable for archive prepublication ceiling checks"
+        )
     usage = _Rusage()
     if _GETRUSAGE(0, ctypes.byref(usage)) != 0:
         error_number = ctypes.get_errno()
-        raise OSError(error_number, os.strerror(error_number))
+        raise ArchiveImplementationError(
+            f"archive getrusage failed: {os.strerror(error_number)}"
+        )
     cpu = (
         usage.ru_utime.tv_sec * 1_000_000
         + usage.ru_utime.tv_usec
@@ -1548,24 +1878,56 @@ def _validate_archive_prepublication_resources(
 ) -> None:
     now = time.monotonic_ns()
     if phase_start_monotonic_ns > now:
-        _fail("archive phase monotonic start is in the future")
+        _implementation_fail("archive phase monotonic start is in the future")
     cpu, peak_rss = _current_process_resource_usage()
     wall = now - phase_start_monotonic_ns
     if prior_archive_cpu_microseconds + cpu > PHASE_CPU_CAP_MICROSECONDS:
-        _fail("E_archive_body CPU ceiling crossed before publication")
+        _resource_fail("E_archive_body CPU ceiling crossed before publication")
     if prior_archive_wall_nanoseconds + wall > PHASE_WALL_CAP_NANOSECONDS:
-        _fail("E_archive_body wall ceiling crossed before publication")
+        _resource_fail("E_archive_body wall ceiling crossed before publication")
     if request_size + archive_body_size > OWNED_LIVE_TEMPORARY_CAP_BYTES:
-        _fail("E_archive_body owned-live-byte ceiling crossed before publication")
+        _resource_fail("E_archive_body owned-live-byte ceiling crossed before publication")
     if prior_study_cpu_microseconds + cpu > STUDY_CPU_CAP_MICROSECONDS:
-        _fail("global T_study CPU ceiling crossed before archive publication")
+        _resource_fail("global T_study CPU ceiling crossed before archive publication")
     if peak_rss > PEAK_RSS_CAP_BYTES:
-        _fail("E_archive_body peak-RSS ceiling crossed before publication")
+        _resource_fail("E_archive_body peak-RSS ceiling crossed before publication")
     if prior_research_evidence_bytes + archive_body_size > RESEARCH_EVIDENCE_CAP_BYTES:
-        _fail("global research-evidence/archive byte ceiling crossed before publication")
+        _resource_fail(
+            "global research-evidence/archive byte ceiling crossed before publication"
+        )
 
 
 def _publish_archive_body(
+    root: Path,
+    body: Mapping[str, Any],
+    *,
+    phase_start_monotonic_ns: int,
+    prior_study_cpu_microseconds: int,
+    prior_research_evidence_bytes: int,
+    prior_archive_cpu_microseconds: int,
+    prior_archive_wall_nanoseconds: int,
+    request_size: int,
+) -> bytes:
+    try:
+        return _publish_archive_body_unchecked(
+            root,
+            body,
+            phase_start_monotonic_ns=phase_start_monotonic_ns,
+            prior_study_cpu_microseconds=prior_study_cpu_microseconds,
+            prior_research_evidence_bytes=prior_research_evidence_bytes,
+            prior_archive_cpu_microseconds=prior_archive_cpu_microseconds,
+            prior_archive_wall_nanoseconds=prior_archive_wall_nanoseconds,
+            request_size=request_size,
+        )
+    except ArchiveContractError:
+        raise
+    except OSError as error:
+        raise ArchiveEvidenceError(
+            f"cannot atomically publish archive body: {error}"
+        ) from error
+
+
+def _publish_archive_body_unchecked(
     root: Path,
     body: Mapping[str, Any],
     *,
@@ -1739,36 +2101,44 @@ def archive_and_return_identity(
         "status_inputs",
     }
     body_request = {key: control[key] for key in body_request_keys}
-    body, t_study_through_verifier = _validate_request_and_build_body(
-        registry,
-        body_request,
-        manifest,
-        verifier,
-        identities,
-        derived_control_valid,
-        derived_representation_valid,
+    body, t_study_through_verifier = _run_as_archive_implementation(
+        lambda: _validate_request_and_build_body(
+            registry,
+            body_request,
+            manifest,
+            verifier,
+            identities,
+            derived_control_valid,
+            derived_representation_valid,
+        )
     )
     (
         prior_archive_cpu,
         prior_archive_wall,
-    ) = _validate_prior_archive_attempt_receipts(
-        registry,
-        control["prior_archive_attempt_receipts"],
-        _require_mapping(
-            control["archive_start_checkpoint"], "archive start checkpoint"
-        ),
+    ) = _run_as_archive_implementation(
+        lambda: _validate_prior_archive_attempt_receipts(
+            registry,
+            control["prior_archive_attempt_receipts"],
+            _require_mapping(
+                control["archive_start_checkpoint"], "archive start checkpoint"
+            ),
+        )
     )
     resource_observation = control["resource_observation_through_verifier"]
     if (
         control["prior_study_cpu_microseconds"]
         != t_study_through_verifier + prior_archive_cpu
     ):
-        _fail("trusted prior-study CPU differs from through-verifier plus prior archive receipts")
+        _implementation_fail(
+            "trusted prior-study CPU differs from through-verifier plus prior archive receipts"
+        )
     if (
         control["prior_research_evidence_bytes"]
         != resource_observation["research_evidence_archive_bytes"]
     ):
-        _fail("trusted prior evidence bytes differ from resource observation")
+        _implementation_fail(
+            "trusted prior evidence bytes differ from resource observation"
+        )
     published = _publish_archive_body(
         root,
         body,
@@ -1784,12 +2154,24 @@ def archive_and_return_identity(
         "size_bytes": len(published),
     }
     if identity_pipe_fd <= 2:
-        _fail("archive identity pipe descriptor must be greater than stderr")
+        _evidence_fail("archive identity pipe descriptor must be greater than stderr")
     try:
-        os.fstat(identity_pipe_fd)
+        try:
+            os.fstat(identity_pipe_fd)
+        except OSError as error:
+            raise ArchiveEvidenceError(
+                f"archive identity pipe is unavailable: {error}"
+            ) from error
         _write_all(identity_pipe_fd, canonical_json_document(identity))
     finally:
-        os.close(identity_pipe_fd)
+        active_error = sys.exc_info()[0] is not None
+        try:
+            os.close(identity_pipe_fd)
+        except OSError as error:
+            if not active_error:
+                raise ArchiveEvidenceError(
+                    f"cannot close archive identity pipe: {error}"
+                ) from error
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -1803,15 +2185,36 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = _parser().parse_args(argv)
+    # Match the supervisor's pre-exec SIGINT block with raw-signal ownership
+    # before argparse or archive work.  Pending SIGINT therefore stays a
+    # negative wait status instead of Python's positive exit 130.
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    signal.pthread_sigmask(signal.SIG_UNBLOCK, {signal.SIGINT})
+    try:
+        args = _parser().parse_args(argv)
+    except SystemExit as error:
+        print(
+            f"A4-V2 archive IMPLEMENTATION_INVALID: argv parse exited {error.code}",
+            file=sys.stderr,
+        )
+        return 5
     try:
         archive_and_return_identity(
             control_fd=args.control_fd,
             identity_pipe_fd=args.identity_pipe_fd,
         )
-    except (OSError, ArchiveContractError) as error:
-        print(f"A4-V2 archive publication failed: {error}", file=sys.stderr)
-        return 2
+    except ArchiveContractError as error:
+        exit_code = {
+            "ARTIFACT_INVALID": 4,
+            "EVIDENCE_INCOMPLETE_NO_DECISION": 2,
+            "IMPLEMENTATION_INVALID": 5,
+            "RESOURCE_INCOMPLETE_NO_DECISION": 3,
+        }[error.status]
+        print(f"A4-V2 archive {error.status}: {error}", file=sys.stderr)
+        return exit_code
+    except OSError as error:
+        print(f"A4-V2 archive IMPLEMENTATION_INVALID: {error}", file=sys.stderr)
+        return 5
     return 0
 
 

@@ -86,13 +86,23 @@ class ProducerHooks(Protocol):
 
     def fail_unpublished_unit(self, status: str, detail: str) -> NoReturn: ...
 
+    def fail_completed_unit(
+        self, status: str, detail: str, state: "ProducerState"
+    ) -> NoReturn: ...
+
     def note_created_temporary(self, path: Path) -> None: ...
 
     def note_deleted_temporary(self, path: Path) -> None: ...
 
     def reserve_permanent_bundle(self, byte_count: int) -> None: ...
 
+    def begin_bundle_publication_commit(self) -> bool: ...
+
     def mark_bundle_publication_visible(self) -> None: ...
+
+    def finish_bundle_publication_commit(self) -> bool: ...
+
+    def capture_producer_terminal(self, error: BaseException) -> None: ...
 
     def commit_permanent_bundle(self, byte_count: int) -> None: ...
 
@@ -820,21 +830,32 @@ def publish_bundle(state: ProducerState, output_root: Path, hooks: ProducerHooks
         raise ProducerFailure("IMPLEMENTATION_INVALID", "bundle requires all eight encoding units")
     staging = output_root / "bundle.staging"
     destination = output_root / "bundle"
-    parent_fd = os.open(
-        output_root,
-        os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
-    )
-    try:
-        os.mkdir("bundle.staging", 0o700, dir_fd=parent_fd)
-    except OSError as error:
-        os.close(parent_fd)
-        raise ProducerFailure("ARTIFACT_INVALID", f"cannot create bundle staging: {error}") from error
-    hooks.note_created_temporary(staging)
+    parent_fd: int | None = None
     staging_fd: int | None = None
     identities: list[BundleFileIdentity] = []
     reserved_bytes: int | None = None
     published = False
     try:
+        try:
+            parent_fd = os.open(
+                output_root,
+                os.O_RDONLY
+                | getattr(os, "O_DIRECTORY", 0)
+                | getattr(os, "O_NOFOLLOW", 0),
+            )
+        except OSError as error:
+            raise ProducerFailure(
+                "ARTIFACT_INVALID",
+                f"cannot open bundle parent: {error}",
+            ) from error
+        try:
+            os.mkdir("bundle.staging", 0o700, dir_fd=parent_fd)
+        except OSError as error:
+            raise ProducerFailure(
+                "ARTIFACT_INVALID",
+                f"cannot create bundle staging: {error}",
+            ) from error
+        hooks.note_created_temporary(staging)
         staging_fd = os.open(
             "bundle.staging",
             os.O_RDONLY
@@ -933,15 +954,37 @@ def publish_bundle(state: ProducerState, output_root: Path, hooks: ProducerHooks
         hooks.check_operational()
         total_bytes = sum(item.size_bytes for item in identities)
         bundle_identity = BundleIdentity("bundle", tuple(identities), total_bytes)
-        hooks.reserve_permanent_bundle(total_bytes)
-        reserved_bytes = total_bytes
-        os.fsync(staging_fd)
-        _rename_noreplace(parent_fd, "bundle.staging", "bundle")
-        published = True
-        hooks.mark_bundle_publication_visible()
-        os.fsync(parent_fd)
-        hooks.commit_permanent_bundle(total_bytes)
+        if hooks.begin_bundle_publication_commit():
+            hooks.finish_bundle_publication_commit()
+            raise ProducerFailure(
+                "RESOURCE_INCOMPLETE_NO_DECISION",
+                "bundle transaction interrupted before reservation",
+            )
+        publication_interrupted = False
+        try:
+            hooks.reserve_permanent_bundle(total_bytes)
+            reserved_bytes = total_bytes
+            os.fsync(staging_fd)
+            _rename_noreplace(parent_fd, "bundle.staging", "bundle")
+            published = True
+            hooks.mark_bundle_publication_visible()
+            os.fsync(parent_fd)
+            hooks.commit_permanent_bundle(total_bytes)
+        finally:
+            publication_interrupted = hooks.finish_bundle_publication_commit()
+        if publication_interrupted:
+            raise (
+                BundlePublicationVisibleFailure(
+                    "bundle target became visible at an interrupted publication edge"
+                )
+                if published
+                else ProducerFailure(
+                    "RESOURCE_INCOMPLETE_NO_DECISION",
+                    "bundle transaction interrupted before atomic publication",
+                )
+            )
     except BaseException as error:
+        hooks.capture_producer_terminal(error)
         if reserved_bytes is not None and not published:
             hooks.cancel_permanent_bundle(reserved_bytes)
         if published:
@@ -961,12 +1004,14 @@ def publish_bundle(state: ProducerState, output_root: Path, hooks: ProducerHooks
                 os.close(staging_fd)
             except BaseException as error:
                 close_error = error
-        try:
-            os.close(parent_fd)
-        except BaseException as error:
-            if close_error is None:
-                close_error = error
+        if parent_fd is not None:
+            try:
+                os.close(parent_fd)
+            except BaseException as error:
+                if close_error is None:
+                    close_error = error
         if close_error is not None:
+            hooks.capture_producer_terminal(close_error)
             if published:
                 raise BundlePublicationVisibleFailure(
                     "bundle target became physically visible before descriptor cleanup: "
@@ -980,7 +1025,7 @@ def _stop_after(hooks: ProducerHooks, state: ProducerState) -> bool:
     return hooks.complete_unit(state.last_completed_unit_index, state)
 
 
-def run_attempt(hooks: ProducerHooks, output_root: Path) -> ProducerState:
+def _run_attempt_body(hooks: ProducerHooks, output_root: Path) -> ProducerState:
     """Run one attempt from U000; return the complete or cap-stopped prefix."""
 
     hooks.switch("C_setup", "C_setup")
@@ -1181,7 +1226,7 @@ def run_attempt(hooks: ProducerHooks, output_root: Path) -> ProducerState:
                     if not record.label_domain_valid
                     else "encoding packing/round-trip control mismatch"
                 )
-                raise ProducerFailure("CONTROL_INVALID", detail)
+                hooks.fail_completed_unit("CONTROL_INVALID", detail, state)
             if stop_after_unit:
                 return state
 
@@ -1190,6 +1235,16 @@ def run_attempt(hooks: ProducerHooks, output_root: Path) -> ProducerState:
     state = state.complete(395, bundle=bundle)
     _stop_after(hooks, state)
     return state
+
+
+def run_attempt(hooks: ProducerHooks, output_root: Path) -> ProducerState:
+    """Run one attempt while sealing every escaping terminal condition."""
+
+    try:
+        return _run_attempt_body(hooks, output_root)
+    except BaseException as error:
+        hooks.capture_producer_terminal(error)
+        raise
 
 
 def discard_attempt_root(path: Path) -> None:

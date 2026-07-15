@@ -39,6 +39,7 @@ from pathlib import Path, PurePosixPath
 import platform
 import re
 import resource
+import selectors
 import signal
 import shlex
 import ssl
@@ -124,7 +125,8 @@ PROTOCOL_COMPONENT_ROLES = {
     ),
 }
 GIT_OUTPUT_CAP_BYTES = 64 << 20
-NATIVE_INTERFACE_CAP_BYTES = 16 << 20
+NATIVE_IO_CHUNK_BYTES = 64 << 10
+NATIVE_WATCHDOG_INTERVAL_NANOSECONDS = 1_000_000_000
 PUBLICATION_CPU_RESERVE_MICROSECONDS = 60_000_000
 PUBLICATION_WALL_RESERVE_NANOSECONDS = 60_000_000_000
 PRIMARY_CPU_CAP_MICROSECONDS = 34_560_000_000
@@ -553,9 +555,65 @@ if _GETRUSAGE is not None:
 class VerificationContractError(RuntimeError):
     """A frozen artifact, schema, or verifier-interface contract failed."""
 
+    status = "ARTIFACT_INVALID"
+
+    def __init__(self, detail: str):
+        super().__init__(detail)
+        self.detail = detail
+
+
+class VerificationImplementationError(VerificationContractError):
+    """The reviewed verifier, tool, timer, or ledger violated its contract."""
+
+    status = "IMPLEMENTATION_INVALID"
+
+
+class VerificationEvidenceError(VerificationContractError):
+    """Verifier publication or its required response is incomplete."""
+
+    status = "EVIDENCE_INCOMPLETE_NO_DECISION"
+
+
+class VerificationResourceError(VerificationContractError):
+    """A registered V-replay or global publication ceiling was crossed."""
+
+
+    status = "RESOURCE_INCOMPLETE_NO_DECISION"
+
+
+class VerificationExternalInterruption(VerificationContractError):
+    """The independent native replay was externally signalled."""
+
+    status = "EXTERNAL_INTERRUPTION"
+
 
 def _fail(message: str) -> NoReturn:
     raise VerificationContractError(message)
+
+
+def _implementation_fail(message: str) -> NoReturn:
+    raise VerificationImplementationError(message)
+
+
+def _evidence_fail(message: str) -> NoReturn:
+    raise VerificationEvidenceError(message)
+
+
+def _resource_fail(message: str) -> NoReturn:
+    raise VerificationResourceError(message)
+
+
+def _run_as_verifier_implementation(operation: Any) -> Any:
+    """Classify reviewed native/tool failures without hiding resource/signal facts."""
+
+    try:
+        return operation()
+    except (VerificationResourceError, VerificationExternalInterruption):
+        raise
+    except VerificationContractError as error:
+        raise VerificationImplementationError(error.detail) from error
+    except OSError as error:
+        raise VerificationImplementationError(str(error)) from error
 
 
 def _reject_float(token: str) -> NoReturn:
@@ -1399,12 +1457,16 @@ def revalidate_immutable_artifact(root: Path, handle: Mapping[str, Any]) -> None
         _fail(f"retained artifact path changed across native replay: {relative!r}")
 
 
-def close_immutable_artifacts(handles: Mapping[str, Mapping[str, Any]]) -> None:
+def close_immutable_artifacts(
+    handles: Mapping[str, Mapping[str, Any]],
+) -> list[str]:
+    errors: list[str] = []
     for handle in handles.values():
         try:
             os.close(handle["fd"])
-        except OSError:
-            pass
+        except OSError as error:
+            errors.append(f"artifact fd {handle['fd']} close failed: {error}")
+    return errors
 
 
 def read_immutable_external(path: Path, description: str, *, maximum_bytes: int) -> bytes:
@@ -2357,6 +2419,7 @@ def _validate_par_review_binding(
     return {
         "implementation_commit": implementation_commit,
         "par_artifact_commit": par_artifact_commit,
+        "par_research_evidence_bytes": indexed_evidence_bytes,
         "review_commit": review_commit,
         "par_artifact_tree_oid": par_tree_oid,
         "par_tree_blobs": par_tree_blobs,
@@ -3969,26 +4032,177 @@ def _validate_prior_phase_receipts(
         for receipt in receipts
         if receipt["phase"] in {"C_setup", "C_core", "C_bundle_io"}
     ]
+    allowed_c_exit_reasons = {
+        "ARTIFACT_INVALID",
+        "CONTROL_INVALID",
+        "EXTERNAL_INTERRUPTION",
+        "IMPLEMENTATION_INVALID",
+        "PHASE_COMPLETE",
+        "PRIMARY_CAP_STOP",
+        "REPRESENTATION_STOP",
+        "RESOURCE_INCOMPLETE_NO_DECISION",
+    }
+    if any(
+        receipt["exit_reason"] not in allowed_c_exit_reasons
+        for receipt in c_receipts
+    ):
+        _fail("verifier prior C receipt has a nonfrozen exit reason")
+    producer_attempts = sorted({receipt["attempt_id"] for receipt in c_receipts})
+    if producer_attempts not in ([0], [0, 1]):
+        _fail("prior producer attempt ids are not the frozen global set")
+    c_receipts_by_attempt = {
+        attempt: [
+            receipt for receipt in c_receipts if receipt["attempt_id"] == attempt
+        ]
+        for attempt in producer_attempts
+    }
+    for attempt, attempt_receipts in c_receipts_by_attempt.items():
+        if any(
+            prior["end_utc"] != following["start_utc"]
+            for prior, following in zip(
+                attempt_receipts, attempt_receipts[1:]
+            )
+        ):
+            _fail("verifier C phase boundaries are not temporally contiguous")
+        observed_phases = [receipt["phase"] for receipt in attempt_receipts]
+        if observed_phases != ["C_setup", "C_core", "C_bundle_io"][: len(observed_phases)]:
+            _fail("verifier C attempt phases are not a prefix from C_setup")
+        phase_bounds = {
+            "C_setup": (0, 0),
+            "C_core": (0, 394),
+            "C_bundle_io": (394, 395),
+        }
+        if any(
+            not (
+                phase_bounds[receipt["phase"]][0]
+                <= receipt["completed_unit_index"]
+                <= phase_bounds[receipt["phase"]][1]
+            )
+            for receipt in attempt_receipts
+        ):
+            _fail("verifier C receipt prefix is outside its frozen phase range")
+        if any(
+            following["completed_unit_index"]
+            < prior["completed_unit_index"]
+            for prior, following in zip(
+                attempt_receipts, attempt_receipts[1:]
+            )
+        ):
+            _fail("verifier C completed prefix regresses within one attempt")
+        if any(
+            receipt["exit_reason"] != "PHASE_COMPLETE"
+            or receipt["staging_disposition"] != "NONE"
+            for receipt in attempt_receipts[:-1]
+        ):
+            _fail("verifier C attempt continued after a terminal receipt")
+        if any(
+            receipt["completed_unit_index"]
+            != {"C_setup": 0, "C_core": 394}[receipt["phase"]]
+            for receipt in attempt_receipts[:-1]
+        ):
+            _fail("verifier C phase boundary closes at the wrong unit")
+        if attempt == 0 and producer_attempts == [0, 1] and (
+            attempt_receipts[-1]["exit_reason"] != "EXTERNAL_INTERRUPTION"
+            or attempt_receipts[-1]["staging_disposition"] != "DISCARDED"
+        ):
+            _fail("verifier producer retry lacks its frozen interrupted attempt")
+    if producer_attempts == [0, 1] and (
+        c_receipts_by_attempt[0][-1]["end_utc"]
+        != c_receipts_by_attempt[1][0]["start_utc"]
+    ):
+        _fail("verifier producer retry does not start at the attempt-0 boundary")
     if (
-        any(
-            receipt["completed_unit_index"] > manifest["last_completed_unit_index"]
-            for receipt in c_receipts
-        )
-        or max(
-            (receipt["completed_unit_index"] for receipt in c_receipts), default=-1
-        )
+        c_receipts_by_attempt[producer_attempts[-1]][-1][
+            "completed_unit_index"
+        ]
         != manifest["last_completed_unit_index"]
     ):
-        _fail("verifier prior C receipts do not close at the producer prefix")
+        _fail("verifier final C attempt does not close at the producer prefix")
+    final_c_receipt = c_receipts_by_attempt[producer_attempts[-1]][-1]
+    c_study_cpu = sum(
+        receipt["cpu_microseconds"]
+        for receipt in receipts
+        if receipt["phase"]
+        in {"B_build", "P_parity", "C_setup", "C_core", "C_bundle_io"}
+    )
+    final_attempt_receipts = c_receipts_by_attempt[producer_attempts[-1]]
+    final_external_has_resource_trigger = (
+        sum(receipt["cpu_microseconds"] for receipt in final_attempt_receipts)
+        > PHASE_CPU_CAP_MICROSECONDS
+        or sum(receipt["wall_nanoseconds"] for receipt in final_attempt_receipts)
+        > PHASE_WALL_CAP_NANOSECONDS
+        or max(receipt["peak_rss_bytes"] for receipt in final_attempt_receipts)
+        > PHASE_PEAK_RSS_CAP_BYTES
+        or c_study_cpu > STUDY_CPU_CAP_MICROSECONDS
+    )
+    if manifest["bundle_published"]:
+        allowed_final = (
+            final_c_receipt["exit_reason"] == "PHASE_COMPLETE"
+            and final_c_receipt["staging_disposition"] == "ATOMICALLY_PUBLISHED"
+            and final_c_receipt["phase"] == "C_bundle_io"
+            and final_c_receipt["completed_unit_index"] == 395
+        )
+    elif final_c_receipt["exit_reason"] in {
+        "PRIMARY_CAP_STOP",
+        "REPRESENTATION_STOP",
+    }:
+        allowed_final = final_c_receipt["staging_disposition"] == "NONE"
+    elif final_c_receipt["exit_reason"] in {
+        "ARTIFACT_INVALID",
+        "CONTROL_INVALID",
+        "IMPLEMENTATION_INVALID",
+        "RESOURCE_INCOMPLETE_NO_DECISION",
+    }:
+        allowed_final = final_c_receipt["staging_disposition"] == "DISCARDED"
+    elif final_c_receipt["exit_reason"] == "EXTERNAL_INTERRUPTION":
+        allowed_final = (
+            producer_attempts == [0]
+            and final_c_receipt["staging_disposition"] == "DISCARDED"
+            and final_external_has_resource_trigger
+        )
+    else:
+        allowed_final = False
+    if not allowed_final:
+        _fail("verifier final C receipt has an impossible terminal disposition")
+    published_c_receipts = [
+        receipt
+        for receipt in c_receipts
+        if receipt["staging_disposition"] == "ATOMICALLY_PUBLISHED"
+    ]
+    if manifest["bundle_published"]:
+        if len(published_c_receipts) != 1 or (
+            published_c_receipts[0]["phase"] != "C_bundle_io"
+            or published_c_receipts[0]["exit_reason"] != "PHASE_COMPLETE"
+            or published_c_receipts[0]["completed_unit_index"] != 395
+            or published_c_receipts[0] is not final_c_receipt
+        ):
+            _fail("verifier published bundle lacks its unique successful U395 receipt")
+    elif published_c_receipts:
+        _fail("verifier prior C receipt claims a visible unpublished bundle")
     emit_receipts = [receipt for receipt in receipts if receipt["phase"] == "E_emit"]
     if not emit_receipts:
         _fail("verifier prior receipts omit E_emit")
+    if any(
+        receipt["exit_reason"] != "EXTERNAL_INTERRUPTION"
+        or receipt["staging_disposition"] != "DISCARDED"
+        for receipt in emit_receipts[:-1]
+    ):
+        _fail("verifier prior E_emit retry lacks its frozen interrupted attempt")
+    if len(emit_receipts) == 2 and (
+        emit_receipts[0]["end_utc"] != emit_receipts[1]["start_utc"]
+    ):
+        _fail("verifier E_emit retry does not start at the attempt-0 boundary")
     terminal_emit = emit_receipts[-1]
     if terminal_emit["exit_reason"] != "PHASE_COMPLETE" or terminal_emit["staging_disposition"] != "ATOMICALLY_PUBLISHED":
         _fail("verifier prior E_emit receipt is not a complete publication")
     prior_verifier_receipts = [
         receipt for receipt in receipts if receipt["phase"] == "V_replay"
     ]
+    if [receipt["attempt_id"] for receipt in prior_verifier_receipts] not in (
+        [],
+        [0],
+    ):
+        _fail("prior V_replay receipts imply more than one frozen restart")
     if any(
         receipt["completed_unit_index"] != manifest["last_completed_unit_index"]
         for receipt in (*emit_receipts, *prior_verifier_receipts)
@@ -3999,6 +4213,12 @@ def _validate_prior_phase_receipts(
         for receipt in prior_verifier_receipts
     ):
         _fail("a prior V_replay retry receipt already claims publication")
+    if any(
+        receipt["exit_reason"] != "EXTERNAL_INTERRUPTION"
+        or receipt["staging_disposition"] != "DISCARDED"
+        for receipt in prior_verifier_receipts
+    ):
+        _fail("prior V_replay retry lacks its frozen interrupted attempt")
     for receipt in receipts:
         if receipt["phase"] in {"C_setup", "C_core", "C_bundle_io", "E_emit", "V_replay"} and receipt["logical_run_id"] != logical_run_id:
             _fail("verifier prior current-run receipt has a different logical_run_id")
@@ -4025,45 +4245,7 @@ def _validate_prior_phase_receipts(
             following["start_utc"]
         ):
             _fail("verifier prior phase attempts overlap")
-    for phase in ("B_build", "P_parity", "E_emit"):
-        phase_receipts = [receipt for receipt in receipts if receipt["phase"] == phase]
-        if (
-            sum(receipt["cpu_microseconds"] for receipt in phase_receipts)
-            > PHASE_CPU_CAP_MICROSECONDS
-            or sum(receipt["wall_nanoseconds"] for receipt in phase_receipts)
-            > PHASE_WALL_CAP_NANOSECONDS
-        ):
-            _fail(f"prior phase {phase} crossed its operational ceiling")
-    producer_attempts = sorted(
-        {
-            receipt["attempt_id"]
-            for receipt in receipts
-            if receipt["phase"] in {"C_setup", "C_core", "C_bundle_io"}
-        }
-    )
-    if producer_attempts not in ([0], [0, 1]):
-        _fail("prior producer attempt ids are not the frozen global set")
-    for attempt in producer_attempts:
-        attempt_receipts = [
-            receipt
-            for receipt in receipts
-            if receipt["phase"] in {"C_setup", "C_core", "C_bundle_io"}
-            and receipt["attempt_id"] == attempt
-        ]
-        if (
-            sum(receipt["cpu_microseconds"] for receipt in attempt_receipts)
-            > PHASE_CPU_CAP_MICROSECONDS
-            or sum(receipt["wall_nanoseconds"] for receipt in attempt_receipts)
-            > PHASE_WALL_CAP_NANOSECONDS
-            or any(
-                receipt["peak_rss_bytes"] > PHASE_PEAK_RSS_CAP_BYTES
-                for receipt in attempt_receipts
-            )
-        ):
-            _fail("prior producer attempt crossed an operational ceiling")
     prior_cpu = sum(receipt["cpu_microseconds"] for receipt in receipts)
-    if prior_cpu > 518_400_000_000:
-        _fail("prior phases already crossed the global T_study CPU ceiling")
     prior_verifier_cpu = sum(
         receipt["cpu_microseconds"] for receipt in prior_verifier_receipts
     )
@@ -4090,34 +4272,10 @@ def _parse_utc_for_receipt(value: Any) -> _datetime.datetime:
 
 
 def _native_child_limits(cpu_seconds: int) -> None:
-    resource.setrlimit(resource.RLIMIT_AS, (PHASE_PEAK_RSS_CAP_BYTES, PHASE_PEAK_RSS_CAP_BYTES))
     resource.setrlimit(resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds))
 
 
 def _validate_verifier_system_preflight(artifact_root: Path) -> None:
-    try:
-        meminfo = Path("/proc/meminfo").read_bytes()
-    except OSError as error:
-        raise VerificationContractError("cannot read verifier /proc/meminfo") from error
-    available: Optional[int] = None
-    for line in meminfo.splitlines():
-        if line.startswith(b"MemAvailable:"):
-            fields = line.split()
-            if len(fields) != 3 or fields[2] != b"kB":
-                _fail("verifier MemAvailable preflight field is malformed")
-            try:
-                available = int(fields[1]) * 1024
-            except ValueError as error:
-                raise VerificationContractError(
-                    "verifier MemAvailable preflight is not an integer"
-                ) from error
-            break
-    if available is None or available < MINIMUM_AVAILABLE_MEMORY_BYTES:
-        _fail("verifier preflight has less than 24 GiB available memory")
-    filesystem = os.statvfs(artifact_root)
-    free_output = filesystem.f_bavail * filesystem.f_frsize
-    if free_output < MINIMUM_FREE_OUTPUT_BYTES:
-        _fail("verifier preflight has less than 16 GiB free output space")
     if _artifact_entry_exists(artifact_root, "verifier") or _artifact_entry_exists(
         artifact_root, "verifier.staging"
     ):
@@ -4159,16 +4317,189 @@ def _sample_native_process(pid: int) -> Optional[tuple[int, int]]:
     return cpu_microseconds, peak_kib * 1024
 
 
-def _terminate_native(process: subprocess.Popen[bytes]) -> None:
+def _kill_close_reap_native(process: subprocess.Popen[bytes]) -> str | None:
+    """Kill one native process group, close its pipes, and must-reap once."""
+
+    cleanup_errors: list[str] = []
+    if process.poll() is None:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        except OSError as error:
+            cleanup_errors.append(f"killpg failed: {error}")
+    for name, pipe in (
+        ("stdin", process.stdin),
+        ("stdout", process.stdout),
+        ("stderr", process.stderr),
+    ):
+        if pipe is None or pipe.closed:
+            continue
+        try:
+            pipe.close()
+        except OSError as error:
+            cleanup_errors.append(f"{name} close failed: {error}")
+    while process.returncode is None:
+        try:
+            process.wait(timeout=1)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            except OSError as error:
+                cleanup_errors.append(f"repeated killpg failed: {error}")
+        except InterruptedError:
+            continue
+        except (ChildProcessError, OSError) as error:
+            cleanup_errors.append(f"native wait failed: {error}")
+            break
+    if process.returncode is None:
+        cleanup_errors.append("native child remained non-waitable without a return code")
+    return "; ".join(cleanup_errors) or None
+
+
+def _exchange_native_bounded(
+    process: subprocess.Popen[bytes],
+    request_payload: bytes,
+    stdout_budget: int,
+    watchdog: Any,
+) -> tuple[bytes, int, str]:
+    """Full-duplex native exchange bounded by the registered evidence budget."""
+
+    if stdout_budget < 0:
+        _implementation_fail("native stdout budget is negative")
+    if process.stdin is None or process.stdout is None or process.stderr is None:
+        _implementation_fail("native verifier pipes are incomplete")
+    stdin_pipe = process.stdin
+    stdout_pipe = process.stdout
+    stderr_pipe = process.stderr
+    selector = selectors.DefaultSelector()
+    stdout = bytearray()
+    stderr_count = 0
+    stderr_hasher = hashlib.sha256()
+    request_offset = 0
+    request_complete = False
+    open_outputs = {"stdout", "stderr"}
+
+    def close_registered(pipe: Any) -> None:
+        try:
+            selector.unregister(pipe)
+        except KeyError:
+            pass
+        try:
+            pipe.close()
+        except OSError as error:
+            _implementation_fail(f"cannot close native interface pipe: {error}")
+
     try:
-        os.killpg(process.pid, signal.SIGKILL)
-    except ProcessLookupError:
-        pass
-    try:
-        process.communicate(timeout=10)
-    except subprocess.TimeoutExpired:
-        process.kill()
-        process.communicate()
+        for pipe in (stdin_pipe, stdout_pipe, stderr_pipe):
+            os.set_blocking(pipe.fileno(), False)
+        selector.register(stdin_pipe, selectors.EVENT_WRITE, "stdin")
+        selector.register(stdout_pipe, selectors.EVENT_READ, "stdout")
+        selector.register(stderr_pipe, selectors.EVENT_READ, "stderr")
+        next_watchdog = time.monotonic_ns()
+        while process.poll() is None or open_outputs:
+            now = time.monotonic_ns()
+            if now >= next_watchdog:
+                watchdog()
+                next_watchdog = now + NATIVE_WATCHDOG_INTERVAL_NANOSECONDS
+            timeout = max(
+                0.0,
+                min(
+                    1.0,
+                    (next_watchdog - time.monotonic_ns()) / 1_000_000_000,
+                ),
+            )
+            try:
+                events = selector.select(timeout)
+            except OSError as error:
+                if error.errno == errno.EINTR:
+                    continue
+                _implementation_fail(f"native interface selector failed: {error}")
+            for key, _ in events:
+                pipe = key.fileobj
+                stream_name = key.data
+                if stream_name == "stdin":
+                    if request_offset == len(request_payload):
+                        request_complete = True
+                        close_registered(pipe)
+                        continue
+                    try:
+                        written = os.write(
+                            pipe.fileno(),
+                            request_payload[
+                                request_offset : request_offset + NATIVE_IO_CHUNK_BYTES
+                            ],
+                        )
+                    except BlockingIOError:
+                        continue
+                    except BrokenPipeError:
+                        close_registered(pipe)
+                        continue
+                    except OSError as error:
+                        _implementation_fail(
+                            f"native request transport write failed: {error}"
+                        )
+                    if written <= 0:
+                        _implementation_fail("native request transport short write")
+                    request_offset += written
+                    if request_offset == len(request_payload):
+                        request_complete = True
+                        close_registered(pipe)
+                    continue
+
+                read_size = NATIVE_IO_CHUNK_BYTES
+                if stream_name == "stdout":
+                    read_size = min(
+                        read_size,
+                        stdout_budget + 1 - len(stdout),
+                    )
+                    if read_size <= 0:
+                        _resource_fail(
+                            "native verifier response cannot fit the registered "
+                            "remaining research-evidence budget"
+                        )
+                try:
+                    chunk = os.read(pipe.fileno(), read_size)
+                except BlockingIOError:
+                    continue
+                except OSError as error:
+                    _implementation_fail(
+                        f"native {stream_name} transport read failed: {error}"
+                    )
+                if not chunk:
+                    close_registered(pipe)
+                    open_outputs.remove(stream_name)
+                    continue
+                if stream_name == "stdout":
+                    stdout.extend(chunk)
+                    if len(stdout) > stdout_budget:
+                        _resource_fail(
+                            "native verifier response cannot fit the registered "
+                            "remaining research-evidence budget"
+                        )
+                else:
+                    stderr_count += len(chunk)
+                    stderr_hasher.update(chunk)
+
+        if process.returncode is None:
+            _implementation_fail("native verifier terminated without a return code")
+        if process.returncode == 0 and not request_complete:
+            _implementation_fail(
+                "successful native verifier did not consume the complete request"
+            )
+        for pipe in (stdin_pipe, stdout_pipe, stderr_pipe):
+            if not pipe.closed:
+                close_registered(pipe)
+        return bytes(stdout), stderr_count, stderr_hasher.hexdigest()
+    finally:
+        try:
+            selector.close()
+        except OSError as error:
+            _implementation_fail(
+                f"cannot close native interface selector: {error}"
+            )
 
 
 def invoke_independent_native_verifier(
@@ -4180,6 +4511,7 @@ def invoke_independent_native_verifier(
     artifact_handles: Mapping[str, Mapping[str, Any]],
     *,
     phase_start_monotonic_ns: int,
+    prior_research_evidence_bytes: int,
     prior_study_cpu_microseconds: int,
     prior_verifier_cpu_microseconds: int,
     prior_verifier_wall_nanoseconds: int,
@@ -4227,13 +4559,22 @@ def invoke_independent_native_verifier(
         - PUBLICATION_WALL_RESERVE_NANOSECONDS
     )
     if remaining_cpu <= 0 or remaining_wall <= 0:
-        _fail("native verifier lacks the frozen publication resource reserve")
+        _resource_fail("native verifier lacks the frozen publication resource reserve")
     if max(prior_verifier_peak_rss_bytes, self_rss, child_rss) > PHASE_PEAK_RSS_CAP_BYTES:
-        _fail("native verifier preflight already exceeds the peak-RSS ceiling")
+        _resource_fail("native verifier preflight already exceeds the peak-RSS ceiling")
     cpu_limit_seconds = max(1, (remaining_cpu + 999_999) // 1_000_000)
     request_payload = canonical_json_document(dict(request))
     if len(request_payload) > 1 << 20:
         _fail("native verifier canonical request exceeds 1 MiB")
+    _require_nonnegative_integer(
+        prior_research_evidence_bytes,
+        "prior_research_evidence_bytes",
+    )
+    if prior_research_evidence_bytes > RESEARCH_EVIDENCE_CAP_BYTES:
+        _resource_fail("prior research evidence already exceeds its registered ceiling")
+    stdout_budget = (
+        RESEARCH_EVIDENCE_CAP_BYTES - prior_research_evidence_bytes
+    )
     artifact_fds = tuple(
         sorted(handle["fd"] for handle in artifact_handles.values())
     )
@@ -4249,86 +4590,126 @@ def invoke_independent_native_verifier(
         start_new_session=True,
         preexec_fn=lambda: _native_child_limits(cpu_limit_seconds),
     )
-    input_payload: Optional[bytes] = request_payload
-    stdout = b""
-    stderr = b""
+
+    def enforce_native_watchdog() -> None:
+        sample = _sample_native_process(process.pid)
+        if sample is None:
+            return
+        native_cpu, native_rss = sample
+        current = time.monotonic_ns()
+        self_now_cpu, self_now_rss = _resource_usage(0)
+        child_now_cpu, child_now_rss = _resource_usage(-1)
+        watchdog_cpu = max(
+            self_now_cpu + child_now_cpu + native_cpu,
+            current_cpu + native_cpu,
+        )
+        reserve_crossed = (
+            prior_verifier_cpu_microseconds
+            + watchdog_cpu
+            + PUBLICATION_CPU_RESERVE_MICROSECONDS
+            > PHASE_CPU_CAP_MICROSECONDS
+            or prior_study_cpu_microseconds
+            + watchdog_cpu
+            + PUBLICATION_CPU_RESERVE_MICROSECONDS
+            > STUDY_CPU_CAP_MICROSECONDS
+            or prior_verifier_wall_nanoseconds
+            + (current - phase_start_monotonic_ns)
+            + PUBLICATION_WALL_RESERVE_NANOSECONDS
+            > PHASE_WALL_CAP_NANOSECONDS
+            or max(
+                prior_verifier_peak_rss_bytes,
+                self_now_rss,
+                child_now_rss,
+                native_rss,
+            )
+            > PHASE_PEAK_RSS_CAP_BYTES
+        )
+        if reserve_crossed:
+            _resource_fail(
+                "native verifier watchdog preserved the publication reserve"
+            )
+
     try:
-        while True:
-            try:
-                stdout, stderr = process.communicate(input=input_payload, timeout=1)
-                break
-            except subprocess.TimeoutExpired as error:
-                input_payload = None
-                partial_stdout = error.output or b""
-                partial_stderr = error.stderr or b""
-                if (
-                    len(partial_stdout) > NATIVE_INTERFACE_CAP_BYTES
-                    or len(partial_stderr) > NATIVE_INTERFACE_CAP_BYTES
-                ):
-                    _terminate_native(process)
-                    _fail("native verifier crossed an interface-output ceiling")
-                sample = _sample_native_process(process.pid)
-                current = time.monotonic_ns()
-                if sample is None:
-                    continue
-                native_cpu, native_rss = sample
-                self_now_cpu, self_now_rss = _resource_usage(0)
-                child_now_cpu, child_now_rss = _resource_usage(-1)
-                watchdog_cpu = max(
-                    self_now_cpu + child_now_cpu + native_cpu,
-                    current_cpu + native_cpu,
+        stdout, stderr_count, stderr_identity = _exchange_native_bounded(
+            process,
+            request_payload,
+            stdout_budget,
+            enforce_native_watchdog,
+        )
+    except BaseException as primary_error:
+        cleanup_error = _kill_close_reap_native(process)
+        if cleanup_error is not None:
+            if isinstance(
+                primary_error,
+                (VerificationImplementationError, VerificationContractError),
+            ) and not isinstance(
+                primary_error,
+                (
+                    VerificationEvidenceError,
+                    VerificationResourceError,
+                    VerificationExternalInterruption,
+                ),
+            ):
+                primary_error.detail = (
+                    f"{primary_error.detail}; native cleanup: {cleanup_error}"
                 )
-                reserve_crossed = (
-                    prior_verifier_cpu_microseconds
-                    + watchdog_cpu
-                    + PUBLICATION_CPU_RESERVE_MICROSECONDS
-                    > PHASE_CPU_CAP_MICROSECONDS
-                    or prior_study_cpu_microseconds
-                    + watchdog_cpu
-                    + PUBLICATION_CPU_RESERVE_MICROSECONDS
-                    > STUDY_CPU_CAP_MICROSECONDS
-                    or prior_verifier_wall_nanoseconds
-                    + (current - phase_start_monotonic_ns)
-                    + PUBLICATION_WALL_RESERVE_NANOSECONDS
-                    > PHASE_WALL_CAP_NANOSECONDS
-                    or max(
-                        prior_verifier_peak_rss_bytes,
-                        self_now_rss,
-                        child_now_rss,
-                        native_rss,
-                    )
-                    > PHASE_PEAK_RSS_CAP_BYTES
-                )
-                if reserve_crossed:
-                    _terminate_native(process)
-                    _fail("native verifier watchdog preserved the publication reserve")
-    except BaseException:
-        if process.poll() is None:
-            _terminate_native(process)
+                primary_error.args = (primary_error.detail,)
+            else:
+                raise VerificationImplementationError(
+                    "native exchange cleanup failed after "
+                    f"{type(primary_error).__name__}: {primary_error}; "
+                    f"cleanup: {cleanup_error}"
+                ) from primary_error
         raise
-    _revalidate_sealed_fd_and_path(
-        executable_descriptor,
-        executable_path,
-        "native verifier",
-        executable_metadata,
-        native_identity["sha256"],
-    )
-    if len(stderr) > NATIVE_INTERFACE_CAP_BYTES:
-        _fail("native verifier stderr exceeds 16 MiB interface ceiling")
     if process.returncode != 0:
-        stderr_identity = sha256_bytes(stderr)
-        _fail(
+        terminal_now = time.monotonic_ns()
+        terminal_self_cpu, terminal_self_rss = _resource_usage(0)
+        terminal_child_cpu, terminal_child_rss = _resource_usage(-1)
+        terminal_resource_crossed = (
+            prior_verifier_cpu_microseconds
+            + terminal_self_cpu
+            + terminal_child_cpu
+            + PUBLICATION_CPU_RESERVE_MICROSECONDS
+            > PHASE_CPU_CAP_MICROSECONDS
+            or prior_study_cpu_microseconds
+            + terminal_self_cpu
+            + terminal_child_cpu
+            + PUBLICATION_CPU_RESERVE_MICROSECONDS
+            > STUDY_CPU_CAP_MICROSECONDS
+            or prior_verifier_wall_nanoseconds
+            + terminal_now
+            - phase_start_monotonic_ns
+            + PUBLICATION_WALL_RESERVE_NANOSECONDS
+            > PHASE_WALL_CAP_NANOSECONDS
+            or max(
+                prior_verifier_peak_rss_bytes,
+                terminal_self_rss,
+                terminal_child_rss,
+            )
+            > PHASE_PEAK_RSS_CAP_BYTES
+        )
+        if terminal_resource_crossed:
+            _resource_fail(
+                "independent native verifier stopped at a registered resource ceiling: "
+                f"exit={process.returncode}, stderr_bytes={stderr_count}, "
+                f"stderr_sha256={stderr_identity}"
+            )
+        if process.returncode < 0:
+            raise VerificationExternalInterruption(
+                "independent native verifier was externally signalled: "
+                f"signal={-process.returncode}, stderr_bytes={stderr_count}, "
+                f"stderr_sha256={stderr_identity}"
+            )
+        _implementation_fail(
             "independent native verifier failed: "
-            f"exit={process.returncode}, stderr_bytes={len(stderr)}, "
+            f"exit={process.returncode}, stderr_bytes={stderr_count}, "
             f"stderr_sha256={stderr_identity}"
         )
-    if stderr:
+    if stderr_count:
         _fail(
             "successful native verifier emitted stderr: "
-            f"bytes={len(stderr)}, sha256={sha256_bytes(stderr)}"
+            f"bytes={stderr_count}, sha256={stderr_identity}"
         )
-    if len(stdout) > NATIVE_INTERFACE_CAP_BYTES:
-        _fail("native verifier response exceeds 16 MiB interface ceiling")
     response = _require_mapping(
         parse_canonical_json_document(stdout, "native verifier response"),
         "native verifier response",
@@ -4391,22 +4772,29 @@ def invoke_independent_native_verifier(
         command,
         command_sha256,
         len(stdout),
-        len(stderr),
+        stderr_count,
     )
 
 
 def _write_all(descriptor: int, payload: bytes) -> None:
     offset = 0
     while offset < len(payload):
-        written = os.write(descriptor, payload[offset:])
+        try:
+            written = os.write(descriptor, payload[offset:])
+        except OSError as error:
+            raise VerificationEvidenceError(
+                f"cannot write verifier output: {error}"
+            ) from error
         if written <= 0:
-            _fail("short write while publishing verifier summary")
+            _evidence_fail("short write while publishing verifier output")
         offset += written
 
 
 def _resource_usage(which: int) -> tuple[int, int]:
     if _GETRUSAGE is None:
-        _fail("getrusage is unavailable for the verifier prepublication ceiling check")
+        _implementation_fail(
+            "getrusage is unavailable for the verifier prepublication ceiling check"
+        )
     usage = _Rusage()
     if _GETRUSAGE(which, ctypes.byref(usage)) != 0:
         error_number = ctypes.get_errno()
@@ -4435,7 +4823,7 @@ def _validate_prepublication_resource_ceiling(
     )
     now = time.monotonic_ns()
     if phase_start_monotonic_ns > now:
-        _fail("verifier phase monotonic start is in the future")
+        _implementation_fail("verifier phase monotonic start is in the future")
     self_cpu, self_rss = _resource_usage(0)
     child_cpu, child_rss = _resource_usage(-1)
     cpu = self_cpu + child_cpu
@@ -4448,32 +4836,49 @@ def _validate_prepublication_resource_ceiling(
         + PUBLICATION_CPU_RESERVE_MICROSECONDS
         > PHASE_CPU_CAP_MICROSECONDS
     ):
-        _fail("V_replay lacks the CPU reserve required for atomic publication")
+        _resource_fail("V_replay lacks the CPU reserve required for atomic publication")
     if (
         prior_verifier_wall_nanoseconds
         + wall
         + PUBLICATION_WALL_RESERVE_NANOSECONDS
         > PHASE_WALL_CAP_NANOSECONDS
     ):
-        _fail("V_replay lacks the wall reserve required for atomic publication")
+        _resource_fail("V_replay lacks the wall reserve required for atomic publication")
     if max(prior_verifier_peak_rss_bytes, peak_rss) > PHASE_PEAK_RSS_CAP_BYTES:
-        _fail("V_replay peak-RSS ceiling crossed before verifier publication")
+        _resource_fail("V_replay peak-RSS ceiling crossed before verifier publication")
     if live_owned_bytes > OWNED_LIVE_TEMPORARY_CAP_BYTES:
-        _fail("V_replay owned-live-byte ceiling crossed before verifier publication")
+        _resource_fail("V_replay owned-live-byte ceiling crossed before verifier publication")
     if summary_size > RESEARCH_EVIDENCE_CAP_BYTES:
-        _fail("V_replay research-evidence byte ceiling crossed before publication")
+        _resource_fail("V_replay research-evidence byte ceiling crossed before publication")
     if (
         prior_study_cpu_microseconds
         + cpu
         + PUBLICATION_CPU_RESERVE_MICROSECONDS
         > STUDY_CPU_CAP_MICROSECONDS
     ):
-        _fail("global T_study lacks the CPU reserve required for publication")
+        _resource_fail("global T_study lacks the CPU reserve required for publication")
     if prior_research_evidence_bytes + summary_size > RESEARCH_EVIDENCE_CAP_BYTES:
-        _fail("global research-evidence/archive byte ceiling crossed before verifier publication")
+        _resource_fail(
+            "global research-evidence/archive byte ceiling crossed before verifier publication"
+        )
 
 
-def atomically_publish_verifier_summary(artifact_root: Path, summary: Mapping[str, Any]) -> None:
+def atomically_publish_verifier_summary(
+    artifact_root: Path, summary: Mapping[str, Any]
+) -> None:
+    try:
+        _atomically_publish_verifier_summary(artifact_root, summary)
+    except VerificationContractError:
+        raise
+    except OSError as error:
+        raise VerificationEvidenceError(
+            f"cannot atomically publish verifier summary: {error}"
+        ) from error
+
+
+def _atomically_publish_verifier_summary(
+    artifact_root: Path, summary: Mapping[str, Any]
+) -> None:
     payload = canonical_json_document(dict(summary))
     root_descriptor = _open_artifact_root(artifact_root)
     try:
@@ -4686,12 +5091,22 @@ def verify_and_publish(control: Mapping[str, Any], _control_payload_size: int) -
         par_phase_receipts,
     )
     if prior_study_cpu != control["prior_study_cpu_microseconds"]:
-        _fail("trusted prior-study CPU differs from exact prior phase receipts")
+        _implementation_fail(
+            "trusted prior-study CPU differs from exact prior phase receipts"
+        )
     published_evidence_bytes = sum(len(payloads[path]) for path in EVIDENCE_PATHS)
-    if control["prior_research_evidence_bytes"] < published_evidence_bytes:
-        _fail("trusted prior evidence bytes omit published producer evidence")
+    exact_prior_research_evidence_bytes = (
+        git_authority["par_research_evidence_bytes"] + published_evidence_bytes
+    )
+    if (
+        control["prior_research_evidence_bytes"]
+        != exact_prior_research_evidence_bytes
+    ):
+        _implementation_fail(
+            "trusted prior evidence bytes differ from exact PAR plus producer evidence"
+        )
     if control["prior_research_evidence_bytes"] > RESEARCH_EVIDENCE_CAP_BYTES:
-        _fail("trusted prior evidence bytes already exceed the global ceiling")
+        _resource_fail("trusted prior evidence bytes already exceed the global ceiling")
     producer_manifest_payload = payloads["evidence/producer_manifest.json"]
     _validate_verifier_system_preflight(root)
     native_command_sha256 = sha256_bytes(canonical_json_without_lf(native_command))
@@ -4721,7 +5136,9 @@ def verify_and_publish(control: Mapping[str, Any], _control_payload_size: int) -
                 if error.errno != errno.EBADF:
                     raise
             else:
-                _fail(f"frozen native execution fd {NATIVE_EXEC_FD} is already occupied")
+                _implementation_fail(
+                    f"frozen native execution fd {NATIVE_EXEC_FD} is already occupied"
+                )
             os.dup2(native_descriptor, NATIVE_EXEC_FD, inheritable=True)
             os.close(native_descriptor)
             native_descriptor = NATIVE_EXEC_FD
@@ -4733,18 +5150,30 @@ def verify_and_publish(control: Mapping[str, Any], _control_payload_size: int) -
             observed_native_command_sha256,
             _native_stdout_size,
             _native_stderr_size,
-        ) = invoke_independent_native_verifier(
-            native_path,
+        ) = _run_as_verifier_implementation(
+            lambda: invoke_independent_native_verifier(
+                native_path,
+                native_descriptor,
+                native_metadata,
+                control["native_verifier"],
+                request,
+                artifact_handles,
+                phase_start_monotonic_ns=control["phase_start_monotonic_ns"],
+                prior_research_evidence_bytes=control[
+                    "prior_research_evidence_bytes"
+                ],
+                prior_study_cpu_microseconds=prior_study_cpu,
+                prior_verifier_cpu_microseconds=prior_verifier_cpu,
+                prior_verifier_wall_nanoseconds=prior_verifier_wall,
+                prior_verifier_peak_rss_bytes=prior_verifier_peak_rss,
+            )
+        )
+        _revalidate_sealed_fd_and_path(
             native_descriptor,
+            native_path,
+            "native verifier",
             native_metadata,
-            control["native_verifier"],
-            request,
-            artifact_handles,
-            phase_start_monotonic_ns=control["phase_start_monotonic_ns"],
-            prior_study_cpu_microseconds=prior_study_cpu,
-            prior_verifier_cpu_microseconds=prior_verifier_cpu,
-            prior_verifier_wall_nanoseconds=prior_verifier_wall,
-            prior_verifier_peak_rss_bytes=prior_verifier_peak_rss,
+            control["native_verifier"]["sha256"],
         )
         for handle in artifact_handles.values():
             revalidate_immutable_artifact(root, handle)
@@ -4762,10 +5191,40 @@ def verify_and_publish(control: Mapping[str, Any], _control_payload_size: int) -
         elif _artifact_entry_exists(root, "bundle"):
             _fail("bundle directory appeared during native replay")
     finally:
-        os.close(native_descriptor)
-        close_immutable_artifacts(artifact_handles)
+        primary_error = sys.exc_info()[1]
+        close_errors: list[str] = []
+        try:
+            os.close(native_descriptor)
+        except OSError as error:
+            close_errors.append(f"native descriptor close failed: {error}")
+        close_errors.extend(close_immutable_artifacts(artifact_handles))
+        if close_errors:
+            detail = "; ".join(close_errors)
+            if isinstance(
+                primary_error,
+                (VerificationImplementationError, VerificationContractError),
+            ) and not isinstance(
+                primary_error,
+                (
+                    VerificationEvidenceError,
+                    VerificationResourceError,
+                    VerificationExternalInterruption,
+                ),
+            ):
+                primary_error.detail = f"{primary_error.detail}; cleanup: {detail}"
+                primary_error.args = (primary_error.detail,)
+            elif primary_error is None:
+                _implementation_fail(detail)
+            else:
+                raise VerificationImplementationError(
+                    "verifier descriptor cleanup failed after "
+                    f"{type(primary_error).__name__}: {primary_error}; "
+                    f"cleanup: {detail}"
+                ) from primary_error
     if observed_native_command != native_command or observed_native_command_sha256 != native_command_sha256:
-        _fail("observed native child argv differs from the frozen invocation identity")
+        _implementation_fail(
+            "observed native child argv differs from the frozen invocation identity"
+        )
     observed_counts = dict(response["decision_counts_observed"])
     discrepancies = list(response["discrepancies"])
     if not response["complete"]:
@@ -4793,8 +5252,19 @@ def verify_and_publish(control: Mapping[str, Any], _control_payload_size: int) -
             "start_utc": start_utc,
         },
     }
-    registry.validate_definition(summary, "verifier_summary_v2", "verifier_summary")
-    summary_size = len(canonical_json_document(summary))
+    summary_payload = _run_as_verifier_implementation(
+        lambda: canonical_json_document(summary)
+    )
+    _run_as_verifier_implementation(
+        lambda: registry.validate_definition(
+            summary, "verifier_summary_v2", "verifier_summary"
+        )
+    )
+    summary_size = len(summary_payload)
+    if summary_size < _native_stdout_size:
+        _implementation_fail(
+            "native response-to-summary transport dominance proof failed"
+        )
     _validate_prepublication_resource_ceiling(
         phase_start_monotonic_ns=control["phase_start_monotonic_ns"],
         prior_study_cpu_microseconds=prior_study_cpu,
@@ -4811,7 +5281,7 @@ def verify_and_publish(control: Mapping[str, Any], _control_payload_size: int) -
         "native_child_argv": observed_native_command,
         "native_child_argv_sha256": observed_native_command_sha256,
         "status": status,
-        "verifier_summary_sha256": sha256_bytes(canonical_json_document(summary)),
+        "verifier_summary_sha256": sha256_bytes(summary_payload),
         "verifier_summary_size_bytes": summary_size,
     }
 
@@ -4824,15 +5294,39 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
-    args = _parser().parse_args(argv)
+    # The supervisor blocks SIGINT before exec so interpreter startup cannot
+    # synthesize exit 130.  Own the phase only after raw-signal semantics are
+    # installed; a pending wrapper SIGINT then terminates by SIGINT.
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    signal.pthread_sigmask(signal.SIG_UNBLOCK, {signal.SIGINT})
+    try:
+        args = _parser().parse_args(argv)
+    except SystemExit as error:
+        print(
+            f"A4-V2 verifier IMPLEMENTATION_INVALID: argv parse exited {error.code}",
+            file=sys.stderr,
+        )
+        return 5
     try:
         payload = _read_all_from_fixed_fd(args.control_fd, "verifier control", 1 << 20)
         os.close(args.control_fd)
         result = verify_and_publish(_parse_control_request(payload), len(payload))
-    except (OSError, VerificationContractError) as error:
-        print(f"A4-V2 verifier publication failed: {error}", file=sys.stderr)
-        return 2
-    _write_all(sys.stdout.fileno(), canonical_json_document(result))
+        _write_all(sys.stdout.fileno(), canonical_json_document(result))
+    except VerificationExternalInterruption as error:
+        print(f"A4-V2 verifier external interruption: {error}", file=sys.stderr)
+        return 6
+    except VerificationContractError as error:
+        exit_code = {
+            "ARTIFACT_INVALID": 4,
+            "EVIDENCE_INCOMPLETE_NO_DECISION": 2,
+            "IMPLEMENTATION_INVALID": 5,
+            "RESOURCE_INCOMPLETE_NO_DECISION": 3,
+        }[error.status]
+        print(f"A4-V2 verifier {error.status}: {error}", file=sys.stderr)
+        return exit_code
+    except OSError as error:
+        print(f"A4-V2 verifier IMPLEMENTATION_INVALID: {error}", file=sys.stderr)
+        return 5
     return 0
 
 

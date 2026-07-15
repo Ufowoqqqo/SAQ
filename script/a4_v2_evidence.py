@@ -15,6 +15,7 @@ import json
 import os
 import re
 import struct
+import sys
 import ctypes
 from dataclasses import dataclass
 from pathlib import Path
@@ -708,25 +709,42 @@ def publish_evidence(
 
     staging = artifact_root / "evidence.staging"
     destination = artifact_root / "evidence"
-    parent_fd = os.open(
-        artifact_root,
-        os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
-    )
     try:
-        os.mkdir("evidence.staging", 0o700, dir_fd=parent_fd)
-    except OSError as error:
-        os.close(parent_fd)
-        raise EvidenceFailure("EVIDENCE_INCOMPLETE_NO_DECISION", f"cannot create evidence staging: {error}") from error
-    hooks.note_created_temporary(staging)
-    staging_fd: int | None = None
-    try:
-        staging_fd = os.open(
-            "evidence.staging",
+        parent_fd = os.open(
+            artifact_root,
             os.O_RDONLY
             | getattr(os, "O_DIRECTORY", 0)
             | getattr(os, "O_NOFOLLOW", 0),
-            dir_fd=parent_fd,
         )
+    except OSError as error:
+        raise EvidenceFailure(
+            "EVIDENCE_INCOMPLETE_NO_DECISION",
+            f"cannot open evidence publication parent: {error}",
+        ) from error
+    try:
+        os.mkdir("evidence.staging", 0o700, dir_fd=parent_fd)
+    except OSError as error:
+        try:
+            os.close(parent_fd)
+        except OSError:
+            pass
+        raise EvidenceFailure("EVIDENCE_INCOMPLETE_NO_DECISION", f"cannot create evidence staging: {error}") from error
+    staging_fd: int | None = None
+    try:
+        hooks.note_created_temporary(staging)
+        try:
+            staging_fd = os.open(
+                "evidence.staging",
+                os.O_RDONLY
+                | getattr(os, "O_DIRECTORY", 0)
+                | getattr(os, "O_NOFOLLOW", 0),
+                dir_fd=parent_fd,
+            )
+        except OSError as error:
+            raise EvidenceFailure(
+                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                f"cannot open evidence staging: {error}",
+            ) from error
         registry = _load_schema(context.schema_identity)
         scalar_bytes, _ = _scalar_lines(state)
         allocation_object = _allocation_object(state)
@@ -838,7 +856,13 @@ def publish_evidence(
         # the no-replace publication.  A failed rename terminates this event;
         # the reservation can therefore never be used to admit later bytes.
         hooks.note_research_evidence(total)
-        os.fsync(staging_fd)
+        try:
+            os.fsync(staging_fd)
+        except OSError as error:
+            raise EvidenceFailure(
+                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                f"cannot fsync evidence staging: {error}",
+            ) from error
         hooks.check_operational()
         try:
             _rename_noreplace(parent_fd, "evidence.staging", "evidence")
@@ -849,9 +873,23 @@ def publish_evidence(
                 f"cannot publish evidence directory: {error}",
             ) from error
     finally:
+        active_error = sys.exc_info()[0] is not None
+        close_errors = []
         if staging_fd is not None:
-            os.close(staging_fd)
-        os.close(parent_fd)
+            try:
+                os.close(staging_fd)
+            except OSError as error:
+                close_errors.append(f"staging descriptor: {error}")
+        try:
+            os.close(parent_fd)
+        except OSError as error:
+            close_errors.append(f"parent descriptor: {error}")
+        if close_errors and not active_error:
+            raise EvidenceFailure(
+                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                "cannot close evidence publication descriptors: "
+                + "; ".join(close_errors),
+            )
     return EvidencePublication("evidence", tuple(identities), total)
 
 
@@ -877,24 +915,41 @@ def publish_final_trailer(
     """Perform the finite three-file F_trailer and nothing else."""
 
     staging = artifact_root / "final.staging"
-    parent_fd = os.open(
-        artifact_root,
-        os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
-    )
-    try:
-        os.mkdir("final.staging", 0o700, dir_fd=parent_fd)
-    except OSError as error:
-        os.close(parent_fd)
-        raise EvidenceFailure("EVIDENCE_INCOMPLETE_NO_DECISION", f"cannot create final staging: {error}") from error
+    parent_fd: int | None = None
     staging_fd: int | None = None
     try:
-        staging_fd = os.open(
-            "final.staging",
-            os.O_RDONLY
-            | getattr(os, "O_DIRECTORY", 0)
-            | getattr(os, "O_NOFOLLOW", 0),
-            dir_fd=parent_fd,
-        )
+        try:
+            parent_fd = os.open(
+                artifact_root,
+                os.O_RDONLY
+                | getattr(os, "O_DIRECTORY", 0)
+                | getattr(os, "O_NOFOLLOW", 0),
+            )
+        except OSError as error:
+            raise EvidenceFailure(
+                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                f"cannot open final publication parent: {error}",
+            ) from error
+        try:
+            os.mkdir("final.staging", 0o700, dir_fd=parent_fd)
+        except OSError as error:
+            raise EvidenceFailure(
+                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                f"cannot create final staging: {error}",
+            ) from error
+        try:
+            staging_fd = os.open(
+                "final.staging",
+                os.O_RDONLY
+                | getattr(os, "O_DIRECTORY", 0)
+                | getattr(os, "O_NOFOLLOW", 0),
+                dir_fd=parent_fd,
+            )
+        except OSError as error:
+            raise EvidenceFailure(
+                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                f"cannot open final staging: {error}",
+            ) from error
         payloads = (resource_payload, decision_payload, artifact_index_payload)
         for name, payload in zip(FINAL_ORDER, payloads):
             if len(payload) > FINAL_LIMITS[name]:
@@ -903,10 +958,31 @@ def publish_final_trailer(
                     f"{name} exceeds frozen byte ceiling",
                 )
             _write_new_at(staging_fd, name, staging / name, payload, None)
-        os.fsync(staging_fd)
+        try:
+            os.fsync(staging_fd)
+        except OSError as error:
+            raise EvidenceFailure(
+                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                f"cannot fsync final staging: {error}",
+            ) from error
         _finish_final_publication(parent_fd, staging_fd)
     finally:
+        active_error = sys.exc_info()[0] is not None
+        close_errors = []
         if staging_fd is not None:
-            os.close(staging_fd)
-        os.close(parent_fd)
+            try:
+                os.close(staging_fd)
+            except OSError as error:
+                close_errors.append(f"staging descriptor: {error}")
+        if parent_fd is not None:
+            try:
+                os.close(parent_fd)
+            except OSError as error:
+                close_errors.append(f"parent descriptor: {error}")
+        if close_errors and not active_error:
+            raise EvidenceFailure(
+                "EVIDENCE_INCOMPLETE_NO_DECISION",
+                "cannot close final publication descriptors: "
+                + "; ".join(close_errors),
+            )
     os._exit(3)
