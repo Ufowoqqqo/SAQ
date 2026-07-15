@@ -8,13 +8,12 @@ Date: 2026-07-13
 
 Presentation status: **CURRENT DRAFT -- not yet presented at a meeting.**
 
-Latest revision: 2026-07-14. Incorporates the 2026-07-13 audit of
+Latest revision: 2026-07-15. Incorporates the 2026-07-13 audit of
 [White and Singal, arXiv:2606.00289v1](https://arxiv.org/abs/2606.00289)
 and its pinned official code, the terminal A4-1S snapshot
-`saq-arbitrary-cardinality-analysis@f1b464b`, and the corrected A4 V2
-protocol-authority snapshot
-`saq-arbitrary-cardinality-feasibility-v2@f13a383`, independently reviewed at
-branch head `98e6999`.
+`saq-arbitrary-cardinality-analysis@f1b464b`, and the corrected A4 V2 source
+snapshot `saq-arbitrary-cardinality-feasibility-v2@482c401`, independently
+reviewed at branch head `4ce2e69`.
 
 Audience assumption: familiar with vector search and vector quantization at a
 high level, but not with SAQ's transform, segmentation, or the experiments in
@@ -24,10 +23,10 @@ Deck status: Attempts 1, 2, and 3 are complete studies. Attempt 4 preserves
 the terminal A4-1S `NO_GO_EXACT_SOLVER_COST`, while a new primary-source review
 supports a narrower A4 V2 protocol for a differently defined synthetic
 comparative-instrument cost question. Its additive PAR-report timing erratum
-is `PROTOCOL_ERRATUM_INDEPENDENT_REVIEW_PASS`. Source-only A4-V2-I is
-`AUTHORIZED_READY_TO_RESUME`, but has no committed implementation or review
-pass; build, parity, synthetic run, real-base read, and SAQ integration remain
-unauthorized.
+is `PROTOCOL_ERRATUM_INDEPENDENT_REVIEW_PASS`. Source-only A4-V2-I reached
+`SOURCE_IMPLEMENTED_STATIC_REVIEW_PASS`; this is artifact readiness, not an
+execution result. Build, parity, synthetic run, real-base read, and SAQ
+integration remain unauthorized.
 
 ---
 
@@ -64,7 +63,8 @@ contribution. Attempt 4's A4-1S formulation is a completed synthetic pipeline-
 cost falsification study, not a natural-data, ANN, or systems result. A4 V2
 preserves that stop and preregisters a new cost/evidence boundary. Its
 reporting-closure erratum is reviewed protocol evidence, not a feasibility
-result; only source implementation and static review are currently authorized.
+result. Its corrected source and manifest passed independent static review,
+but no implementation was imported, built, tested, or run.
 ```
 
 Speaker notes:
@@ -91,7 +91,7 @@ Project-level decision before this deck:
 SAQ-centric incremental method search: STOP
 SAQ as a strong baseline:              RETAIN
 Attempt 4 A4-1S formulation:           TERMINAL COST STOP
-Attempt 4 A4 V2:                       ERRATUM REVIEWED; SOURCE-ONLY I AUTHORIZED
+Attempt 4 A4 V2:                       SOURCE-ONLY I STATIC REVIEW PASS
 SAQ/index/search integration:          NOT AUTHORIZED
 ```
 
@@ -140,7 +140,7 @@ the old `5/2` real-data projection does not transfer.
 | 1B. Lossy `D -> d` projection | Can a PCA head plus a compact tail surrogate beat native full-D SAQ? | GIST sample50k, `960 -> 576`, favorable exact surrogate | Gate A failed; projected SAQ not built |
 | 2. Exact scalar-codebook DP | Does histogram-exact 1D DP improve shared dimensionwise scalar quantization over Lloyd, and is any method novelty left after prior work? | audio, PCA CIFAR60K, PCA DEEP1M; arXiv/code audit | Stronger offline baseline; inner DP is prior art; no stable recall dominance |
 | 3. Distance-quality re-evaluation | Does `1/Ratio@k` change a frozen Recall-based Pareto conclusion? | GIST sample100k B=4; DEEP sample100k B=4/B=5 controls | Closed as metric-sensitivity evidence |
-| 4. Arbitrary-cardinality fixed-rate words | Does the power-of-two restriction waste material capacity at unchanged fixed payload and lookup granularity? | A4-0 synthetic witness; terminal A4-1S correctness/cost gate; reviewed A4 V2 parent protocol and additive timing-closure erratum; registered real-base gates remain unauthorized | preserve A4-1S `NO_GO_EXACT_SOLVER_COST`; erratum `PROTOCOL_ERRATUM_INDEPENDENT_REVIEW_PASS`; source-only A4-V2-I authorized but incomplete |
+| 4. Arbitrary-cardinality fixed-rate words | Does the power-of-two restriction waste material capacity at unchanged fixed payload and lookup granularity? | A4-0 synthetic witness; terminal A4-1S correctness/cost gate; reviewed A4 V2 protocol/erratum and source-only implementation; registered real-base gates remain unauthorized | preserve A4-1S `NO_GO_EXACT_SOLVER_COST`; A4-V2-I `SOURCE_IMPLEMENTED_STATIC_REVIEW_PASS`; await separate PAR authorization |
 
 Speaker notes:
 
@@ -2161,10 +2161,10 @@ case study, not an independent database-systems method.
 ## 59. Attempt 4: Research Question, Old Stop, And V2 Boundary
 
 Current scientific-content snapshot:
-`saq-arbitrary-cardinality-feasibility-v2@f13a383`
+`saq-arbitrary-cardinality-feasibility-v2@482c401`
 
-Independent erratum-review head:
-`saq-arbitrary-cardinality-feasibility-v2@98e6999`
+Independent source-review head:
+`saq-arbitrary-cardinality-feasibility-v2@4ce2e69`
 
 Preserved terminal A4-1S snapshot:
 `saq-arbitrary-cardinality-analysis@f1b464b`
@@ -2176,7 +2176,7 @@ Preserved terminal A4-1S snapshot:
 | A4-1S synthetic implementation | `NO_GO_EXACT_SOLVER_COST` | parity passed, but the reviewed frozen construction/evidence pipeline exceeded its cost ceiling |
 | A4-V2 parent protocol | `PROTOCOL_READY_NOT_AUTHORIZED_FOR_EXECUTION` | a new FOM and evidence boundary were independently reviewed at `f86a51d` |
 | A4-V2-P-ERRATUM | `PROTOCOL_ERRATUM_INDEPENDENT_REVIEW_PASS` | an additive finite PAR-report closure fixes terminal-P receipt recursion without changing the parent scientific contract |
-| A4-V2-I | `AUTHORIZED_READY_TO_RESUME` | only source implementation and independent static review; no implementation commit or review pass exists yet |
+| A4-V2-I | `SOURCE_IMPLEMENTED_STATIC_REVIEW_PASS` | corrected exact source `482c401`, binding, and 35-file manifest passed three independent static-only reviews; failed parent `3a4f7c5` remains non-evidence |
 | A4-V2-PAR / SRUN | `NOT_AUTHORIZED` | build/parity and one synthetic event remain separate, non-transitive future stages |
 | SAQ/index/search integration | `NOT_AUTHORIZED` | no production representation or query-path change may be made |
 
@@ -2271,7 +2271,7 @@ Current boundary:
 ```text
 PRESERVE A4-1S TERMINAL COST STOP
 A4 V2 CORRECTED PROTOCOL AUTHORITY REVIEWED
-A4-V2-I SOURCE/STATIC REVIEW AUTHORIZED; NOT COMPLETED
+A4-V2-I SOURCE_IMPLEMENTED_STATIC_REVIEW_PASS
 A4-V2-PAR, SRUN, DATA, AND SAQ CHANGES NOT AUTHORIZED
 ```
 
@@ -2280,7 +2280,9 @@ exact A4-1S construction/evidence pipeline did not meet its preregistered cost
 ceiling. V2 does not rescue or reinterpret that result. It freezes a new
 synthetic comparative-instrument question and cannot claim a new quantization
 primitive, feasibility, or SAQ integration. The erratum repairs protocol
-closure only; the source-only implementation stage remains incomplete.
+closure only. The source-only implementation is now statically closed, but it
+has not been imported, built, tested, or executed and adds no scientific
+evidence by itself.
 
 ---
 
@@ -2363,11 +2365,12 @@ writing a later systems protocol. It still would not have established Recall,
 QPS, or a method claim. A4-1S did not pass, so reading the registered base
 inputs remains forbidden and this gate must not be opened.
 
-A4 V2 does not reopen A4-1. Its current authorization ceiling is source-only
-implementation and independent static review. Even a separately authorized
-and successful future V2 synthetic event would stop to ask whether to write a
-new base-only preregistration; it would not itself authorize any base or query
-read.
+A4 V2 does not reopen A4-1. Its source-only implementation and independent
+static review are complete; the current boundary is to ask whether to
+authorize frozen build/parity as a separate stage. Even a separately
+authorized and successful future V2 synthetic event would stop to ask whether
+to write a new base-only preregistration; it would not itself authorize any
+base or query read.
 
 ---
 
@@ -2431,7 +2434,7 @@ deliberately excluded.
 
 ---
 
-## 65. A4 V2: Reviewed Corrected Cost And Evidence Protocol
+## 65. A4 V2: Reviewed Corrected Protocol And Source
 
 Primary review: `saq-arbitrary-cardinality-feasibility-v2@c4ccea3`
 
@@ -2443,6 +2446,12 @@ Corrected protocol-authority snapshot:
 
 Independent erratum-review head:
 `saq-arbitrary-cardinality-feasibility-v2@98e6999`
+
+Corrected source snapshot:
+`saq-arbitrary-cardinality-feasibility-v2@482c401`
+
+Independent source-review head:
+`saq-arbitrary-cardinality-feasibility-v2@4ce2e69`
 
 The review preserves the old A4-1S result and changes the next question, not
 the result. A4-1S timed exact construction together with full canonical
@@ -2461,13 +2470,12 @@ The cap is only an internal admission boundary for the one frozen synthetic
 panel. The old `5/2` factor does not transfer: there is no V2 projection to
 GIST, CIFAR, two datasets, a full vector, an SAQ index build, or deployment.
 
-Authorized source-only inspection then found that the parent protocol asked
-the terminal `P_parity` receipt to include publication work whose terminal
-values did not yet exist. No implementation commit or review pass resulted;
-the untracked WIP is not evidence. The additive erratum closes only that
-self-reference with a finite one-file `PAR_report` after terminal P. It leaves
-the three parent blobs, scientific computation, FOM, threshold, retry policy,
-and status precedence unchanged.
+Initial source-only inspection found that the parent protocol asked the
+terminal `P_parity` receipt to include publication work whose terminal values
+did not yet exist. The additive erratum closes only that self-reference with a
+finite one-file `PAR_report` after terminal P. It leaves the three parent
+blobs, scientific computation, FOM, threshold, retry policy, and status
+precedence unchanged.
 
 No work disappears from reporting:
 
@@ -2494,20 +2502,27 @@ status precedence. The four-arm bundle is A4-reference-equivalent only; it is
 not current SAQ's serialized representation or query estimator.
 
 The corrected protocol authority passed independent timing-closure, schema,
-and Git-authority review. The maximum new claim is:
+and Git-authority review. Initial implementation commit `3a4f7c5` then failed
+static review and remains non-evidence. Corrected exact source commit
+`482c401` passed three independent static-only reviews. Its canonical manifest
+binds 35 exact sources at source-tree SHA-256 `d5b8374f...`; no repository
+module was imported, built, syntax-checked, tested, or executed.
+
+The maximum new claim is:
 
 ```text
-PROTOCOL_ERRATUM_INDEPENDENT_REVIEW_PASS
+SOURCE_IMPLEMENTED_STATIC_REVIEW_PASS
 ```
 
-This is a protocol-correction outcome, not an implementation or feasibility
-result.
+This is source and artifact-pipeline readiness, not parity, feasibility,
+natural-data, ANN, or systems evidence. Tooling correctness is not the
+database-systems contribution.
 
 Future stages are separate and non-transitive:
 
 | Stage | Scope | Current authorization |
 |---|---|---|
-| `A4-V2-I` | source implementation and independent static review only | `AUTHORIZED_READY_TO_RESUME` |
+| `A4-V2-I` | source implementation and independent static review only | `COMPLETED_REVIEW_PASS` |
 | `A4-V2-PAR` | frozen build and parity only | `NOT_AUTHORIZED` |
 | `A4-V2-SRUN` | one logical synthetic admission event | `NOT_AUTHORIZED` |
 | data / SAQ | base, query, index, estimator, integration | `NOT_AUTHORIZED` |
@@ -2522,7 +2537,7 @@ Future stages are separate and non-transitive:
 | 1B lossy `D -> d` | exact head and norm terms in favorable oracle | tail norms reduce RMSE from 0.0445 to 0.00248 | omitted tail IP still worsens ranking versus native SAQ |
 | 2 exact scalar DP | exact bin-boundary partition SSE using raw bin moments; final midpoint-nearest-centroid raw SSE is evaluated, not reoptimized; outer optimum is conditional on `E[j,b]` | audio B=4 raw MSE `-15.5%`, R@100 `+0.004` | inner-DP novelty is foreclosed by prior art; no full-scale raw optimum or recall guarantee; cross-regime reversals |
 | 3 distance-quality re-evaluation | paper-exact metric semantics; no method guarantee | GIST measured point: higher `1/Ratio`, `1.078x` QPS at the frozen target | one positive setting; DEEP controls remain negative; metric is prior work |
-| 4 arbitrary-cardinality fixed-rate words | the arbitrary positive-integer feasible set contains the dyadic set for exact factorized SSE | frozen `(3,5)` witness, A4-1S implementation parity, and reviewed corrected V2 cost/evidence protocol | preserve A4-1S `NO_GO_EXACT_SOLVER_COST`; A4-V2-I source/static review is authorized but incomplete; no V2 implementation pass, run, data, or ANN/system evidence exists |
+| 4 arbitrary-cardinality fixed-rate words | the arbitrary positive-integer feasible set contains the dyadic set for exact factorized SSE | frozen `(3,5)` witness, A4-1S parity, reviewed V2 protocol, and corrected source-static pass | preserve A4-1S `NO_GO_EXACT_SOLVER_COST`; source readiness is not execution evidence; await explicit PAR authorization |
 
 Cross-attempt lesson:
 
@@ -2537,8 +2552,9 @@ include all construction, storage, and query overhead.
 Attempt 4 was deliberately staged so that a representation theorem or a
 synthetic witness could not silently become a method claim. The committed and
 reviewed A4-1S cost stop prevented the next expansion of scope. V2 changes the
-future measurement contract, and its additive erratum closes one reporting
-self-reference, but neither is evidence that the instrument is feasible.
+future measurement contract, its additive erratum closes one reporting
+self-reference, and its corrected source now passes static review. None of
+those facts is evidence that the instrument is feasible.
 ```
 
 ---
@@ -2572,19 +2588,19 @@ Decision 4:
 
 ```text
 Do we agree to preserve the terminal A4-1S pipeline-cost failure, while
-treating the corrected A4 V2 authority only as a reviewed measurement protocol
-rather than a rescued result or feasibility claim?
+treating the corrected A4 V2 protocol and source-static pass only as artifact
+readiness rather than a rescued result or feasibility claim? If so, should the
+user separately authorize the frozen `A4-V2-PAR` build/parity stage?
 ```
 
-There is no new execution-authorization question yet. The active boundary is:
+The next authorization question is narrow:
 
 ```text
-A4-V2-I may resume source implementation and independent static review only.
-It has not passed.
+A4-V2-I is complete at SOURCE_IMPLEMENTED_STATIC_REVIEW_PASS.
 
-Only after a committed independent A4-V2-I review could the user separately
-consider A4-V2-PAR. Build, parity, RNG, a synthetic run, base/query inputs,
-SAQ changes, and the old A4-1 gate remain unauthorized now.
+The user may now decide whether to authorize A4-V2-PAR only. Until an explicit
+decision, build, parity, RNG, a synthetic run, base/query inputs, SAQ changes,
+and the old A4-1 gate remain unauthorized.
 ```
 
 Speaker notes:
@@ -2594,8 +2610,8 @@ Speaker notes:
   and encoding cost phases were not
   reached after the scalar-prefix early stop.
 - A4 V2's direct internal cap and evidence split are preregistered but wholly
-  unexecuted. Its erratum repairs reporting closure only, and the old `5/2`
-  projection is not a V2 cost model.
+  unexecuted. Its erratum repairs reporting closure and its source pass checks
+  artifact machinery only; the old `5/2` projection is not a V2 cost model.
 - Novelty, mechanism, replication, and total overhead should be challenged
   before experimental scope is expanded.
 
@@ -2685,9 +2701,9 @@ docs/saq_attempt4_a4_1s_artifacts_2026_07_13/cost_projection_artifact_index.json
 docs/saq_attempt4_a4_1s_cost_projection_review_2026_07_13.md
 ```
 
-Attempt 4 V2 corrected protocol-authority follow-up, scientific snapshot
-`saq-arbitrary-cardinality-feasibility-v2@f13a383`, independently reviewed at
-branch head `98e6999`:
+Attempt 4 V2 corrected protocol-authority snapshot
+`saq-arbitrary-cardinality-feasibility-v2@f13a383`, plus corrected source
+snapshot `@482c401`, independently reviewed at branch head `4ce2e69`:
 
 ```text
 docs/saq_a4_v2_primary_source_metadata_2026_07_14.json
@@ -2704,14 +2720,19 @@ docs/saq_a4_v2_par_report_seal_schema_2026_07_14.json
 docs/saq_a4_v2_par_report_seal_maximal_instance_2026_07_14.json
 docs/saq_a4_v2_protocol_authority_manifest_2026_07_14.json
 docs/saq_a4_v2_par_report_timing_closure_erratum_independent_review_2026_07_14.md
+docs/saq_a4_v2_implementation_binding_2026_07_14.md
+docs/saq_a4_v2_implementation_manifest_2026_07_14.json
+docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md
+docs/saq_a4_v2_implementation_independent_review_2026_07_15.md
 ```
 
 A4-0 and A4-1S parity are outcome evidence only at their stated instrument
 ceilings. A4-1S cost is a reviewed pipeline-cost no-go. A4-1 remains an
 unexecuted frozen protocol; no natural-data, ANN, or systems result is
 established. A4 V2 is an independently reviewed corrected protocol, not an
-execution result. Source-only A4-V2-I is authorized but incomplete;
-A4-V2-PAR, A4-V2-SRUN, and all data access remain unauthorized.
+execution result. Source-only A4-V2-I reached its static-review ceiling;
+A4-V2-PAR, A4-V2-SRUN, and all data access remain unauthorized until separate
+explicit decisions.
 
 Current deck:
 
@@ -2753,13 +2774,14 @@ pipeline projected to 24.170246892361 CPU-hours and failed its 24-hour gate.
 That terminal result remains unchanged. A4 V2 now freezes a direct internal
 comparative-instrument FOM and a complete evidence ledger. Its reviewed
 erratum adds only a finite one-file terminal-P reporting closure; the old 5/2
-projection does not transfer, and V2 has no implementation pass or run.
+projection does not transfer. Corrected V2 source passed independent static
+review, but nothing was imported, built, tested, or run.
 
 Project decision:
 Keep Attempts 1--3 as rigorous negative or partial evidence. Do not rescue
 them with post-hoc sweeps. Preserve A4-1S as a preregistered synthetic cost
-stop. Treat A4 V2 only as corrected protocol authority; resume only the
-authorized source/static A4-V2-I and await its committed independent review
-before considering any separately authorized PAR stage. Do not open any base
-or query gate.
+stop. Treat A4 V2 only as reviewed protocol plus source/artifact readiness,
+not feasibility evidence. Decide separately whether to authorize A4-V2-PAR;
+until then, do not build, run parity, or open any synthetic, base, or query
+gate.
 ```
