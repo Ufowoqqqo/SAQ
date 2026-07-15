@@ -21,6 +21,8 @@ A4-V2-P     preregistration/schema/contract            COMPLETED_DOCUMENTATION
 A4-V2-P-ERRATUM finite PAR-report closure correction   COMPLETED_REVIEW_PASS
 A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
 A4-V2-PAR   pre-build executable identity admission    ARTIFACT_INVALID / REVIEWED_TERMINAL
+A4-V2-I-R1  executable-identity source repair           AUTHORIZED_STATIC_ONLY
+A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
 data        benchmark/base/query/index reads           NOT_AUTHORIZED
 ```
@@ -47,8 +49,43 @@ finding at LOW or above. The durable review is
 There is no valid PAR authority and no scientific decision. The empty staging
 directory and five ignored Python caches are quarantined non-evidence. Do not
 clean for retry, invoke the command again, substitute a resolved interpreter,
-repair source, generate the SRUN panel, enter the 396-unit construction, or
-continue automatically.
+generate the SRUN panel, enter the 396-unit construction, or continue to an
+execution stage automatically.
+
+After the terminal handoff stated that the next admissible step was a clean
+executable-identity source correction plus independent review, the user
+instructed `继续`. The additive authorization is
+`docs/saq_a4_v2_executable_identity_source_repair_authorization_2026_07_15.md`.
+It opens only `A4-V2-I-R1`: a bounded source correction and static independent
+review. It permits no cleanup, import, build, test, parity, RNG, SRUN, data
+read, or SAQ change. Corrected execution is reserved as `A4-V2-PAR-R1` and
+remains unauthorized.
+
+## A4-V2-I-R1 Deliverables
+
+1. Bind leader identity to the already-running CPython image through a stable
+   `/proc/self/exe` descriptor and require the intentionally followed
+   `sys.executable` path to name the same regular inode.
+2. Apply that identity consistently to conductor, runner receipts/admission,
+   and a physically independent verifier implementation without weakening
+   generic no-follow artifact readers.
+3. Update only the implementation binding, source-provenance crosswalk, and
+   canonical 35-source manifest required by those source changes; rebind the
+   existing manifest `authorization_identity` to the additive I-R1 receipt
+   without adding a schema key.
+4. Commit and independently review the exact repaired source using only
+   static inspection, Git identities, hashes, byte sizes, canonical manifest
+   recomputation, and diff checks.
+5. Push and perform the mandatory Meeting Summary Handoff, then stop before
+   `A4-V2-PAR-R1` authorization.
+
+The maximum result is `SOURCE_REPAIR_STATIC_REVIEW_PASS`. It is not parity,
+artifact execution readiness, scientific evidence, or a method claim.
+
+The five quarantined bytecode files expose a separate import-cost and
+unmetered-cache-byte determinism question. It was not causal to the executable-
+identity failure and is outside I-R1. Do not add a bytecode admission policy or
+open PAR-R1 until the user separately authorizes a resolution.
 
 The completed erratum stage permitted only additive authority documents,
 static review, focused commits, push, and Meeting Summary Handoff. It permitted
@@ -221,9 +258,9 @@ Return `GO_PROTOCOL_DESIGN` only if all are supported before execution:
 - the resulting study could falsify an ANN-relevant opportunity rather than
   merely demonstrate faster artifact production.
 
-Commit and independently review only the A4-V2-PAR terminal failure memo and
-status. The empty staging directory and ignored Python caches remain
-non-evidence and must not be synchronized. After the committed independent
-review, perform the mandatory Meeting Summary Handoff and stop. There is no
-active repair, PAR, or SRUN authority; never infer one from the historical
-source review or failed invocation.
+The reviewed A4-V2-PAR terminal failure remains immutable. During the active
+`A4-V2-I-R1` stage, the empty staging directory and ignored Python caches
+remain non-evidence and must not be synchronized or cleaned. Only focused
+source repair and static review are active. There is no PAR-R1, SRUN, data, or
+SAQ authority; never infer one from the historical source review, failed
+invocation, or repaired source.

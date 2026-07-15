@@ -77,6 +77,18 @@ passed three-track independent review with no finding at LOW or above; its
 review is
 `docs/saq_a4_v2_par_prebuild_artifact_identity_failure_independent_review_2026_07_15.md`.
 
+After the terminal handoff described the next admissible source-correction
+step, the user instructed `继续`. That instruction is narrowly bound as
+`A4-V2-I-R1`, a static-only repair of CPython leader executable identity. Its
+additive authority is
+`docs/saq_a4_v2_executable_identity_source_repair_authorization_2026_07_15.md`.
+Before implementation source changes, that authority/status commit must be
+pushed and independently exact-reviewed while the prior 35 source blobs,
+manifest, and source-tree identity remain unchanged. The maximum later result
+is `SOURCE_REPAIR_STATIC_REVIEW_PASS`. Corrected build/parity is reserved as
+`A4-V2-PAR-R1` and remains separately unauthorized; source repair authorizes
+neither cleanup nor execution.
+
 The completed `A4-V2-P-ERRATUM` permitted only additive protocol-authority
 documents, branch status documents, focused commits, static independent
 review, push, and the required Meeting Summary Handoff. Do not edit or commit
@@ -137,6 +149,8 @@ Current stages remain separate:
 A4-V2-P-ERRATUM documentation-only closure correction  COMPLETED_REVIEW_PASS
 A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
 A4-V2-PAR   pre-build executable identity admission     ARTIFACT_INVALID / REVIEWED_TERMINAL
+A4-V2-I-R1  executable-identity source repair           AUTHORIZED_STATIC_ONLY
+A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event only  NOT_AUTHORIZED
 ```
 
@@ -160,7 +174,9 @@ The PAR authorization and reviewed terminal pre-build failure records are:
 The source pass remains a historical static-review result only. The attempted
 PAR launch falsified executable artifact readiness before build; it is not a
 parity result, synthetic gate, SAQ limitation result, method contribution, or
-systems-performance claim. There is no active execution authorization.
+systems-performance claim. `A4-V2-I-R1` is active only for source repair and
+static review. There is no active cleanup, PAR, SRUN, data, or SAQ execution
+authorization.
 
 ## Prior A4-1S Result
 
@@ -284,6 +300,12 @@ Do not build, import, syntax-check, execute, or test the implementation during
 contract inspection, and independent static review. Structured frozen
 metadata may be inspected but must not be rewritten.
 
+The same static-only verification boundary applies to `A4-V2-I-R1`. It may
+recompute source/document SHA-256 values, byte sizes, and the canonical source-
+tree preimage without importing repository Python. It must not delete or read
+the contents of the quarantined bytecode files or remove the empty staging
+directory.
+
 The one authorized `A4-V2-PAR` invocation used the following exact command
 from clean reviewed execution base `2e983a0`:
 
@@ -294,9 +316,9 @@ python script/run_arbitrary_cardinality_a4_v2.py \
 ```
 
 It returned `ARTIFACT_INVALID` before build and published no PAR tree. The
-command is retained here as history; do not invoke it again. Commit and
-independently review only the terminal failure memo and branch status. No
-failure result authorizes SRUN.
+command is retained here as history; do not invoke it again. Under that
+consumed A4-V2-PAR authority, only the terminal failure memo and branch status
+were committed and independently reviewed. No failure result authorizes SRUN.
 
 ## Do-Not Rules
 
@@ -306,9 +328,9 @@ failure result authorizes SRUN.
 - Do not rerun PAR, replace `python` with a resolved interpreter, alter PATH,
   delete the quarantined staging directory to make the root absent, or clean
   ignored caches as a route to retry.
-- Do not repair the executable-identity path under the consumed PAR authority;
-  a correction requires a new reviewed clean source and new explicit user
-  authorization for the affected stage.
+- Do not repair the executable-identity path under the consumed PAR authority.
+  Only the additive `A4-V2-I-R1` source/static-review authority permits the
+  bounded correction; it grants no cleanup, build, parity, or retry.
 - Do not continue from PAR to `A4-V2-SRUN` without a later explicit user
   authorization, even if every parity fixture passes.
 - Do not copy, cherry-pick, import, include, link, or execute the old A4-1S
