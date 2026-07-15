@@ -109,6 +109,23 @@ test, PAR-R1, SRUN, data access, or SAQ modification. The maximum outcome is
 `CACHE_STAGING_POLICY_REVIEW_PASS`; any later implementation/preparation and
 `A4-V2-PAR-R1` remain separately unauthorized.
 
+The bounded CACHE-P review returns
+`GO_SANITIZED_REMOTE_ISOLATION_PROTOCOL_REQUIRED / NO_GO_DIRECT_PAR_R1`.
+Its four protocol objects are now a focused commit candidate:
+
+- `docs/saq_a4_v2_cache_staging_primary_sources_2026_07_15.json`;
+- `docs/saq_a4_v2_cache_staging_primary_source_review_2026_07_15.md`;
+- `docs/saq_a4_v2_cache_staging_disposition_protocol_2026_07_15.md`; and
+- `docs/saq_a4_v2_cache_staging_disposition_contract_2026_07_15.json`.
+
+The candidate changes only those four paths plus `AGENTS.md` and `TASK.md`,
+preserves implementation-manifest Git blob
+`2aa64e50dad19626711e0dd90c038704ac73e328`, all 35 source blobs, and source-
+tree SHA-256
+`8d8b5d3f8990e5d360e0a617d157a8b934c14d0f37b69f399bcc62c71f98360a`.
+Its status is `CANDIDATE_PENDING_EXACT_COMMIT_REVIEW`; WIP-content review is
+not exact-commit evidence and the maximum outcome has not yet been reached.
+
 The completed `A4-V2-P-ERRATUM` permitted only additive protocol-authority
 documents, branch status documents, focused commits, static independent
 review, push, and the required Meeting Summary Handoff. Do not edit or commit
@@ -170,7 +187,7 @@ A4-V2-P-ERRATUM documentation-only closure correction  COMPLETED_REVIEW_PASS
 A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
 A4-V2-PAR   pre-build executable identity admission     ARTIFACT_INVALID / REVIEWED_TERMINAL
 A4-V2-I-R1  executable-identity source repair           COMPLETED_REVIEW_PASS
-A4-V2-CACHE-P cache/staging documentation protocol      AUTHORIZED_DOCUMENTATION_ONLY
+A4-V2-CACHE-P cache/staging documentation protocol      CANDIDATE_PENDING_EXACT_COMMIT_REVIEW
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event only  NOT_AUTHORIZED
 ```
@@ -197,12 +214,18 @@ The executable-identity correction records are:
 - `docs/saq_a4_v2_executable_identity_source_repair_authorization_2026_07_15.md`;
 - `docs/saq_a4_v2_executable_identity_source_repair_independent_review_2026_07_15.md`.
 
+The CACHE-P candidate records are the four objects named above. Their fixed
+future independent-review path is
+`docs/saq_a4_v2_cache_staging_disposition_protocol_independent_review_2026_07_15.md`;
+that review does not yet exist at this target-candidate stage.
+
 The source pass remains a historical static-review result only. The attempted
 PAR launch falsified executable artifact readiness before build; it is not a
 parity result, synthetic gate, SAQ limitation result, method contribution, or
 systems-performance claim. `A4-V2-I-R1` is now a reviewed source correction,
-not execution evidence or artifact readiness. There is no active cleanup,
-cache-policy, PAR, SRUN, data, or SAQ execution authorization.
+not execution evidence or artifact readiness. Only focused CACHE-P candidate
+commit/review/push/handoff work is active. There is no cleanup, cache-policy
+implementation, PREP, PAR, SRUN, data, or SAQ execution authorization.
 
 ## Prior A4-1S Result
 

@@ -1,0 +1,294 @@
+{
+  "access_date": "2026-07-15",
+  "cpython_pin": {
+    "annotated_tag_object": "a0b04e6630d31bdf096a2755fb4dc6b473295531",
+    "commit": "0bbaf5de9744ae1acea3e2c9ad2257d1cc68e847",
+    "repository": "https://github.com/python/cpython.git",
+    "tag": "v3.9.25",
+    "tag_resolution_command": "git ls-remote https://github.com/python/cpython.git refs/tags/v3.9.25 refs/tags/v3.9.25^{}"
+  },
+  "local_authorities": {
+    "cache_policy_authorization_commit": "ffd0f41c40cd5709fb8be8b5888575c2276a3047",
+    "cache_policy_authorization_path": "docs/saq_a4_v2_cache_staging_policy_authorization_2026_07_15.md",
+    "historical_terminal_commit": "30dfada9917fc225168963331ea5d57dbbe56525",
+    "historical_terminal_path": "docs/saq_a4_v2_par_prebuild_artifact_identity_failure_2026_07_15.md",
+    "historical_terminal_review_commit": "fd5367e51e504b09d8f7715f978d348264d4286d",
+    "historical_terminal_review_path": "docs/saq_a4_v2_par_prebuild_artifact_identity_failure_independent_review_2026_07_15.md",
+    "implementation_manifest_blob": "2aa64e50dad19626711e0dd90c038704ac73e328",
+    "reviewed_source_commit": "e48df4523f99c085cfcb83623664054b5f9ae6f7",
+    "reviewed_source_tree_sha256": "8d8b5d3f8990e5d360e0a617d157a8b934c14d0f37b69f399bcc62c71f98360a",
+    "source_review_head": "c401daeba021d79d7200bb7c436b923a3c66e309"
+  },
+  "local_runtime_static_observations": {
+    "coreutils_env_path": "/usr/bin/env",
+    "coreutils_env_package": "coreutils-8.32-41.el9_8.x86_64",
+    "coreutils_env_sha256": "4fa9935734560713b5a6250fa3481d1044ad117f220bf32c802af382bb7e5c9b",
+    "coreutils_env_size_bytes": 45088,
+    "coreutils_timeout_path": "/usr/bin/timeout",
+    "coreutils_timeout_package": "coreutils-8.32-41.el9_8.x86_64",
+    "coreutils_timeout_source_package": "coreutils-8.32-41.el9_8.src.rpm",
+    "coreutils_timeout_sha256": "025ed27290a98226e03278d99b728a8276e64662b7dea323028b62018316ec69",
+    "coreutils_timeout_size_bytes": 36848,
+    "coreutils_source_claim_ceiling": "the upstream GNU 8.32 archive is the official CLI/source semantic reference for env -i and timeout options; the installed RHEL binary bytes and RPM owner are pinned separately; the source-RPM filename is provenance only and no upstream-to-patched-binary source parity is claimed",
+    "cpython_executable_path": "/usr/bin/python3.9",
+    "cpython_executable_owner_command": "rpm -qf /usr/bin/python3.9",
+    "cpython_executable_owner_result": "python3-3.9.25-7.el9_8.x86_64",
+    "cpython_executable_sha256": "c87babf8337b668da60e26d897d694df7bd9a5b7907416e4eda078b9c33d05e0",
+    "cpython_executable_size_bytes": 15448,
+    "cpython_identity_claim_ceiling": "leader ELF and installed bootstrap file bytes only; dynamic loader, libpython, libc and other mapped libraries unbound",
+    "installed_bootstrap_external_path": "/usr/lib64/python3.9/importlib/_bootstrap_external.py",
+    "installed_bootstrap_external_rpm": "python3-libs-3.9.25-7.el9_8.x86_64",
+    "installed_bootstrap_external_sha256": "8373612b2866d0971f9167ced3a0254204fef058c975f2e30fbb3138797e21d4",
+    "installed_bootstrap_external_size_bytes": 66447,
+    "git_binary_path_for_future_pin": "/usr/bin/git",
+    "git_binary_sha256": "f7d0c1d79341f3d2d8e5c63f89c11400f48af55d8b659251c18cd7d13e3e4ed3",
+    "git_binary_size_bytes": 4397352,
+    "git_package": "git-core-2.52.0-1.el9.x86_64",
+    "git_remote_http_path": "/usr/libexec/git-core/git-remote-http",
+    "git_remote_http_sha256": "c2c458ee6ecadbb1b95fce9bef7f990a51f6486d06dae3621f8997757380a902",
+    "git_remote_http_size_bytes": 966840,
+    "git_remote_https_link_path": "/usr/libexec/git-core/git-remote-https",
+    "git_remote_https_link_target": "git-remote-http",
+    "git_builtin_helper_link_names": [
+      "git-checkout",
+      "git-config",
+      "git-fetch",
+      "git-fsck",
+      "git-index-pack",
+      "git-unpack-objects"
+    ],
+    "git_builtin_helper_link_target": "../../bin/git",
+    "git_version": "git version 2.52.0",
+    "current_git_object_count": 2318,
+    "current_git_object_logical_size_human": "15.62 MiB",
+    "current_tracked_blob_logical_bytes": 8623405,
+    "current_tracked_entry_count": 467,
+    "remote_https_probe_command": "git ls-remote https://github.com/Ufowoqqqo/SAQ.git refs/heads/saq-arbitrary-cardinality-feasibility-v2",
+    "remote_https_probe_oid": "ffd0f41c40cd5709fb8be8b5888575c2276a3047"
+  },
+  "primary_sources": [
+    {
+      "id": "cpython-command-line-3.9.25",
+      "kind": "official_release_documentation",
+      "sections": ["-B", "-I", "-S", "PYTHONDONTWRITEBYTECODE", "PYTHONPYCACHEPREFIX"],
+      "url": "https://docs.python.org/release/3.9.25/using/cmdline.html"
+    },
+    {
+      "id": "cpython-sys-3.9.25",
+      "kind": "official_release_documentation",
+      "sections": ["sys.dont_write_bytecode", "sys.pycache_prefix", "sys.flags"],
+      "url": "https://docs.python.org/release/3.9.25/library/sys.html"
+    },
+    {
+      "id": "cpython-import-reference-3.9.25",
+      "kind": "official_release_documentation",
+      "sections": ["module cache", "cached bytecode invalidation"],
+      "url": "https://docs.python.org/release/3.9.25/reference/import.html"
+    },
+    {
+      "id": "cpython-initialization-3.9.25",
+      "kind": "official_release_documentation",
+      "sections": ["PyConfig.pycache_prefix", "PyConfig.write_bytecode", "PyConfig.run_filename", "PyConfig.site_import"],
+      "url": "https://docs.python.org/release/3.9.25/c-api/init_config.html"
+    },
+    {
+      "id": "cpython-bootstrap-external-v3.9.25",
+      "kind": "official_commit_pinned_source",
+      "pin": "0bbaf5de9744ae1acea3e2c9ad2257d1cc68e847",
+      "symbols": ["cache_from_source", "SourceLoader.get_code"],
+      "url": "https://github.com/python/cpython/blob/0bbaf5de9744ae1acea3e2c9ad2257d1cc68e847/Lib/importlib/_bootstrap_external.py"
+    },
+    {
+      "id": "pep-3147",
+      "kind": "accepted_python_pep",
+      "url": "https://peps.python.org/pep-3147/"
+    },
+    {
+      "id": "pep-552",
+      "kind": "accepted_python_pep",
+      "url": "https://peps.python.org/pep-0552/"
+    },
+    {
+      "id": "gnu-coreutils-env-timeout-8.32-release",
+      "kind": "official_release_archive",
+      "release": "8.32",
+      "source_paths": ["src/env.c", "src/timeout.c", "doc/coreutils.texi: env invocation", "doc/coreutils.texi: timeout invocation"],
+      "sections": ["env -i/--ignore-environment", "env NAME=VALUE", "timeout --signal", "timeout --kill-after", "timeout duration", "timeout exit status"],
+      "signature_url": "https://ftp.gnu.org/gnu/coreutils/coreutils-8.32.tar.xz.sig",
+      "url": "https://ftp.gnu.org/gnu/coreutils/coreutils-8.32.tar.xz"
+    },
+    {
+      "id": "git-clone-2.52.0",
+      "kind": "official_git_documentation",
+      "sections": ["--local race warning", "--no-local", "--no-checkout", "--single-branch", "--no-tags and remote.origin.tagOpt", "--template"],
+      "url": "https://git-scm.com/docs/git-clone/2.52.0"
+    },
+    {
+      "id": "git-fetch-2.52.0",
+      "kind": "official_git_documentation",
+      "url": "https://git-scm.com/docs/git-fetch/2.52.0"
+    },
+    {
+      "id": "git-config-2.52.0",
+      "kind": "official_git_documentation",
+      "sections": ["configuration scopes", "core.hooksPath", "core.fsmonitor", "maintenance.auto", "url rewrite"],
+      "url": "https://git-scm.com/docs/git-config/2.52.0"
+    },
+    {
+      "id": "git-environment-2.52.0",
+      "kind": "official_git_documentation",
+      "sections": ["GIT_CONFIG_NOSYSTEM", "GIT_CONFIG_GLOBAL", "GIT_ATTR_NOSYSTEM", "object database environment"],
+      "url": "https://git-scm.com/docs/git/2.52.0#Documentation/git.txt-codeGITCONFIGNOSYSTEMcode"
+    },
+    {
+      "id": "githooks-2.52.0",
+      "kind": "official_git_documentation",
+      "sections": ["template hooks", "post-checkout"],
+      "url": "https://git-scm.com/docs/githooks/2.52.0"
+    },
+    {
+      "id": "gitattributes-2.52.0",
+      "kind": "official_git_documentation",
+      "sections": ["filter", "working-tree-encoding"],
+      "url": "https://git-scm.com/docs/gitattributes/2.52.0"
+    },
+    {
+      "id": "git-status-2.52.0",
+      "kind": "official_git_documentation",
+      "sections": ["--ignored", "--untracked-files"],
+      "url": "https://git-scm.com/docs/git-status/2.52.0"
+    },
+    {
+      "id": "git-checkout-2.52.0",
+      "kind": "official_git_documentation",
+      "url": "https://git-scm.com/docs/git-checkout/2.52.0"
+    },
+    {
+      "id": "git-ls-tree-2.52.0",
+      "kind": "official_git_documentation",
+      "url": "https://git-scm.com/docs/git-ls-tree/2.52.0"
+    },
+    {
+      "id": "git-cat-file-2.52.0",
+      "kind": "official_git_documentation",
+      "url": "https://git-scm.com/docs/git-cat-file/2.52.0"
+    },
+    {
+      "id": "git-rev-list-2.52.0",
+      "kind": "official_git_documentation",
+      "url": "https://git-scm.com/docs/git-rev-list/2.52.0"
+    },
+    {
+      "id": "git-rev-parse-2.52.0",
+      "kind": "official_git_documentation",
+      "sections": ["revision verification", "^{tree}"],
+      "url": "https://git-scm.com/docs/git-rev-parse/2.52.0"
+    },
+    {
+      "id": "git-fsck-2.52.0",
+      "kind": "official_git_documentation",
+      "url": "https://git-scm.com/docs/git-fsck/2.52.0"
+    },
+    {
+      "id": "git-show-ref-2.52.0",
+      "kind": "official_git_documentation",
+      "url": "https://git-scm.com/docs/git-show-ref/2.52.0"
+    },
+    {
+      "id": "git-symbolic-ref-2.52.0",
+      "kind": "official_git_documentation",
+      "url": "https://git-scm.com/docs/git-symbolic-ref/2.52.0"
+    },
+    {
+      "id": "git-ls-remote-2.52.0",
+      "kind": "official_git_documentation",
+      "sections": ["--refs", "output format"],
+      "url": "https://git-scm.com/docs/git-ls-remote/2.52.0"
+    },
+    {
+      "id": "git-remote-2.52.0",
+      "kind": "official_git_documentation",
+      "sections": ["set-url", "set-url --push"],
+      "url": "https://git-scm.com/docs/git-remote/2.52.0"
+    },
+    {
+      "id": "posix-open-openat",
+      "kind": "open_group_standard",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/open.html"
+    },
+    {
+      "id": "posix-stat-fstatat",
+      "kind": "open_group_standard",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/stat.html"
+    },
+    {
+      "id": "posix-readdir",
+      "kind": "open_group_standard",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/readdir.html"
+    },
+    {
+      "id": "linux-renameat2",
+      "kind": "linux_man_pages_project",
+      "sections": ["RENAME_NOREPLACE"],
+      "url": "https://www.man7.org/linux/man-pages/man2/rename.2.html"
+    },
+    {
+      "id": "linux-fsync",
+      "kind": "linux_man_pages_project",
+      "url": "https://www.man7.org/linux/man-pages/man2/fsync.2.html"
+    },
+    {
+      "id": "linux-proc-pid-cmdline",
+      "kind": "linux_man_pages_project",
+      "url": "https://www.man7.org/linux/man-pages/man5/proc_pid_cmdline.5.html"
+    },
+    {
+      "id": "linux-proc-pid-stat",
+      "kind": "linux_man_pages_project",
+      "url": "https://www.man7.org/linux/man-pages/man5/proc_pid_stat.5.html"
+    },
+    {
+      "id": "linux-proc-pid-io",
+      "kind": "linux_man_pages_project",
+      "url": "https://www.man7.org/linux/man-pages/man5/proc_pid_io.5.html"
+    },
+    {
+      "id": "posix-getrusage",
+      "kind": "open_group_standard",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/getrusage.html"
+    },
+    {
+      "id": "posix-kill-process-groups",
+      "kind": "open_group_standard",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/kill.html"
+    },
+    {
+      "id": "posix-waitpid",
+      "kind": "open_group_standard",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/wait.html"
+    },
+    {
+      "id": "posix-exec",
+      "kind": "open_group_standard",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/exec.html"
+    },
+    {
+      "id": "posix-setpgid",
+      "kind": "open_group_standard",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/setpgid.html"
+    },
+    {
+      "id": "posix-umask",
+      "kind": "open_group_standard",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/umask.html"
+    },
+    {
+      "id": "linux-pr-set-child-subreaper",
+      "kind": "linux_man_pages_project",
+      "url": "https://www.man7.org/linux/man-pages/man2/PR_SET_CHILD_SUBREAPER.2const.html"
+    }
+  ],
+  "review_outcome": "GO_SANITIZED_REMOTE_ISOLATION_PROTOCOL_REQUIRED_NO_GO_DIRECT_PAR_R1",
+  "schema_version": 4,
+  "scope": "CPython bytecode read/write and isolated-startup semantics, A4-V2 import/timing boundaries, Git clone and timeout-bounded remote-equality authority, and non-destructive exclusion of the named quarantined cache/staging residuals"
+}

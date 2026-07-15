@@ -1,0 +1,867 @@
+{
+  "authority": {
+    "authorization_commit": "ffd0f41c40cd5709fb8be8b5888575c2276a3047",
+    "authorization_path": "docs/saq_a4_v2_cache_staging_policy_authorization_2026_07_15.md",
+    "current_stage": "A4-V2-CACHE-P",
+    "execution_authorized": false,
+    "maximum_documentation_outcome": "CACHE_STAGING_POLICY_REVIEW_PASS"
+  },
+  "binding_contract": {
+    "authorized": false,
+    "artifact_kind": "a4_v2_cache_prep_binding",
+    "exact_top_level_keys": [
+      "artifact_kind",
+      "schema_version",
+      "cache_i_target_commit",
+      "cache_i_review_commit",
+      "cache_protocol_identity",
+      "source_manifest_identity",
+      "source_tree_sha256",
+      "prep_authorization_target_commit",
+      "prep_authorization_review_commit",
+      "prep_execution_base_commit",
+      "prep_receipt_target_commit",
+      "prep_receipt_review_commit",
+      "prep_seal_identity",
+      "prep_token_identity",
+      "isolated_clone_identity",
+      "remote_branch_identity",
+      "par_r1_authorization_slot"
+    ],
+    "fixed_path": "docs/saq_a4_v2_cache_prep_binding_2026_07_15.json",
+    "maximum_instance_path": "docs/saq_a4_v2_cache_prep_binding_maximal_instance_2026_07_15.json",
+    "maximum_outcome": "CACHE_PREP_BINDING_REVIEW_PASS",
+    "par_r1_slot": {
+      "commit": null,
+      "path": "docs/saq_a4_v2_par_r1_authorization_2026_07_15.md",
+      "sha256": null,
+      "size_bytes": null,
+      "status": "NOT_ISSUED"
+    },
+    "required_predicates": [
+      "CACHE-I and PREP target-to-review edges through PREP receipt review are direct-parent with exact changed-path allowlists",
+      "PREP execution base equals PREP authorization review head",
+      "PREP receipt target has execution base as direct parent and adds exactly its four final receipt files plus AGENTS.md and TASK.md",
+      "all PREP authorization/receipt target/review commits preserve the reviewed 37-source tree",
+      "clone HEAD and sanitized-HTTPS freshly fetched origin equal pushed PREP receipt review head",
+      "CACHE-BIND target/review identities are deliberately absent because they do not exist when this object is formed; its independent review proves them and later PAR-R1 authority binds them"
+    ],
+    "schema_path": "docs/saq_a4_v2_cache_prep_binding_schema_2026_07_15.json",
+    "schema_version": 1,
+    "source_change_authorized": false
+  },
+  "cache_paths": {
+    "adjacent_legacy_paths": [
+      "script/a4_v2_archive.pyc",
+      "script/a4_v2_cache_policy_verifier.pyc",
+      "script/a4_v2_evidence.pyc",
+      "script/a4_v2_isolated_clone_prep.pyc",
+      "script/a4_v2_parity.pyc",
+      "script/a4_v2_producer.pyc",
+      "script/a4_v2_producer_wire.pyc",
+      "script/a4_v2_runner.pyc",
+      "script/a4_v2_verifier.pyc",
+      "script/run_arbitrary_cardinality_a4_v2.pyc"
+    ],
+    "namespace": "script/__pycache__",
+    "required_state": "ABSENT_BEFORE_EXPLICIT_A4_IMPORT_AND_AT_PRETERMINAL_B_AND_P_CHECKS"
+  },
+  "commit_closure": {
+    "cache_p_target_parent": "ffd0f41c40cd5709fb8be8b5888575c2276a3047",
+    "cache_p_target_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_cache_staging_disposition_contract_2026_07_15.json",
+      "docs/saq_a4_v2_cache_staging_disposition_protocol_2026_07_15.md",
+      "docs/saq_a4_v2_cache_staging_primary_source_review_2026_07_15.md",
+      "docs/saq_a4_v2_cache_staging_primary_sources_2026_07_15.json"
+    ],
+    "cache_p_review_path": "docs/saq_a4_v2_cache_staging_disposition_protocol_independent_review_2026_07_15.md",
+    "cache_p_review_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_cache_staging_disposition_protocol_independent_review_2026_07_15.md"
+    ],
+    "cache_p_preserved_source_closure": {
+      "implementation_manifest_git_blob": "2aa64e50dad19626711e0dd90c038704ac73e328",
+      "source_count": 35,
+      "source_tree_sha256": "8d8b5d3f8990e5d360e0a617d157a8b934c14d0f37b69f399bcc62c71f98360a",
+      "rule": "target direct child of cache_p_target_parent; review direct child of target; exact changed-path arrays are set equality and every other tracked blob is unchanged"
+    },
+    "cache_p_remote_equality": "after target push and again after review push, one timeout-bounded no-clone sanitized HTTPS closure probe per role must return the exact corresponding commit OID; target command/result is mandatory in the direct-child review memo; review-head result is a live non-evidentiary post-commit predicate and is not synchronized to Meeting Summary; a separately authorized child node uses one distinct parent-admission probe recorded in its target; push success alone is not authority",
+    "cache_i_authorization_target_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_cache_implementation_authorization_2026_07_15.md"
+    ],
+    "cache_i_authorization_review_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_cache_implementation_authorization_independent_review_2026_07_15.md"
+    ],
+    "cache_i_target_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_artifact_schema_2026_07_14.json",
+      "docs/saq_a4_v2_cache_prep_binding_maximal_instance_2026_07_15.json",
+      "docs/saq_a4_v2_cache_prep_binding_schema_2026_07_15.json",
+      "docs/saq_a4_v2_cache_protocol_authority_manifest_2026_07_15.json",
+      "docs/saq_a4_v2_cache_runtime_maximal_instance_2026_07_15.json",
+      "docs/saq_a4_v2_cache_runtime_schema_2026_07_15.json",
+      "docs/saq_a4_v2_cache_static_closure_2026_07_15.json",
+      "docs/saq_a4_v2_implementation_binding_2026_07_14.md",
+      "docs/saq_a4_v2_implementation_manifest_2026_07_14.json",
+      "docs/saq_a4_v2_isolated_clone_prep_receipt_maximal_instance_2026_07_15.json",
+      "docs/saq_a4_v2_isolated_clone_prep_receipt_schema_2026_07_15.json",
+      "docs/saq_a4_v2_isolated_clone_prep_token_maximal_instance_2026_07_15.json",
+      "docs/saq_a4_v2_isolated_clone_prep_token_schema_2026_07_15.json",
+      "docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md",
+      "script/a4_v2_cache_policy_verifier.py",
+      "script/a4_v2_isolated_clone_prep.py",
+      "script/a4_v2_parity.py",
+      "script/a4_v2_runner.py",
+      "script/a4_v2_verifier.py",
+      "script/run_arbitrary_cardinality_a4_v2.py"
+    ],
+    "cache_i_review_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_cache_implementation_independent_review_2026_07_15.md"
+    ],
+    "prep_authorization_target_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_isolated_clone_prep_authorization_2026_07_15.md"
+    ],
+    "prep_authorization_review_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_isolated_clone_prep_authorization_independent_review_2026_07_15.md"
+    ],
+    "prep_launcher_incident_target_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_isolated_clone_prep_launcher_incident_2026_07_15.md"
+    ],
+    "prep_launcher_incident_review_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_isolated_clone_prep_launcher_incident_independent_review_2026_07_15.md"
+    ],
+    "prep_receipt_target_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_isolated_clone_prep_artifacts_2026_07_15/clone_inventory.json",
+      "docs/saq_a4_v2_isolated_clone_prep_artifacts_2026_07_15/clone_operations.jsonl",
+      "docs/saq_a4_v2_isolated_clone_prep_artifacts_2026_07_15/clone_postcheck.json",
+      "docs/saq_a4_v2_isolated_clone_prep_artifacts_2026_07_15/prep_seal.json"
+    ],
+    "prep_receipt_review_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_isolated_clone_prep_independent_review_2026_07_15.md"
+    ],
+    "cache_bind_target_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_cache_prep_binding_2026_07_15.json"
+    ],
+    "cache_bind_review_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_cache_prep_binding_independent_review_2026_07_15.md"
+    ],
+    "par_r1_authorization_target_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_par_r1_authorization_2026_07_15.md"
+    ],
+    "par_r1_authorization_review_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_par_r1_authorization_independent_review_2026_07_15.md"
+    ],
+    "edge_rule": "each review commit is the direct child of its target; current CACHE-P target has cache_p_target_parent and each future target has the direct parent named by the DAG; exact arrays are set equality and every other tracked blob is unchanged",
+    "launcher_incident_rule": "if durable START is never reached, incident target is direct child of PREP authorization-review execution base; review direct child; no clone exists so sanitized HTTPS ls-remote OID equality replaces clone fetch; terminal branch cannot enter receipt/BIND/PAR",
+    "post_review_rule": "push transport is not authority; every producing node before isolated-clone creation and any launcher incident uses no-clone target/review closure probes, with target result independently reviewed and review result a live non-evidentiary predicate; any later authorized pre-clone child uses its own no-clone parent-admission probe; PREP-authorization review closure also gates the immediate PREP invocation; isolated-clone nodes use sanitized HTTPS fresh-fetch remote-tracking equality to review head before the next node"
+  },
+  "claim_ceiling": "Artifact governance only. No protocol, source, preparation, binding, or PAR result here establishes an SAQ limitation, feasibility, scientific FOM result, systems performance, novelty, SRUN authority, data authority, or SAQ-change authority.",
+  "fixed_generic_paths": {
+    "additive_cache_authority": "docs/saq_a4_v2_cache_protocol_authority_manifest_2026_07_15.json",
+    "binding_maximal_instance": "docs/saq_a4_v2_cache_prep_binding_maximal_instance_2026_07_15.json",
+    "binding_schema": "docs/saq_a4_v2_cache_prep_binding_schema_2026_07_15.json",
+    "cache_static_closure": "docs/saq_a4_v2_cache_static_closure_2026_07_15.json",
+    "prep_receipt_maximal_instance": "docs/saq_a4_v2_isolated_clone_prep_receipt_maximal_instance_2026_07_15.json",
+    "prep_receipt_schema": "docs/saq_a4_v2_isolated_clone_prep_receipt_schema_2026_07_15.json",
+    "prep_token_maximal_instance": "docs/saq_a4_v2_isolated_clone_prep_token_maximal_instance_2026_07_15.json",
+    "prep_token_schema": "docs/saq_a4_v2_isolated_clone_prep_token_schema_2026_07_15.json",
+    "runtime_maximal_instance": "docs/saq_a4_v2_cache_runtime_maximal_instance_2026_07_15.json",
+    "runtime_schema": "docs/saq_a4_v2_cache_runtime_schema_2026_07_15.json"
+  },
+  "future_authority_dag": [
+    {
+      "authorized": true,
+      "maximum_outcome": "CACHE_STAGING_POLICY_REVIEW_PASS",
+      "required_edges": "target direct child of ffd0f41c40cd5709fb8be8b5888575c2276a3047; review direct child of target",
+      "stage": "A4-V2-CACHE-P"
+    },
+    {
+      "authorized": false,
+      "maximum_outcome": "GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS",
+      "required_edges": "authorization target direct child of pushed CACHE-P review head after its closure predicate and a distinct CACHE-I-authorized no-clone parent-admission probe recorded in the authorization document; authorization target/review each have one no-clone closure probe; implementation target direct child of authorization review after a distinct no-clone parent-admission probe recorded in the additive cache-authority manifest; implementation target/review each have one no-clone closure probe",
+      "stage": "A4-V2-CACHE-I"
+    },
+    {
+      "authorized": false,
+      "maximum_outcome": "ISOLATED_CLONE_PREPARED_REVIEW_PASS",
+      "required_edges": "authorization target direct child of pushed CACHE-I implementation review head after a distinct PREP-authorized no-clone parent-admission probe recorded in the PREP authorization document; authorization target/review each have one no-clone closure probe; authorization review closure has no intervening branch/worktree mutation and also gates immediate PREP execution; success receipt target direct child of execution base; receipt review direct child",
+      "stage": "A4-V2-CACHE-PREP-ISO"
+    },
+    {
+      "authorized": false,
+      "maximum_outcome": "CACHE_PREP_BINDING_REVIEW_PASS",
+      "required_edges": "binding target direct child of pushed PREP receipt review after fresh equality; binding review direct child",
+      "stage": "A4-V2-CACHE-BIND"
+    },
+    {
+      "authorized": false,
+      "maximum_outcome": "PASS_PARITY",
+      "required_edges": "PAR-R1 authorization target direct child of pushed CACHE-BIND review after fresh equality; authorization review direct child and is the only possible later PAR-R1 execution base",
+      "stage": "A4-V2-PAR-R1"
+    }
+  ],
+  "host_execution_identity": {
+    "cpython": {
+      "claim_ceiling": "runtime pins leader ELF and bootstrap file bytes only; dynamic loader, libpython, libc and other shared libraries are disclosed unbound host inputs",
+      "bootstrap_external": {
+        "path": "/usr/lib64/python3.9/importlib/_bootstrap_external.py",
+        "rpm": "python3-libs-3.9.25-7.el9_8.x86_64",
+        "sha256": "8373612b2866d0971f9167ced3a0254204fef058c975f2e30fbb3138797e21d4",
+        "size_bytes": 66447,
+        "type": "regular"
+      },
+      "executable": {
+        "path": "/usr/bin/python3.9",
+        "rpm": "python3-3.9.25-7.el9_8.x86_64",
+        "sha256": "c87babf8337b668da60e26d897d694df7bd9a5b7907416e4eda078b9c33d05e0",
+        "size_bytes": 15448,
+        "type": "regular"
+      }
+    },
+    "env": {
+      "path": "/usr/bin/env",
+      "rpm": "coreutils-8.32-41.el9_8.x86_64",
+      "sha256": "4fa9935734560713b5a6250fa3481d1044ad117f220bf32c802af382bb7e5c9b",
+      "size_bytes": 45088,
+      "type": "regular"
+    },
+    "timeout": {
+      "path": "/usr/bin/timeout",
+      "rpm": "coreutils-8.32-41.el9_8.x86_64",
+      "source_rpm": "coreutils-8.32-41.el9_8.src.rpm",
+      "sha256": "025ed27290a98226e03278d99b728a8276e64662b7dea323028b62018316ec69",
+      "size_bytes": 36848,
+      "type": "regular"
+    },
+    "git": {
+      "builtin_helper_links": {
+        "directory": "/usr/libexec/git-core",
+        "names": ["git-checkout", "git-config", "git-fetch", "git-fsck", "git-index-pack", "git-unpack-objects"],
+        "target": "../../bin/git"
+      },
+      "executable": {
+        "path": "/usr/bin/git",
+        "rpm": "git-core-2.52.0-1.el9.x86_64",
+        "sha256": "f7d0c1d79341f3d2d8e5c63f89c11400f48af55d8b659251c18cd7d13e3e4ed3",
+        "size_bytes": 4397352,
+        "type": "regular",
+        "version": "git version 2.52.0"
+      },
+      "remote_http": {
+        "path": "/usr/libexec/git-core/git-remote-http",
+        "rpm": "git-core-2.52.0-1.el9.x86_64",
+        "sha256": "c2c458ee6ecadbb1b95fce9bef7f990a51f6486d06dae3621f8997757380a902",
+        "size_bytes": 966840,
+        "type": "regular"
+      },
+      "remote_https_link": {
+        "path": "/usr/libexec/git-core/git-remote-https",
+        "target": "git-remote-http",
+        "type": "symlink"
+      }
+    },
+    "package_fields_role": "CACHE-P static provenance only; runtime does not execute rpm or parse rpmdb",
+    "process_executable_inventory_rule": "PREP-only static callsite/helper allowlist is exact; executable images observed at 10-ms /proc samples and observed boundaries are a subset of CPython, env, git and git-remote-http; observed unexpected is ARTIFACT_INVALID; no complete exec-tracing claim; the separate no-clone probe inventory is env, timeout, git and git-remote-http as frozen in preparation_contract.git.incident_remote_equality"
+  },
+  "historical_quarantine": {
+    "authoritative_commit": "30dfada9917fc225168963331ea5d57dbbe56525",
+    "authoritative_review_commit": "fd5367e51e504b09d8f7715f978d348264d4286d",
+    "cache_payload_identity": "UNKNOWN_AND_MUST_REMAIN_UNREAD",
+    "disposition": "RETAIN_NONEVIDENCE_EXCLUDED_BY_SANITIZED_REMOTE_CLONE",
+    "live_inventory_access_authorized": false,
+    "pyc_allocated_and_directory_bytes": null,
+    "pyc_logical_bytes_recorded": 364538,
+    "staging_path": "docs/saq_a4_v2_par_artifacts_2026_07_14.staging"
+  },
+  "preparation_contract": {
+    "authorized": false,
+    "branch": "saq-arbitrary-cardinality-feasibility-v2",
+    "clone_root": "/tmp/saq-a4-v2-par-r1-isolation/repo",
+    "cwd": "/",
+    "exact_absent_paths_after_checkout": [
+      "script/__pycache__",
+      "script/a4_v2_archive.pyc",
+      "script/a4_v2_cache_policy_verifier.pyc",
+      "script/a4_v2_evidence.pyc",
+      "script/a4_v2_isolated_clone_prep.pyc",
+      "script/a4_v2_parity.pyc",
+      "script/a4_v2_producer.pyc",
+      "script/a4_v2_producer_wire.pyc",
+      "script/a4_v2_runner.pyc",
+      "script/a4_v2_verifier.pyc",
+      "script/run_arbitrary_cardinality_a4_v2.pyc",
+      "docs/saq_a4_v2_par_artifacts_2026_07_14.staging",
+      "docs/saq_a4_v2_par_artifacts_2026_07_14",
+      "docs/saq_a4_v2_execution_authority_2026_07_14",
+      "build/a4_v2",
+      "build/a4_v2_verifier",
+      "docs/saq_a4_v2_isolated_clone_prep_artifacts_2026_07_15.staging",
+      "docs/saq_a4_v2_isolated_clone_prep_artifacts_2026_07_15"
+    ],
+    "execution_base_rule": "exact pushed and independently reviewed PREP authorization-review head; its 37-source tree equals CACHE-I",
+    "execution_base_remote_admission_rule": "the PREP-authorization review no-clone closure probe must succeed immediately before the one PREP invocation with no intervening branch/worktree mutation; this single live probe has both review-closure and execution-base-admission roles and failure forbids PREP",
+    "origin_fetch_url": "https://github.com/Ufowoqqqo/SAQ.git",
+    "origin_push_url": "git@github.com:Ufowoqqqo/SAQ.git",
+    "git": {
+      "child_environment": {
+        "GIT_ATTR_NOSYSTEM": "1",
+        "GIT_CONFIG_GLOBAL": "/dev/null",
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_EXEC_PATH": "/usr/libexec/git-core",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "GIT_TERMINAL_PROMPT": "0",
+        "HOME": "/tmp/saq-a4-v2-par-r1-isolation/git-home",
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "XDG_CONFIG_HOME": "/tmp/saq-a4-v2-par-r1-isolation/git-xdg"
+      },
+      "clone_argv_template": [
+        "/usr/bin/git",
+        "-c", "core.hooksPath=/dev/null",
+        "-c", "core.fsmonitor=false",
+        "-c", "core.autocrlf=false",
+        "-c", "core.eol=lf",
+        "-c", "gc.auto=0",
+        "-c", "maintenance.auto=false",
+        "clone",
+        "--no-local",
+        "--no-checkout",
+        "--single-branch",
+        "--no-tags",
+        "--template=/tmp/saq-a4-v2-par-r1-isolation/empty-git-template",
+        "--branch",
+        "saq-arbitrary-cardinality-feasibility-v2",
+        "https://github.com/Ufowoqqqo/SAQ.git",
+        "/tmp/saq-a4-v2-par-r1-isolation/repo"
+      ],
+      "command_prefix": [
+        "/usr/bin/git",
+        "-c", "core.hooksPath=/dev/null",
+        "-c", "core.fsmonitor=false",
+        "-c", "core.autocrlf=false",
+        "-c", "core.eol=lf",
+        "-c", "gc.auto=0",
+        "-c", "maintenance.auto=false"
+      ],
+      "checkout_argv_template": [
+        "/usr/bin/git",
+        "-c", "core.hooksPath=/dev/null",
+        "-c", "core.fsmonitor=false",
+        "-c", "core.autocrlf=false",
+        "-c", "core.eol=lf",
+        "-c", "gc.auto=0",
+        "-c", "maintenance.auto=false",
+        "-C", "/tmp/saq-a4-v2-par-r1-isolation/repo",
+        "checkout", "--force", "-B",
+        "saq-arbitrary-cardinality-feasibility-v2",
+        "<PREP_EXECUTION_BASE>"
+      ],
+      "checkout_order_rule": "after no-checkout clone, validate exact commit/tree, forbidden tracked entries, config/ref/log closure, object hash/reachability and executable closure before checkout",
+      "config_allowlist_before_pushurl": [
+        ["core.repositoryformatversion", "0"],
+        ["core.filemode", "true"],
+        ["core.bare", "false"],
+        ["core.logallrefupdates", "true"],
+        ["remote.origin.url", "https://github.com/Ufowoqqqo/SAQ.git"],
+        ["remote.origin.fetch", "+refs/heads/saq-arbitrary-cardinality-feasibility-v2:refs/remotes/origin/saq-arbitrary-cardinality-feasibility-v2"],
+        ["remote.origin.tagOpt", "--no-tags"],
+        ["branch.saq-arbitrary-cardinality-feasibility-v2.remote", "origin"],
+        ["branch.saq-arbitrary-cardinality-feasibility-v2.merge", "refs/heads/saq-arbitrary-cardinality-feasibility-v2"]
+      ],
+      "config_allowlist_final_addition": [
+        ["remote.origin.pushurl", "git@github.com:Ufowoqqqo/SAQ.git"]
+      ],
+      "executable": "/usr/bin/git",
+      "executable_identity_ref": "host_execution_identity.git",
+      "forbidden_state": [
+        "unexpected config or ref",
+        "hook or nonempty template",
+        "gitattributes or gitmodules",
+        "filter, fsmonitor, or maintenance actor",
+        "symlink or gitlink tracked entry",
+        "replace, graft, shallow, promisor, or alternate object state",
+        "external object database environment",
+        "URL rewrite"
+      ],
+      "fresh_fetch_argv_suffix": [
+        "-C", "/tmp/saq-a4-v2-par-r1-isolation/repo",
+        "fetch", "--no-tags", "origin",
+        "+refs/heads/saq-arbitrary-cardinality-feasibility-v2:refs/remotes/origin/saq-arbitrary-cardinality-feasibility-v2"
+      ],
+      "incident_remote_equality": {
+        "argv": [
+          "/usr/bin/env", "-i",
+          "GIT_ATTR_NOSYSTEM=1", "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1",
+          "GIT_EXEC_PATH=/usr/libexec/git-core", "GIT_OPTIONAL_LOCKS=0", "GIT_TERMINAL_PROMPT=0",
+          "HOME=/tmp/saq-a4-v2-incident-git-home-absent",
+          "XDG_CONFIG_HOME=/tmp/saq-a4-v2-incident-git-xdg-absent",
+          "LANG=C", "LC_ALL=C", "PATH=/usr/bin:/bin",
+          "/usr/bin/timeout", "--signal=TERM", "--kill-after=5s", "300s",
+          "/usr/bin/git",
+          "-c", "core.hooksPath=/dev/null",
+          "-c", "core.fsmonitor=false",
+          "-c", "core.autocrlf=false",
+          "-c", "core.eol=lf",
+          "-c", "gc.auto=0",
+          "-c", "maintenance.auto=false",
+          "ls-remote", "--refs", "https://github.com/Ufowoqqqo/SAQ.git",
+          "refs/heads/saq-arbitrary-cardinality-feasibility-v2"
+        ],
+        "cwd": "/",
+        "stdin": "/dev/null",
+        "exact_absent_paths": [
+          "/tmp/saq-a4-v2-incident-git-home-absent",
+          "/tmp/saq-a4-v2-incident-git-xdg-absent"
+        ],
+        "identity_ref": "host_execution_identity.timeout, host_execution_identity.env and host_execution_identity.git",
+        "uses": ["current CACHE-P target/review closure equality", "separately authorized pre-clone CACHE-I authorization target/review closure equality", "separately authorized pre-clone CACHE-I implementation target/review closure equality", "separately authorized pre-clone PREP authorization target/review closure equality", "future launcher-incident target/review closure equality", "separately authorized pre-clone child-node parent admission", "PREP authorization-review closure as immediate PREP execution-base admission"],
+        "env_semantics": {
+          "source": "GNU coreutils 8.32 official upstream release archive, src/env.c and matching Texinfo env invocation section",
+          "rule": "-i starts env with an empty inherited environment and the exact registered NAME=VALUE operands form the child environment"
+        },
+        "timeout_semantics": {
+          "source": "GNU coreutils 8.32 official upstream release archive, src/timeout.c and matching Texinfo timeout invocation section",
+          "rule": "sanitized env directly execs byte-pinned installed timeout; command duration 300 seconds; --signal TERM then --kill-after 5 seconds; wrapper exit must be zero; no hard descendant-reap claim"
+        },
+        "coreutils_source_claim_ceiling": "upstream 8.32 is the CLI/source semantic reference; installed RHEL env/timeout bytes and RPM owner are separate host-artifact pins; source-RPM filename is provenance only and no upstream-to-patched-binary source parity is claimed",
+        "probe_executable_inventory": ["/usr/bin/env", "/usr/bin/timeout", "/usr/bin/git", "/usr/libexec/git-core/git-remote-http via exact git-remote-https symlink"],
+        "parser": "wrapper exit 0; empty stderr; stdout exactly one ASCII line of 40 lowercase hex, TAB, exact branch ref, LF; OID equals the registered current CACHE-P, pre-clone CACHE-I authorization/implementation, pre-clone PREP authorization, or future incident target/review OID, or the registered pre-clone parent-review admission OID, according to role",
+        "closure_probe_count_rule": "exactly one target closure probe and one review closure probe per producing node formed before isolated-clone creation, including CACHE-P, CACHE-I authorization, CACHE-I implementation, PREP authorization, and any launcher incident",
+        "next_node_admission_probe_rule": "a later separately authorized pre-clone child gets exactly one distinct parent-review admission probe before target formation and records it in that target for independent review; current CACHE-P grants no future CACHE-I or PREP probe",
+        "prep_execution_base_admission_rule": "PREP-authorization review closure is also the single live execution-base admission immediately before PREP, with no intervening branch/worktree mutation; it is not an additional probe and failure forbids invocation",
+        "failure_rule": "timeout, nonzero or signal exit, nonempty stderr, unexpected output/path state, or caller-side failure yields REMOTE_EQUALITY_NOT_ESTABLISHED and stops the branch pending new authorization",
+        "claim_ceiling": "only pinned env-to-timeout-to-Git wall-bounded successful exit and exact returned bytes; no outer executor, capture, hashing, process-count, hard-reap, failure-resource, or systems-performance claim",
+        "causal_result_recording": {
+          "target_head": "exact command/result mandatory in later direct-child review memo and independently reviewed",
+          "review_head": "live non-evidentiary post-commit closure predicate; never claimed inside same memo and never synchronized to Meeting Summary",
+          "next_node_parent_admission": "distinct command/result mandatory in the separately authorized child target and independently reviewed",
+          "prep_execution_base": "PREP-authorization review closure also gates the immediate invocation; no second probe and no durable evidence claim is made for that live predicate",
+          "launcher_incident": "same complete target/review closure split, including incident target OID in parser"
+        },
+        "writes_or_template_state": "none"
+      },
+      "object_closure_rule": "set(cat-file --batch-all-objects) equals set(rev-list --objects --all); every object hash-valid; fsck unreachable/dangling output empty",
+      "read_remote_url": "https://github.com/Ufowoqqqo/SAQ.git",
+      "remote_authority_rule": "SSH push transport/config/agent/host keys are outside the claim and push success is not authority; all producing nodes and parent admissions before isolated-clone creation, plus a no-clone incident, require their frozen timeout-bounded HTTPS ls-remote equality; isolated-clone nodes require subsequent sanitized HTTPS fresh-fetch OID equality",
+      "ref_allowlist": [
+        "HEAD symbolic to refs/heads/saq-arbitrary-cardinality-feasibility-v2 at PREP_EXECUTION_BASE",
+        "refs/heads/saq-arbitrary-cardinality-feasibility-v2 at PREP_EXECUTION_BASE",
+        "refs/remotes/origin/saq-arbitrary-cardinality-feasibility-v2 at PREP_EXECUTION_BASE"
+      ],
+      "reflog_rule": "CACHE-I schema freezes exact required HEAD/local/remote reflog paths and content shape; no other ref or log",
+      "set_fetch_url_argv_suffix": [
+        "-C", "/tmp/saq-a4-v2-par-r1-isolation/repo",
+        "remote", "set-url", "origin", "https://github.com/Ufowoqqqo/SAQ.git"
+      ],
+      "set_push_url_argv_suffix": [
+        "-C", "/tmp/saq-a4-v2-par-r1-isolation/repo",
+        "remote", "set-url", "--push", "origin", "git@github.com:Ufowoqqqo/SAQ.git"
+      ],
+      "validation_argv_suffixes": [
+        ["-C", "/tmp/saq-a4-v2-par-r1-isolation/repo", "config", "--null", "--local", "--list"],
+        ["-C", "/tmp/saq-a4-v2-par-r1-isolation/repo", "show-ref", "--head", "--dereference"],
+        ["-C", "/tmp/saq-a4-v2-par-r1-isolation/repo", "symbolic-ref", "-q", "HEAD"],
+        ["-C", "/tmp/saq-a4-v2-par-r1-isolation/repo", "cat-file", "-e", "<PREP_EXECUTION_BASE>^{commit}"],
+        ["-C", "/tmp/saq-a4-v2-par-r1-isolation/repo", "rev-parse", "<PREP_EXECUTION_BASE>^{tree}"],
+        ["-C", "/tmp/saq-a4-v2-par-r1-isolation/repo", "ls-tree", "-rz", "--full-tree", "<PREP_EXECUTION_BASE>"],
+        ["-C", "/tmp/saq-a4-v2-par-r1-isolation/repo", "rev-list", "--objects", "--all", "--no-object-names"],
+        ["-C", "/tmp/saq-a4-v2-par-r1-isolation/repo", "cat-file", "--batch-all-objects", "--batch-check=%(objectname)"],
+        ["-C", "/tmp/saq-a4-v2-par-r1-isolation/repo", "fsck", "--full", "--strict", "--unreachable", "--no-reflogs"]
+      ],
+      "version": "git version 2.52.0"
+    },
+    "isolation_root": "/tmp/saq-a4-v2-par-r1-isolation",
+    "journal": {
+      "causal_scope": "every substantive Git/filesystem intent and result through READY_FOR_RECEIPT_INSTALL",
+      "copy_rule": "closed outer journal copied byte-for-byte to receipt; equality checked before terminal",
+      "directory": "/tmp/saq-a4-v2-par-r1-isolation/prep-attempt",
+      "failure_rule": "retain token, root and partial journal; only a separately authorized terminal memo may become evidence",
+      "hash_chained": true,
+      "record_cap": 100000,
+      "size_cap_bytes": 67108864
+    },
+    "launch": {
+      "argv_template": [
+        "/usr/bin/env",
+        "-i",
+        "LC_ALL=C",
+        "LANG=C",
+        "PATH=/usr/bin:/bin",
+        "/usr/bin/python3.9",
+        "-I",
+        "-B",
+        "-S",
+        "-c",
+        "<CACHE_I_BOOTSTRAP_SOURCE>",
+        "<CACHE_I_BOOTSTRAP_SHA256>",
+        "<CACHE_I_BOOTSTRAP_SIZE>",
+        "<CACHE_I_PROLOGUE_SHA256>",
+        "<CACHE_I_PROLOGUE_SIZE>",
+        "<PREP_EXECUTION_BASE>",
+        "<PREP_TOOL_SHA256>",
+        "<PREP_TOOL_SIZE>",
+        "<PREP_AUTH_SHA256>",
+        "<PREP_AUTH_SIZE>",
+        "<PREP_AUTH_REVIEW_SHA256>",
+        "<PREP_AUTH_REVIEW_SIZE>"
+      ],
+      "bootstrap_binding": "exactly one ASCII-only inline executable source in implementation manifest/cache authority/static closure; full-source and exact raw-prefix prologue sha256/size, argv/maximal instance and complete call/open/import/mutation/terminal closure; 37 file sources plus this unit equals 38 executable units",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin"
+      },
+      "environment_wrapper": "/usr/bin/env -i",
+      "host_identity_ref": "host_execution_identity.env plus leader-ELF/bootstrap byte pins in host_execution_identity.cpython; RPM strings are static provenance and shared libraries are unbound host inputs",
+      "import_policy": "pre-START exact builtins sys,posix only; post-START standalone frozen stdlib allowlist; no repo/A4 import; no source-worktree status or traversal",
+      "interpreter": "/usr/bin/python3.9",
+      "launcher_failure_rule": "env/CPython/pre-START builtin import/bootstrap parse/argv validation/first token-publication failure before durable START is LAUNCHER_INCOMPLETE_NO_DECISION and NOT_MACHINE_PROVABLE_INVOCATION_OR_DURABILITY; fixed incident target/review; same authority never retried",
+      "launcher_incident_path": "docs/saq_a4_v2_isolated_clone_prep_launcher_incident_2026_07_15.md",
+      "launcher_incident_review_path": "docs/saq_a4_v2_isolated_clone_prep_launcher_incident_independent_review_2026_07_15.md",
+      "one_shot_boundary": "first inline-bootstrap prologue imports exactly builtin sys,posix, validates strict claimed argv, sets umask 077 and immediately attempts component-wise no-follow O_EXCL START plus file/common-dir fsync; durable START is mechanical boundary; no machine invocation claim before it",
+      "pre_start_bootstrap_identity_rule": "bootstrap is ASCII-only and prologue is its exact raw-byte prefix at registered size; argv carries bootstrap sha256/size and distinct prologue sha256/size claims; START records them; after START parse NUL-delimited /proc/self/cmdline and require both actual -c source and its prologue prefix identities before further authority work",
+      "pre_start_import_allowlist": [
+        {"module": "sys", "origin": "built-in", "filesystem_or_cache_read": false},
+        {"module": "posix", "origin": "built-in", "filesystem_or_cache_read": false}
+      ],
+      "pre_start_filesystem_allowlist": {
+        "component_paths": ["/", "/rwproject", "/rwproject/kdd-db", "/rwproject/kdd-db/kluaq", "/rwproject/kdd-db/kluaq/saq", "/rwproject/kdd-db/kluaq/saq/.git"],
+        "leaf_path": "/rwproject/kdd-db/kluaq/saq/.git/saq-a4-v2-isolated-prep.lock",
+        "operations": "posix.umask(077); component-wise directory open relative to verified parent with O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC; leaf O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW|O_CLOEXEC mode 0600; bounded full write of fixed ASCII START record; file fsync; close; common-directory fsync; close",
+        "all_other_pre_start_filesystem_access": "forbidden",
+        "collision_or_any_failure_before_common_directory_fsync": "no durable START; external LAUNCHER_INCOMPLETE_NO_DECISION; no retry or rewrite"
+      },
+      "pre_start_serialization": "fixed ASCII canonical-JSON template with strict lowercase-hex/decimal argv validation; no json/hashlib import",
+      "source_worktree": "/tmp/saq-arbitrary-cardinality-feasibility-v2",
+      "tool_execution": "after durable START and capture creation, component-wise no-follow verify authority/host/tool; then compile/execute verified in-memory PREP bytes without import or reopen; mismatch closes typed terminal",
+      "umask_before_token": "077"
+    },
+    "measurement": {
+      "allocated_bytes": "st_blocks multiplied by 512 over complete no-follow traversal",
+      "cpu": "after parent drain through ECHILD, final parent RUSAGE_SELF user+system plus final parent RUSAGE_CHILDREN user+system exactly once; includes env/CPython startup and all worker/direct/reparented descendants; worker and per-wait records are reconciliation diagnostics and are never added again",
+      "filesystem_sampling": "250 ms monotonic plus immediately before/after every Git child and receipt/token/capture publication",
+      "logical_bytes": "st_size over complete no-follow traversal",
+      "network_bytes": "authoritative integer when available, otherwise null with UNAVAILABLE_NO_AUTHORITATIVE_COUNTER; never zero",
+      "output_streaming": "CACHE-I-frozen length-prefixed aggregate sidecar format; continuous reads, maximum chunk 65536 bytes, exact counts; separate 8388608-byte per-descendant-stream and aggregate-per-sidecar caps; either crossing is resource failure",
+      "proc_io": "per-process /proc PID io captured before reap when available",
+      "process_sampling": "10 ms monotonic plus every observed fork/exec/exit/I/O boundary",
+      "rss": "initialize with supervisor cumulative ru_maxrss before worker exists to cover env/CPython startup; thereafter maximum observed sum of current RSS over supervisor and live descendants at samples; no hard instantaneous-peak claim",
+      "source_gitdir_pre_terminal_ledger_fields": [
+        "start_token_logical_bytes", "start_token_allocated_bytes", "start_token_write_syscall_count", "start_token_write_bytes", "start_token_file_fsync_count",
+        "stdout_capture_logical_bytes", "stdout_capture_allocated_bytes", "stdout_capture_write_syscall_count", "stdout_capture_write_bytes", "stdout_capture_file_fsync_count",
+        "stderr_capture_logical_bytes", "stderr_capture_allocated_bytes", "stderr_capture_write_syscall_count", "stderr_capture_write_bytes", "stderr_capture_file_fsync_count",
+        "source_git_common_dir_fsync_count_before_terminal", "source_gitdir_created_entry_count_before_terminal", "capture_bytes"
+      ],
+      "terminal_token_publication_tail": "terminal encoding/append, token fsync, following common-dir fsync and resulting allocation are NOT_MEASURED_NOT_INTERPRETED; review observes final bytes/state only",
+      "wall": "kernel process start ticks through registered terminal"
+    },
+    "observation_claim": "ephemeral physical readiness observation; not power-loss durability; independent review and PAR repeat complete admission",
+    "prep_authorization_path": "docs/saq_a4_v2_isolated_clone_prep_authorization_2026_07_15.md",
+    "prep_lock": {
+      "capture_files": [
+        "/rwproject/kdd-db/kluaq/saq/.git/saq-a4-v2-isolated-prep.stdout",
+        "/rwproject/kdd-db/kluaq/saq/.git/saq-a4-v2-isolated-prep.stderr"
+      ],
+      "capture_rule": "after START: no-follow O_EXCL mode-0600; fixed multiplex format; 8388608-byte aggregate cap each plus independent same-size per-descendant-stream caps; file/common-dir fsync; START binds paths/caps and TERMINAL binds final sha256/sizes",
+      "creation": "no-follow exclusive mode-0600 create, file fsync, Git-common-dir fsync",
+      "disposition": "permanent consumed-authority token; never automatically removed",
+      "exact_start_record_keys": [
+        "record_type", "schema_version", "sequence", "previous_record_sha256", "claimed_authorization_identity", "claimed_authorization_review_identity", "claimed_execution_base_commit", "claimed_bootstrap_identity", "source_git_common_dir_path", "umask_octal", "capture_policy", "prologue_identity"
+      ],
+      "exact_terminal_record_keys": [
+        "record_type", "schema_version", "sequence", "previous_record_sha256", "status", "status_detail", "verified_authority_identity", "verified_host_identity", "outer_journal_identity", "receipt_seal_identity", "stdout_capture_identity", "stderr_capture_identity", "terminal_process_identity", "source_gitdir_pre_terminal_ledger"
+      ],
+      "max_records": 2,
+      "max_size_bytes": 131072,
+      "path": "/rwproject/kdd-db/kluaq/saq/.git/saq-a4-v2-isolated-prep.lock",
+      "record_types": ["START", "TERMINAL"],
+      "schema_path": "docs/saq_a4_v2_isolated_clone_prep_token_schema_2026_07_15.json",
+      "maximum_instance_path": "docs/saq_a4_v2_isolated_clone_prep_token_maximal_instance_2026_07_15.json",
+      "start_only_semantics": "CRASH_OR_UNKNOWN only; never infer a precondition or artifact status",
+      "success_terminal": "freeze pre-terminal ledger, append/fsync exact prep seal and capture identities, fsync common dir; publication tail is explicitly unmeasured/nonrecursive",
+      "terminal_status_enum": ["PRECONDITION_NOT_MET", "RESOURCE_INCOMPLETE_NO_DECISION", "ARTIFACT_INVALID", "IMPLEMENTATION_INVALID", "ISOLATED_CLONE_PREPARED_PENDING_COMMIT_REVIEW"],
+      "noncanonical_or_missing_terminal_semantics": "after valid START, absent, partial, corrupt, or otherwise noncanonical TERMINAL is CRASH_OR_UNKNOWN only; no overlapping incomplete-evidence status",
+      "caught_failure_terminal": "close/fsync captures, freeze pre-terminal ledger, append/fsync typed terminal record, fsync common dir; tail is unmeasured/nonrecursive"
+    },
+    "prep_report": {
+      "allowed_work": "copy already frozen meter-start/meter-stop integers, frozen nonnegative ledger arithmetic, fixed receipt validation, hash three closed files, form/fsync seal, staging fsync, dirfd-relative renameat2(RENAME_NOREPLACE), docs fsync, append/fsync token seal identity, Git-common-dir fsync",
+      "duration_and_rss": "NOT_MEASURED_NOT_INTERPRETED",
+      "failure_after_rename": "visible final tree remains invalid nonevidence unless terminal token publication completes",
+      "review_claim": "review verifies source-level finite tail closure and final bytes/state, not dynamic proof of completed durability syscalls",
+      "seal_has_own_size_or_future_git_field": false
+    },
+    "process_topology": {
+      "descendant_rule": "every worker descendant retains worker PGID; mismatch is ARTIFACT_INVALID",
+      "parent": "before fork calls/verifies prctl PR_SET_CHILD_SUBREAPER=1; remains outside worker group; sole journal/signal/publication actor; reaps worker and reparented descendants and drains waitid/wait4 through ECHILD",
+      "worker": "exactly one forked worker calls setpgid(0,0) before mutation; parent verifies PGID equals worker PID through readiness pipe; worker is sole normal reaper of direct Git children, records their wait4 results, and reports final RUSAGE_SELF and RUSAGE_CHILDREN",
+      "reap_and_cpu_disjointness": "worker direct-child wait records and final usage are diagnostics; parent reaps only worker/reparented descendants; authoritative family CPU is final parent RUSAGE_SELF plus RUSAGE_CHILDREN once after ECHILD",
+      "termination": "parent sends SIGTERM then SIGKILL only to negative verified worker PGID, drains all waitable descendants and remains alive to publish"
+    },
+    "receipt_files": [
+      "clone_inventory.json",
+      "clone_operations.jsonl",
+      "clone_postcheck.json",
+      "prep_seal.json"
+    ],
+    "receipt_final": "docs/saq_a4_v2_isolated_clone_prep_artifacts_2026_07_15",
+    "receipt_staging": "docs/saq_a4_v2_isolated_clone_prep_artifacts_2026_07_15.staging",
+    "resource_ceilings": {
+      "canonical_string_bytes": 65536,
+      "isolation_allocated_bytes": 1073741824,
+      "isolation_logical_bytes": 1073741824,
+      "journal_bytes": 67108864,
+      "journal_records": 100000,
+      "live_process_count": 32,
+      "process_family_cpu_microseconds": 1800000000,
+      "maximum_observed_concurrent_process_family_rss_bytes": 2147483648,
+      "process_family_wall_nanoseconds": 1800000000000,
+      "stderr_aggregate_capture_bytes": 8388608,
+      "stderr_bytes_per_child": 8388608,
+      "stdout_aggregate_capture_bytes": 8388608,
+      "stdout_bytes_per_child": 8388608,
+      "total_filesystem_entries": 20000
+    },
+    "resource_termination": "SIGTERM negative verified worker PGID, five-second monotonic grace, SIGKILL same group, parent must-reap and retain all state",
+    "timer": "kernel process start through snapshot after first three receipt files, journal-copy equality and clone postcheck are fsynced",
+    "tool_source": "script/a4_v2_isolated_clone_prep.py",
+    "tree_authority": {
+      "checkpoint_rule": "allowlists apply only at evidence/admission checkpoints; commit-construction WIP is nonevidence and must be absent at next checkpoint",
+      "git_admin_domain": "separate exact .git config/index/HEAD/ref/log/object closure; dirs and ordinary metadata 0700/0600; immutable object/pack/idx/rev payloads 0400; CACHE-I closes exact role map",
+      "git_admin_mode_allowlist": [
+        {"mode_octal": "0700", "role": "directory"},
+        {"mode_octal": "0600", "role": "ordinary config/index/HEAD/ref/log/lock/temp metadata"},
+        {"mode_octal": "0400", "role": "immutable loose-object/pack/index/reverse-index payload"}
+      ],
+      "mode_rule": "tracked worktree Git comparison is type plus executable bit; worktree physical modes nonexec=0600 exec=0700 dir=0700, effective-UID owner, pinned device; do not apply to Git object payloads",
+      "post_checkout": "tracked worktree exactly equals Git tree; no receipt path",
+      "metered_preterminal": "Git tree plus exactly owned receipt staging",
+      "post_publication": "Git tree plus exactly owned untracked final receipt; staging absent",
+      "post_receipt_commit": "final four-file receipt tracked; staging absent",
+      "post_review_commit": "review memo and AGENTS/TASK status tracked; clean tree",
+      "ref_transition_rule": "through PREP publication all refs equal execution base; receipt target moves local only; sanitized HTTPS fetch after receipt review makes local/remote equal review; CACHE-BIND repeats target/review transition",
+      "status_role": "Git status is cross-check only"
+    }
+  },
+  "preparation_status_precedence": [
+    {"order": 0, "status": "NOT_AUTHORIZED", "trigger": "no explicit PREP-ISO authority"},
+    {"order": 1, "status": "LAUNCHER_INCOMPLETE_NO_DECISION", "trigger": "authorized command cannot reach durable START; fixed incident target/review explicitly records NOT_MACHINE_PROVABLE_INVOCATION_OR_DURABILITY; same authority never retried"},
+    {"order": 2, "status": "PRECONDITION_NOT_MET", "trigger": "after this attempt's durable START, a verified source, authority, or destination precondition fails before root creation; token collision before START is launcher-incomplete and an existing valid token retains its original attempt status"},
+    {"order": 3, "status": "CRASH_OR_UNKNOWN", "trigger": "after valid START, no complete canonical TERMINAL exists because it is absent, partial, corrupt, or interrupted by an uncontained post-token failure"},
+    {"order": 4, "status": "RESOURCE_INCOMPLETE_NO_DECISION", "trigger": "correct tool encounters I/O, network, permission, storage, timeout, signal, process-loss, or resource failure and closes a typed terminal token"},
+    {"order": 5, "status": "ARTIFACT_INVALID", "trigger": "semantic Git, source, path, origin, executable, cache, or identity differs despite successful required operations"},
+    {"order": 6, "status": "IMPLEMENTATION_INVALID", "trigger": "prep, schema, timer, canonicalization, process-topology, or ledger implementation defect"},
+    {"order": 7, "status": "ISOLATED_CLONE_PREPARED_PENDING_COMMIT_REVIEW", "trigger": "receipt and typed success TERMINAL are completely published but not committed, pushed, and independently reviewed"},
+    {"order": 8, "status": "ISOLATED_CLONE_PREPARED_REVIEW_PASS", "trigger": "receipt target/review pushed; clone HEAD and sanitized-HTTPS freshly fetched origin equal review commit after complete revalidation; push success alone is not authority"}
+  ],
+  "primary_source_decision": "GO_SANITIZED_REMOTE_ISOLATION_PROTOCOL_REQUIRED_NO_GO_DIRECT_PAR_R1",
+  "prohibitions_under_current_stage": [
+    "enumerate, stat, hash, read, import, copy, rename, chmod, remove, or reuse a live quarantined residual",
+    "create an isolated clone, one-shot token, or capture sidecar",
+    "edit implementation source or runtime environment",
+    "execute Python, import, build, test, fixture, RNG, PAR, or SRUN",
+    "access benchmark, base, query, ground truth, index, or untracked result",
+    "modify SAQ or CAQ"
+  ],
+  "runtime_policy": {
+    "authorized": false,
+    "cache_identity_artifact_failures": [
+      "recognized cache or legacy path present or unclassifiable",
+      "cwd, clone, PREP, CACHE-BIND, Git, source, origin, executable, cache, or module identity mismatch",
+      "independent verifier reports an identity or absence mismatch"
+    ],
+    "cache_tag": "cpython-39",
+    "claim_scope": "cooperative dedicated-clone B/P evidence only; no malicious/history-erasing actor claim and no later SRUN-child cache claim",
+    "environment_preimage_change": "add exact seventh top-level python_cache_policy field; do not mutate frozen host_environment object",
+    "exact_parent_argv": [
+      "python",
+      "-B",
+      "script/run_arbitrary_cardinality_a4_v2.py",
+      "par",
+      "docs/saq_a4_v2_par_artifacts_2026_07_14"
+    ],
+    "independent_verifier": {
+      "argv_template": [
+        "/proc/self/fd/197",
+        "-I",
+        "-B",
+        "-S",
+        "<ABSOLUTE_ISOLATED_CLONE>/script/a4_v2_cache_policy_verifier.py",
+        "verify-parent-cache-policy",
+        "--control-fd",
+        "198"
+      ],
+      "artifact_path_relative_to_par_root": "cache_policy_verification.json",
+      "control": "bounded canonical JSON over inherited fd 198",
+      "cost_owner": "P_parity",
+      "cwd": "/",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin"
+      },
+      "leader_identity_ref": "host_execution_identity.cpython leader-ELF/bootstrap byte pins; RPM provenance static; shared libraries disclosed unbound",
+      "maximum_instance_path": "docs/saq_a4_v2_cache_runtime_maximal_instance_2026_07_15.json",
+      "schema_path": "docs/saq_a4_v2_cache_runtime_schema_2026_07_15.json",
+      "source": "script/a4_v2_cache_policy_verifier.py",
+      "srun_invocation": false
+    },
+    "interpreter_preimport_requirements": {
+      "PYTHON_environment_prefix": "NO_KEY_PRESENT",
+      "sitecustomize_in_sys_modules": false,
+      "sys.dont_write_bytecode": true,
+      "sys.flags.dont_write_bytecode": 1,
+      "sys.flags.ignore_environment": 0,
+      "sys.flags.isolated": 0,
+      "sys.flags.no_site": 0,
+      "sys.flags.optimize": 0,
+      "sys.pycache_prefix": null,
+      "usercustomize_in_sys_modules": false
+    },
+    "module_path_predicates": [
+      "cwd equals bound isolated clone root",
+      "registered __main__ equals reviewed isolated-clone entrypoint",
+      "no other pre-import module origin is inside any repository/worktree",
+      "no sys.path or origin names old worktree",
+      "only clone-local import root is exact script directory",
+      "other origins are builtin/frozen or under frozen installed CPython/package roots"
+    ],
+    "no_runtime_lock": "required; existing one-shot/output/process admission remains and frozen PAR_report closure is unchanged",
+    "parent_command": "MKL_NUM_THREADS=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python -B script/run_arbitrary_cardinality_a4_v2.py par docs/saq_a4_v2_par_artifacts_2026_07_14",
+    "resolved_parent_leader_identity_ref": "host_execution_identity.cpython; followed python command and /proc/self/exe must be same regular leader ELF inode and exact binary/bootstrap size/sha256; RPM static only; no complete mapped-image claim",
+    "postterminal_cache_access": "FORBIDDEN_AFTER_P_TERMINAL_SNAPSHOT",
+    "precondition_failures": [
+      "missing or duplicate -B",
+      "any other parent interpreter option",
+      "any PYTHON-prefixed environment key",
+      "pre-import interpreter/cache state mismatch"
+    ],
+    "recheck": "all interpreter/cache/path predicates at B and P preterminal",
+    "retry_rule": "cache mismatch/defect adds no retry; preserve exactly the existing one eligible external-POSIX-signal retry per B/P phase; verifier wait status reporting signal termination delegates into existing P rule only before P terminal when existing retry_safe is true, without claiming signal provenance; mismatch/malformed output/ordinary-nonzero/identity/post-boundary events never retry",
+    "runtime_status_precedence": [
+      {"order": 0, "status": "NOT_AUTHORIZED", "trigger": "no explicit PAR-R1 authority"},
+      {"order": 1, "status": "PRECONDITION_NOT_MET", "trigger": "missing or duplicate -B, any other parent interpreter option, any PYTHON-prefixed key, or startup cache-state mismatch before explicit A4 import"},
+      {"order": 2, "status": "ARTIFACT_INVALID", "trigger": "cwd, clone, PREP, CACHE-BIND, Git, source, origin, executable, cache-path, or module identity mismatch, including a well-formed independent-verifier mismatch report"},
+      {"order": 3, "status": "IMPLEMENTATION_INVALID", "trigger": "import/loader defect; after successful verifier spawn and reap, missing or malformed output; ordinary nonzero exit; or verifier schema, canonicalization, timer, or ledger defect; explicitly excludes fork/exec/wait I/O, permission, EAGAIN, ENOMEM, or other resource/system-call failure, excludes wait-status signal termination, and is distinguished from a well-formed mismatch report"},
+      {
+        "order": 4,
+        "trigger": "resource, signal, retry, or publication condition",
+        "delegates_to": {
+          "name": "byte-frozen parent status and external-signal retry precedence",
+          "reviewed_source_commit": "e48df4523f99c085cfcb83623664054b5f9ae6f7",
+          "source_tree_sha256": "8d8b5d3f8990e5d360e0a617d157a8b934c14d0f37b69f399bcc62c71f98360a",
+          "parity_source": {"path": "script/a4_v2_parity.py", "git_blob": "1e8627075d81da89449cbb4729f60958bd134c3e"},
+          "runner_source": {"path": "script/a4_v2_runner.py", "git_blob": "b9c9993a4116f03b2e57a569fd16062308165f2e"},
+          "erratum_contract": {"path": "docs/saq_a4_v2_par_report_timing_closure_erratum_2026_07_14.json", "git_blob": "82e128d3b798a275492833f354c768a57bd592a6"},
+          "parent_contract": {"path": "docs/saq_a4_v2_synthetic_construction_contract_2026_07_14.json", "git_blob": "24af731af3fe40fba0bc100b87bccd8880e091a4"},
+          "active_code_crosswalk": {
+            "artifact": "docs/saq_a4_v2_cache_static_closure_2026_07_15.json#parent_precedence_crosswalk",
+            "algorithm": "unique exact UTF-8 boundary-context pairs locate raw half-open [start,end) slices; sha256 and size; no normalization; complete nonoverlapping baseline and candidate byte partitions from offset zero through EOF into equal raw slices (registered components plus unchanged complement) and a finite cache-governance delta allowlist with both-side identities, purpose, and permitted effect; insertion uses a zero-length baseline span between unique left/right contexts with fixed empty-byte sha256; deletion forbidden; B/P retry slices use unique phase-specific multiline contexts",
+            "required_equal_components": [
+              "runner.STATUS_ORDER", "runner.C_FAILURE_STATUSES", "runner._status_min", "runner._c_failure_status", "runner._fail_preserving_prior_status", "runner._run_preserving_prior_status", "runner._resolve_final_status",
+              "parity.ExternalPhaseSignal", "parity.B_build_external_signal_retry_block", "parity.P_parity_external_signal_retry_block", "parity._post_par_report_unchecked", "parity._post_par_report"
+            ],
+            "new_only_adapter": "cache_verifier_signal_adapter may translate only verifier wait status reporting POSIX-signal termination before existing retry-safe boundary, without claiming signal provenance; mismatch/schema/identity/ordinary nonzero/post-boundary failures forbidden"
+          }
+        }
+      }
+    ],
+    "srun_boundary": "source admission identities become stale and may receive dormant parsing rebind only; no SRUN execution or child cache-policy claim",
+    "terminal_checks": {
+      "B": "before shared B-terminal/P-start snapshot, charged to B",
+      "P": "parent plus independent verifier before P terminal snapshot, charged to P"
+    }
+  },
+  "schema_version": 4,
+  "selected_policy": "RETAIN_OLD_QUARANTINE_AND_USE_SANITIZED_REMOTE_CLONE_PLUS_EXPLICIT_B_FOR_PAR",
+  "source_stage_contract": {
+    "authorized": false,
+    "base_manifest_blob": "2aa64e50dad19626711e0dd90c038704ac73e328",
+    "base_source_count": 35,
+    "base_source_tree_sha256": "8d8b5d3f8990e5d360e0a617d157a8b934c14d0f37b69f399bcc62c71f98360a",
+    "build_manifest_cache_shape_version": 2,
+    "changed_existing_source_allowlist": [
+      "script/a4_v2_parity.py",
+      "script/a4_v2_runner.py",
+      "script/a4_v2_verifier.py",
+      "script/run_arbitrary_cardinality_a4_v2.py"
+    ],
+    "exact_resulting_source_count": 37,
+    "exact_resulting_executable_unit_count": 38,
+    "inline_executable_sources": [
+      {
+        "id": "a4_v2_prep_c_bootstrap",
+        "storage": "exact UTF-8 string in cache static closure and authority/manifest",
+        "required_identity": ["sha256", "size_bytes", "role", "argv_schema", "maximal_instance"],
+        "required_static_closure": ["earliest token prologue", "open/stat/hash", "import", "compile/exec", "process", "mutation", "exception", "terminal paths"]
+      }
+    ],
+    "implementation_manifest_schema_version": 2,
+    "manifest_rebind_rules": [
+      "source_files equals base exact 35 plus two new governance sources",
+      "python_source_files equals base exact eight plus two new governance sources",
+      "implementation manifest schema_version equals 2",
+      "native arrays and all 27 native/CMake blobs unchanged",
+      "the other four existing Python source blobs unchanged",
+      "par_contract.par_command equals exact parent argv with -B",
+      "build-manifest and artifact-index cache-aware shapes equal version 2",
+      "_post_par_report and _post_par_report_unchecked bodies and closure are byte-identical",
+      "canonical source-tree algorithm unchanged and recomputed over 37",
+      "new cache_protocol_identity binds additive cache authority",
+      "exactly one ASCII-only inline executable bootstrap identity, its exact raw-prefix prologue identity, and complete static closure are bound without adding a filesystem source path",
+      "parent_precedence_crosswalk gives complete nonoverlapping baseline and candidate byte partitions into equal raw slices plus a finite cache-governance delta allowlist",
+      "old preregistration/protocol/erratum/composite authority blobs unchanged"
+    ],
+    "par_artifact_index_cache_shape_version": 2,
+    "new_governance_sources": [
+      "script/a4_v2_isolated_clone_prep.py",
+      "script/a4_v2_cache_policy_verifier.py"
+    ],
+    "par_artifact_change": "add cache_policy_verification.json to metered P inventory/index/schema before P terminal",
+    "static_closure_predicates": [
+      "no explicit pyc/cache reader, writer, marshal loader, mutation or deletion",
+      "no import-hook installation or unreviewed dynamic import/eval/exec",
+      "exact direct-import allowlists and subprocess/exec callsites",
+      "no cache/sys.path/sys.meta_path mutation after registered observations"
+    ],
+    "static_closure_scope": "all 37 file sources plus the one inline bootstrap executable unit",
+    "srun_admission_only_source_change": "permitted only to parse and verify the new sealed PAR authority; scientific replay behavior unchanged",
+    "srun_execution_authorized": false,
+    "unchanged_scientific_semantics": "solver, allocation, representation, packing, fixtures, RNG, retry counts, thresholds, and scientific verifier logic"
+  },
+  "stages_outside_dag": [
+    "A4-V2-SRUN execution",
+    "benchmark/base/query/index access",
+    "SAQ or CAQ modification"
+  ]
+}
