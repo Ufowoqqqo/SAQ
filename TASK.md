@@ -20,10 +20,24 @@ A4-V2-D     cost/evidence-model go/no-go decision     GO_PROTOCOL_DESIGN
 A4-V2-P     preregistration/schema/contract            COMPLETED_DOCUMENTATION
 A4-V2-P-ERRATUM finite PAR-report closure correction   COMPLETED_REVIEW_PASS
 A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
-A4-V2-PAR   build and frozen parity execution          NOT_AUTHORIZED
+A4-V2-PAR   build and frozen parity execution          AUTHORIZED_PENDING_EXECUTION
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
 data        benchmark/base/query/index reads           NOT_AUTHORIZED
 ```
+
+On 2026-07-15 the user explicitly authorized `A4-V2-PAR build/parity gate`.
+The additive authority receipt is
+`docs/saq_a4_v2_par_authorization_2026_07_15.md`. Before execution, the focused
+authorization/status change must be committed, pushed, and independently
+reviewed while proving the exact 35-source manifest and `d5b837...` source
+tree unchanged. The reviewed clean authorization commit then becomes the
+execution commit recorded by the frozen PAR artifacts.
+
+The only authorized top-level event is the exact PAR conductor with the fixed
+thread environment and fixed output path. It performs its own clean B build
+and the complete parity inventory, including the registered deterministic
+PCG64 scalar/block fixtures. Do not prebuild, run a subset, generate the SRUN
+panel, enter the 396-unit construction, or continue automatically after PAR.
 
 The completed erratum stage permitted only additive authority documents,
 static review, focused commits, push, and Meeting Summary Handoff. It permitted
@@ -61,7 +75,8 @@ synthetic, or feasibility result.
 
 The maximum stage outcome is
 `SOURCE_IMPLEMENTED_STATIC_REVIEW_PASS`; exact commit `482c401` reached that
-outcome. It authorizes nothing beyond asking whether to start `A4-V2-PAR`.
+outcome. The user has now separately authorized `A4-V2-PAR`; this does not
+change the source-stage claim or authorize `A4-V2-SRUN`.
 
 ## Frozen V2 Outcome
 
@@ -173,7 +188,10 @@ Return `GO_PROTOCOL_DESIGN` only if all are supported before execution:
 - the resulting study could falsify an ANN-relevant opportunity rather than
   merely demonstrate faster artifact production.
 
-After the focused implementation-review commit, push and Meeting Summary
-Handoff, stop and ask whether to authorize `A4-V2-PAR`. `A4-V2-PAR` and
-`A4-V2-SRUN` still require separate explicit authorization; never infer either
-from source readiness, protocol publication, or static review.
+Run only the separately authorized `A4-V2-PAR` from its clean reviewed
+authorization commit. A successful atomic PAR tree must be committed and then
+independently reviewed in a later commit without changing that tree. A failed
+or incomplete staging tree is non-evidence. After a committed and reviewed PAR
+result, perform the mandatory Meeting Summary Handoff and stop. `A4-V2-SRUN`
+still requires a later explicit user authorization; never infer it from a PAR
+pass.

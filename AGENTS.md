@@ -49,8 +49,18 @@ static review; its verdict is recorded in
 `A4-V2-I` is complete at `SOURCE_IMPLEMENTED_STATIC_REVIEW_PASS`. No compiler,
 build, Python import, syntax/test command, native execution, parity fixture,
 RNG, synthetic event, generated artifact, benchmark/data read, or SAQ
-modification occurred. `A4-V2-PAR` and `A4-V2-SRUN` remain separately
-unauthorized.
+modification occurred during that stage.
+
+On 2026-07-15 the user explicitly authorized `A4-V2-PAR` build/parity only.
+The additive receipt is
+`docs/saq_a4_v2_par_authorization_2026_07_15.md`. Before any import, build, or
+fixture execution, commit, push, and independently review that focused
+authorization/status change while proving the 35 reviewed source blobs and
+source-tree identity unchanged. Then run only the exact frozen PAR conductor
+from that clean reviewed commit. The fixed PAR inventory includes its
+registered `PCG64(20260713)` scalar and block fixtures; it does not authorize
+the SRUN panel. `A4-V2-SRUN`, benchmark/data access, and SAQ modification
+remain separately unauthorized.
 
 The completed `A4-V2-P-ERRATUM` permitted only additive protocol-authority
 documents, branch status documents, focused commits, static independent
@@ -111,7 +121,7 @@ Current stages remain separate:
 ```text
 A4-V2-P-ERRATUM documentation-only closure correction  COMPLETED_REVIEW_PASS
 A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
-A4-V2-PAR   frozen build and parity execution only      NOT_AUTHORIZED
+A4-V2-PAR   frozen build and parity execution only      AUTHORIZED_PENDING_EXECUTION
 A4-V2-SRUN  one logical synthetic admission event only  NOT_AUTHORIZED
 ```
 
@@ -128,7 +138,8 @@ The authoritative implementation-stage documents are:
 
 The source pass is artifact readiness only. It is not a PAR result, synthetic
 gate, SAQ limitation result, method contribution, or systems-performance
-claim. The only possible next stage is a separately authorized `A4-V2-PAR`.
+claim. The only active execution stage is the separately authorized
+`A4-V2-PAR`; it may produce only build/parity evidence.
 
 ## Prior A4-1S Result
 
@@ -229,8 +240,11 @@ authorization.
   physically independent as frozen by the protocol.
 - `saqlib/`, `src/`, existing non-V2 `script/`, and `unit_test/`: out of scope;
   do not modify them for A4 V2.
-- `data/`, `results/`, `build/`, `bin/`: do not open or generate under the
-  current authorization.
+- `data/`, `results/`, and `bin/`: do not open or generate under the current
+  authorization. `build/a4_v2/` and `build/a4_v2_verifier/` are the only
+  permitted `build/` paths, and only the frozen PAR conductor may create or
+  use them after proving both absent at prelaunch; all manual/prebuild access
+  and every other build path remain forbidden.
 
 ## Verification
 
@@ -250,9 +264,26 @@ Do not build, import, syntax-check, execute, or test the implementation during
 contract inspection, and independent static review. Structured frozen
 metadata may be inspected but must not be rewritten.
 
+For the authorized `A4-V2-PAR`, do not prebuild or run a fixture subset. From
+the clean independently reviewed authorization commit, with the fixed output
+and both build directories absent, run exactly:
+
+```bash
+MKL_NUM_THREADS=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+python script/run_arbitrary_cardinality_a4_v2.py \
+  par docs/saq_a4_v2_par_artifacts_2026_07_14
+```
+
+Commit the atomically published PAR tree separately, then independently review
+that exact commit without changing the tree. No PAR result authorizes SRUN.
+
 ## Do-Not Rules
 
 - Do not run or modify the old A4-1S command.
+- Do not manually build V2, alter the frozen PAR command, or run only a parity
+  subset; `B_build` and the complete inventory belong inside the one conductor.
+- Do not continue from PAR to `A4-V2-SRUN` without a later explicit user
+  authorization, even if every parity fixture passes.
 - Do not copy, cherry-pick, import, include, link, or execute the old A4-1S
   runner. Historical kernels may be used only as read-only semantic oracles;
   V2 source must be self-contained and its provenance/crosswalk explicit.
