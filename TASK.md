@@ -20,7 +20,7 @@ A4-V2-D     cost/evidence-model go/no-go decision     GO_PROTOCOL_DESIGN
 A4-V2-P     preregistration/schema/contract            COMPLETED_DOCUMENTATION
 A4-V2-P-ERRATUM finite PAR-report closure correction   COMPLETED_REVIEW_PASS
 A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
-A4-V2-PAR   build and frozen parity execution          AUTHORIZED_PENDING_EXECUTION
+A4-V2-PAR   pre-build executable identity admission    ARTIFACT_INVALID / STOPPED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
 data        benchmark/base/query/index reads           NOT_AUTHORIZED
 ```
@@ -28,16 +28,23 @@ data        benchmark/base/query/index reads           NOT_AUTHORIZED
 On 2026-07-15 the user explicitly authorized `A4-V2-PAR build/parity gate`.
 The additive authority receipt is
 `docs/saq_a4_v2_par_authorization_2026_07_15.md`. Before execution, the focused
-authorization/status change must be committed, pushed, and independently
-reviewed while proving the exact 35-source manifest and `d5b837...` source
-tree unchanged. The reviewed clean authorization commit then becomes the
-execution commit recorded by the frozen PAR artifacts.
+authorization/status change was committed, pushed, and independently reviewed
+at clean execution base `2e983a0`, with the exact 35-source manifest and
+`d5b837...` source tree unchanged.
 
-The only authorized top-level event is the exact PAR conductor with the fixed
-thread environment and fixed output path. It performs its own clean B build
-and the complete parity inventory, including the registered deterministic
-PCG64 scalar/block fixtures. Do not prebuild, run a subset, generate the SRUN
-panel, enter the 396-unit construction, or continue automatically after PAR.
+The one authorized top-level event then returned frozen status
+`ARTIFACT_INVALID` before prelaunch observation or a B/P worker. The conductor
+created its empty staging directory, then rejected `/bin/python` because the
+leader-identity read uses `O_NOFOLLOW` and that path object is a symlink. It
+did not build, collect NumPy authority, generate PCG64 fixtures, create a B/P
+receipt, or publish a manifest, index, summary, or seal. The terminal record is
+`docs/saq_a4_v2_par_prebuild_artifact_identity_failure_2026_07_15.md`.
+
+There is no valid PAR authority and no scientific decision. The empty staging
+directory and five ignored Python caches are quarantined non-evidence. Do not
+clean for retry, invoke the command again, substitute a resolved interpreter,
+repair source, generate the SRUN panel, enter the 396-unit construction, or
+continue automatically.
 
 The completed erratum stage permitted only additive authority documents,
 static review, focused commits, push, and Meeting Summary Handoff. It permitted
@@ -75,8 +82,29 @@ synthetic, or feasibility result.
 
 The maximum stage outcome is
 `SOURCE_IMPLEMENTED_STATIC_REVIEW_PASS`; exact commit `482c401` reached that
-outcome. The user has now separately authorized `A4-V2-PAR`; this does not
-change the source-stage claim or authorize `A4-V2-SRUN`.
+outcome. That historical static result did not establish executable readiness;
+the later PAR invocation stopped at artifact identity admission. Neither
+result authorizes `A4-V2-SRUN`.
+
+## A4-V2-PAR Terminal Failure
+
+The exact command at `2e983a0` returned exit `3` and stderr
+`ARTIFACT_INVALID: [Errno 40] Too many levels of symbolic links:
+'/bin/python'`. The failure occurred before any build or parity worker. Its
+maximum conclusion is:
+
+```text
+ARTIFACT_INVALID
+STOPPED_NO_VALID_PAR_AUTHORITY
+NO_SCIENTIFIC_DECISION
+```
+
+It is not `PASS_PARITY`, a parity mismatch, a resource observation, or evidence
+about arbitrary-cardinality quantization. The in-conductor external-signal
+retry rule does not apply, and the consumed one-event authorization grants no
+second top-level invocation. Any correction requires a new clean source
+commit, independent review, and new explicit authorization for the affected
+PAR stage.
 
 ## Frozen V2 Outcome
 
@@ -188,10 +216,9 @@ Return `GO_PROTOCOL_DESIGN` only if all are supported before execution:
 - the resulting study could falsify an ANN-relevant opportunity rather than
   merely demonstrate faster artifact production.
 
-Run only the separately authorized `A4-V2-PAR` from its clean reviewed
-authorization commit. A successful atomic PAR tree must be committed and then
-independently reviewed in a later commit without changing that tree. A failed
-or incomplete staging tree is non-evidence. After a committed and reviewed PAR
-result, perform the mandatory Meeting Summary Handoff and stop. `A4-V2-SRUN`
-still requires a later explicit user authorization; never infer it from a PAR
-pass.
+Commit and independently review only the A4-V2-PAR terminal failure memo and
+status. The empty staging directory and ignored Python caches remain
+non-evidence and must not be synchronized. After the committed independent
+review, perform the mandatory Meeting Summary Handoff and stop. There is no
+active repair, PAR, or SRUN authority; never infer one from the historical
+source review or failed invocation.

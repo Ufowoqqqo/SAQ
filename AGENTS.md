@@ -62,6 +62,18 @@ registered `PCG64(20260713)` scalar and block fixtures; it does not authorize
 the SRUN panel. `A4-V2-SRUN`, benchmark/data access, and SAQ modification
 remain separately unauthorized.
 
+That single authorized invocation ran from reviewed and pushed execution base
+`2e983a0` on 2026-07-15. It stopped before prelaunch observation or any B/P
+worker because `sys.executable` was the `/bin/python` symlink and the frozen
+leader-identity reader required a no-follow regular file. The exact frozen
+status is `ARTIFACT_INVALID`; there is no valid PAR authority and no scientific
+decision. The terminal facts are recorded in
+`docs/saq_a4_v2_par_prebuild_artifact_identity_failure_2026_07_15.md`. No
+build, parity fixture, RNG, B/P receipt, artifact index, or seal was produced.
+The empty staging directory and ignored Python caches are quarantined WIP,
+not evidence. Do not rerun, substitute another Python path, clean for retry,
+or repair source under this authorization.
+
 The completed `A4-V2-P-ERRATUM` permitted only additive protocol-authority
 documents, branch status documents, focused commits, static independent
 review, push, and the required Meeting Summary Handoff. Do not edit or commit
@@ -121,7 +133,7 @@ Current stages remain separate:
 ```text
 A4-V2-P-ERRATUM documentation-only closure correction  COMPLETED_REVIEW_PASS
 A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
-A4-V2-PAR   frozen build and parity execution only      AUTHORIZED_PENDING_EXECUTION
+A4-V2-PAR   pre-build executable identity admission     ARTIFACT_INVALID / STOPPED
 A4-V2-SRUN  one logical synthetic admission event only  NOT_AUTHORIZED
 ```
 
@@ -136,10 +148,15 @@ The authoritative implementation-stage documents are:
 - `docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md`; and
 - `docs/saq_a4_v2_implementation_independent_review_2026_07_15.md`.
 
-The source pass is artifact readiness only. It is not a PAR result, synthetic
-gate, SAQ limitation result, method contribution, or systems-performance
-claim. The only active execution stage is the separately authorized
-`A4-V2-PAR`; it may produce only build/parity evidence.
+The PAR authorization and terminal pre-build failure records are:
+
+- `docs/saq_a4_v2_par_authorization_2026_07_15.md`; and
+- `docs/saq_a4_v2_par_prebuild_artifact_identity_failure_2026_07_15.md`.
+
+The source pass remains a historical static-review result only. The attempted
+PAR launch falsified executable artifact readiness before build; it is not a
+parity result, synthetic gate, SAQ limitation result, method contribution, or
+systems-performance claim. There is no active execution authorization.
 
 ## Prior A4-1S Result
 
@@ -240,11 +257,10 @@ authorization.
   physically independent as frozen by the protocol.
 - `saqlib/`, `src/`, existing non-V2 `script/`, and `unit_test/`: out of scope;
   do not modify them for A4 V2.
-- `data/`, `results/`, and `bin/`: do not open or generate under the current
-  authorization. `build/a4_v2/` and `build/a4_v2_verifier/` are the only
-  permitted `build/` paths, and only the frozen PAR conductor may create or
-  use them after proving both absent at prelaunch; all manual/prebuild access
-  and every other build path remain forbidden.
+- `data/`, `results/`, `bin/`, and `build/`: do not open or generate under the
+  current stopped boundary. The failed conductor created neither registered
+  build directory. Their former one-event exception is consumed and grants no
+  repair or retry authority.
 
 ## Verification
 
@@ -264,9 +280,8 @@ Do not build, import, syntax-check, execute, or test the implementation during
 contract inspection, and independent static review. Structured frozen
 metadata may be inspected but must not be rewritten.
 
-For the authorized `A4-V2-PAR`, do not prebuild or run a fixture subset. From
-the clean independently reviewed authorization commit, with the fixed output
-and both build directories absent, run exactly:
+The one authorized `A4-V2-PAR` invocation used the following exact command
+from clean reviewed execution base `2e983a0`:
 
 ```bash
 MKL_NUM_THREADS=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
@@ -274,14 +289,22 @@ python script/run_arbitrary_cardinality_a4_v2.py \
   par docs/saq_a4_v2_par_artifacts_2026_07_14
 ```
 
-Commit the atomically published PAR tree separately, then independently review
-that exact commit without changing the tree. No PAR result authorizes SRUN.
+It returned `ARTIFACT_INVALID` before build and published no PAR tree. The
+command is retained here as history; do not invoke it again. Commit and
+independently review only the terminal failure memo and branch status. No
+failure result authorizes SRUN.
 
 ## Do-Not Rules
 
 - Do not run or modify the old A4-1S command.
 - Do not manually build V2, alter the frozen PAR command, or run only a parity
   subset; `B_build` and the complete inventory belong inside the one conductor.
+- Do not rerun PAR, replace `python` with a resolved interpreter, alter PATH,
+  delete the quarantined staging directory to make the root absent, or clean
+  ignored caches as a route to retry.
+- Do not repair the executable-identity path under the consumed PAR authority;
+  a correction requires a new reviewed clean source and new explicit user
+  authorization for the affected stage.
 - Do not continue from PAR to `A4-V2-SRUN` without a later explicit user
   authorization, even if every parity fixture passes.
 - Do not copy, cherry-pick, import, include, link, or execute the old A4-1S
