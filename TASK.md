@@ -32,7 +32,7 @@ A4-V2-CACHE-PREP-ISO original one-shot authority        UNSPENT_BUT_NONTRANSFERA
 A4-V2-PREP-HOST-P host-rebind erratum protocol/review   COMPLETED_REVIEW_PASS
 A4-V2-PREP-HOST-I-AUTH source-rebind authorization      AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-PREP-HOST-I-ERRATUM source-authority correction   HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
-A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_FORMED_REVIEW_PENDING
+A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
@@ -420,6 +420,25 @@ syntax/import, compiler/build/test, verifier, PREP, clone, data, quarantine,
 or SAQ/CAQ operation is authorized.  Commit, push, independent review, and
 Meeting Summary Handoff are the complete current sequence; later PREP
 authorization remains separate.
+
+The exact source-static target was subsequently committed and pushed at
+`46025854ce1657e09fa64ac9277e53a87c8e15b2`, tree
+`c5080470082912475bc7df11accbfc214de1ebe6`, with direct parent
+`9fa9528f4181d51fe6e060c1de14ea568eb31c4a`.  Its sole independent static
+review returned FAIL with one HIGH finding: the implementation binding and
+source-provenance crosswalk cite the 11,426-byte source-authority-erratum
+review as
+`c670d368647fbd13bfe4133241e2c37e29101e91538687a64349a606bd059f2a`,
+whereas the immutable committed bytes are
+`c670d3685256d94812ee03d4932df304e0bd2ed6a61eeb670a618a9ac6eab331`.
+The terminal target-review status is
+`SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH` and
+`HOST_IDENTITY_REBOUND` is `NOT_ESTABLISHED`.
+
+The registered three-path review projection permits only this status update
+and its negative review memo; it cannot repair the two target documents or
+their dependent manifest identities.  No correction, PREP, cache-verifier,
+PAR, performance, or scientific claim is authorized or established.
 
 ## A4-V2-P-ERRATUM Deliverables
 

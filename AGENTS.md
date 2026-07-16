@@ -360,7 +360,7 @@ key/path admission in the cache verifier.  The source inventory remains 37
 filesystem sources and 38 executable units, and `build_status` remains
 `NOT_AUTHORIZED_NOT_RUN`.
 
-The target's current ceiling is
+The target's formation-time ceiling was
 `HOST_I_SOURCE_STATIC_TARGET_FORMED_REVIEW_PENDING`.  Only its exact
 three-path direct-child review may establish the bounded registered-object
 `HOST_IDENTITY_REBOUND` source-static result.  The old CACHE-I-SYNTAX
@@ -371,6 +371,28 @@ This authority permits no Python, syntax, import, build, test, cache-verifier,
 PREP, clone, data, quarantine, or SAQ/CAQ operation.  After commit, push,
 zero-LOW-or-higher independent review, and mandatory Meeting Summary Handoff,
 stop; any later PREP authorization remains separate.
+
+The exact source-static target was committed and pushed at
+`46025854ce1657e09fa64ac9277e53a87c8e15b2`, tree
+`c5080470082912475bc7df11accbfc214de1ebe6`, with direct parent
+`9fa9528f4181d51fe6e060c1de14ea568eb31c4a`.  Its sole independent static
+review found one HIGH authority-DAG identity mismatch and therefore failed.
+The implementation binding and source-provenance crosswalk record
+`c670d368647fbd13bfe4133241e2c37e29101e91538687a64349a606bd059f2a`
+for the 11,426-byte HOST-I source-authority-erratum review, but the immutable
+committed object is actually
+`c670d3685256d94812ee03d4932df304e0bd2ed6a61eeb670a618a9ac6eab331`.
+The negative review is
+`docs/saq_a4_v2_prep_host_identity_rebind_implementation_independent_review_2026_07_16.md`.
+
+The terminal exact-target status is
+`SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH`.
+`HOST_IDENTITY_REBOUND` is not established.  The exact three-path review
+projection cannot repair either target document or the dependent manifest
+identities; no correction is authorized under this review node.  No Python,
+syntax/import, compiler/build/test, cache verifier, PREP, clone, data,
+quarantine, or SAQ/CAQ action occurred.  PREP, cache-verifier/PAR readiness,
+performance, and scientific conclusions remain unestablished.
 
 ## Review And Protocol Outcome
 
@@ -435,7 +457,7 @@ A4-V2-CACHE-PREP-ISO original one-shot authority        UNSPENT_BUT_NONTRANSFERA
 A4-V2-PREP-HOST-P host-rebind erratum protocol/review   COMPLETED_REVIEW_PASS
 A4-V2-PREP-HOST-I-AUTH source-rebind authorization      AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-PREP-HOST-I-ERRATUM source-authority correction   HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
-A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_FORMED_REVIEW_PENDING
+A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED
