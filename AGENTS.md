@@ -349,6 +349,29 @@ documents, branch status documents, focused commits, static independent
 review, push, and the required Meeting Summary Handoff. Do not edit or commit
 implementation WIP under that authorization.
 
+The user has now explicitly authorized `A4-V2-PREP-HOST-I source-static
+target + direct-child review`.  The exact source target is the direct child of
+the clean, pushed, publication-closed erratum review head
+`9fa9528f4181d51fe6e060c1de14ea568eb31c4a`; it changes all and only the
+fourteen mode-`100644` paths frozen by the reviewed erratum.  The semantic
+source delta is exactly seven old-to-new CPython leader-digest substitutions
+across the frozen five sources, plus the exact 197-byte eighth-component
+key/path admission in the cache verifier.  The source inventory remains 37
+filesystem sources and 38 executable units, and `build_status` remains
+`NOT_AUTHORIZED_NOT_RUN`.
+
+The target's current ceiling is
+`HOST_I_SOURCE_STATIC_TARGET_FORMED_REVIEW_PENDING`.  Only its exact
+three-path direct-child review may establish the bounded registered-object
+`HOST_IDENTITY_REBOUND` source-static result.  The old CACHE-I-SYNTAX
+identities remain historical and do not apply to these bytes.  The known
+`SOURCE_HISTORY_MISMATCH` remains unresolved and forbids cache-verifier/PAR
+readiness, but it does not block this source-static review or PREP itself.
+This authority permits no Python, syntax, import, build, test, cache-verifier,
+PREP, clone, data, quarantine, or SAQ/CAQ operation.  After commit, push,
+zero-LOW-or-higher independent review, and mandatory Meeting Summary Handoff,
+stop; any later PREP authorization remains separate.
+
 ## Review And Protocol Outcome
 
 The bounded review returned `GO_PROTOCOL_DESIGN`. The original reviewed
@@ -412,7 +435,7 @@ A4-V2-CACHE-PREP-ISO original one-shot authority        UNSPENT_BUT_NONTRANSFERA
 A4-V2-PREP-HOST-P host-rebind erratum protocol/review   COMPLETED_REVIEW_PASS
 A4-V2-PREP-HOST-I-AUTH source-rebind authorization      AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-PREP-HOST-I-ERRATUM source-authority correction   HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
-A4-V2-PREP-HOST-I coherent source/authority rebind      REAUTHORIZATION_REQUIRED_NOT_RUN
+A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_FORMED_REVIEW_PENDING
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED

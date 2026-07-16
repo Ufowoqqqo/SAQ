@@ -989,3 +989,82 @@ STATIC_SEAL_COMPLETE_PENDING_EXACT_TARGET_COMMIT_AND_INDEPENDENT_REVIEW
 
 It is below `GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS` and grants no
 PREP, CACHE-BIND, PAR-R1, SRUN, data, or SAQ/CAQ authority.
+
+### 13.2 A4-V2-PREP-HOST-I active source-authority rebind
+
+The separately reauthorized `A4-V2-PREP-HOST-I` target is an additive,
+source-static artifact-governance rebind.  Its direct parent is the clean,
+pushed, publication-closed HOST-I source-authority-erratum review head
+`9fa9528f4181d51fe6e060c1de14ea568eb31c4a`.  The additive authority DAG is:
+
+| Authority object | SHA-256 | Bytes |
+| --- | --- | ---: |
+| HOST-P rebind contract admitted as the eighth cache component | `c8e182dd8f7a661e465aa9ce03fa2d7bfed233124209dff43826ea0b32510b09` | 10,684 |
+| HOST-I source-authority erratum protocol at target `6fe8544` | `5d9ac7222f93f00de5f2cd96b6df16d389b9f3123b604115c515bae963a1088d` | 14,716 |
+| HOST-I source-authority erratum contract at target `6fe8544` | `01dadbe2ba73a429a67d7029b5e4dafafb6b400a6067767a1aac161e9457977a` | 10,967 |
+| HOST-I source-authority erratum review at head `9fa9528` | `c670d368647fbd13bfe4133241e2c37e29101e91538687a64349a606bd059f2a` | 11,426 |
+| HOST-I authorization record | `7a07e05eb2b96c7ecd57facf9f1b7405a63f0d6d66d2af3cad3a1eeb626ce3b0` | 11,928 |
+| HOST-I authorization independent review | `bda4f52b549e28b69cca5c012c21e12867266e0c5920eda27f7df87e478d69e9` | 14,740 |
+
+Exactly seven active source occurrences replace the old CPython leader digest
+with the sole `.el9_8.2` digest
+`c7b3d12b0bcda9356ce5a7e21e66c41476310d595c54b5689bca1e38abd8f42b`
+in the frozen `1 + 2 + 2 + 1 + 1` source partition.  The resulting active
+filesystem-source identities are:
+
+| Source | SHA-256 | Bytes | Git blob |
+| --- | --- | ---: | --- |
+| `script/a4_v2_cache_policy_verifier.py` | `bd2a75beae4619beec34f37f3d5788caf71fdf2634fb0d864c358c9a29caa5e1` | 151,568 | `9ace42bb7c8d856e6b93c9836fb0c9732c169a37` |
+| `script/a4_v2_isolated_clone_prep.py` | `823bb00711e036c832f96f66e1979c69931866460af0d38a48f93c3fa9c03de2` | 219,758 | `d671531132eb0c490dec1953ca778e8d03913b3d` |
+| `script/a4_v2_runner.py` | `a59de1f673b16f13f87dc5682a608387ab1747c00d4a0d2db1d8d616ea037662` | 360,127 | `44e1a8078caf8774d1005f88265c87167e462eb7` |
+| `script/a4_v2_verifier.py` | `425a7853198bffe2fb612f999a1bbbb3ea67ac4e7c4f16b6b182604cee87d5e5` | 250,023 | `d8e0bdc6df0865e95dfe631446d108368640e25d` |
+| `script/run_arbitrary_cardinality_a4_v2.py` | `e11f5a62542f843cede94837cd73681cf713aa0700fb7c8bfdf2dcd07204fb2b` | 34,929 | `21925cddb4d07a1ec046d405493980813a4d581a` |
+
+The complete inventory remains exactly 37 filesystem sources and 38
+executable units.  The canonical sorted 37-source tree is
+`97f676357e6f8916a570ba28b7dabcdb358d7138f4485e7ca005a5e746a5e07a`.
+The active 19,631-byte inline PREP source is identically bound by its four
+authorities at
+`d14feb020a1389a6c90f9c3696033f07d0747a9e135be7c9905aeb08d1810b56`;
+its raw 2,778-byte pre-START prologue remains byte-identical at
+`0111488a71573dd058308a3e20590cb8def3d4f5e8601b0e566800fd10b0d3a7`.
+
+The rebound derived objects are:
+
+| Object | SHA-256 | Bytes |
+| --- | --- | ---: |
+| cache runtime schema | `47bfcd039acddebbf9c6e5058b1c20ca9a743a5d2518ff31d4fef72ae103f896` | 23,762 |
+| cache runtime maximal instance | `5a373bd002b48041e150588002a193a9c068cf98977897e6f5cc5f3339e71a42` | 4,439,071 |
+| cache static closure | `815478c1b6a22f4871c2e82c341f0c0d417de4014f19cc794ae3b3c44cf3776d` | 218,872 |
+| cache protocol authority | `09c1b6adf429f933620e503e8ee479b2b17380e460b8961782a78309a18e9885` | 43,128 |
+
+The cache authority now has exactly eight protocol components: the seven
+historical entries are byte-for-byte identity-preserved and the sole new
+entry is the 10,684-byte HOST-P contract above.  The verifier admits it only
+through one exact set member and one exact path-map member.  This adds 197
+permanent source bytes and exactly one invocation of the existing
+protocol-component `_check_identity` loop.  On physical success the existing
+`filesystem_bytes_read` aggregate therefore increases by exactly 10,684;
+fallback/mismatch accounting, caps, status mapping, and error precedence are
+unchanged.  Across the exact fourteen-path target projection, the total
+permanent tracked byte delta relative to parent `9fa9528` is
+`+12,758` bytes; this is governance overhead, not scientific
+construction or query work.
+
+The implementation manifest keeps its existing schema and binds its existing
+`authorization_identity` field to the committed HOST-I authorization record.
+`build_status` remains `NOT_AUTHORIZED_NOT_RUN`.  The earlier
+`A4-V2-CACHE-I-SYNTAX` source and inline identities above section 13.2 remain
+historical evidence for the old snapshot only; they are deliberately not
+relabeled as applying to these changed bytes.
+
+The distinct `SOURCE_HISTORY_MISMATCH` remains unresolved: a future cache
+verifier would compare these new active blobs with historical CACHE-I/PREP
+commits that correctly retain old blobs.  This does not block this source-only
+target, its static review, or PREP itself, but it forbids cache-verifier/PAR
+readiness and requires a separate later protocol and source authorization.
+No Python, syntax check, import, compiler, build, test, verifier, PREP, clone,
+data, quarantine, or SAQ/CAQ operation was run.  Until the exact target's
+direct-child independent review passes, the maximum claim is only
+`HOST_I_SOURCE_STATIC_TARGET_FORMED_REVIEW_PENDING`; it is not yet an
+independently established `HOST_IDENTITY_REBOUND` result.

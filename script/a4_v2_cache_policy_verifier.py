@@ -73,7 +73,7 @@ STATIC_CLOSURE_PATH = "docs/saq_a4_v2_cache_static_closure_2026_07_15.json"
 CACHE_BINDING_PATH = "docs/saq_a4_v2_cache_prep_binding_2026_07_15.json"
 RUNTIME_SCHEMA_PATH = "docs/saq_a4_v2_cache_runtime_schema_2026_07_15.json"
 
-CPYTHON_SHA256 = "c87babf8337b668da60e26d897d694df7bd9a5b7907416e4eda078b9c33d05e0"
+CPYTHON_SHA256 = "c7b3d12b0bcda9356ce5a7e21e66c41476310d595c54b5689bca1e38abd8f42b"
 CPYTHON_SIZE = 15_448
 BOOTSTRAP_EXTERNAL_PATH = "/usr/lib64/python3.9/importlib/_bootstrap_external.py"
 BOOTSTRAP_EXTERNAL_SHA256 = (
@@ -334,6 +334,7 @@ PROTOCOL_COMPONENT_KEYS = frozenset(
         "cache_primary_review",
         "cache_primary_sources",
         "cache_protocol",
+        "prep_host_identity_rebind_erratum_contract",
     }
 )
 GENERIC_OBJECT_KEYS = frozenset(
@@ -585,6 +586,9 @@ PROTOCOL_COMPONENT_PATHS = {
     ),
     "cache_protocol": (
         "docs/saq_a4_v2_cache_staging_disposition_protocol_2026_07_15.md"
+    ),
+    "prep_host_identity_rebind_erratum_contract": (
+        "docs/saq_a4_v2_prep_host_identity_rebind_erratum_contract_2026_07_16.json"
     ),
 }
 GENERIC_OBJECT_PATHS = {

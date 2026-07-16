@@ -200,3 +200,69 @@ The current worktree seal remains uncommitted nonevidence pending its exact
 22-path target commit and direct-child independent review.  Its maximum status
 is
 `STATIC_SEAL_COMPLETE_PENDING_EXACT_TARGET_COMMIT_AND_INDEPENDENT_REVIEW`.
+
+## HOST-I source-static provenance rebind
+
+The active HOST-I source snapshot is a governance-only rebind layered on the
+historical CACHE-I source seal above.  It is the direct child of reviewed
+source-authority-erratum head
+`9fa9528f4181d51fe6e060c1de14ea568eb31c4a`.  Its additive provenance is the
+HOST-P component contract
+`c8e182dd8f7a661e465aa9ce03fa2d7bfed233124209dff43826ea0b32510b09`
+(10,684 bytes), HOST-I erratum protocol/contract/review identities
+`5d9ac7222f93f00de5f2cd96b6df16d389b9f3123b604115c515bae963a1088d`
+(14,716),
+`01dadbe2ba73a429a67d7029b5e4dafafb6b400a6067767a1aac161e9457977a`
+(10,967), and
+`c670d368647fbd13bfe4133241e2c37e29101e91538687a64349a606bd059f2a`
+(11,426), plus the committed HOST-I authorization/review identities
+`7a07e05eb2b96c7ecd57facf9f1b7405a63f0d6d66d2af3cad3a1eeb626ce3b0`
+(11,928) and
+`bda4f52b549e28b69cca5c012c21e12867266e0c5920eda27f7df87e478d69e9`
+(14,740).
+
+No scientific owner changes.  Exactly five active governance/runtime sources
+receive seven equal-length leader-digest substitutions, partitioned
+`1 + 2 + 2 + 1 + 1`; the cache verifier additionally receives the exact
+eighth-component set/path admission frozen by the erratum:
+
+| Active source | SHA-256 | Bytes | Git blob |
+| --- | --- | ---: | --- |
+| `script/a4_v2_cache_policy_verifier.py` | `bd2a75beae4619beec34f37f3d5788caf71fdf2634fb0d864c358c9a29caa5e1` | 151,568 | `9ace42bb7c8d856e6b93c9836fb0c9732c169a37` |
+| `script/a4_v2_isolated_clone_prep.py` | `823bb00711e036c832f96f66e1979c69931866460af0d38a48f93c3fa9c03de2` | 219,758 | `d671531132eb0c490dec1953ca778e8d03913b3d` |
+| `script/a4_v2_runner.py` | `a59de1f673b16f13f87dc5682a608387ab1747c00d4a0d2db1d8d616ea037662` | 360,127 | `44e1a8078caf8774d1005f88265c87167e462eb7` |
+| `script/a4_v2_verifier.py` | `425a7853198bffe2fb612f999a1bbbb3ea67ac4e7c4f16b6b182604cee87d5e5` | 250,023 | `d8e0bdc6df0865e95dfe631446d108368640e25d` |
+| `script/run_arbitrary_cardinality_a4_v2.py` | `e11f5a62542f843cede94837cd73681cf713aa0700fb7c8bfdf2dcd07204fb2b` | 34,929 | `21925cddb4d07a1ec046d405493980813a4d581a` |
+
+All 27 native/CMake sources and the five unaffected Python sources remain
+byte-identical.  The active closure remains 37 filesystem sources and 38
+executable units, with canonical source-tree SHA-256
+`97f676357e6f8916a570ba28b7dabcdb358d7138f4485e7ca005a5e746a5e07a`.
+The inline source is unchanged in length at 19,631 bytes and rebound
+identically across PREP, cache authority, static closure, and implementation
+manifest to
+`d14feb020a1389a6c90f9c3696033f07d0747a9e135be7c9905aeb08d1810b56`;
+its raw prologue remains 2,778 bytes at
+`0111488a71573dd058308a3e20590cb8def3d4f5e8601b0e566800fd10b0d3a7`.
+The active cache authority is
+`09c1b6adf429f933620e503e8ee479b2b17380e460b8961782a78309a18e9885`
+over 43,128 bytes, and the active static closure is
+`815478c1b6a22f4871c2e82c341f0c0d417de4014f19cc794ae3b3c44cf3776d`
+over 218,872 bytes.
+
+Permanent source growth is exactly 197 bytes.  The eighth authority member
+adds one existing-loop identity check; a successful physical check adds
+10,684 to the existing `filesystem_bytes_read` aggregate.  No ledger schema,
+status, retry, cap, timer, construction, query, or scientific behavior
+changes.  The exact fourteen-path target's total permanent tracked-byte delta
+relative to `9fa9528` is `+12,758` bytes.
+
+The CACHE-I-SYNTAX table immediately above remains an immutable historical
+snapshot and is not evidence about the changed source bytes.  The separate
+future `SOURCE_HISTORY_MISMATCH` is also preserved: historical commits retain
+their old blobs, so this rebind establishes neither cache-verifier nor PAR
+readiness.  No source was imported, parsed by Python, compiled, built, tested,
+or executed, and no PREP, data, quarantine, or SAQ/CAQ action occurred.  The
+target itself remains `HOST_I_SOURCE_STATIC_TARGET_FORMED_REVIEW_PENDING`
+until its exact direct-child independent review; that ceiling is not a
+performance or scientific result.

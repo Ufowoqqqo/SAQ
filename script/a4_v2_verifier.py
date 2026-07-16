@@ -3826,7 +3826,7 @@ def _validate_python_cache_policy_preimage(
             or os.path.normpath(item["path"]) != item["path"]
             or item["resolved_path"] != "/usr/bin/python3.9"
             or item["sha256"]
-            != "c87babf8337b668da60e26d897d694df7bd9a5b7907416e4eda078b9c33d05e0"
+            != "c7b3d12b0bcda9356ce5a7e21e66c41476310d595c54b5689bca1e38abd8f42b"
             or item["size_bytes"] != 15_448
             for item in leader_records
         )

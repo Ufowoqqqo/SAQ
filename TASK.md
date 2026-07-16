@@ -32,7 +32,7 @@ A4-V2-CACHE-PREP-ISO original one-shot authority        UNSPENT_BUT_NONTRANSFERA
 A4-V2-PREP-HOST-P host-rebind erratum protocol/review   COMPLETED_REVIEW_PASS
 A4-V2-PREP-HOST-I-AUTH source-rebind authorization      AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-PREP-HOST-I-ERRATUM source-authority correction   HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
-A4-V2-PREP-HOST-I coherent source/authority rebind      REAUTHORIZATION_REQUIRED_NOT_RUN
+A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_FORMED_REVIEW_PENDING
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
@@ -395,6 +395,31 @@ static review, focused commits, push, and Meeting Summary Handoff. It permitted
 no implementation edit, build, Python import, syntax/test command, RNG,
 synthetic run, generated scientific artifact, data read, or SAQ modification.
 Untracked implementation WIP remains nonevidence.
+
+The user has now explicitly authorized `A4-V2-PREP-HOST-I source-static
+target + direct-child review`.  The exact target is the direct child of
+publication-closed erratum review head
+`9fa9528f4181d51fe6e060c1de14ea568eb31c4a` and changes all and only the
+frozen fourteen mode-`100644` paths.  It replaces the old CPython leader
+digest at exactly seven active loci across the five registered sources and
+adds only the erratum-frozen 197-byte eighth-component key/path admission in
+the cache verifier.  The active closure remains 37 filesystem sources and 38
+executable units; historical CACHE-I-SYNTAX identities remain bound to the
+old bytes, and `build_status` remains `NOT_AUTHORIZED_NOT_RUN`.
+
+Before direct-child review, the maximum target status is
+`HOST_I_SOURCE_STATIC_TARGET_FORMED_REVIEW_PENDING`, not an independently
+established host rebind.  The direct-child review may change exactly
+`AGENTS.md`, `TASK.md`, and
+`docs/saq_a4_v2_prep_host_identity_rebind_implementation_independent_review_2026_07_16.md`.
+It must find zero LOW-or-higher issues before the bounded registered-object
+`HOST_IDENTITY_REBOUND` claim is allowed.  The known downstream
+`SOURCE_HISTORY_MISMATCH` remains unresolved and forbids cache-verifier/PAR
+readiness; it does not block source-static review or PREP itself.  No Python,
+syntax/import, compiler/build/test, verifier, PREP, clone, data, quarantine,
+or SAQ/CAQ operation is authorized.  Commit, push, independent review, and
+Meeting Summary Handoff are the complete current sequence; later PREP
+authorization remains separate.
 
 ## A4-V2-P-ERRATUM Deliverables
 
