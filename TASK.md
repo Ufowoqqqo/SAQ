@@ -24,8 +24,8 @@ Current summary inventory:
 - `docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` is the current,
   unpresented successor draft. It queues `R07`, `R08`, `R10`, `R11`, and
   `R12`; its Attempt 4 scientific snapshot is
-  `saq-arbitrary-cardinality-feasibility-v2@30dfada`, with the independently
-  reviewed terminal status at audited branch head `fd5367e`.
+  `saq-arbitrary-cardinality-feasibility-v2@b89dabe`, whose latest material
+  milestone is host-rebind erratum target/review `5a47fed/@b89dabe`.
 
 ## Current Attempt 4 Boundary
 
@@ -40,6 +40,13 @@ A4-V2-P PROTOCOL_READY_NOT_AUTHORIZED_FOR_EXECUTION / REVIEWED
 A4-V2-P-ERRATUM PROTOCOL_ERRATUM_INDEPENDENT_REVIEW_PASS
 A4-V2-I SOURCE_IMPLEMENTED_STATIC_REVIEW_PASS
 A4-V2-PAR ARTIFACT_INVALID / REVIEWED_TERMINAL_NO_VALID_PAR_AUTHORITY
+A4-V2-I-R1 SOURCE_REPAIR_STATIC_REVIEW_PASS
+A4-V2-CACHE-P EXACT_TARGET_INDEPENDENT_REVIEW_PASS
+A4-V2-CACHE-I GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS
+A4-V2-CACHE-PREP-AUTH PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
+A4-V2-PREP-HOST-P HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS
+A4-V2-PREP-HOST-I-AUTH / HOST-I NOT_AUTHORIZED
+A4-V2-CACHE-PREP-ISO-R1 NOT_AUTHORIZED
 A4-V2-SRUN NOT_AUTHORIZED
 ```
 
@@ -89,13 +96,31 @@ track independent review at branch head `fd5367e`. It establishes no valid PAR
 authority and no scientific decision. Empty staging and ignored caches are
 WIP/non-evidence.
 
+Subsequent reviewed work stayed at artifact-governance ceilings. I-R1 repaired
+the source-only executable identity; CACHE-P selected sanitized remote
+isolation and rejected direct PAR-R1; CACHE-I reached a generic source/static
+pass; and PREP authorization target/review `e7f940e/@16a8201` froze only a
+dormant contract. Before PREP, static checking found that a root RPM update
+had replaced the frozen `.el9_8` Python leader with `.el9_8.2`; PREP was not
+invoked, START was not created, and no runtime terminal status exists.
+
+The bounded additive host-rebind erratum target/review `5a47fed/@b89dabe`
+passed exact-commit independent review with 0 LOW+ findings. Its ceiling is
+`HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS`, not host rebound, PREP readiness,
+feasibility, performance, or scientific evidence. The old invocation
+authority is unspent but nontransferable, and the old probe is unspent but
+superseded and must never run or be reused.
+
 ## Next Admissible Summary Work
 
-There is no active source-branch execution authority. Any correction requires
-a new clean source commit, independent source review, and a new explicit user
-authorization for the affected PAR stage. This summary handoff grants none of
-those. `A4-V2-SRUN`, data reads, generated scientific evidence, and SAQ changes
-remain unauthorized.
+There is no active source-branch execution authority. The next admissible
+source-branch node is a separately user-authorized
+`A4-V2-PREP-HOST-I-AUTH`; only after its review could a separately authorized
+HOST-I coherently update the five affected sources and seven derived
+authority objects. Fresh PREP authorization/review, a new actual-invocation
+grant and immediate probe, CACHE-BIND, PAR-R1, SRUN, data reads, generated
+scientific evidence, and SAQ changes all remain unauthorized. This summary
+handoff grants none of them.
 
 For the next handoff, re-read `AGENTS.md` and the registry, fetch, require this
 worktree to be clean and equal to its remote, record that remote commit, and
@@ -129,7 +154,7 @@ branch.
 - implementing or rerunning A4-1S, or opening its foreclosed base gate;
 - implementing or executing A4 V2 on this summary branch; A4-V2-PAR is a
   reviewed terminal `ARTIFACT_INVALID` with no valid PAR authority, and
-  repair, rerun, A4-V2-SRUN, data, and SAQ work remain unauthorized;
+  HOST-I, PREP, rerun, A4-V2-SRUN, data, and SAQ work remain unauthorized;
 - opening registered base, query, ground-truth, or index artifacts;
 - modifying SAQ/CAQ, index, estimator, packing, or search code;
 - expanding any source branch's experimental authorization; or
