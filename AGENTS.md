@@ -329,6 +329,21 @@ source-static only and PREP does not invoke this verifier; nevertheless no
 cache-verifier or PAR readiness may be claimed, and repair requires another
 explicit protocol/source authorization.
 
+The exact four-path erratum target was committed and pushed at
+`6fe8544ae677fa8aaf7bba1306ae9aa8d4599f20`, tree
+`51f9abc20ac6e7afcb0c584ce6bd4cfc79e3b5f9`, with direct parent
+`71e6bec01dbabaf29333ac75dcd9ef7a238a079d`.  Three fresh independent static
+review tracks found zero issues at LOW severity or above.  Their durable memo
+is
+`docs/saq_a4_v2_prep_host_identity_rebind_implementation_erratum_independent_review_2026_07_16.md`.
+The resulting ceiling is
+`HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS`, conditional only on this exact
+three-path direct-child review being committed and pushed.  The target push
+succeeded; one optional SSH `ls-remote` failed locally before any remote
+observation, was not retried, and is excluded from evidence.  After review
+publication and Meeting Summary Handoff, stop before fresh HOST-I
+authorization.
+
 The completed `A4-V2-P-ERRATUM` permitted only additive protocol-authority
 documents, branch status documents, focused commits, static independent
 review, push, and the required Meeting Summary Handoff. Do not edit or commit
@@ -396,7 +411,7 @@ A4-V2-CACHE-PREP-AUTH authorization record/review       PREP_AUTHORIZATION_EXACT
 A4-V2-CACHE-PREP-ISO original one-shot authority        UNSPENT_BUT_NONTRANSFERABLE
 A4-V2-PREP-HOST-P host-rebind erratum protocol/review   COMPLETED_REVIEW_PASS
 A4-V2-PREP-HOST-I-AUTH source-rebind authorization      AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
-A4-V2-PREP-HOST-I-ERRATUM source-authority correction   TARGET_FORMED_PENDING_INDEPENDENT_REVIEW
+A4-V2-PREP-HOST-I-ERRATUM source-authority correction   HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
 A4-V2-PREP-HOST-I coherent source/authority rebind      REAUTHORIZATION_REQUIRED_NOT_RUN
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED

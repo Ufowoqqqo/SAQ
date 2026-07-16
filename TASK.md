@@ -31,7 +31,7 @@ A4-V2-CACHE-PREP-AUTH authorization record/review       PREP_AUTHORIZATION_EXACT
 A4-V2-CACHE-PREP-ISO original one-shot authority        UNSPENT_BUT_NONTRANSFERABLE
 A4-V2-PREP-HOST-P host-rebind erratum protocol/review   COMPLETED_REVIEW_PASS
 A4-V2-PREP-HOST-I-AUTH source-rebind authorization      AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
-A4-V2-PREP-HOST-I-ERRATUM source-authority correction   TARGET_FORMED_PENDING_INDEPENDENT_REVIEW
+A4-V2-PREP-HOST-I-ERRATUM source-authority correction   HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
 A4-V2-PREP-HOST-I coherent source/authority rebind      REAUTHORIZATION_REQUIRED_NOT_RUN
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
@@ -374,6 +374,21 @@ source blobs with old CACHE-I/PREP history commits and report
 which does not run that verifier, but it forbids any cache-verifier/PAR-
 readiness claim.  Repair is outside this erratum and requires separate
 protocol and source authorization.
+
+Exact four-path erratum target
+`6fe8544ae677fa8aaf7bba1306ae9aa8d4599f20`, tree
+`51f9abc20ac6e7afcb0c584ce6bd4cfc79e3b5f9`, is committed and pushed as the
+direct child of `71e6bec01dbabaf29333ac75dcd9ef7a238a079d`.  Three fresh
+independent exact-target tracks found zero LOW-or-higher issues; the durable
+review is
+`docs/saq_a4_v2_prep_host_identity_rebind_implementation_erratum_independent_review_2026_07_16.md`.
+The exact review reaches only
+`HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS` once its registered three-path
+direct-child record is committed and pushed.  A successful push established
+remote acceptance of the target.  One optional SSH `ls-remote` failed locally
+before remote observation, was not retried, and is excluded.  Review
+publication and Meeting Summary Handoff must complete before the stage stops
+for fresh HOST-I authorization.
 
 The completed erratum stage permitted only additive authority documents,
 static review, focused commits, push, and Meeting Summary Handoff. It permitted
