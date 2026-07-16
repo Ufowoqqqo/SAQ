@@ -24,9 +24,11 @@ Current summary inventory:
 - `docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` is the current,
   unpresented successor draft. It queues `R07`, `R08`, `R10`, `R11`, and
   `R12`; its Attempt 4 scientific snapshot is
-  `saq-arbitrary-cardinality-feasibility-v2@71e6bec`, whose latest material
-  milestone is HOST-I-AUTH target/review `212a67b/@71e6bec`, following the
-  preserved host-rebind erratum target/review `5a47fed/@b89dabe`.
+  `saq-arbitrary-cardinality-feasibility-v2@9fa9528`. Under HOST-I-AUTH
+  target/review `212a67b/@71e6bec`, the subsequently instructed HOST-I
+  projection was found unsatisfiable before any source target; the additive
+  source-authority erratum target/review `6fe8544/@9fa9528` now reaches only
+  `HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS`.
 
 ## Current Attempt 4 Boundary
 
@@ -47,7 +49,8 @@ A4-V2-CACHE-I GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS
 A4-V2-CACHE-PREP-AUTH PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-PREP-HOST-P HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS
 A4-V2-PREP-HOST-I-AUTH AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
-A4-V2-PREP-HOST-I NOT_AUTHORIZED
+A4-V2-PREP-HOST-I-ERRATUM HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
+A4-V2-PREP-HOST-I REAUTHORIZATION_REQUIRED_NOT_RUN
 A4-V2-CACHE-PREP-ISO-R1 NOT_AUTHORIZED
 A4-V2-SRUN NOT_AUTHORIZED
 ```
@@ -118,26 +121,48 @@ HOST-I-AUTH exact target `212a67b` and direct-child independent review
 
 ```text
 A4-V2-PREP-HOST-I-AUTH  AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
-A4-V2-PREP-HOST-I       NOT_AUTHORIZED
+A4-V2-PREP-HOST-I       REAUTHORIZATION_REQUIRED_NOT_RUN
 HOST_IDENTITY_REBOUND   NOT_ESTABLISHED
 PYTHON/PREP              NOT_AUTHORIZED_NOT_RUN
 ```
 
-This is authorization-document governance only. No five-source or seven-
-derived-object rebind, Python, START, PREP, build, data access, or scientific
-execution occurred.
+Before any HOST-I source target, exact projection checking found that the
+authorization preserved a closed seven-component cache-authority set while
+also requiring an eighth host-rebind erratum component. The instruction was
+therefore stopped without edits. Additive source-authority erratum
+target/review `6fe8544/@9fa9528` passed three independent static tracks with
+0 LOW+ findings and establishes only:
+
+```text
+A4-V2-PREP-HOST-I-ERRATUM  HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
+A4-V2-PREP-HOST-I          REAUTHORIZATION_REQUIRED_NOT_RUN
+HOST_IDENTITY_REBOUND      NOT_ESTABLISHED
+PYTHON/PREP                NOT_AUTHORIZED_NOT_RUN
+```
+
+The erratum freezes admission of the eighth protocol component and the exact
+future byte/accounting projection: 197 source bytes are added, moving the
+cache verifier from 151,371 to 151,568 bytes before the length-neutral digest
+substitutions. It does not rebind any of the five sources or seven derived
+objects. Its static review also disclosed that a later cache
+verifier/PAR path would deterministically encounter `SOURCE_HISTORY_MISMATCH`
+after the planned source rebind because it still compares current authority
+sources with historical CACHE-I/PREP commits. That separate problem is not
+fixed here and forbids cache-verifier/PAR-readiness claims. No Python, START,
+PREP, build, data access, or scientific execution occurred.
 
 ## Next Admissible Summary Work
 
 There is no active source-branch execution authority. The next admissible
-source-branch node is a separately user-authorized
-`A4-V2-PREP-HOST-I` implementation target and its direct-child independent
-review, coherently updating only the five affected sources and seven derived
-authority objects under the frozen fourteen-path closure. Fresh PREP
-authorization/review, a new actual-invocation grant and newly registered
-immediate probe, actual PREP, receipt review, CACHE-BIND, explicit PAR-R1,
-SRUN, data reads, generated scientific evidence, and SAQ changes all remain
-unauthorized. This summary handoff grants none of them.
+source-branch node is a fresh explicit user authorization for
+`A4-V2-PREP-HOST-I`, followed by its source-static target and direct-child
+independent review under the corrected fourteen-path closure. Even if that
+passes, the disclosed historical-source comparison needs its own later
+protocol/source authorization before cache-verifier or PAR readiness can be
+claimed. Fresh PREP authorization/review, a new actual-invocation grant and
+newly registered immediate probe, actual PREP, receipt review, CACHE-BIND,
+explicit PAR-R1, SRUN, data reads, generated scientific evidence, and SAQ
+changes all remain unauthorized. This summary handoff grants none of them.
 
 For the next handoff, re-read `AGENTS.md` and the registry, fetch, require this
 worktree to be clean and equal to its remote, record that remote commit, and
@@ -171,7 +196,8 @@ branch.
 - implementing or rerunning A4-1S, or opening its foreclosed base gate;
 - implementing or executing A4 V2 on this summary branch; A4-V2-PAR is a
   reviewed terminal `ARTIFACT_INVALID` with no valid PAR authority, and
-  HOST-I, PREP, rerun, A4-V2-SRUN, data, and SAQ work remain unauthorized;
+  HOST-I reauthorization, the separate historical-source repair, PREP,
+  rerun, A4-V2-SRUN, data, and SAQ work remain unauthorized;
 - opening registered base, query, ground-truth, or index artifacts;
 - modifying SAQ/CAQ, index, estimator, packing, or search code;
 - expanding any source branch's experimental authorization; or

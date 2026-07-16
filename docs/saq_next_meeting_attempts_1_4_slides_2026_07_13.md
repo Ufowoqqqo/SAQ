@@ -20,7 +20,9 @@ the generic cache-policy source/static target `@c33a2bf`, independently
 reviewed at `@5db3025`, and the exact PREP authorization target `@e7f940e`,
 independently reviewed at `@16a8201`, followed by the host-rebind erratum
 target `@5a47fed`, independently reviewed at `@b89dabe`, and the exact
-HOST-I-AUTH target `@212a67b`, independently reviewed at `@71e6bec`.
+HOST-I-AUTH target `@212a67b`, independently reviewed at `@71e6bec`, followed
+by the source-authority erratum target `@6fe8544`, independently reviewed at
+`@9fa9528`.
 
 Audience assumption: familiar with vector search and vector quantization at a
 high level, but not with SAQ's transform, segmentation, or the experiments in
@@ -52,8 +54,16 @@ the old invocation authority is nontransferable, and the old probe is
 superseded and must never be reused. The later HOST-I-AUTH target/review
 reached only `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`; no five-source or
 seven-derived-object rebind occurred, host identity is still not rebound, and
-no Python or PREP ran. HOST-I, fresh PREP authority, actual PREP, CACHE-BIND,
-PAR-R1, SRUN, real-base reads, and SAQ integration remain unauthorized.
+no Python or PREP ran. Its later HOST-I instruction stopped before any source
+target because the preserved seven-component authority closure could not
+admit the required eighth component. The additive source-authority erratum
+target/review reached only `HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS` and
+changed no implementation source or derived authority object. HOST-I requires
+fresh authorization. A separately disclosed future `SOURCE_HISTORY_MISMATCH`
+also prevents cache-verifier/PAR-readiness claims until a separately
+authorized repair is implemented and independently reviewed. Fresh PREP
+authority, actual PREP, CACHE-BIND, PAR-R1, SRUN, real-base reads, and SAQ
+integration remain unauthorized.
 
 ---
 
@@ -103,7 +113,10 @@ evidence. A later exact PREP authorization record passed independent review,
 but that is authorization-document governance only and authorizes no clone,
 preparation, or execution. The subsequent host-rebind protocol and HOST-I-AUTH
 reviews likewise remain documentation governance: they rebind neither source
-nor host and authorize no Python or PREP.
+nor host and authorize no Python or PREP. The attempted HOST-I source edge was
+stopped before edits on a seven-versus-eight contract contradiction; its
+reviewed additive erratum repairs only that source-authority contract and
+leaves HOST-I subject to fresh authorization.
 ```
 
 Speaker notes:
@@ -128,7 +141,11 @@ Speaker notes:
   the old delayed probe is superseded and may never run or be reused. The
   later HOST-I-AUTH review freezes only the contract and projection for a
   possible future source target; it grants no HOST-I authority and performed
-  no source/authority rebind, Python, or PREP.
+  no source/authority rebind, Python, or PREP. That attempted source target
+  then stopped before edits on an exact seven-versus-eight component
+  contradiction. The reviewed source-authority erratum admits the eighth
+  component only; HOST-I still needs fresh authorization, and a separate
+  historical-source mismatch remains outside its scope.
 
 ---
 
@@ -147,8 +164,11 @@ Attempt 4 A4 V2 CACHE-I:               GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW
 Attempt 4 A4 V2 PREP authorization:    PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 Attempt 4 A4 V2 HOST-P erratum:        HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS
 Attempt 4 A4 V2 HOST-I-AUTH:           AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
+Attempt 4 A4 V2 HOST-I-ERRATUM:        HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
 Attempt 4 A4 V2 host rebound:          NOT ESTABLISHED
-Attempt 4 A4 V2 HOST-I/PREP/BIND:      NOT AUTHORIZED
+Attempt 4 A4 V2 HOST-I:                REAUTHORIZATION REQUIRED / NOT RUN
+Attempt 4 A4 V2 PREP/BIND:             NOT AUTHORIZED
+Attempt 4 A4 V2 cache/PAR readiness:   NOT ESTABLISHED; SOURCE_HISTORY_MISMATCH OPEN
 Attempt 4 A4 V2 direct PAR-R1:         NO-GO / NOT AUTHORIZED
 SAQ/index/search integration:          NOT AUTHORIZED
 ```
@@ -198,7 +218,7 @@ the old `5/2` real-data projection does not transfer.
 | 1B. Lossy `D -> d` projection | Can a PCA head plus a compact tail surrogate beat native full-D SAQ? | GIST sample50k, `960 -> 576`, favorable exact surrogate | Gate A failed; projected SAQ not built |
 | 2. Exact scalar-codebook DP | Does histogram-exact 1D DP improve shared dimensionwise scalar quantization over Lloyd, and is any method novelty left after prior work? | audio, PCA CIFAR60K, PCA DEEP1M; arXiv/code audit | Stronger offline baseline; inner DP is prior art; no stable recall dominance |
 | 3. Distance-quality re-evaluation | Does `1/Ratio@k` change a frozen Recall-based Pareto conclusion? | GIST sample100k B=4; DEEP sample100k B=4/B=5 controls | Closed as metric-sensitivity evidence |
-| 4. Arbitrary-cardinality fixed-rate words | Does the power-of-two restriction waste material capacity at unchanged fixed payload and lookup granularity? | A4-0 synthetic witness; terminal A4-1S correctness/cost gate; reviewed A4 V2 protocol/source, terminal pre-build PAR identity failure, static-only I-R1 repair, CACHE-P/CACHE-I governance, PREP authorization, reviewed host-rebind erratum, and reviewed HOST-I-AUTH documentation; registered real-base gates remain unauthorized | preserve A4-1S `NO_GO_EXACT_SOLVER_COST` and A4-V2-PAR `ARTIFACT_INVALID / NO_SCIENTIFIC_DECISION`; HOST-I-AUTH reached only `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`; host identity is not rebound, and HOST-I, PREP, CACHE-BIND, and PAR-R1 are unauthorized |
+| 4. Arbitrary-cardinality fixed-rate words | Does the power-of-two restriction waste material capacity at unchanged fixed payload and lookup granularity? | A4-0 synthetic witness; terminal A4-1S correctness/cost gate; reviewed A4 V2 protocol/source, terminal pre-build PAR identity failure, static-only I-R1 repair, CACHE-P/CACHE-I governance, PREP authorization, reviewed host-rebind erratum, HOST-I-AUTH, and source-authority erratum documentation; registered real-base gates remain unauthorized | preserve A4-1S `NO_GO_EXACT_SOLVER_COST` and A4-V2-PAR `ARTIFACT_INVALID / NO_SCIENTIFIC_DECISION`; the source-authority erratum reached only `HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS`; host identity is not rebound, HOST-I requires fresh authorization, `SOURCE_HISTORY_MISMATCH` remains open, and PREP/CACHE-BIND/PAR-R1 are unauthorized |
 
 Speaker notes:
 
@@ -2218,8 +2238,11 @@ case study, not an independent database-systems method.
 
 ## 59. Attempt 4: Research Question, Old Stop, And V2 Boundary
 
-Current R12 authorization target:
-`saq-arbitrary-cardinality-feasibility-v2@212a67b`
+Current R12 reviewed snapshot:
+`saq-arbitrary-cardinality-feasibility-v2@9fa9528`
+
+Source-authority erratum target/review:
+`saq-arbitrary-cardinality-feasibility-v2@6fe8544/@9fa9528`
 
 Independent HOST-I-AUTH review record:
 `saq-arbitrary-cardinality-feasibility-v2@71e6bec`
@@ -2260,7 +2283,10 @@ Preserved terminal A4-1S snapshot:
 | A4-V2-CACHE-PREP-AUTH | `PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS` | exact three-path target `e7f940e` and direct-child review `16a8201` bound a dormant PREP contract; the later host mismatch made its invocation authority nontransferable and its unique probe superseded |
 | A4-V2-PREP-HOST-P | `HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS` | target/review `5a47fed/@b89dabe` bind the current `.el9_8.2` leader and complete future rebind closure; host identity is not rebound and no Python, PREP, probe, clone, token, build, data, or scientific action ran |
 | A4-V2-PREP-HOST-I-AUTH | `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS` | exact target/review `212a67b/@71e6bec` freeze only the contract and projection for a possible later source target and grant no HOST-I authority; no five-source/seven-derived-object rebind, Python, build, PREP, data, or scientific action occurred |
-| A4-V2-PREP-HOST-I | `NOT_AUTHORIZED` | the coherent five-source/seven-derived-authority rebind and its direct-child static review remain a separate future node |
+| attempted A4-V2-PREP-HOST-I | `STOPPED_BEFORE_TARGET` | exact checking exposed an unsatisfiable seven-versus-eight protocol-component closure before any source edit, Python, or PREP |
+| A4-V2-PREP-HOST-I-ERRATUM | `HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS` | target/review `6fe8544/@9fa9528` admit the eighth component and freeze its exact accounting/projection only; no implementation-source/derived-authority rebind or execution occurred |
+| A4-V2-PREP-HOST-I | `REAUTHORIZATION_REQUIRED_NOT_RUN` | the coherent five-source/seven-derived-authority rebind and its direct-child static review require a fresh explicit user instruction |
+| historical-source repair | `NOT_AUTHORIZED` | the future `SOURCE_HISTORY_MISMATCH` in cache-verifier/PAR history comparisons is disclosed but outside the source-authority erratum; readiness cannot be claimed until a separate protocol/source repair passes |
 | actual PREP / receipt review / CACHE-BIND | `NOT_AUTHORIZED` | one preparation attempt, its committed independent receipt review, and binding remain separate non-transitive stages |
 | A4-V2-PAR-R1 | `NOT_AUTHORIZED` | direct PAR-R1 is no-go; it can be considered only after every separately authorized isolation stage passes and the user explicitly authorizes PAR-R1 |
 | A4-V2-SRUN | `NOT_AUTHORIZED` | the synthetic event remains a separate, non-transitive future stage and cannot start from invalid PAR authority |
@@ -2365,7 +2391,11 @@ A4-V2-CACHE-I GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS ONLY
 A4-V2-CACHE-PREP-AUTH PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS ONLY
 A4-V2-PREP-HOST-P HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS ONLY
 A4-V2-PREP-HOST-I-AUTH AUTHORIZATION_EXACT_TARGET_REVIEW_PASS ONLY
-A4-V2-PREP-HOST-I NOT AUTHORIZED / HOST_IDENTITY_REBOUND NOT ESTABLISHED
+A4-V2-PREP-HOST-I ATTEMPT STOPPED BEFORE TARGET ON 7-VS-8 CONTRADICTION
+A4-V2-PREP-HOST-I-ERRATUM HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS ONLY
+A4-V2-PREP-HOST-I REAUTHORIZATION REQUIRED / NOT RUN
+HOST_IDENTITY_REBOUND NOT ESTABLISHED
+SOURCE_HISTORY_MISMATCH OPEN / CACHE-VERIFIER AND PAR READINESS NOT ESTABLISHED
 ACTUAL PREP AND CACHE-BIND NOT AUTHORIZED
 A4-V2-PAR-R1 NOT AUTHORIZED
 A4-V2-SRUN, DATA, AND SAQ CHANGES NOT AUTHORIZED
@@ -2411,8 +2441,19 @@ nontransferable; its probe is unspent but superseded and must never run or be
 reused. The later exact HOST-I-AUTH target/review `212a67b/@71e6bec` reached
 only `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`. It froze a possible future
 fourteen-path source edge but changed none of the five sources or seven
-derived authority objects; `HOST_IDENTITY_REBOUND` remains `NOT_ESTABLISHED`,
-and Python/PREP remain `NOT_AUTHORIZED_NOT_RUN`.
+derived authority objects. When HOST-I was later instructed, exact projection
+checking found that the frozen seven-component authority closure could not
+admit the required eighth host-rebind component, so work stopped before any
+source target. Additive source-authority erratum target/review
+`6fe8544/@9fa9528` reached only
+`HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS`: it admits that eighth component
+and freezes exact future byte/accounting semantics, but still changes no
+implementation source or derived authority object. HOST-I is
+`REAUTHORIZATION_REQUIRED_NOT_RUN`,
+`HOST_IDENTITY_REBOUND` remains `NOT_ESTABLISHED`, and Python/PREP remain
+`NOT_AUTHORIZED_NOT_RUN`. Review also disclosed a separate future
+`SOURCE_HISTORY_MISMATCH` in cache-verifier/PAR history comparisons; the
+erratum does not repair it, so readiness claims remain forbidden.
 
 ---
 
@@ -2514,9 +2555,16 @@ erratum target/review `5a47fed/@b89dabe` reached only
 `HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS`; the old probe is superseded and
 must never be reused. HOST-I-AUTH target/review `212a67b/@71e6bec` then
 reached only `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`: no source/authority
-rebind, Python, START, or PREP occurred. HOST-I, fresh PREP authority, actual
-PREP, receipt review, CACHE-BIND, PAR-R1, SRUN, base, and query reads all
-remain unauthorized.
+rebind, Python, START, or PREP occurred. A later HOST-I instruction stopped
+before any source target on the exact seven-versus-eight component
+contradiction. Source-authority erratum target/review `6fe8544/@9fa9528`
+reached only `HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS`; it changes no
+implementation source or derived authority object and grants no HOST-I
+authority. HOST-I requires fresh authorization. Its review also disclosed an
+unresolved future
+`SOURCE_HISTORY_MISMATCH`, so cache-verifier/PAR readiness is not established.
+Fresh PREP authority, actual PREP, receipt review, CACHE-BIND, PAR-R1, SRUN,
+base, and query reads all remain unauthorized.
 
 ---
 
@@ -2580,7 +2628,7 @@ deliberately excluded.
 
 ---
 
-## 65. A4 V2: Terminal PAR Failure, Source Repair, And Cache Protocol
+## 65. A4 V2: Terminal PAR Failure, Source Repair, And Governance Chain
 
 Primary review: `saq-arbitrary-cardinality-feasibility-v2@c4ccea3`
 
@@ -2649,6 +2697,9 @@ HOST-I-AUTH target:
 
 HOST-I-AUTH independent review record:
 `saq-arbitrary-cardinality-feasibility-v2@71e6bec`
+
+Source-authority erratum target/review:
+`saq-arbitrary-cardinality-feasibility-v2@6fe8544/@9fa9528`
 
 The review preserves the old A4-1S result and changes the next question, not
 the result. A4-1S timed exact construction together with full canonical
@@ -2795,7 +2846,15 @@ source. HOST-I-AUTH target/review `212a67b/@71e6bec` then passed with zero
 LOW+ findings and only `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`. It did not
 edit the five sources or seven derived authority objects, establish
 `HOST_IDENTITY_REBOUND`, or run Python, build, PREP, or data. It authorizes no
-execution; HOST-I remains a separately authorized future source/review edge.
+execution. When HOST-I was instructed, exact checking found an unsatisfiable
+seven-versus-eight protocol-component closure before any source target.
+Additive source-authority erratum target/review `6fe8544/@9fa9528` passed
+three static tracks and reached only
+`HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS`. It admits the eighth component
+but changes no implementation source or derived authority object. HOST-I now
+requires fresh authorization. The same review disclosed a distinct future
+`SOURCE_HISTORY_MISMATCH`; cache-verifier/PAR readiness remains unestablished
+until a separately authorized protocol/source repair closes it.
 
 Future stages are separate and non-transitive:
 
@@ -2809,7 +2868,10 @@ Future stages are separate and non-transitive:
 | PREP authorization/review | freeze one sanitized remote preparation event | `PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`; documentation governance only |
 | `A4-V2-PREP-HOST-P` | additive current-host rebind protocol and exact review | `HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS`; host identity is not rebound |
 | `A4-V2-PREP-HOST-I-AUTH` | freeze only the contract/projection for a possible later source/review edge | `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`; documentation governance only; grants no HOST-I authority |
-| `A4-V2-PREP-HOST-I` | implement and independently review the coherent five-source/seven-derived-authority rebind | `NOT_AUTHORIZED` |
+| attempted `A4-V2-PREP-HOST-I` | validate the frozen projection before source editing | `STOPPED_BEFORE_TARGET`; exact seven-versus-eight contradiction |
+| `A4-V2-PREP-HOST-I-ERRATUM` | admit the eighth protocol component and freeze exact future accounting | `HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS`; documentation governance only |
+| `A4-V2-PREP-HOST-I` | implement and independently review the coherent five-source/seven-derived-authority rebind | `REAUTHORIZATION_REQUIRED_NOT_RUN` |
+| historical-source repair | reconcile future authority-source history comparisons after rebind | `NOT_AUTHORIZED`; `SOURCE_HISTORY_MISMATCH` remains open |
 | one sanitized preparation + receipt/review | prepare without reading quarantine, then commit and review its receipt | `NOT_AUTHORIZED` |
 | `A4-V2-CACHE-BIND` | bind only the independently reviewed sanitized preparation | `NOT_AUTHORIZED` |
 | `A4-V2-PAR-R1` | at most one corrected frozen build/parity event after the full isolation chain | `NOT_AUTHORIZED`; direct transition rejected |
@@ -2826,7 +2888,7 @@ Future stages are separate and non-transitive:
 | 1B lossy `D -> d` | exact head and norm terms in favorable oracle | tail norms reduce RMSE from 0.0445 to 0.00248 | omitted tail IP still worsens ranking versus native SAQ |
 | 2 exact scalar DP | exact bin-boundary partition SSE using raw bin moments; final midpoint-nearest-centroid raw SSE is evaluated, not reoptimized; outer optimum is conditional on `E[j,b]` | audio B=4 raw MSE `-15.5%`, R@100 `+0.004` | inner-DP novelty is foreclosed by prior art; no full-scale raw optimum or recall guarantee; cross-regime reversals |
 | 3 distance-quality re-evaluation | paper-exact metric semantics; no method guarantee | GIST measured point: higher `1/Ratio`, `1.078x` QPS at the frozen target | one positive setting; DEEP controls remain negative; metric is prior work |
-| 4 arbitrary-cardinality fixed-rate words | the arbitrary positive-integer feasible set contains the dyadic set for exact factorized SSE | frozen `(3,5)` witness and A4-1S parity; later positive records are protocol/source/artifact-governance evidence only | preserve A4-1S `NO_GO_EXACT_SOLVER_COST` and PAR `ARTIFACT_INVALID / NO_SCIENTIFIC_DECISION`; HOST-I-AUTH review passed only as documentation governance, while host identity is not rebound and HOST-I/PREP/binding/PAR-R1 remain unauthorized |
+| 4 arbitrary-cardinality fixed-rate words | the arbitrary positive-integer feasible set contains the dyadic set for exact factorized SSE | frozen `(3,5)` witness and A4-1S parity; later positive records are protocol/source/artifact-governance evidence only | preserve A4-1S `NO_GO_EXACT_SOLVER_COST` and PAR `ARTIFACT_INVALID / NO_SCIENTIFIC_DECISION`; the HOST-I source-authority erratum is documentation governance only, while host identity is not rebound, HOST-I needs fresh authorization, `SOURCE_HISTORY_MISMATCH` remains open, and PREP/binding/PAR-R1 remain unauthorized |
 
 Cross-attempt lesson:
 
@@ -2856,8 +2918,12 @@ activation path before PREP. The reviewed additive host erratum freezes only
 a future rebind contract; it does not rebind the host or grant PREP or
 execution authority. The later HOST-I-AUTH review freezes only the contract
 and projection for a possible source edge and grants no HOST-I authority; no
-source/authority rebind, Python, or PREP ran, and HOST-I still requires a
-separate explicit user instruction and review.
+source/authority rebind, Python, or PREP ran. Its attempted HOST-I edge stopped
+before edits on a seven-versus-eight component contradiction. The reviewed
+source-authority erratum fixes only that contract admission; HOST-I still
+requires a separate explicit user instruction and review, and the disclosed
+historical-source mismatch requires its own later repair before readiness can
+be claimed.
 ```
 
 ---
@@ -2900,7 +2966,10 @@ no-go on direct PAR-R1; and treating CACHE-I's static pass as governance
 source evidence rather than PREP readiness; and treating the later PREP
 authorization review as a dormant contract rather than a completed clone or
 feasibility result; and treating HOST-I-AUTH review only as authorization-
-document governance rather than source rebind, host rebound, or execution?
+document governance rather than source rebind, host rebound, or execution;
+and treating the later source-authority erratum only as a correction of the
+seven-versus-eight contract contradiction, not HOST-I completion or cache-
+verifier/PAR readiness?
 ```
 
 The current authorization boundary is narrow:
@@ -2922,12 +2991,19 @@ only `HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS`; host identity is not rebound.
 The old authority is nontransferable and the old probe is superseded and must
 never run or be reused. HOST-I-AUTH target/review `212a67b/@71e6bec` reached
 only `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`; it performed no five-source or
-seven-derived-object rebind and ran no Python or PREP. The next admissible node
-is separately authorized HOST-I implementation plus exact-commit review,
-followed by fresh PREP authorization/review, a new invocation grant and newly
-registered immediate probe, actual PREP, receipt review, CACHE-BIND, explicit
-PAR-R1, and only then SRUN. None of that ordered chain is currently authorized;
-base/query inputs, SAQ changes, and the old A4-1 gate remain unauthorized.
+seven-derived-object rebind and ran no Python or PREP. The attempted HOST-I
+edge then stopped before any source target on an exact seven-versus-eight
+component contradiction. Source-authority erratum target/review
+`6fe8544/@9fa9528` reached only
+`HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS`; HOST-I is
+`REAUTHORIZATION_REQUIRED_NOT_RUN`. Its review also disclosed a future
+`SOURCE_HISTORY_MISMATCH` that needs a separate protocol/source repair before
+cache-verifier/PAR readiness. The next admissible node is fresh explicit
+authorization for HOST-I implementation plus exact-commit review. Fresh PREP
+authorization/review, a new invocation grant and newly registered immediate
+probe, actual PREP, receipt review, CACHE-BIND, explicit PAR-R1, and SRUN all
+remain separate and unauthorized; base/query inputs, SAQ changes, and the old
+A4-1 gate remain unauthorized.
 ```
 
 Speaker notes:
@@ -3038,7 +3114,8 @@ target/review record `@56210f8/@249d5b8` and CACHE-I exact source/static
 target/review `@c33a2bf/@5db3025`, then the exact PREP authorization
 target/review `@e7f940e/@16a8201`, and host-rebind erratum target/review
 `@5a47fed/@b89dabe`, followed by HOST-I-AUTH target/review
-`@212a67b/@71e6bec`:
+`@212a67b/@71e6bec`, then source-authority erratum target/review
+`@6fe8544/@9fa9528`:
 
 ```text
 docs/saq_a4_v2_primary_source_metadata_2026_07_14.json
@@ -3086,6 +3163,9 @@ docs/saq_a4_v2_prep_host_identity_rebind_erratum_contract_2026_07_16.json
 docs/saq_a4_v2_prep_host_identity_rebind_erratum_independent_review_2026_07_16.md
 docs/saq_a4_v2_prep_host_identity_rebind_implementation_authorization_2026_07_16.md
 docs/saq_a4_v2_prep_host_identity_rebind_implementation_authorization_independent_review_2026_07_16.md
+docs/saq_a4_v2_prep_host_identity_rebind_implementation_erratum_protocol_2026_07_16.md
+docs/saq_a4_v2_prep_host_identity_rebind_implementation_erratum_contract_2026_07_16.json
+docs/saq_a4_v2_prep_host_identity_rebind_implementation_erratum_independent_review_2026_07_16.md
 ```
 
 A4-0 and A4-1S parity are outcome evidence only at their stated instrument
@@ -3107,7 +3187,12 @@ The host-rebind erratum reached only
 `HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS`, not host rebound or PREP
 readiness. HOST-I-AUTH then reached only
 `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`; it changed no source/authority
-object and ran no Python or PREP. HOST-I, fresh PREP authority, actual PREP,
+object and ran no Python or PREP. The attempted HOST-I edge stopped before a
+target on the seven-versus-eight contradiction; its additive source-authority
+erratum reached only `HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS` and changed
+no implementation source or derived authority object. HOST-I requires fresh
+authorization, while a separate `SOURCE_HISTORY_MISMATCH` repair is required
+before cache-verifier or PAR readiness. Fresh PREP authority, actual PREP,
 receipt review, CACHE-BIND, PAR-R1, A4-V2-SRUN, and all data access remain
 unauthorized until their own reviewed and explicit authorities exist.
 
@@ -3177,7 +3262,14 @@ token, or receipt, did not rebind the host, and superseded the old probe;
 HOST-I-AUTH target `212a67b`, independently reviewed at `71e6bec`, then
 reached only `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`. That is documentation
 governance only: no five-source/seven-derived-object rebind, Python, build, or
-PREP occurred; HOST-I and actual PREP remain unauthorized.
+PREP occurred. The attempted HOST-I source edge stopped before a target on an
+exact seven-versus-eight component contradiction. Source-authority erratum
+target `6fe8544`, independently reviewed at `9fa9528`, reached only
+`HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS`; it changes no implementation
+source or derived authority object. HOST-I requires fresh authorization,
+actual PREP remains unauthorized, and a separate future
+`SOURCE_HISTORY_MISMATCH` repair is still required before cache-verifier/PAR
+readiness.
 
 Project decision:
 Keep Attempts 1--3 as rigorous negative or partial evidence. Do not rescue
@@ -3190,10 +3282,12 @@ reviewed isolation protocol, with
 the later CACHE-I result remains static artifact governance only. Treat the
 subsequent PREP authorization and host-rebind erratum reviews as documentation
 governance, not PREP readiness or execution. Treat HOST-I-AUTH the same way:
-it freezes only the contract/projection for a possible future source edge,
-grants no HOST-I authority, and is not source implementation or host rebound.
-HOST-I implementation/review, fresh PREP authorization/review,
-a new invocation grant and immediate probe, actual PREP, receipt review,
+it freezes only the contract/projection for a possible future source edge and
+grants no HOST-I authority. Treat the source-authority erratum as a correction
+of that projection only, not source implementation, host rebound, or
+readiness. HOST-I needs fresh authorization; the disclosed historical-source
+comparison needs a separate later repair. Fresh PREP authorization/review, a
+new invocation grant and immediate probe, actual PREP, receipt review,
 CACHE-BIND, separately explicit PAR-R1, and SRUN remain a strictly ordered
 unauthorized chain; base, query, and SAQ gates remain closed.
 ```
