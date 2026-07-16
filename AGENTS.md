@@ -199,10 +199,30 @@ target-head remote-equality closure, disclosed and excluded an earlier
 sandbox-only DNS failure that returned no remote observation, and assigned
 the maximum outcome
 `GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS`.  This is artifact-governance
-source/static-review evidence only.  The review record remains WIP/nonevidence
-until committed; after its commit and push, the live review-head closure is a
-required non-evidentiary predicate.  No PREP, CACHE-BIND, PAR-R1, SRUN, data,
-quarantine, or SAQ/CAQ authority follows from this result.
+source/static-review evidence only.  The review record was subsequently
+committed and pushed at `5db302537793bc05f541aede119255213ea49e14`,
+tree `f3c8e0ca52cb719018f5ad82952c06724ab9105a`.  CACHE-I is complete
+at `GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS`.  No PREP, CACHE-BIND,
+PAR-R1, SRUN, data, quarantine, or SAQ/CAQ authority follows from this result.
+
+On 2026-07-16 the user instructed exactly
+`授权 PREP authorization/review`.  This is narrowly bound to formation,
+push, and independent review of
+`docs/saq_a4_v2_isolated_clone_prep_authorization_2026_07_15.md`; actual
+PREP remains unauthorized.  The target is a direct child of `5db3025` and
+changes only that document, `AGENTS.md`, and `TASK.md`.  The distinct
+PREP parent-admission probe recorded in the authorization document returned
+exact remote OID `5db3025` with no sandbox preflight.
+
+The maximum documentation verdict after exact committed review is
+`PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`, not the future whole-stage
+ceiling `ISOLATED_CLONE_PREPARED_REVIEW_PASS`.  The unique PREP
+authorization-review-head probe must not run during this documentation stage:
+it is both review-head closure and immediate execution-base admission and may
+run only immediately before a separately user-authorized PREP, with no
+intervening source-branch/worktree mutation.  If that cannot hold, stop for
+new authority.  No clone, token, PREP, receipt, CACHE-BIND, PAR-R1, data,
+quarantine, or SAQ/CAQ action follows from this record.
 
 The completed `A4-V2-P-ERRATUM` permitted only additive protocol-authority
 documents, branch status documents, focused commits, static independent
@@ -266,7 +286,9 @@ A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
 A4-V2-PAR   pre-build executable identity admission     ARTIFACT_INVALID / REVIEWED_TERMINAL
 A4-V2-I-R1  executable-identity source repair           COMPLETED_REVIEW_PASS
 A4-V2-CACHE-P cache/staging documentation protocol      COMPLETED_OPERATIONAL_PROTOCOL_CLOSURE
-A4-V2-CACHE-I generic source/schema/static review       AUTHORIZATION_EXACT_TARGET_REVIEW_PASS_PENDING_REVIEW_RECORD_CLOSURE
+A4-V2-CACHE-I generic source/schema/static review       GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS
+A4-V2-CACHE-PREP-AUTH authorization record/review       TARGET_FORMATION_AUTHORIZED / WIP_NONEVIDENCE
+A4-V2-CACHE-PREP-ISO one isolated-clone PREP attempt    NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event only  NOT_AUTHORIZED
 ```
