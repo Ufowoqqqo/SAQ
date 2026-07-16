@@ -275,21 +275,25 @@ fresh PREP authorization/review, a new actual invocation grant, and a newly
 registered immediate probe are separate unauthorized nodes.
 
 On 2026-07-16 the user instructed exactly
-`授权 A4-V2-PREP-HOST-I-AUTH`.  This opens only formation, commit, push, and
+`授权 A4-V2-PREP-HOST-I-AUTH`.  This opened only formation, commit, push, and
 exact-commit independent review of
 `docs/saq_a4_v2_prep_host_identity_rebind_implementation_authorization_2026_07_16.md`
-plus focused `AGENTS.md`/`TASK.md` status.  The target is a direct child of
-`b89dabedd0273a330dded7f61551e6ad1ceac19c` and changes exactly those three
-paths; its direct-child review changes only the two root files and
-`docs/saq_a4_v2_prep_host_identity_rebind_implementation_authorization_independent_review_2026_07_16.md`.
+plus focused `AGENTS.md`/`TASK.md` status.  The exact three-path target is a
+direct child of `b89dabedd0273a330dded7f61551e6ad1ceac19c` and was committed
+and pushed at `212a67b887aa710fed35f66766982db683b3fa63`.  Its ordinary
+sanitized target-head equality check returned that exact remote head; this was
+documentation publication equality only, not a PREP or implementation probe.
 
-The maximum current-node verdict is `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`.
-This instruction does not authorize `A4-V2-PREP-HOST-I`, source or derived-
-authority edits, Python, DNF, syntax, build, PREP, any execution-base probe,
-clone/token, data, quarantine, or SAQ/CAQ action.  No pre-target parent-
-admission probe is registered.  After exact review and Meeting Summary
-Handoff, stop; a separate explicit user instruction naming
-`A4-V2-PREP-HOST-I` is still required.
+A fresh independent exact-commit review found zero LOW-or-higher findings and
+is recorded in
+`docs/saq_a4_v2_prep_host_identity_rebind_implementation_authorization_independent_review_2026_07_16.md`.
+The resulting ceiling is `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`.  It does
+not authorize `A4-V2-PREP-HOST-I`, source or derived-authority edits, Python,
+DNF, syntax, build, PREP, any execution-base probe, clone/token, data,
+quarantine, or SAQ/CAQ action.  No pre-target parent-admission probe was
+registered or run.  After the mandatory Meeting Summary Handoff, stop; a
+separate explicit user instruction naming `A4-V2-PREP-HOST-I` is still
+required.
 
 The completed `A4-V2-P-ERRATUM` permitted only additive protocol-authority
 documents, branch status documents, focused commits, static independent
@@ -357,7 +361,7 @@ A4-V2-CACHE-I generic source/schema/static review       GENERIC_CACHE_POLICY_SOU
 A4-V2-CACHE-PREP-AUTH authorization record/review       PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-CACHE-PREP-ISO original one-shot authority        UNSPENT_BUT_NONTRANSFERABLE
 A4-V2-PREP-HOST-P host-rebind erratum protocol/review   COMPLETED_REVIEW_PASS
-A4-V2-PREP-HOST-I-AUTH source-rebind authorization      IN_PROGRESS_DOCUMENTATION_ONLY
+A4-V2-PREP-HOST-I-AUTH source-rebind authorization      AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-PREP-HOST-I coherent source/authority rebind      NOT_AUTHORIZED
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED

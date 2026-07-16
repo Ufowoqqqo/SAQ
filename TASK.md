@@ -30,7 +30,7 @@ A4-V2-CACHE-I generic source/schema/static review       GENERIC_CACHE_POLICY_SOU
 A4-V2-CACHE-PREP-AUTH authorization record/review       PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-CACHE-PREP-ISO original one-shot authority        UNSPENT_BUT_NONTRANSFERABLE
 A4-V2-PREP-HOST-P host-rebind erratum protocol/review   COMPLETED_REVIEW_PASS
-A4-V2-PREP-HOST-I-AUTH source-rebind authorization      IN_PROGRESS_DOCUMENTATION_ONLY
+A4-V2-PREP-HOST-I-AUTH source-rebind authorization      AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-PREP-HOST-I coherent source/authority rebind      NOT_AUTHORIZED
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
@@ -314,19 +314,24 @@ five-source/derived-authority rebind, fresh PREP authorization/review, new
 explicit one-invocation grant, and newly registered immediate probe each
 remain separately unauthorized.
 
-The user's 2026-07-16 instruction `授权 A4-V2-PREP-HOST-I-AUTH` opens only
+The user's 2026-07-16 instruction `授权 A4-V2-PREP-HOST-I-AUTH` opened only
 formation, commit, push, and exact-commit independent review of
 `docs/saq_a4_v2_prep_host_identity_rebind_implementation_authorization_2026_07_16.md`
 plus focused `AGENTS.md`/`TASK.md` status.  Its exact parent is
-`b89dabedd0273a330dded7f61551e6ad1ceac19c`; its target and direct-child
-review each have the three-path projections frozen in HOST-P section 6.
+`b89dabedd0273a330dded7f61551e6ad1ceac19c`; the exact three-path target was
+committed and pushed at `212a67b887aa710fed35f66766982db683b3fa63`.
+An ordinary sanitized target-head check returned exact remote equality and is
+only a documentation-publication observation, not a PREP or implementation
+probe.
 
-The maximum current-node verdict is `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`.
-`A4-V2-PREP-HOST-I` remains `NOT_AUTHORIZED`: the AUTH node may not edit any
-of the five sources or seven derived authority objects and may not run Python,
-DNF, syntax, build, PREP, a probe, clone/token, data, quarantine, or SAQ/CAQ
-work.  After independent review and Meeting Summary Handoff, stop for a
-separate explicit HOST-I instruction.
+A fresh independent exact-target review found zero LOW-or-higher findings and
+is recorded in
+`docs/saq_a4_v2_prep_host_identity_rebind_implementation_authorization_independent_review_2026_07_16.md`.
+Its maximum verdict is `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`.
+`A4-V2-PREP-HOST-I` remains `NOT_AUTHORIZED`: no five-source or seven-derived-
+object rebind occurred, and the AUTH node ran no Python, DNF, syntax, build,
+PREP, probe, clone/token, data, quarantine, or SAQ/CAQ work.  After Meeting
+Summary Handoff, stop for a separate explicit HOST-I instruction.
 
 The completed erratum stage permitted only additive authority documents,
 static review, focused commits, push, and Meeting Summary Handoff. It permitted
