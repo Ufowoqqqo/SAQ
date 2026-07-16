@@ -53,10 +53,36 @@ PRODUCER_NATIVE = REPOSITORY_ROOT / "build/a4_v2/a4_v2_native"
 VERIFIER_NATIVE = REPOSITORY_ROOT / "build/a4_v2_verifier/a4_v2_native"
 VERIFIER_WRAPPER = REPOSITORY_ROOT / "script/a4_v2_verifier.py"
 ARCHIVE_WRAPPER = REPOSITORY_ROOT / "script/a4_v2_archive.py"
+CACHE_POLICY_VERIFIER = REPOSITORY_ROOT / "script/a4_v2_cache_policy_verifier.py"
+CACHE_RUNTIME_SCHEMA_PATH = (
+    REPOSITORY_ROOT / "docs/saq_a4_v2_cache_runtime_schema_2026_07_15.json"
+)
+CACHE_PATHS = (
+    "script/__pycache__",
+    "script/a4_v2_archive.pyc",
+    "script/a4_v2_cache_policy_verifier.pyc",
+    "script/a4_v2_evidence.pyc",
+    "script/a4_v2_isolated_clone_prep.pyc",
+    "script/a4_v2_parity.pyc",
+    "script/a4_v2_producer.pyc",
+    "script/a4_v2_producer_wire.pyc",
+    "script/a4_v2_runner.pyc",
+    "script/a4_v2_verifier.pyc",
+    "script/run_arbitrary_cardinality_a4_v2.pyc",
+)
+ALLOWED_INSTALLED_ORIGIN_ROOTS = (
+    "/usr/lib/python3.9",
+    "/usr/lib64/python3.9",
+    "/usr/lib64/python39.zip",
+    "/usr/local/lib/python3.9/site-packages",
+    "/usr/local/lib64/python3.9/site-packages",
+)
 
 PYTHON_SOURCE_FILES = (
     "script/a4_v2_archive.py",
+    "script/a4_v2_cache_policy_verifier.py",
     "script/a4_v2_evidence.py",
+    "script/a4_v2_isolated_clone_prep.py",
     "script/a4_v2_parity.py",
     "script/a4_v2_producer.py",
     "script/a4_v2_producer_wire.py",
@@ -249,6 +275,7 @@ PAR_PARITY_ARTIFACT_FILES = (
     "block_optimized_run2.stderr",
     "block_optimized_run2.stdout",
     "block_optimized_run2.tsv",
+    "cache_policy_verification.json",
     "parity_summary.json",
     "producer_native_smoke.stderr",
     "producer_native_smoke.stdout",
@@ -617,8 +644,10 @@ def _git_source_identity() -> tuple[str, str, str, bytes]:
         "artifact_schema_identity",
         "authorization_identity",
         "build_status",
+        "cache_protocol_identity",
         "contract_identity",
         "implementation_binding_identity",
+        "inline_executable_sources",
         "parent_preregistration_identity",
         "par_contract",
         "parent_protocol_commit",
@@ -633,7 +662,7 @@ def _git_source_identity() -> tuple[str, str, str, bytes]:
     }
     if set(manifest) != required_manifest_keys or (
         manifest.get("artifact_kind") != "a4_v2_implementation_manifest"
-        or manifest.get("schema_version") != 1
+        or manifest.get("schema_version") != 2
         or manifest.get("parent_protocol_commit")
         != "f86a51d6923409d735dda0ee40f88fd2e0ad2e43"
         or manifest.get("build_status") != "NOT_AUTHORIZED_NOT_RUN"
@@ -647,6 +676,7 @@ def _git_source_identity() -> tuple[str, str, str, bytes]:
         "authorization_identity": "docs/saq_a4_v2_executable_identity_source_repair_authorization_2026_07_15.md",
         "implementation_binding_identity": "docs/saq_a4_v2_implementation_binding_2026_07_14.md",
         "source_provenance_identity": "docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md",
+        "cache_protocol_identity": "docs/saq_a4_v2_cache_protocol_authority_manifest_2026_07_15.json",
     }
     for key, relative in expected_documents.items():
         value = manifest.get(key)
@@ -682,6 +712,7 @@ def _git_source_identity() -> tuple[str, str, str, bytes]:
         ),
         "par_command": [
             "python",
+            "-B",
             "script/run_arbitrary_cardinality_a4_v2.py",
             "par",
             "docs/saq_a4_v2_par_artifacts_2026_07_14",
@@ -709,6 +740,87 @@ def _git_source_identity() -> tuple[str, str, str, bytes]:
     }
     if par_contract != expected_par_contract:
         _fail("ARTIFACT_INVALID", "implementation manifest PAR contract value mismatch")
+    inline_sources = manifest.get("inline_executable_sources")
+    if not isinstance(inline_sources, list) or len(inline_sources) != 1:
+        _fail("ARTIFACT_INVALID", "implementation manifest inline-source count differs")
+    inline = inline_sources[0]
+    inline_keys = {
+        "argv_template",
+        "encoding",
+        "id",
+        "maximal_argv",
+        "prologue_sha256",
+        "prologue_size_bytes",
+        "sha256",
+        "size_bytes",
+        "source",
+        "static_closure_unit_id",
+        "storage",
+    }
+    if not isinstance(inline, dict) or set(inline) != inline_keys or (
+        inline.get("id") != "a4_v2_prep_c_bootstrap"
+        or inline.get("encoding") != "ASCII"
+        or not isinstance(inline.get("source"), str)
+        or not inline["source"].isascii()
+        or inline.get("size_bytes") != len(inline["source"].encode("ascii"))
+        or inline.get("sha256")
+        != _sha256(inline["source"].encode("ascii"))
+        or not isinstance(inline.get("prologue_size_bytes"), int)
+        or isinstance(inline.get("prologue_size_bytes"), bool)
+        or not 0 < inline["prologue_size_bytes"] <= inline["size_bytes"]
+        or inline.get("prologue_sha256")
+        != _sha256(
+            inline["source"].encode("ascii")[: inline["prologue_size_bytes"]]
+        )
+    ):
+        _fail("ARTIFACT_INVALID", "implementation manifest inline source is malformed")
+    cache_authority = _parse_json_document(
+        (
+            REPOSITORY_ROOT
+            / "docs/saq_a4_v2_cache_protocol_authority_manifest_2026_07_15.json"
+        ).read_bytes(),
+        "additive cache authority",
+        False,
+    )
+    cache_authority_keys = {
+        "artifact_kind",
+        "authority_chain",
+        "claim_ceiling",
+        "commit_closure",
+        "future_authority_slots",
+        "generic_object_identities",
+        "implementation_parent_admission",
+        "inline_executable_source",
+        "no_execution_attestation",
+        "outcome_ceiling",
+        "prohibitions",
+        "protocol_components",
+        "runtime_policy",
+        "schema_version",
+        "source_closure",
+        "stage",
+    }
+    cache_static_closure = _parse_json_document(
+        (
+            REPOSITORY_ROOT
+            / "docs/saq_a4_v2_cache_static_closure_2026_07_15.json"
+        ).read_bytes(),
+        "cache static closure",
+        False,
+    )
+    if (
+        not isinstance(cache_authority, dict)
+        or set(cache_authority) != cache_authority_keys
+        or cache_authority.get("schema_version") != 1
+        or cache_authority.get("stage") != "A4-V2-CACHE-I"
+        or cache_authority.get("inline_executable_source") != inline
+        or not isinstance(cache_static_closure, dict)
+        or cache_static_closure.get("inline_executable_source") != inline
+    ):
+        _fail(
+            "ARTIFACT_INVALID",
+            "manifest/authority/static-closure inline bootstrap identity differs",
+        )
     raw_files = manifest.get("source_files")
     if not isinstance(raw_files, list) or not raw_files:
         _fail("ARTIFACT_INVALID", "implementation manifest has no explicit source_files")
@@ -1426,7 +1538,7 @@ def _admit_par_artifact_index(
     } or (
         index.get("artifact_kind") != "a4_v2_par_artifact_index"
         or index.get("implementation_commit") != implementation_commit
-        or index.get("schema_version") != 1
+        or index.get("schema_version") != 2
     ):
         _fail("IMPLEMENTATION_INVALID", "PAR artifact-index envelope mismatch")
     files = index.get("files")
@@ -2043,6 +2155,706 @@ def _git_par_tree(commit: str) -> tuple[tuple[str, str, str, str], ...]:
     return tuple(records)
 
 
+def _admit_python_cache_policy(
+    value: Any,
+    implementation_manifest: Mapping[str, Any],
+    build_source_identity: Mapping[str, Any],
+) -> dict[str, Any]:
+    policy = value
+    if not isinstance(policy, dict) or set(policy) != {
+        "artifact_kind",
+        "authority",
+        "cache_paths",
+        "clone",
+        "independent_verifier",
+        "parent",
+        "reviewed_python_sources",
+        "schema_version",
+        "startup_observation",
+    } or (
+        policy.get("artifact_kind") != "a4_v2_python_cache_policy_preimage"
+        or policy.get("schema_version") != 1
+        or policy.get("cache_paths") != list(CACHE_PATHS)
+    ):
+        _fail("IMPLEMENTATION_INVALID", "PAR Python cache-policy preimage differs")
+    authority = policy.get("authority")
+    authority_paths = {
+        "cache_prep_binding": "docs/saq_a4_v2_cache_prep_binding_2026_07_15.json",
+        "cache_protocol_authority": (
+            "docs/saq_a4_v2_cache_protocol_authority_manifest_2026_07_15.json"
+        ),
+        "cache_static_closure": "docs/saq_a4_v2_cache_static_closure_2026_07_15.json",
+        "implementation_manifest": (
+            "docs/saq_a4_v2_implementation_manifest_2026_07_14.json"
+        ),
+        "par_r1_authorization": "docs/saq_a4_v2_par_r1_authorization_2026_07_15.md",
+        "runtime_schema": "docs/saq_a4_v2_cache_runtime_schema_2026_07_15.json",
+    }
+    if not isinstance(authority, dict) or set(authority) != set(authority_paths):
+        _fail("IMPLEMENTATION_INVALID", "cache-policy authority inventory differs")
+    for key, relative in authority_paths.items():
+        identity = authority.get(key)
+        target = REPOSITORY_ROOT / relative
+        payload = _read_regular_nofollow(target, 16 << 20)
+        if identity != {
+            "path": relative,
+            "sha256": _sha256(payload),
+            "size_bytes": len(payload),
+        }:
+            _fail("IMPLEMENTATION_INVALID", f"cache authority differs: {key}")
+    if (
+        authority["cache_protocol_authority"]
+        != implementation_manifest.get("cache_protocol_identity")
+        or authority["implementation_manifest"] != build_source_identity
+    ):
+        _fail("IMPLEMENTATION_INVALID", "cache authority is not source-manifest bound")
+    clone = policy.get("clone")
+    if not isinstance(clone, dict) or set(clone) != {
+        "allowed_installed_origin_roots",
+        "branch",
+        "expected_commit",
+        "expected_tree_oid",
+        "origin_fetch_url",
+        "origin_push_url",
+        "par_staging_relative_path",
+        "root",
+        "source_tree_sha256",
+    } or (
+        clone.get("allowed_installed_origin_roots")
+        != list(ALLOWED_INSTALLED_ORIGIN_ROOTS)
+        or clone.get("branch") != "saq-arbitrary-cardinality-feasibility-v2"
+        or clone.get("origin_fetch_url") != "https://github.com/Ufowoqqqo/SAQ.git"
+        or clone.get("origin_push_url") != "git@github.com:Ufowoqqqo/SAQ.git"
+        or clone.get("par_staging_relative_path")
+        != "docs/saq_a4_v2_par_artifacts_2026_07_14.staging"
+        or clone.get("root") != "/tmp/saq-a4-v2-par-r1-isolation/repo"
+        or clone.get("source_tree_sha256")
+        != implementation_manifest.get("source_tree_sha256")
+        or not isinstance(clone.get("expected_tree_oid"), str)
+        or re.fullmatch(r"[0-9a-f]{40}", clone["expected_tree_oid"]) is None
+    ):
+        _fail("IMPLEMENTATION_INVALID", "cache-policy clone preimage differs")
+    verifier = policy.get("independent_verifier")
+    if not isinstance(verifier, dict) or set(verifier) != {
+        "argv",
+        "control_fd",
+        "control_maximum_bytes",
+        "control_transport",
+        "cwd",
+        "environment",
+        "output",
+    } or (
+        verifier.get("argv")
+        != [
+            "/proc/self/fd/197",
+            "-I",
+            "-B",
+            "-S",
+            (
+                "/tmp/saq-a4-v2-par-r1-isolation/repo/"
+                "script/a4_v2_cache_policy_verifier.py"
+            ),
+            "verify-parent-cache-policy",
+            "--control-fd",
+            "198",
+        ]
+        or verifier.get("control_fd") != 198
+        or verifier.get("control_maximum_bytes") != 1 << 20
+        or verifier.get("cwd") != "/"
+        or verifier.get("environment")
+        != {"LANG": "C", "LC_ALL": "C", "PATH": "/usr/bin:/bin"}
+        or verifier.get("control_transport")
+        != {
+            "name": "saq-a4-v2-cache-policy-control",
+            "offset_bytes": 0,
+            "seals": [
+                "F_SEAL_SEAL",
+                "F_SEAL_SHRINK",
+                "F_SEAL_GROW",
+                "F_SEAL_WRITE",
+            ],
+            "transport": "SEALED_ANONYMOUS_MEMFD",
+        }
+        or verifier.get("output")
+        != {
+            "artifact_name": "cache_policy_verification.json",
+            "maximum_bytes": 8 << 20,
+            "staging_relative_path": clone["par_staging_relative_path"],
+        }
+    ):
+        _fail("IMPLEMENTATION_INVALID", "cache independent-verifier preimage differs")
+    parent = policy.get("parent")
+    if not isinstance(parent, dict) or set(parent) != {
+        "bootstrap_external",
+        "cmdline_hex",
+        "cmdline_sha256",
+        "cwd",
+        "environment",
+        "leader",
+        "pid",
+        "start_time_clock_ticks",
+    }:
+        _fail("IMPLEMENTATION_INVALID", "cache parent preimage shape differs")
+    expected_cmdline = b"\0".join(
+        (
+            b"python",
+            b"-B",
+            b"script/run_arbitrary_cardinality_a4_v2.py",
+            b"par",
+            b"docs/saq_a4_v2_par_artifacts_2026_07_14",
+        )
+    ) + b"\0"
+    leader_group = parent.get("leader")
+    leader_keys = {
+        "device",
+        "inode",
+        "mode",
+        "path",
+        "resolved_path",
+        "sha256",
+        "size_bytes",
+    }
+    if not isinstance(leader_group, dict) or set(leader_group) != {
+        "command",
+        "proc_self_exe",
+        "sys_executable",
+    } or any(
+        not isinstance(leader_group[name], dict)
+        or set(leader_group[name]) != leader_keys
+        for name in ("command", "proc_self_exe", "sys_executable")
+    ):
+        _fail("IMPLEMENTATION_INVALID", "cache parent leader closure differs")
+    leader_records = [
+        leader_group[name]
+        for name in ("command", "proc_self_exe", "sys_executable")
+    ]
+    bootstrap = parent.get("bootstrap_external")
+    if not isinstance(bootstrap, dict) or set(bootstrap) != {
+        "device",
+        "inode",
+        "mode",
+        "path",
+        "sha256",
+        "size_bytes",
+    }:
+        _fail("IMPLEMENTATION_INVALID", "cache parent bootstrap identity differs")
+    if (
+        parent.get("cmdline_hex") != expected_cmdline.hex()
+        or parent.get("cmdline_sha256") != _sha256(expected_cmdline)
+        or parent.get("cwd") != clone["root"]
+        or parent.get("environment")
+        != {
+            "python_prefixed_names": [],
+            "thread_environment": dict(_FIXED_CHILD_ENVIRONMENT),
+        }
+        or not isinstance(parent.get("pid"), int)
+        or isinstance(parent.get("pid"), bool)
+        or parent["pid"] <= 0
+        or not isinstance(parent.get("start_time_clock_ticks"), int)
+        or isinstance(parent.get("start_time_clock_ticks"), bool)
+        or parent["start_time_clock_ticks"] <= 0
+        or bootstrap
+        != {
+            "device": bootstrap["device"],
+            "inode": bootstrap["inode"],
+            "mode": bootstrap["mode"],
+            "path": "/usr/lib64/python3.9/importlib/_bootstrap_external.py",
+            "sha256": (
+                "8373612b2866d0971f9167ced3a0254204fef058c975f2e30fbb3138797e21d4"
+            ),
+            "size_bytes": 66_447,
+        }
+        or not isinstance(bootstrap["device"], int)
+        or isinstance(bootstrap["device"], bool)
+        or bootstrap["device"] < 0
+        or not isinstance(bootstrap["inode"], int)
+        or isinstance(bootstrap["inode"], bool)
+        or bootstrap["inode"] <= 0
+        or not isinstance(bootstrap["mode"], int)
+        or isinstance(bootstrap["mode"], bool)
+        or not stat.S_ISREG(bootstrap["mode"])
+        or len({(item["device"], item["inode"]) for item in leader_records}) != 1
+        or any(
+            not isinstance(item["device"], int)
+            or isinstance(item["device"], bool)
+            or item["device"] < 0
+            or not isinstance(item["inode"], int)
+            or isinstance(item["inode"], bool)
+            or item["inode"] <= 0
+            or not isinstance(item["mode"], int)
+            or isinstance(item["mode"], bool)
+            or not stat.S_ISREG(item["mode"])
+            or not isinstance(item["path"], str)
+            or not os.path.isabs(item["path"])
+            or os.path.normpath(item["path"]) != item["path"]
+            or item["resolved_path"] != "/usr/bin/python3.9"
+            or item["sha256"]
+            != "c87babf8337b668da60e26d897d694df7bd9a5b7907416e4eda078b9c33d05e0"
+            or item["size_bytes"] != 15_448
+            for item in leader_records
+        )
+    ):
+        _fail("IMPLEMENTATION_INVALID", "cache parent identity differs")
+    reviewed = policy.get("reviewed_python_sources")
+    if not isinstance(reviewed, list) or len(reviewed) != len(PYTHON_SOURCE_FILES):
+        _fail("IMPLEMENTATION_INVALID", "cache reviewed-source count differs")
+    source_by_path = {
+        item.get("path"): item
+        for item in implementation_manifest.get("source_files", [])
+        if isinstance(item, dict)
+    }
+    for item, path in zip(reviewed, PYTHON_SOURCE_FILES):
+        expected = source_by_path.get(path)
+        if not isinstance(item, dict) or not isinstance(expected, dict) or (
+            set(item)
+            != {"family", "git_blob", "path", "role", "sha256", "size_bytes"}
+            or {key: item[key] for key in ("family", "path", "role", "sha256", "size_bytes")}
+            != expected
+            or not isinstance(item.get("git_blob"), str)
+            or re.fullmatch(r"[0-9a-f]{40}", item["git_blob"]) is None
+        ):
+            _fail("IMPLEMENTATION_INVALID", "cache reviewed-source identity differs")
+    return dict(policy)
+
+
+def _cache_full_identity_shape(value: Any, *, leader: bool) -> bool:
+    keys = (
+        {
+            "device",
+            "inode",
+            "mode",
+            "path",
+            "resolved_path",
+            "sha256",
+            "size_bytes",
+        }
+        if leader
+        else {"device", "inode", "mode", "path", "sha256", "size_bytes"}
+    )
+    if not isinstance(value, dict) or set(value) != keys:
+        return False
+    if any(
+        not isinstance(value[name], int)
+        or isinstance(value[name], bool)
+        or value[name] < 0
+        or value[name] > (1 << 64) - 1
+        for name in ("device", "inode", "mode", "size_bytes")
+    ) or not stat.S_ISREG(value["mode"]):
+        return False
+    if (
+        not isinstance(value["path"], str)
+        or not 0 < len(value["path"]) <= 512
+        or not os.path.isabs(value["path"])
+        or os.path.normpath(value["path"]) != value["path"]
+        or not isinstance(value["sha256"], str)
+        or re.fullmatch(r"[0-9a-f]{64}", value["sha256"]) is None
+    ):
+        return False
+    return not leader or (
+        isinstance(value["resolved_path"], str)
+        and 0 < len(value["resolved_path"]) <= 512
+        and os.path.isabs(value["resolved_path"])
+        and os.path.normpath(value["resolved_path"]) == value["resolved_path"]
+    )
+
+
+def _cache_leader_core(value: Mapping[str, Any]) -> tuple[Any, ...]:
+    return tuple(
+        value[name]
+        for name in (
+            "device",
+            "inode",
+            "mode",
+            "resolved_path",
+            "sha256",
+            "size_bytes",
+        )
+    )
+
+
+def _admit_cache_result_identity_checks(
+    result: Mapping[str, Any], policy: Mapping[str, Any]
+) -> None:
+    parent = policy["parent"]
+    expected_bootstrap = parent["bootstrap_external"]
+    expected_leader = parent["leader"]
+    parent_checks = result.get("parent_checks")
+    if not isinstance(parent_checks, dict) or set(parent_checks) != {
+        "bootstrap_external_check",
+        "cmdline_hex",
+        "cmdline_sha256",
+        "cwd",
+        "environment_check",
+        "leader_check",
+        "pid",
+        "start_time_clock_ticks",
+    }:
+        _fail("IMPLEMENTATION_INVALID", "cache parent-check shape differs")
+    bootstrap_check = parent_checks["bootstrap_external_check"]
+    environment_check = parent_checks["environment_check"]
+    leader_check = parent_checks["leader_check"]
+    if (
+        not isinstance(bootstrap_check, dict)
+        or set(bootstrap_check) != {"expected", "observed", "status"}
+        or bootstrap_check
+        != {
+            "expected": expected_bootstrap,
+            "observed": expected_bootstrap,
+            "status": "MATCH",
+        }
+        or not _cache_full_identity_shape(expected_bootstrap, leader=False)
+        or not isinstance(environment_check, dict)
+        or set(environment_check) != {"expected", "observed", "status"}
+        or environment_check
+        != {
+            "expected": parent["environment"],
+            "observed": parent["environment"],
+            "status": "MATCH",
+        }
+        or not isinstance(leader_check, dict)
+        or set(leader_check)
+        != {"command_observed", "expected", "proc_exe_observed", "status"}
+    ):
+        _fail("IMPLEMENTATION_INVALID", "cache parent identity checks differ")
+    parent_command = leader_check["command_observed"]
+    parent_proc = leader_check["proc_exe_observed"]
+    if (
+        leader_check["expected"] != expected_leader
+        or leader_check["status"] != "MATCH"
+        or parent_command != expected_leader["command"]
+        or not _cache_full_identity_shape(parent_command, leader=True)
+        or not _cache_full_identity_shape(parent_proc, leader=True)
+        or _cache_leader_core(parent_proc)
+        != _cache_leader_core(expected_leader["proc_self_exe"])
+        or _cache_leader_core(parent_command) != _cache_leader_core(parent_proc)
+        or parent_proc["path"] != f"/proc/{parent_checks['pid']}/exe"
+        or any(
+            not _cache_full_identity_shape(expected_leader[name], leader=True)
+            for name in ("command", "proc_self_exe", "sys_executable")
+        )
+    ):
+        _fail("IMPLEMENTATION_INVALID", "cache live parent leader check differs")
+    if (
+        parent_checks["cmdline_hex"] != parent["cmdline_hex"]
+        or parent_checks["cmdline_sha256"] != parent["cmdline_sha256"]
+        or parent_checks["cwd"] != parent["cwd"]
+        or parent_checks["pid"] != parent["pid"]
+        or parent_checks["start_time_clock_ticks"]
+        != parent["start_time_clock_ticks"]
+    ):
+        _fail("IMPLEMENTATION_INVALID", "cache live parent check differs")
+
+    verifier = result.get("verifier_process")
+    if not isinstance(verifier, dict) or set(verifier) != {
+        "bootstrap_external_check",
+        "cmdline_hex",
+        "cmdline_sha256",
+        "cwd",
+        "environment",
+        "flags",
+        "leader_check",
+        "pid",
+        "start_time_clock_ticks",
+    }:
+        _fail("IMPLEMENTATION_INVALID", "cache verifier-process shape differs")
+    verifier_bootstrap = verifier["bootstrap_external_check"]
+    verifier_leader = verifier["leader_check"]
+    if (
+        verifier_bootstrap
+        != {
+            "expected": expected_bootstrap,
+            "observed": expected_bootstrap,
+            "status": "MATCH",
+        }
+        or not isinstance(verifier_leader, dict)
+        or set(verifier_leader)
+        != {"descriptor_observed", "expected", "proc_exe_observed", "status"}
+    ):
+        _fail("IMPLEMENTATION_INVALID", "cache verifier identity checks differ")
+    descriptor = verifier_leader["descriptor_observed"]
+    proc_exe = verifier_leader["proc_exe_observed"]
+    if (
+        verifier_leader["expected"] != expected_leader
+        or verifier_leader["status"] != "MATCH"
+        or not _cache_full_identity_shape(descriptor, leader=True)
+        or not _cache_full_identity_shape(proc_exe, leader=True)
+        or descriptor["path"] != "/proc/self/fd/197"
+        or proc_exe["path"] != "/proc/self/exe"
+        or _cache_leader_core(descriptor)
+        != _cache_leader_core(expected_leader["proc_self_exe"])
+        or _cache_leader_core(descriptor) != _cache_leader_core(proc_exe)
+    ):
+        _fail("IMPLEMENTATION_INVALID", "cache verifier leader check differs")
+    expected_cmdline = b"\0".join(
+        argument.encode("utf-8")
+        for argument in policy["independent_verifier"]["argv"]
+    ) + b"\0"
+    if (
+        verifier["cmdline_hex"] != expected_cmdline.hex()
+        or verifier["cmdline_sha256"] != _sha256(expected_cmdline)
+        or verifier["cwd"] != "/"
+        or verifier["environment"]
+        != {"LANG": "C", "LC_ALL": "C", "PATH": "/usr/bin:/bin"}
+        or verifier["flags"]
+        != {
+            "dont_write_bytecode": 1,
+            "ignore_environment": 1,
+            "isolated": 1,
+            "no_site": 1,
+            "optimize": 0,
+        }
+        or not isinstance(verifier["pid"], int)
+        or isinstance(verifier["pid"], bool)
+        or verifier["pid"] <= 0
+        or not isinstance(verifier["start_time_clock_ticks"], int)
+        or isinstance(verifier["start_time_clock_ticks"], bool)
+        or verifier["start_time_clock_ticks"] <= 0
+    ):
+        _fail("IMPLEMENTATION_INVALID", "cache verifier process identity differs")
+
+
+def _admit_cache_policy_result(
+    payload: bytes,
+    policy: Mapping[str, Any],
+    implementation_manifest: Mapping[str, Any],
+) -> dict[str, int]:
+    if len(payload) > 8 << 20:
+        _fail("IMPLEMENTATION_INVALID", "cache-policy artifact exceeds eight MiB")
+    result = _parse_json_document(payload, "cache-policy verification", True)
+    required = {
+        "artifact_kind",
+        "authority_checks",
+        "cache_checks",
+        "claim_ceiling",
+        "clone_checks",
+        "control_identity",
+        "control_preimage_hex",
+        "mismatches",
+        "module_checks",
+        "parent_checks",
+        "resource_ledger",
+        "schema_version",
+        "source_checks",
+        "status",
+        "verifier_process",
+    }
+    if not isinstance(result, dict) or set(result) != required or (
+        result.get("artifact_kind") != "a4_v2_cache_policy_verification"
+        or result.get("schema_version") != 1
+        or result.get("status") != "PASS"
+        or result.get("mismatches") != []
+        or result.get("claim_ceiling")
+        != (
+            "Cooperative isolated-clone B/P cache-policy evidence only; no "
+            "malicious-writer, SRUN-child, parity, feasibility, systems, or "
+            "scientific claim."
+        )
+    ):
+        _fail("IMPLEMENTATION_INVALID", "cache-policy verification did not pass")
+    control_preimage_hex = result.get("control_preimage_hex")
+    if (
+        not isinstance(control_preimage_hex, str)
+        or not 2 <= len(control_preimage_hex) <= 2 * (1 << 20)
+        or len(control_preimage_hex) % 2
+        or re.fullmatch(r"(?:[0-9a-f]{2})+", control_preimage_hex) is None
+    ):
+        _fail("IMPLEMENTATION_INVALID", "cache-policy control preimage hex differs")
+    control_payload = bytes.fromhex(control_preimage_hex)
+    persisted_control = _parse_json_document(
+        control_payload, "cache-policy persisted control", True
+    )
+    expected_control_keys = {
+        "artifact_kind",
+        "authority",
+        "cache_paths",
+        "clone",
+        "output",
+        "parent",
+        "preterminal_observations",
+        "reviewed_python_sources",
+        "schema_version",
+        "startup_observation",
+    }
+    if not isinstance(persisted_control, dict) or set(persisted_control) != expected_control_keys:
+        _fail("IMPLEMENTATION_INVALID", "cache-policy persisted control shape differs")
+    preterminal_observations = persisted_control.get("preterminal_observations")
+    if (
+        persisted_control.get("artifact_kind")
+        != "a4_v2_cache_policy_verifier_control"
+        or persisted_control.get("schema_version") != 1
+        or persisted_control.get("authority") != policy["authority"]
+        or persisted_control.get("cache_paths") != policy["cache_paths"]
+        or persisted_control.get("clone") != policy["clone"]
+        or persisted_control.get("output")
+        != policy["independent_verifier"]["output"]
+        or persisted_control.get("parent") != policy["parent"]
+        or persisted_control.get("reviewed_python_sources")
+        != policy["reviewed_python_sources"]
+        or persisted_control.get("startup_observation")
+        != policy["startup_observation"]
+        or not isinstance(preterminal_observations, list)
+        or len(preterminal_observations) != 2
+        or any(not isinstance(item, dict) for item in preterminal_observations)
+        or [item.get("checkpoint") for item in preterminal_observations]
+        != ["B_PRETERMINAL", "P_PRETERMINAL"]
+    ):
+        _fail("IMPLEMENTATION_INVALID", "cache-policy persisted control differs")
+    authority = policy["authority"]
+    authority_checks = result.get("authority_checks")
+    if not isinstance(authority_checks, list) or len(authority_checks) != 6:
+        _fail("IMPLEMENTATION_INVALID", "cache authority-check count differs")
+    for check, key in zip(authority_checks, sorted(authority)):
+        expected = authority[key]
+        if not isinstance(check, dict) or check != {
+            "path": expected["path"],
+            "sha256": expected["sha256"],
+            "size_bytes": expected["size_bytes"],
+            "status": "MATCH",
+        }:
+            _fail("IMPLEMENTATION_INVALID", "cache authority-check identity differs")
+    expected_cache_checks = [
+        {"checkpoint": "VERIFIER_LIVE_P", "path": path, "state": "ABSENT"}
+        for path in CACHE_PATHS
+    ]
+    if result.get("cache_checks") != expected_cache_checks:
+        _fail("IMPLEMENTATION_INVALID", "cache-policy live namespace differs")
+    clone = policy["clone"]
+    expected_clone = {
+        "branch_ref": "refs/heads/saq-arbitrary-cardinality-feasibility-v2",
+        "fetch_url": clone["origin_fetch_url"],
+        "head": clone["expected_commit"],
+        "push_url": clone["origin_push_url"],
+        "tree": clone["expected_tree_oid"],
+    }
+    if result.get("clone_checks") != {
+        "expected": expected_clone,
+        "observed": expected_clone,
+        "status": "MATCH",
+    }:
+        _fail("IMPLEMENTATION_INVALID", "cache-policy clone checks differ")
+    _admit_cache_result_identity_checks(result, policy)
+    control_identity = result.get("control_identity")
+    if not isinstance(control_identity, dict) or set(control_identity) != {
+        "name",
+        "offset_bytes",
+        "seals",
+        "sha256",
+        "size_bytes",
+        "transport",
+    } or (
+        control_identity.get("name") != "saq-a4-v2-cache-policy-control"
+        or control_identity.get("offset_bytes") != 0
+        or control_identity.get("seals")
+        != [
+            "F_SEAL_SEAL",
+            "F_SEAL_SHRINK",
+            "F_SEAL_GROW",
+            "F_SEAL_WRITE",
+        ]
+        or control_identity.get("transport") != "SEALED_ANONYMOUS_MEMFD"
+        or not isinstance(control_identity.get("sha256"), str)
+        or re.fullmatch(r"[0-9a-f]{64}", control_identity["sha256"]) is None
+        or not isinstance(control_identity.get("size_bytes"), int)
+        or isinstance(control_identity.get("size_bytes"), bool)
+        or not 0 < control_identity["size_bytes"] <= 1 << 20
+        or control_identity["sha256"] != _sha256(control_payload)
+        or control_identity["size_bytes"] != len(control_payload)
+    ):
+        _fail("IMPLEMENTATION_INVALID", "cache-policy control identity differs")
+    module_checks = result.get("module_checks")
+    persisted_observations = [
+        persisted_control["startup_observation"],
+        *preterminal_observations,
+    ]
+    expected_module_checks = [
+        {
+            "a4_module_count": len(observation["a4_modules"]),
+            "checkpoint": checkpoint,
+            "identity_sha256": _sha256(evidence.canonical_body(observation)),
+            "retained_module_count": len(observation["retained_modules"]),
+            "seen_reviewed_source_count": len(
+                {item["source_path"] for item in observation["a4_modules"]}
+            ),
+            "sys_meta_path_count": len(observation["sys_meta_path"]),
+            "sys_path_count": len(observation["sys_path"]),
+        }
+        for observation, checkpoint in zip(
+            persisted_observations,
+            ("STARTUP_PREIMPORT", "B_PRETERMINAL", "P_PRETERMINAL"),
+        )
+    ]
+    if module_checks != expected_module_checks:
+        _fail("IMPLEMENTATION_INVALID", "cache module-check inventory differs")
+    source_checks = result.get("source_checks")
+    source_files = implementation_manifest.get("source_files")
+    if not isinstance(source_checks, list) or not isinstance(source_files, list) or (
+        len(source_checks) != 37 or len(source_files) != 37
+    ):
+        _fail("IMPLEMENTATION_INVALID", "cache-policy source-check count differs")
+    for check, expected in zip(source_checks, source_files):
+        if not isinstance(check, dict) or not isinstance(expected, dict) or (
+            check.get("path") != expected.get("path")
+            or check.get("sha256") != expected.get("sha256")
+            or check.get("size_bytes") != expected.get("size_bytes")
+            or check.get("git_matches") is not True
+            or check.get("physical_matches") is not True
+        ):
+            _fail("IMPLEMENTATION_INVALID", "cache-policy source checks differ")
+    resource = result.get("resource_ledger")
+    if not isinstance(resource, dict) or set(resource) != {
+        "cache_verifier_transient_bytes",
+        "control_bytes",
+        "cpu_microseconds",
+        "filesystem_bytes_read",
+        "git_stderr_bytes",
+        "git_stdout_bytes",
+        "maximum_rss_bytes",
+        "measurement_scope",
+        "wall_nanoseconds",
+    }:
+        _fail("IMPLEMENTATION_INVALID", "cache-policy resource ledger differs")
+    transient = resource.get("cache_verifier_transient_bytes")
+    transient_keys = {
+        "control_allocated_bytes",
+        "control_logical_bytes",
+        "stderr_allocated_bytes",
+        "stderr_logical_bytes",
+        "stdout_allocated_bytes",
+        "stdout_logical_bytes",
+    }
+    if not isinstance(transient, dict) or set(transient) != transient_keys or any(
+        not isinstance(transient.get(key), int)
+        or isinstance(transient.get(key), bool)
+        or transient[key] < 0
+        or transient[key] > (1 << 64) - 1
+        for key in transient_keys
+    ) or (
+        resource.get("control_bytes") != transient["control_logical_bytes"]
+        or resource.get("control_bytes", (1 << 64)) > 1 << 20
+        or transient["stdout_logical_bytes"] != 0
+        or transient["stderr_logical_bytes"] != 0
+        or resource.get("measurement_scope")
+        != "DIAGNOSTIC_PARENT_P_LEDGER_AUTHORITATIVE"
+        or any(
+            not isinstance(resource.get(key), int)
+            or isinstance(resource.get(key), bool)
+            or resource[key] < 0
+            or resource[key] > (1 << 64) - 1
+            for key in (
+                "control_bytes",
+                "cpu_microseconds",
+                "filesystem_bytes_read",
+                "git_stderr_bytes",
+                "git_stdout_bytes",
+                "maximum_rss_bytes",
+                "wall_nanoseconds",
+            )
+        )
+    ):
+        _fail("IMPLEMENTATION_INVALID", "cache transient-byte ledger differs")
+    return dict(transient)
+
+
 def _load_par_seal(
     commit: str, source_tree: str, implementation_manifest_payload: bytes
 ) -> tuple[
@@ -2051,6 +2863,11 @@ def _load_par_seal(
     dict[str, Any],
     dict[str, Any],
 ]:
+    implementation_manifest = _parse_json_document(
+        implementation_manifest_payload, "implementation manifest", True
+    )
+    if not isinstance(implementation_manifest, dict):
+        _fail("IMPLEMENTATION_INVALID", "implementation manifest is not an object")
     payload = _read_regular_nofollow(PAR_SEAL_PATH, 65_536)
     if len(payload) > 5_171:
         _fail("IMPLEMENTATION_INVALID", "PAR seal exceeds exact maximal-instance bound")
@@ -2143,6 +2960,7 @@ def _load_par_seal(
         "leader_binary_sha256",
         "leader_binary_size_bytes",
         "numpy_authority",
+        "python_cache_policy",
         "tool_paths",
     }
     outer_argv = logical_preimage.get("outer_argv")
@@ -2164,6 +2982,13 @@ def _load_par_seal(
         or numpy_authority.get("version") != "1.23.5"
     ):
         _fail("IMPLEMENTATION_INVALID", "PAR receipt identity preimage shape mismatch")
+    cache_policy = _admit_python_cache_policy(
+        environment_preimage["python_cache_policy"],
+        implementation_manifest,
+        source_manifest,
+    )
+    if cache_policy["clone"]["expected_commit"] != implementation_commit:
+        _fail("IMPLEMENTATION_INVALID", "cache-policy clone commit differs from PAR I")
     expected_logical = _sha256(evidence.canonical_body(logical_preimage))
     expected_environment = _sha256(evidence.canonical_body(environment_preimage))
     expected_argv = _sha256(evidence.canonical_body(outer_argv))
@@ -2177,7 +3002,7 @@ def _load_par_seal(
     par_prelaunch_observation = build_manifest_document.get("prelaunch_observation")
     if (
         build_manifest_document.get("artifact_kind") != "a4_v2_build_manifest"
-        or build_manifest_document.get("schema_version") != 1
+        or build_manifest_document.get("schema_version") != 2
         or build_manifest_document.get("implementation_commit")
         != implementation_commit
         or build_manifest_document.get("build_commands")
@@ -2245,6 +3070,29 @@ def _load_par_seal(
     byte_entries = _validate_par_byte_ledger(
         seal.get("phase_byte_ledger"), admitted_index, len(admitted_index_payload)
     )
+    cache_transient = _admit_cache_policy_result(
+        _read_regular_nofollow(
+            PAR_SEAL_PATH.parent / "cache_policy_verification.json", 8 << 20
+        ),
+        cache_policy,
+        implementation_manifest,
+    )
+    p_bytes = byte_entries[1]
+    if (
+        p_bytes["created_temporary_bytes"] - p_bytes["deleted_partial_bytes"]
+        != p_bytes["research_evidence_archive_bytes"]
+        + cache_transient["control_logical_bytes"]
+        or p_bytes["maximum_live_owned_temporary_bytes"]
+        < sum(
+            cache_transient[key]
+            for key in (
+                "control_allocated_bytes",
+                "stdout_allocated_bytes",
+                "stderr_allocated_bytes",
+            )
+        )
+    ):
+        _fail("IMPLEMENTATION_INVALID", "PAR P ledger omits cache transient bytes")
 
     review_payload = _read_regular_nofollow(PAR_REVIEW_BINDING_PATH, 65_536)
     review = _parse_json_document(review_payload, "PAR review binding", True)
@@ -7797,6 +8645,272 @@ def _run_srun(start_cpu: int, start_wall: int, artifact_root_argument: str) -> i
     os._exit(3)
 
 
+def _admit_cache_startup_capture(
+    startup_capture: object, cache_policy_observer: object
+) -> tuple[dict[str, Any], Any]:
+    if not isinstance(startup_capture, dict) or set(startup_capture) != {
+        "observation",
+        "parent",
+    }:
+        raise PreconditionFailure("PAR lacks the bounded pre-import cache capture")
+    if not callable(cache_policy_observer):
+        raise PreconditionFailure("PAR lacks the reviewed cache observation callback")
+    observation = startup_capture.get("observation")
+    parent = startup_capture.get("parent")
+    if not isinstance(observation, dict) or set(observation) != {
+        "a4_modules",
+        "cache_paths",
+        "checkpoint",
+        "interpreter",
+        "observed_monotonic_ns",
+        "parent_identity",
+        "retained_modules",
+        "sys_meta_path",
+        "sys_path",
+        "user_site_enabled",
+    }:
+        raise PreconditionFailure("pre-import cache observation shape differs")
+    if observation.get("checkpoint") != "STARTUP_PREIMPORT":
+        raise PreconditionFailure("pre-import cache observation checkpoint differs")
+    interpreter = observation.get("interpreter")
+    if interpreter != {
+        "dont_write_bytecode": True,
+        "flags": {
+            "dont_write_bytecode": 1,
+            "ignore_environment": 0,
+            "isolated": 0,
+            "no_site": 0,
+            "optimize": 0,
+        },
+        "implementation_cache_tag": "cpython-39",
+        "pycache_prefix": None,
+    }:
+        raise PreconditionFailure("pre-import interpreter/cache state differs")
+    parent_identity = observation.get("parent_identity")
+    if not isinstance(parent_identity, dict) or (
+        parent_identity.get("pid") != os.getpid()
+        or parent_identity.get("start_time_clock_ticks")
+        != _parse_stat(_read_proc_file(os.getpid(), b"stat")).start_ticks
+    ):
+        raise PreconditionFailure("pre-import parent process identity differs")
+    cache_paths = observation.get("cache_paths")
+    if cache_paths != [
+        {"path": path, "state": "ABSENT"} for path in CACHE_PATHS
+    ]:
+        _fail("ARTIFACT_INVALID", "pre-import cache namespace was not absent")
+    if observation.get("a4_modules") != []:
+        raise PreconditionFailure("an A4 module preceded the registered import boundary")
+    retained = observation.get("retained_modules")
+    if not isinstance(retained, list) or any(
+        isinstance(item, dict)
+        and item.get("name") in {"sitecustomize", "usercustomize"}
+        for item in retained
+    ):
+        raise PreconditionFailure(
+            "startup retained modules include sitecustomize/usercustomize"
+        )
+    clone_root = "/tmp/saq-a4-v2-par-r1-isolation/repo"
+    clone_script = clone_root + "/script"
+
+    def startup_path_allowed(value: object) -> bool:
+        return isinstance(value, str) and (
+            value in {"built-in", "frozen"}
+            or any(
+                value == root or value.startswith(root + "/")
+                for root in ALLOWED_INSTALLED_ORIGIN_ROOTS
+            )
+        )
+
+    if (
+        len(retained) > 4096
+        or any(
+            not isinstance(item, dict)
+            or set(item) != {"cached", "file", "loader_type", "name", "origin"}
+            or not isinstance(item.get("name"), str)
+            or not 0 < len(item["name"]) <= 256
+            or not isinstance(item.get("loader_type"), str)
+            or not 0 < len(item["loader_type"]) <= 512
+            for item in retained
+        )
+        or [item["name"] for item in retained]
+        != sorted(item["name"] for item in retained)
+        or len({item["name"] for item in retained}) != len(retained)
+    ):
+        _fail("ARTIFACT_INVALID", "startup retained-module inventory is malformed")
+    for item in retained:
+        if item["name"] == "__main__":
+            expected_main = clone_script + "/run_arbitrary_cardinality_a4_v2.py"
+            if (
+                item["file"] != expected_main
+                or item["origin"] != expected_main
+                or item["cached"] is not None
+            ):
+                _fail("ARTIFACT_INVALID", "startup __main__ identity differs")
+            continue
+        for field in ("cached", "file", "origin"):
+            value = item[field]
+            if value is not None and not startup_path_allowed(value):
+                _fail(
+                    "ARTIFACT_INVALID",
+                    f"startup module {field} is outside frozen roots",
+                )
+    sys_path = observation.get("sys_path")
+    if (
+        not isinstance(sys_path, list)
+        or not sys_path
+        or len(sys_path) > 128
+        or any(
+            not isinstance(path, str) or not 0 < len(path) <= 512
+            for path in sys_path
+        )
+        or [path for path in sys_path if path.startswith(clone_root + "/")]
+        != [clone_script]
+        or any(
+            path != clone_script and not startup_path_allowed(path)
+            for path in sys_path
+        )
+    ):
+        _fail("ARTIFACT_INVALID", "startup sys.path differs from frozen roots")
+    meta_path = observation.get("sys_meta_path")
+    if (
+        not isinstance(meta_path, list)
+        or len(meta_path) > 64
+        or any(
+            not isinstance(item, dict)
+            or set(item) != {"origin", "type"}
+            or not isinstance(item.get("type"), str)
+            or not 0 < len(item["type"]) <= 512
+            or (
+                item.get("origin") is not None
+                and not startup_path_allowed(item["origin"])
+            )
+            for item in meta_path
+        )
+    ):
+        _fail("ARTIFACT_INVALID", "startup sys.meta_path differs from frozen roots")
+    if observation.get("user_site_enabled") not in {None, True, False}:
+        _fail("ARTIFACT_INVALID", "startup user-site observation is malformed")
+    monotonic = observation.get("observed_monotonic_ns")
+    if not isinstance(monotonic, int) or isinstance(monotonic, bool) or monotonic <= 0:
+        _fail("ARTIFACT_INVALID", "startup monotonic observation is malformed")
+    if not isinstance(parent, dict) or set(parent) != {
+        "bootstrap_external",
+        "cwd",
+        "environment",
+        "leader",
+        "raw_cmdline_hex",
+        "raw_cmdline_sha256",
+        "raw_cmdline_size_bytes",
+        "sys_argv",
+    }:
+        raise PreconditionFailure("pre-import parent binding shape differs")
+    raw_hex = parent.get("raw_cmdline_hex")
+    if (
+        not isinstance(raw_hex, str)
+        or len(raw_hex) % 2
+        or re.fullmatch(r"[0-9a-f]+", raw_hex) is None
+    ):
+        raise PreconditionFailure("pre-import raw cmdline identity is malformed")
+    raw_cmdline = bytes.fromhex(raw_hex)
+    expected_raw = b"\0".join(
+        (
+            b"python",
+            b"-B",
+            b"script/run_arbitrary_cardinality_a4_v2.py",
+            b"par",
+            b"docs/saq_a4_v2_par_artifacts_2026_07_14",
+        )
+    ) + b"\0"
+    if (
+        raw_cmdline != expected_raw
+        or parent.get("raw_cmdline_sha256") != _sha256(raw_cmdline)
+        or parent.get("raw_cmdline_size_bytes") != len(raw_cmdline)
+        or parent.get("sys_argv")
+        != [
+            "script/run_arbitrary_cardinality_a4_v2.py",
+            "par",
+            "docs/saq_a4_v2_par_artifacts_2026_07_14",
+        ]
+    ):
+        raise PreconditionFailure("parent raw cmdline is not exact python -B PAR")
+    environment = parent.get("environment")
+    if environment != {
+        "python_prefixed_names": [],
+        "thread_environment": dict(_FIXED_CHILD_ENVIRONMENT),
+    }:
+        raise PreconditionFailure("parent Python/thread environment differs")
+    if parent.get("cwd") != "/tmp/saq-a4-v2-par-r1-isolation/repo":
+        _fail("ARTIFACT_INVALID", "parent cwd is not the bound isolated clone")
+    leader = parent.get("leader")
+    bootstrap = parent.get("bootstrap_external")
+    if not isinstance(leader, dict) or set(leader) != {
+        "command",
+        "proc_self_exe",
+        "sys_executable",
+    }:
+        _fail("ARTIFACT_INVALID", "parent leader alias closure is malformed")
+    leader_records = [leader[name] for name in sorted(leader)]
+    leader_keys = {
+        "device",
+        "inode",
+        "mode",
+        "path",
+        "resolved_path",
+        "sha256",
+        "size_bytes",
+    }
+    if any(
+        not isinstance(item, dict) or set(item) != leader_keys
+        for item in leader_records
+    ):
+        _fail("ARTIFACT_INVALID", "parent leader alias identity is malformed")
+    leader_inodes = {
+        (item.get("device"), item.get("inode")) for item in leader_records
+    }
+    if len(leader_inodes) != 1 or any(
+        item.get("resolved_path") != "/usr/bin/python3.9"
+        or not isinstance(item.get("path"), str)
+        or not os.path.isabs(item["path"])
+        or os.path.normpath(item["path"]) != item["path"]
+        or not isinstance(item.get("mode"), int)
+        or isinstance(item.get("mode"), bool)
+        or not stat.S_ISREG(item["mode"])
+        or item.get("sha256")
+        != "c87babf8337b668da60e26d897d694df7bd9a5b7907416e4eda078b9c33d05e0"
+        or item.get("size_bytes") != 15_448
+        for item in leader_records
+    ):
+        _fail(
+            "ARTIFACT_INVALID",
+            "python command/sys.executable/proc-exe aliases differ from the pinned leader",
+        )
+    if not isinstance(bootstrap, dict) or set(bootstrap) != {
+        "device",
+        "inode",
+        "mode",
+        "path",
+        "sha256",
+        "size_bytes",
+    } or (
+        bootstrap.get("path")
+        != "/usr/lib64/python3.9/importlib/_bootstrap_external.py"
+        or bootstrap.get("sha256")
+        != "8373612b2866d0971f9167ced3a0254204fef058c975f2e30fbb3138797e21d4"
+        or bootstrap.get("size_bytes") != 66_447
+        or not isinstance(bootstrap.get("device"), int)
+        or isinstance(bootstrap.get("device"), bool)
+        or bootstrap["device"] < 0
+        or not isinstance(bootstrap.get("inode"), int)
+        or isinstance(bootstrap.get("inode"), bool)
+        or bootstrap["inode"] <= 0
+        or not isinstance(bootstrap.get("mode"), int)
+        or isinstance(bootstrap.get("mode"), bool)
+        or not stat.S_ISREG(bootstrap["mode"])
+    ):
+        _fail("ARTIFACT_INVALID", "installed importlib bootstrap identity differs")
+    return {"observation": dict(observation), "parent": dict(parent)}, cache_policy_observer
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(allow_abbrev=False)
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -7807,7 +8921,12 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(start_cpu_microseconds: int, start_wall_nanoseconds: int) -> int:
+def main(
+    start_cpu_microseconds: int,
+    start_wall_nanoseconds: int,
+    startup_capture: object = None,
+    cache_policy_observer: object = None,
+) -> int:
     args = _parser().parse_args()
     try:
         if args.command == "srun":
@@ -7815,6 +8934,9 @@ def main(start_cpu_microseconds: int, start_wall_nanoseconds: int) -> int:
                 start_cpu_microseconds, start_wall_nanoseconds, args.artifact_root
             )
         if args.command == "par":
+            admitted_startup, admitted_observer = _admit_cache_startup_capture(
+                startup_capture, cache_policy_observer
+            )
             import a4_v2_parity  # Future separately authorized PAR stage only.
 
             try:
@@ -7825,7 +8947,15 @@ def main(start_cpu_microseconds: int, start_wall_nanoseconds: int) -> int:
                     _snapshot,
                     _process_inventory,
                     _prelaunch_observation,
+                    admitted_startup,
+                    admitted_observer,
                 )
+            except a4_v2_parity.CachePolicyArtifactFailure as error:
+                print(f"ARTIFACT_INVALID: {error}", file=sys.stderr)
+                return 3
+            except a4_v2_parity.CachePolicyResourceFailure as error:
+                print(f"RESOURCE_INCOMPLETE_NO_DECISION: {error}", file=sys.stderr)
+                return 3
             except a4_v2_parity.ParityFailure as error:
                 print(f"IMPLEMENTATION_INVALID: {error}", file=sys.stderr)
                 return 3

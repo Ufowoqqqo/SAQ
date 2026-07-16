@@ -844,3 +844,148 @@ SOURCE_IMPLEMENTED_STATIC_REVIEW_PASS
 It does not establish that the code builds, that parity passes, that the
 synthetic instrument fits its cap, or that arbitrary cardinalities improve an
 ANN system.
+
+## 13. CACHE-I additive evidence binding
+
+The `A4-V2-CACHE-I` rebinding is governance-only and preserves the scientific
+instrument above.  Its exact machine authority is
+`docs/saq_a4_v2_cache_protocol_authority_manifest_2026_07_15.json`; its exact
+37-file-source manifest/tree and separately identified inline PREP bootstrap
+are in `docs/saq_a4_v2_implementation_manifest_2026_07_14.json`; and its
+complete executable-unit and parent-precedence closure is
+`docs/saq_a4_v2_cache_static_closure_2026_07_15.json`.
+
+The parent PAR launch is frozen to:
+
+```text
+MKL_NUM_THREADS=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+python -B script/run_arbitrary_cardinality_a4_v2.py \
+  par docs/saq_a4_v2_par_artifacts_2026_07_14
+```
+
+The registered entrypoint observation occurs after the first CPU/wall
+snapshots and before importing an A4 module.  It binds raw
+`/proc/self/cmdline`, cwd, interpreter flags, bytecode/cache state, bounded
+`sys.path` and `sys.meta_path`, retained modules, and the pinned running
+CPython leader and installed bootstrap.  It is rechecked before the B terminal
+and before the P terminal.  The cache namespace and ten adjacent legacy paths
+must be absent under no-follow semantics at all three checkpoints.
+
+The environment-preimage is extended by exactly one seventh top-level field,
+`python_cache_policy`.  It binds only identities and expectations available
+before B/P execution: the launch/startup observation, cache protocol/static
+closure, source/schema/control, clone/PREP/BIND slots, expected B/P checks,
+and independent-verifier contract.  It does not hash a future verifier result.
+The actual B/P observations and independent result are instead carried by the
+P-owned canonical `cache_policy_verification.json`.  It persists the exact
+bounded canonical fd-198 control bytes as lowercase hex, binds and recomputes
+their identity, and requires the decoded observations to recompute the result's
+module summaries.  The artifact is validated, indexed, and sealed before the
+P terminal.  This is independently reconstructible one-way publication, not a
+self-reference.
+
+The independent cache verifier is a standalone stdlib-only process launched
+only in P through the already verified CPython descriptor with `-I -B -S`, cwd
+`/`, the exact three-key environment, and bounded canonical control on fd 198.
+It imports no repository module and writes only the registered P artifact.
+Its resource/stream/accounting work belongs to P.  The existing SRUN path may
+only receive dormant admission parsing for this new sealed input; CACHE-I
+does not authorize SRUN and SRUN never launches the cache verifier.
+
+Cache mismatch adds no retry or status.  Startup option/cache-state failure is
+`PRECONDITION_NOT_MET`; source/clone/binding/origin/cache mismatch, including
+a well-formed verifier mismatch report, is `ARTIFACT_INVALID`; verifier
+schema/process/canonicalization defects after successful spawn and reap are
+`IMPLEMENTATION_INVALID`.  The standalone verifier reserves exact exit `75`
+only for an internal resource/system-call failure that cannot truthfully
+publish its result; the parent maps only that exit to its existing resource
+class, while exit `70` and every other ordinary nonzero remain implementation
+defects.  Resource/system-call failures and a verifier wait status that reports
+POSIX-signal termination delegate to the byte-preserved parent mapping.  Only
+that last wait-status event may enter the already existing P signal-retry
+boundary, and only while its existing `retry_safe` predicate holds.  Mismatch,
+identity, schema, malformed output, ordinary nonzero exit other than the exact
+resource channel, and any post-boundary failure are never translated or
+retried.
+
+The **PAR** build-manifest and **PAR** artifact-index cache-aware shapes are
+version 2.  This does not renumber the later SRUN `F_trailer`
+`artifact_index_v2`, whose schema remains version 1.  The PAR artifact index
+must contain exactly one identity for
+`cache_policy_verification.json`; the unchanged PAR seal binds its exact
+bytes.  Both `_post_par_report_unchecked` and `_post_par_report` remain raw-byte
+equal to the parent baseline, so no cache observation, import, stat, read, or
+hash operation occurs after the P terminal snapshot.
+
+The PREP source and inline bootstrap are published only as statically reviewed
+future machinery.  They are not executed by CACHE-I, and no isolated clone,
+token, receipt, CACHE-BIND object, PAR event, data result, or scientific claim
+exists at this stage.  The maximum conclusion is
+`GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS` after an exact committed
+target and independent review find no issue at LOW or above.
+
+The future PREP receipt contract is nevertheless closed at source-review time.
+Its final resource ledger keeps seven mutually exclusive storage categories
+(`directories`, loose Git objects, pack payloads, other Git administration,
+tracked checkout, receipt, and temporary state), reconciles each category's
+logical bytes, allocated bytes, and entry count to the outer totals, and
+separately records ten supervisor/entry/fsync/process/capture operation counts.
+Bounded journal snapshots carry the observed process inventory and completed
+wait records, including per-process `/proc/io` when available and `ru_maxrss`.
+Unavailable network or process-I/O counters are explicit null observations,
+never inferred zeroes.  These are future evidence fields, not measurements
+made by CACHE-I.
+
+### 13.1 Exact CACHE-I static seal and narrow syntax record
+
+The final locked filesystem-source closure is exactly 37 files: 27
+native/CMake sources and 10 Python sources.  Its unchanged canonical-tree
+algorithm now produces:
+
+```text
+9568007588c78ddda9fb4c4e20e8773ee2fa1da10a7656f181fef06883de38a2
+```
+
+The separate inline PREP bootstrap remains outside that 37-file preimage.  Its
+exact ASCII identity is
+`9c86fcf81df8d8d2b7b9b15a43682fd62f7c6ba35762d41e8d2a04785708487b`
+over 19,631 bytes; its durable-start prologue identity is
+`0111488a71573dd058308a3e20590cb8def3d4f5e8601b0e566800fd10b0d3a7`
+over 2,778 bytes.  The 37 file sources plus this inline source are exactly 38
+statically enumerated executable units.
+
+After the original CACHE-I source-only boundary, the user separately granted
+the narrow authority `A4-V2-CACHE-I-SYNTAX`.  Under that distinct authority,
+`/usr/bin/python3.9` accepted `compile()`-only syntax checks for the exact
+six changed/new outer Python source snapshots and the exact inline source
+snapshot.  No resulting code object was executed; no module was imported; and
+no build, fixture, RNG, PREP, cache-verifier, PAR, SRUN, data, quarantine, or
+SAQ/CAQ operation was authorized or performed.  This result establishes only
+Python 3.9 syntax acceptance for those seven exact byte snapshots.  It does
+not establish importability, executability, correctness, runtime-policy
+validity, schema acceptance, parity, or scientific evidence.
+
+The additive cache-authority object's frozen
+`no_execution_attestation` and prohibition list continue to state the
+original CACHE-I authority exactly because the future verifier requires those
+literal bytes.  The later syntax-only exception is recorded separately in the
+static closure, this binding, the provenance crosswalk, `AGENTS.md`, and
+`TASK.md`; it must not be silently folded into or misrepresented as an
+operation under the original CACHE-I authority.
+
+The canonical static-closure identity is
+`f4e842fb5e43f1d134e92782b3aa44da4b9440bf154200161f5cda21213795a0`
+over 218,872 bytes.  The cache-authority identity is
+`5bbb08b98eaddf6e828c13c9c8daf968f1be5912ff8fd93b71383fa34ef6ceec`
+over 42,903 bytes.  These are uncommitted target-worktree identities until a
+focused exact target commit and its direct-child independent review close the
+frozen predicates.  WIP and untracked files remain nonevidence.
+
+The current maximum worktree status is therefore:
+
+```text
+STATIC_SEAL_COMPLETE_PENDING_EXACT_TARGET_COMMIT_AND_INDEPENDENT_REVIEW
+```
+
+It is below `GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS` and grants no
+PREP, CACHE-BIND, PAR-R1, SRUN, data, or SAQ/CAQ authority.

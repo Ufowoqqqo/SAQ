@@ -8,7 +8,9 @@ must not be imported or executed during A4-V2-I.
 
 from __future__ import annotations
 
+import errno
 import hashlib
+import fcntl
 import importlib.metadata
 import itertools
 import json
@@ -38,6 +40,23 @@ IMPLEMENTATION_MANIFEST = (
 )
 PROTOCOL = REPOSITORY_ROOT / "docs/saq_a4_v2_protocol_authority_manifest_2026_07_14.json"
 SCHEMA = REPOSITORY_ROOT / "docs/saq_a4_v2_artifact_schema_2026_07_14.json"
+CACHE_POLICY_VERIFIER = REPOSITORY_ROOT / "script/a4_v2_cache_policy_verifier.py"
+CACHE_PROTOCOL_AUTHORITY = (
+    REPOSITORY_ROOT
+    / "docs/saq_a4_v2_cache_protocol_authority_manifest_2026_07_15.json"
+)
+CACHE_RUNTIME_SCHEMA = (
+    REPOSITORY_ROOT / "docs/saq_a4_v2_cache_runtime_schema_2026_07_15.json"
+)
+CACHE_STATIC_CLOSURE = (
+    REPOSITORY_ROOT / "docs/saq_a4_v2_cache_static_closure_2026_07_15.json"
+)
+CACHE_PREP_BINDING = (
+    REPOSITORY_ROOT / "docs/saq_a4_v2_cache_prep_binding_2026_07_15.json"
+)
+PAR_R1_AUTHORIZATION = (
+    REPOSITORY_ROOT / "docs/saq_a4_v2_par_r1_authorization_2026_07_15.md"
+)
 EXPECTED_ARTIFACT_ROOT = (
     REPOSITORY_ROOT / "docs/saq_a4_v2_par_artifacts_2026_07_14"
 )
@@ -45,6 +64,35 @@ HASH_DOMAIN = "saq-attempt4-a4-1-20260713-schema2"
 PROTOCOL_VERSION = "saq-a4-v2-synthetic-construction-20260714-schema1"
 SEED = 20260713
 FIXED_FD = 197
+CACHE_CONTROL_FD = 198
+CACHE_VERIFIER_RESOURCE_EXIT = 75
+CACHE_CONTROL_LIMIT = 1_048_576
+CACHE_OUTPUT_LIMIT = 8_388_608
+CACHE_VERIFIER_ENVIRONMENT = {
+    "LANG": "C",
+    "LC_ALL": "C",
+    "PATH": "/usr/bin:/bin",
+}
+CACHE_PATHS = (
+    "script/__pycache__",
+    "script/a4_v2_archive.pyc",
+    "script/a4_v2_cache_policy_verifier.pyc",
+    "script/a4_v2_evidence.pyc",
+    "script/a4_v2_isolated_clone_prep.pyc",
+    "script/a4_v2_parity.pyc",
+    "script/a4_v2_producer.pyc",
+    "script/a4_v2_producer_wire.pyc",
+    "script/a4_v2_runner.pyc",
+    "script/a4_v2_verifier.pyc",
+    "script/run_arbitrary_cardinality_a4_v2.pyc",
+)
+ALLOWED_INSTALLED_ORIGIN_ROOTS = (
+    "/usr/lib/python3.9",
+    "/usr/lib64/python3.9",
+    "/usr/lib64/python39.zip",
+    "/usr/local/lib/python3.9/site-packages",
+    "/usr/local/lib64/python3.9/site-packages",
+)
 PER_PHASE_CPU_LIMIT = 86_400_000_000
 PER_PHASE_WALL_LIMIT = 172_800_000_000_000
 STUDY_CPU_LIMIT = 518_400_000_000
@@ -107,6 +155,7 @@ _WAIT4.argtypes = [
 ]
 _WAIT4.restype = ctypes.c_int
 _CURRENT_DIRECT_CHILD_PEAK_RSS = 0
+_PENDING_CACHE_TRANSIENT: dict[str, Any] | None = None
 CMAKE_BINARY = "/usr/local/software/cmake-4.0.3/bin/cmake"
 NINJA_BINARY = "/usr/local/software/ninja-1.9.0/bin/ninja"
 CXX_BINARY = "/usr/bin/c++"
@@ -271,6 +320,7 @@ PARITY_ARTIFACT_NAMES = (
     "block_optimized_run2.stderr",
     "block_optimized_run2.stdout",
     "block_optimized_run2.tsv",
+    "cache_policy_verification.json",
     "parity_summary.json",
     "producer_native_smoke.stderr",
     "producer_native_smoke.stdout",
@@ -288,6 +338,14 @@ PARITY_ARTIFACT_NAMES = (
     "scalar_optimized.stdout",
     "scalar_optimized.tsv",
 )
+
+
+class CachePolicyArtifactFailure(RuntimeError):
+    """A well-formed cache identity/absence mismatch."""
+
+
+class CachePolicyResourceFailure(RuntimeError):
+    """A cache verifier system/resource failure, including its typed exit."""
 
 
 class ParityFailure(RuntimeError):
@@ -1917,6 +1975,13 @@ def _tree_bytes(path: Path) -> int:
             if candidate.is_symlink() or not candidate.is_file():
                 _fail(f"nonregular member in owned PAR tree: {candidate}")
             total += candidate.stat().st_size
+    pending = _PENDING_CACHE_TRANSIENT
+    if pending is not None:
+        resolved = str(path.resolve())
+        if resolved == pending["attempt_path"]:
+            total += int(pending["logical_bytes"])
+        elif resolved == pending["staging_path"]:
+            total += int(pending["allocated_bytes"])
     return total
 
 
@@ -1964,9 +2029,16 @@ def _fsync_directory(path: Path) -> None:
 
 
 def _discard_attempt(path: Path) -> int:
+    global _PENDING_CACHE_TRANSIENT
+
     deleted = _tree_bytes(path)
     if path.exists():
         shutil.rmtree(path)
+    if (
+        _PENDING_CACHE_TRANSIENT is not None
+        and str(path.resolve()) == _PENDING_CACHE_TRANSIENT["attempt_path"]
+    ):
+        _PENDING_CACHE_TRANSIENT = None
     return deleted
 
 
@@ -2205,7 +2277,7 @@ def _run_build_attempt(
             "docs/saq_a4_v2_protocol_authority_manifest_2026_07_14.json"
         ),
         "schema": _sealed("docs/saq_a4_v2_artifact_schema_2026_07_14.json"),
-        "schema_version": 1,
+        "schema_version": 2,
         "source_manifest": _sealed(
             "docs/saq_a4_v2_implementation_manifest_2026_07_14.json"
         ),
@@ -2407,6 +2479,1485 @@ def _run_parity_attempt(
     _write_new(attempt / "parity_summary.json", _canonical_document(parity_summary))
 
 
+def _cache_reviewed_python_sources(
+    source_manifest: Mapping[str, Any], implementation_commit: str
+) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]]]:
+    python_paths = source_manifest.get("python_source_files")
+    source_files = source_manifest.get("source_files")
+    if (
+        source_manifest.get("schema_version") != 2
+        or not isinstance(python_paths, list)
+        or len(python_paths) != 10
+        or python_paths
+        != sorted(python_paths, key=lambda value: value.encode("utf-8"))
+        or not isinstance(source_files, list)
+        or len(source_files) != 37
+    ):
+        raise CachePolicyArtifactFailure(
+            "implementation manifest is not the exact CACHE-I 37/10-source closure"
+        )
+    by_path = {
+        item.get("path"): item
+        for item in source_files
+        if isinstance(item, dict) and isinstance(item.get("path"), str)
+    }
+    reviewed: list[dict[str, Any]] = []
+    observation_map: dict[str, dict[str, Any]] = {}
+    for path in python_paths:
+        item = by_path.get(path)
+        if not isinstance(path, str) or not isinstance(item, dict) or set(item) != {
+            "family",
+            "path",
+            "role",
+            "sha256",
+            "size_bytes",
+        }:
+            raise CachePolicyArtifactFailure(
+                "implementation manifest Python source entry is malformed"
+            )
+        blob = _capture(("git", "rev-parse", f"{implementation_commit}:{path}"))
+        blob_text = blob.decode("ascii", errors="strict").strip()
+        if re.fullmatch(r"[0-9a-f]{40}", blob_text) is None:
+            raise CachePolicyArtifactFailure(
+                f"reviewed Python source lacks a Git blob identity: {path}"
+            )
+        reviewed.append(
+            {
+                "family": item["family"],
+                "git_blob": blob_text,
+                "path": path,
+                "role": item["role"],
+                "sha256": item["sha256"],
+                "size_bytes": item["size_bytes"],
+            }
+        )
+        observation_map[path] = dict(item)
+    return reviewed, observation_map
+
+
+def _cache_policy_fixed_preimage(
+    *,
+    implementation_commit: str,
+    source_manifest: Mapping[str, Any],
+    startup_capture: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
+    source_tree_sha256 = source_manifest.get("source_tree_sha256")
+    if not isinstance(source_tree_sha256, str) or re.fullmatch(
+        r"[0-9a-f]{64}", source_tree_sha256
+    ) is None:
+        raise CachePolicyArtifactFailure(
+            "implementation manifest source-tree identity is malformed"
+        )
+    reviewed_sources, observation_map = _cache_reviewed_python_sources(
+        source_manifest, implementation_commit
+    )
+    expected_tree = _capture(("git", "rev-parse", "HEAD^{tree}"))
+    expected_tree_oid = expected_tree.decode("ascii", errors="strict").strip()
+    if re.fullmatch(r"[0-9a-f]{40}", expected_tree_oid) is None:
+        raise CachePolicyArtifactFailure("clone tree identity is not a Git OID")
+    authority = {
+        "cache_prep_binding": _sealed(
+            "docs/saq_a4_v2_cache_prep_binding_2026_07_15.json"
+        ),
+        "cache_protocol_authority": _sealed(
+            "docs/saq_a4_v2_cache_protocol_authority_manifest_2026_07_15.json"
+        ),
+        "cache_static_closure": _sealed(
+            "docs/saq_a4_v2_cache_static_closure_2026_07_15.json"
+        ),
+        "implementation_manifest": _sealed(
+            "docs/saq_a4_v2_implementation_manifest_2026_07_14.json"
+        ),
+        "par_r1_authorization": _sealed(
+            "docs/saq_a4_v2_par_r1_authorization_2026_07_15.md"
+        ),
+        "runtime_schema": _sealed(
+            "docs/saq_a4_v2_cache_runtime_schema_2026_07_15.json"
+        ),
+    }
+    clone = {
+        "allowed_installed_origin_roots": list(ALLOWED_INSTALLED_ORIGIN_ROOTS),
+        "branch": "saq-arbitrary-cardinality-feasibility-v2",
+        "expected_commit": implementation_commit,
+        "expected_tree_oid": expected_tree_oid,
+        "origin_fetch_url": "https://github.com/Ufowoqqqo/SAQ.git",
+        "origin_push_url": "git@github.com:Ufowoqqqo/SAQ.git",
+        "par_staging_relative_path": (
+            "docs/saq_a4_v2_par_artifacts_2026_07_14.staging"
+        ),
+        "root": "/tmp/saq-a4-v2-par-r1-isolation/repo",
+        "source_tree_sha256": source_tree_sha256,
+    }
+    parent_capture = startup_capture.get("parent")
+    startup_observation = startup_capture.get("observation")
+    if not isinstance(parent_capture, dict) or not isinstance(
+        startup_observation, dict
+    ):
+        raise CachePolicyArtifactFailure("admitted startup capture is malformed")
+    parent_identity = startup_observation.get("parent_identity")
+    bootstrap = parent_capture.get("bootstrap_external")
+    leader_group = parent_capture.get("leader")
+    if (
+        not isinstance(parent_identity, dict)
+        or not isinstance(bootstrap, dict)
+        or set(bootstrap)
+        != {"device", "inode", "mode", "path", "sha256", "size_bytes"}
+        or not isinstance(leader_group, dict)
+        or any(
+            not isinstance(leader_group.get(name), dict)
+            for name in ("command", "proc_self_exe", "sys_executable")
+        )
+    ):
+        raise CachePolicyArtifactFailure("startup parent identity is incomplete")
+    if parent_capture.get("environment") != {
+        "python_prefixed_names": [],
+        "thread_environment": dict(EXPECTED_THREAD_ENVIRONMENT),
+    }:
+        raise CachePolicyArtifactFailure("startup parent environment binding differs")
+    leader = {
+        name: {
+            key: leader_group[name].get(key)
+            for key in (
+                "device",
+                "inode",
+                "mode",
+                "path",
+                "resolved_path",
+                "sha256",
+                "size_bytes",
+            )
+        }
+        for name in ("command", "proc_self_exe", "sys_executable")
+    }
+    parent = {
+        "bootstrap_external": {
+            key: bootstrap.get(key)
+            for key in (
+                "device",
+                "inode",
+                "mode",
+                "path",
+                "sha256",
+                "size_bytes",
+            )
+        },
+        "cmdline_hex": parent_capture.get("raw_cmdline_hex"),
+        "cmdline_sha256": parent_capture.get("raw_cmdline_sha256"),
+        "cwd": parent_capture.get("cwd"),
+        "environment": parent_capture.get("environment"),
+        "leader": leader,
+        "pid": parent_identity.get("pid"),
+        "start_time_clock_ticks": parent_identity.get("start_time_clock_ticks"),
+    }
+    output = {
+        "artifact_name": "cache_policy_verification.json",
+        "maximum_bytes": CACHE_OUTPUT_LIMIT,
+        "staging_relative_path": clone["par_staging_relative_path"],
+    }
+    fixed = {
+        "artifact_kind": "a4_v2_python_cache_policy_preimage",
+        "authority": authority,
+        "cache_paths": list(CACHE_PATHS),
+        "clone": clone,
+        "independent_verifier": {
+            "argv": [
+                "/proc/self/fd/197",
+                "-I",
+                "-B",
+                "-S",
+                str(CACHE_POLICY_VERIFIER),
+                "verify-parent-cache-policy",
+                "--control-fd",
+                "198",
+            ],
+            "control_fd": CACHE_CONTROL_FD,
+            "control_maximum_bytes": CACHE_CONTROL_LIMIT,
+            "control_transport": {
+                "name": "saq-a4-v2-cache-policy-control",
+                "offset_bytes": 0,
+                "seals": [
+                    "F_SEAL_SEAL",
+                    "F_SEAL_SHRINK",
+                    "F_SEAL_GROW",
+                    "F_SEAL_WRITE",
+                ],
+                "transport": "SEALED_ANONYMOUS_MEMFD",
+            },
+            "cwd": "/",
+            "environment": dict(CACHE_VERIFIER_ENVIRONMENT),
+            "output": output,
+        },
+        "parent": parent,
+        "reviewed_python_sources": reviewed_sources,
+        "schema_version": 1,
+        "startup_observation": dict(startup_observation),
+    }
+    return fixed, observation_map
+
+
+def _observe_cache_checkpoint(
+    observer: Any,
+    checkpoint: str,
+    observation_map: Mapping[str, Mapping[str, Any]],
+) -> dict[str, Any]:
+    try:
+        value = observer(checkpoint, dict(observation_map))
+    except (OSError, RuntimeError, ValueError) as error:
+        raise CachePolicyArtifactFailure(
+            f"{checkpoint} cache/source/origin observation failed: {error}"
+        ) from error
+    if not isinstance(value, dict) or value.get("checkpoint") != checkpoint:
+        raise CachePolicyArtifactFailure(
+            f"{checkpoint} cache observation shape/checkpoint differs"
+        )
+    return value
+
+
+def _write_all_descriptor(descriptor: int, payload: bytes) -> None:
+    offset = 0
+    while offset < len(payload):
+        written = os.write(descriptor, payload[offset:])
+        if written <= 0:
+            raise OSError("cache verifier control write made no progress")
+        offset += written
+
+
+def _cache_verifier_signal_retry_safe(output_path: Path) -> bool:
+    try:
+        os.stat(output_path, follow_symlinks=False)
+    except FileNotFoundError:
+        return True
+    except OSError:
+        return False
+    return False
+
+
+def _register_cache_transient_accounting(
+    staging: Path, attempt_path: Path, accounting: Mapping[str, int]
+) -> None:
+    global _PENDING_CACHE_TRANSIENT
+
+    if _PENDING_CACHE_TRANSIENT is not None:
+        raise CachePolicyResourceFailure(
+            "cache verifier transient accounting overlapped a prior retry"
+        )
+    _PENDING_CACHE_TRANSIENT = {
+        "allocated_bytes": sum(
+            int(accounting[name])
+            for name in (
+                "control_allocated_bytes",
+                "stdout_allocated_bytes",
+                "stderr_allocated_bytes",
+            )
+        ),
+        "attempt_path": str(attempt_path.resolve()),
+        "logical_bytes": sum(
+            int(accounting[name])
+            for name in (
+                "control_logical_bytes",
+                "stdout_logical_bytes",
+                "stderr_logical_bytes",
+            )
+        ),
+        "staging_path": str(staging.resolve()),
+    }
+
+
+def _clear_cache_transient_accounting(staging: Path, attempt_path: Path) -> None:
+    global _PENDING_CACHE_TRANSIENT
+
+    expected = {
+        "attempt_path": str(attempt_path.resolve()),
+        "staging_path": str(staging.resolve()),
+    }
+    if _PENDING_CACHE_TRANSIENT is None or any(
+        _PENDING_CACHE_TRANSIENT[key] != value for key, value in expected.items()
+    ):
+        raise CachePolicyResourceFailure(
+            "cache verifier transient-accounting success discharge differs"
+        )
+    _PENDING_CACHE_TRANSIENT = None
+
+
+def _cache_verifier_transient_accounting(
+    *,
+    control_allocated_bytes: int,
+    control_logical_bytes: int,
+    stdout_fd: int,
+    stderr_fd: int,
+    control_fd: int = -1,
+) -> dict[str, int]:
+    def descriptor_values(descriptor: int) -> tuple[int, int]:
+        if descriptor < 0:
+            return 0, 0
+        metadata = os.fstat(descriptor)
+        return int(metadata.st_blocks) * 512, int(metadata.st_size)
+
+    if control_fd >= 0:
+        control_allocated_bytes, control_logical_bytes = descriptor_values(
+            control_fd
+        )
+    stdout_allocated_bytes, stdout_logical_bytes = descriptor_values(stdout_fd)
+    stderr_allocated_bytes, stderr_logical_bytes = descriptor_values(stderr_fd)
+    return {
+        "control_allocated_bytes": control_allocated_bytes,
+        "control_logical_bytes": control_logical_bytes,
+        "stderr_allocated_bytes": stderr_allocated_bytes,
+        "stderr_logical_bytes": stderr_logical_bytes,
+        "stdout_allocated_bytes": stdout_allocated_bytes,
+        "stdout_logical_bytes": stdout_logical_bytes,
+    }
+
+
+def _signal_cache_verifier_group(pid: int) -> None:
+    try:
+        os.killpg(pid, signal.SIGKILL)
+    except ProcessLookupError:
+        return
+    except OSError as error:
+        raise CachePolicyResourceFailure(
+            f"cannot contain cache-verifier process group: {error}"
+        ) from error
+
+
+def _terminate_cache_verifier_group(pid: int) -> None:
+    _signal_cache_verifier_group(pid)
+    _wait_cache_verifier_group_empty(pid)
+
+
+def _wait_cache_verifier_group_empty(pid: int) -> None:
+    deadline = time.monotonic_ns() + 5_000_000_000
+    while True:
+        try:
+            os.killpg(pid, 0)
+        except ProcessLookupError:
+            return
+        except OSError as error:
+            raise CachePolicyResourceFailure(
+                f"cannot inspect contained cache-verifier group: {error}"
+            ) from error
+        if time.monotonic_ns() >= deadline:
+            raise CachePolicyResourceFailure(
+                "cache-verifier process group did not become empty after SIGKILL"
+            )
+        time.sleep(0.01)
+
+
+def _require_cache_verifier_group_empty(pid: int) -> None:
+    try:
+        os.killpg(pid, 0)
+    except ProcessLookupError:
+        return
+    except OSError as error:
+        raise CachePolicyResourceFailure(
+            f"cannot inspect reaped cache-verifier process group: {error}"
+        ) from error
+    try:
+        os.killpg(pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    except OSError as error:
+        raise CachePolicyResourceFailure(
+            f"cannot contain cache-verifier descendant group: {error}"
+        ) from error
+    _wait_cache_verifier_group_empty(pid)
+    _fail("cache verifier left a live descendant after its leader was reaped")
+
+
+def _normalize_cache_cleanup_failure(error: BaseException) -> BaseException:
+    if isinstance(error, (CachePolicyResourceFailure, ParityFailure)):
+        return error
+    if isinstance(error, (OSError, MemoryError, TimeoutError)):
+        return CachePolicyResourceFailure(
+            "cache verifier cleanup resource failure: "
+            f"{type(error).__name__}"
+        )
+    if isinstance(error, KeyboardInterrupt):
+        return CachePolicyResourceFailure(
+            "cache verifier cleanup was externally interrupted"
+        )
+    return ParityFailure(
+        "cache verifier cleanup implementation failure: "
+        f"{type(error).__name__}"
+    )
+
+
+def _cache_result_object(
+    value: Any, keys: set[str], description: str
+) -> Mapping[str, Any]:
+    if not isinstance(value, dict) or set(value) != keys:
+        _fail(f"cache verifier {description} object shape differs")
+    return value
+
+
+def _cache_result_integer(
+    value: Any, description: str, *, minimum: int = 0, maximum: int = (1 << 64) - 1
+) -> int:
+    if (
+        not isinstance(value, int)
+        or isinstance(value, bool)
+        or value < minimum
+        or value > maximum
+    ):
+        _fail(f"cache verifier {description} integer is out of bounds")
+    return value
+
+
+def _cache_result_ascii(
+    value: Any, description: str, *, maximum: int, nullable: bool = False
+) -> str | None:
+    if nullable and value is None:
+        return None
+    if (
+        not isinstance(value, str)
+        or not value
+        or len(value) > maximum
+        or any(ord(character) < 32 or ord(character) > 126 for character in value)
+    ):
+        _fail(f"cache verifier {description} is not bounded printable ASCII")
+    return value
+
+
+def _cache_result_sha256(value: Any, description: str) -> str:
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+        _fail(f"cache verifier {description} is not a SHA-256")
+    return value
+
+
+def _cache_result_git_oid(value: Any, description: str) -> str:
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{40}", value) is None:
+        _fail(f"cache verifier {description} is not a Git OID")
+    return value
+
+
+def _cache_result_bootstrap_identity(
+    value: Any, description: str, *, nullable: bool = False
+) -> Mapping[str, Any] | None:
+    if nullable and value is None:
+        return None
+    item = _cache_result_object(
+        value,
+        {"device", "inode", "mode", "path", "sha256", "size_bytes"},
+        description,
+    )
+    _cache_result_integer(item["device"], f"{description} device")
+    _cache_result_integer(item["inode"], f"{description} inode")
+    mode = _cache_result_integer(item["mode"], f"{description} mode")
+    if not stat.S_ISREG(mode):
+        _fail(f"cache verifier {description} mode is not regular")
+    _cache_result_ascii(item["path"], f"{description} path", maximum=512)
+    _cache_result_sha256(item["sha256"], f"{description} SHA-256")
+    _cache_result_integer(item["size_bytes"], f"{description} size")
+    return item
+
+
+def _cache_result_leader_identity(
+    value: Any, description: str, *, nullable: bool = False
+) -> Mapping[str, Any] | None:
+    if nullable and value is None:
+        return None
+    item = _cache_result_object(
+        value,
+        {
+            "device",
+            "inode",
+            "mode",
+            "path",
+            "resolved_path",
+            "sha256",
+            "size_bytes",
+        },
+        description,
+    )
+    _cache_result_integer(item["device"], f"{description} device")
+    _cache_result_integer(item["inode"], f"{description} inode")
+    mode = _cache_result_integer(item["mode"], f"{description} mode")
+    if not stat.S_ISREG(mode):
+        _fail(f"cache verifier {description} mode is not regular")
+    for key in ("path", "resolved_path"):
+        path = _cache_result_ascii(
+            item[key], f"{description} {key}", maximum=512
+        )
+        if path is None or not os.path.isabs(path) or os.path.normpath(path) != path:
+            _fail(f"cache verifier {description} {key} is not normalized absolute")
+    _cache_result_sha256(item["sha256"], f"{description} SHA-256")
+    _cache_result_integer(item["size_bytes"], f"{description} size")
+    return item
+
+
+def _cache_result_leader_group(
+    value: Any, description: str
+) -> Mapping[str, Mapping[str, Any]]:
+    group = _cache_result_object(
+        value,
+        {"command", "proc_self_exe", "sys_executable"},
+        description,
+    )
+    normalized = {
+        name: _cache_result_leader_identity(
+            group[name], f"{description}.{name}"
+        )
+        for name in ("command", "proc_self_exe", "sys_executable")
+    }
+    if any(item is None for item in normalized.values()):
+        _fail(f"cache verifier {description} contains a null expected identity")
+    return normalized  # type: ignore[return-value]
+
+
+def _cache_result_leader_core(value: Mapping[str, Any]) -> tuple[Any, ...]:
+    return tuple(
+        value[key]
+        for key in (
+            "device",
+            "inode",
+            "mode",
+            "resolved_path",
+            "sha256",
+            "size_bytes",
+        )
+    )
+
+
+def _cache_result_identity_status(
+    check: Mapping[str, Any], observed: Any, matches: bool, description: str
+) -> None:
+    expected_status = "UNAVAILABLE" if observed is None else "MATCH" if matches else "MISMATCH"
+    if check["status"] != expected_status:
+        _fail(f"cache verifier {description} status/observation differs")
+
+
+def _cache_result_bootstrap_check(
+    value: Any, expected: Mapping[str, Any], description: str
+) -> Mapping[str, Any]:
+    check = _cache_result_object(
+        value, {"expected", "observed", "status"}, description
+    )
+    expected_record = _cache_result_bootstrap_identity(
+        check["expected"], f"{description}.expected"
+    )
+    observed = _cache_result_bootstrap_identity(
+        check["observed"], f"{description}.observed", nullable=True
+    )
+    if expected_record != expected:
+        _fail(f"cache verifier {description} expected identity differs")
+    _cache_result_identity_status(
+        check, observed, observed == expected_record, description
+    )
+    return check
+
+
+def _cache_result_environment_check(
+    value: Any, expected: Mapping[str, Any], description: str
+) -> Mapping[str, Any]:
+    check = _cache_result_object(
+        value, {"expected", "observed", "status"}, description
+    )
+    if check["expected"] != expected:
+        _fail(f"cache verifier {description} expected environment differs")
+    observed = check["observed"]
+    if observed is not None:
+        observed = _cache_result_object(
+            observed,
+            {"python_prefixed_names", "thread_environment"},
+            f"{description}.observed",
+        )
+        names = observed["python_prefixed_names"]
+        if not isinstance(names, list) or len(names) > 128:
+            _fail(f"cache verifier {description} Python-name inventory differs")
+        for index, name in enumerate(names):
+            _cache_result_ascii(
+                name,
+                f"{description} Python name {index}",
+                maximum=128,
+            )
+        if len(set(names)) != len(names) or names != sorted(
+            names, key=lambda item: item.encode("ascii")
+        ):
+            _fail(f"cache verifier {description} Python-name inventory differs")
+        thread = _cache_result_object(
+            observed["thread_environment"],
+            {"MKL_NUM_THREADS", "OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS"},
+            f"{description}.thread_environment",
+        )
+        for name in sorted(thread):
+            _cache_result_ascii(
+                thread[name],
+                f"{description} {name}",
+                maximum=128,
+                nullable=True,
+            )
+    _cache_result_identity_status(check, observed, observed == expected, description)
+    return check
+
+
+def _cache_result_parent_leader_check(
+    value: Any,
+    expected: Mapping[str, Any],
+    parent_pid: int,
+) -> Mapping[str, Any]:
+    check = _cache_result_object(
+        value,
+        {"command_observed", "expected", "proc_exe_observed", "status"},
+        "parent leader_check",
+    )
+    expected_group = _cache_result_leader_group(
+        check["expected"], "parent leader_check.expected"
+    )
+    command = _cache_result_leader_identity(
+        check["command_observed"],
+        "parent leader_check.command_observed",
+        nullable=True,
+    )
+    proc_exe = _cache_result_leader_identity(
+        check["proc_exe_observed"],
+        "parent leader_check.proc_exe_observed",
+        nullable=True,
+    )
+    if expected_group != expected:
+        _fail("cache verifier parent leader expected group differs")
+    matches = (
+        command is not None
+        and proc_exe is not None
+        and command == expected_group["command"]
+        and _cache_result_leader_core(proc_exe)
+        == _cache_result_leader_core(expected_group["proc_self_exe"])
+        and _cache_result_leader_core(command)
+        == _cache_result_leader_core(proc_exe)
+        and proc_exe["path"] == f"/proc/{parent_pid}/exe"
+    )
+    observed = None if command is None or proc_exe is None else (command, proc_exe)
+    _cache_result_identity_status(check, observed, matches, "parent leader_check")
+    return check
+
+
+def _cache_result_verifier_leader_check(
+    value: Any, expected: Mapping[str, Any]
+) -> Mapping[str, Any]:
+    check = _cache_result_object(
+        value,
+        {"descriptor_observed", "expected", "proc_exe_observed", "status"},
+        "verifier leader_check",
+    )
+    expected_group = _cache_result_leader_group(
+        check["expected"], "verifier leader_check.expected"
+    )
+    descriptor = _cache_result_leader_identity(
+        check["descriptor_observed"],
+        "verifier leader_check.descriptor_observed",
+        nullable=True,
+    )
+    proc_exe = _cache_result_leader_identity(
+        check["proc_exe_observed"],
+        "verifier leader_check.proc_exe_observed",
+        nullable=True,
+    )
+    if expected_group != expected:
+        _fail("cache verifier leader expected group differs")
+    matches = (
+        descriptor is not None
+        and proc_exe is not None
+        and descriptor["path"] == "/proc/self/fd/197"
+        and proc_exe["path"] == "/proc/self/exe"
+        and _cache_result_leader_core(descriptor)
+        == _cache_result_leader_core(expected_group["proc_self_exe"])
+        == _cache_result_leader_core(proc_exe)
+    )
+    observed = None if descriptor is None or proc_exe is None else (descriptor, proc_exe)
+    _cache_result_identity_status(check, observed, matches, "verifier leader_check")
+    return check
+
+
+def _validate_cache_policy_result(
+    output: Mapping[str, Any],
+    *,
+    control: Mapping[str, Any],
+    control_payload: bytes,
+    accounting: Mapping[str, int],
+    source_manifest: Mapping[str, Any],
+    verifier_pid: int,
+) -> None:
+    global _CURRENT_DIRECT_CHILD_PEAK_RSS
+
+    if (
+        output.get("artifact_kind") != "a4_v2_cache_policy_verification"
+        or output.get("schema_version") != 1
+        or output.get("status") not in {"PASS", "MISMATCH"}
+        or output.get("claim_ceiling")
+        != (
+            "Cooperative isolated-clone B/P cache-policy evidence only; no "
+            "malicious-writer, SRUN-child, parity, feasibility, systems, or "
+            "scientific claim."
+        )
+    ):
+        _fail("cache verifier result envelope/claim differs")
+    status = str(output["status"])
+
+    control_preimage_hex = output.get("control_preimage_hex")
+    if (
+        not isinstance(control_preimage_hex, str)
+        or not 2 <= len(control_preimage_hex) <= 2 * CACHE_CONTROL_LIMIT
+        or len(control_preimage_hex) % 2
+        or re.fullmatch(r"(?:[0-9a-f]{2})+", control_preimage_hex) is None
+    ):
+        _fail("cache verifier persisted control preimage is not bounded lowercase hex")
+    persisted_control_payload = bytes.fromhex(control_preimage_hex)
+    persisted_control = _parse_json(
+        persisted_control_payload,
+        "persisted cache verifier control",
+        canonical=True,
+    )
+    if persisted_control_payload != control_payload or persisted_control != control:
+        _fail("cache verifier persisted control differs from the launched control")
+
+    authority_checks = output.get("authority_checks")
+    authority = control["authority"]
+    if not isinstance(authority_checks, list) or len(authority_checks) != 6:
+        _fail("cache verifier authority-check count differs")
+    for index, key in enumerate(sorted(authority)):
+        item = _cache_result_object(
+            authority_checks[index],
+            {"path", "sha256", "size_bytes", "status"},
+            f"authority_checks[{index}]",
+        )
+        _cache_result_ascii(item["path"], "authority path", maximum=512)
+        _cache_result_sha256(item["sha256"], "authority SHA-256")
+        _cache_result_integer(
+            item["size_bytes"], "authority size", maximum=(1 << 64) - 1
+        )
+        if item["status"] not in {"MATCH", "MISMATCH"}:
+            _fail("cache verifier authority status differs")
+        authority_matches = {
+            "path": item["path"],
+            "sha256": item["sha256"],
+            "size_bytes": item["size_bytes"],
+        } == authority[key]
+        if (item["status"] == "MATCH") != authority_matches or (
+            status == "PASS" and not authority_matches
+        ):
+            _fail("PASS cache verifier authority check is not exact")
+
+    cache_checks = output.get("cache_checks")
+    if not isinstance(cache_checks, list) or len(cache_checks) != len(CACHE_PATHS):
+        _fail("cache verifier live-cache check count differs")
+    for index, expected_path in enumerate(CACHE_PATHS):
+        item = _cache_result_object(
+            cache_checks[index], {"checkpoint", "path", "state"}, f"cache_checks[{index}]"
+        )
+        if (
+            item["checkpoint"] != "VERIFIER_LIVE_P"
+            or item["path"] != expected_path
+            or item["state"] not in {"ABSENT", "PRESENT_OR_UNCLASSIFIABLE"}
+            or (status == "PASS" and item["state"] != "ABSENT")
+        ):
+            _fail("cache verifier live-cache check value/order differs")
+
+    clone_checks = _cache_result_object(
+        output.get("clone_checks"), {"expected", "observed", "status"}, "clone_checks"
+    )
+    expected_clone = {
+        "branch_ref": "refs/heads/saq-arbitrary-cardinality-feasibility-v2",
+        "fetch_url": "https://github.com/Ufowoqqqo/SAQ.git",
+        "head": control["clone"]["expected_commit"],
+        "push_url": "git@github.com:Ufowoqqqo/SAQ.git",
+        "tree": control["clone"]["expected_tree_oid"],
+    }
+    expected_identity = _cache_result_object(
+        clone_checks["expected"],
+        {"branch_ref", "fetch_url", "head", "push_url", "tree"},
+        "clone_checks.expected",
+    )
+    _cache_result_git_oid(expected_identity["head"], "expected clone head")
+    _cache_result_git_oid(expected_identity["tree"], "expected clone tree")
+    for text_key in ("branch_ref", "fetch_url", "push_url"):
+        _cache_result_ascii(
+            expected_identity[text_key], f"expected clone {text_key}", maximum=512
+        )
+    observed_identity = _cache_result_object(
+        clone_checks["observed"],
+        {"branch_ref", "fetch_url", "head", "push_url", "tree"},
+        "clone_checks.observed",
+    )
+    for text_key in ("branch_ref", "fetch_url", "head", "push_url", "tree"):
+        _cache_result_ascii(
+            observed_identity[text_key], f"observed clone {text_key}", maximum=512
+        )
+    clone_matches = clone_checks["expected"] == clone_checks["observed"]
+    if (
+        clone_checks["status"] not in {"MATCH", "MISMATCH"}
+        or (clone_checks["status"] == "MATCH") != clone_matches
+        or (
+            status == "PASS"
+            and (
+                clone_checks["status"] != "MATCH"
+                or clone_checks["expected"] != expected_clone
+                or clone_checks["observed"] != expected_clone
+            )
+        )
+    ):
+        _fail("cache verifier clone check binding differs")
+
+    control_identity = _cache_result_object(
+        output.get("control_identity"),
+        {"name", "offset_bytes", "seals", "sha256", "size_bytes", "transport"},
+        "control_identity",
+    )
+    if control_identity != {
+        "name": "saq-a4-v2-cache-policy-control",
+        "offset_bytes": 0,
+        "seals": [
+            "F_SEAL_SEAL",
+            "F_SEAL_SHRINK",
+            "F_SEAL_GROW",
+            "F_SEAL_WRITE",
+        ],
+        "sha256": _sha256(persisted_control_payload),
+        "size_bytes": len(persisted_control_payload),
+        "transport": "SEALED_ANONYMOUS_MEMFD",
+    }:
+        _fail("cache verifier sealed control identity differs")
+
+    mismatches = output.get("mismatches")
+    if not isinstance(mismatches, list) or len(mismatches) > 256:
+        _fail("cache verifier mismatch inventory bound differs")
+    for index, raw in enumerate(mismatches):
+        item = _cache_result_object(
+            raw, {"code", "detail", "path"}, f"mismatches[{index}]"
+        )
+        _cache_result_ascii(item["code"], "mismatch code", maximum=128)
+        _cache_result_ascii(item["detail"], "mismatch detail", maximum=4096)
+        _cache_result_ascii(
+            item["path"], "mismatch path", maximum=4096, nullable=True
+        )
+    if (status == "PASS") != (mismatches == []):
+        _fail("cache verifier status/mismatch implication differs")
+
+    observations = [
+        persisted_control["startup_observation"],
+        *persisted_control["preterminal_observations"],
+    ]
+    module_checks = output.get("module_checks")
+    checkpoints = ("STARTUP_PREIMPORT", "B_PRETERMINAL", "P_PRETERMINAL")
+    if not isinstance(module_checks, list) or len(module_checks) != 3:
+        _fail("cache verifier module-check count differs")
+    for index, (item_raw, observation, checkpoint) in enumerate(
+        zip(module_checks, observations, checkpoints)
+    ):
+        item = _cache_result_object(
+            item_raw,
+            {
+                "a4_module_count",
+                "checkpoint",
+                "identity_sha256",
+                "retained_module_count",
+                "seen_reviewed_source_count",
+                "sys_meta_path_count",
+                "sys_path_count",
+            },
+            f"module_checks[{index}]",
+        )
+        expected_module_check = {
+            "a4_module_count": len(observation["a4_modules"]),
+            "checkpoint": checkpoint,
+            "identity_sha256": _sha256(_canonical_body(observation)),
+            "retained_module_count": len(observation["retained_modules"]),
+            "seen_reviewed_source_count": len(
+                {module["source_path"] for module in observation["a4_modules"]}
+            ),
+            "sys_meta_path_count": len(observation["sys_meta_path"]),
+            "sys_path_count": len(observation["sys_path"]),
+        }
+        if item != expected_module_check:
+            _fail("cache verifier serialized module-check identity differs")
+
+    parent_checks = _cache_result_object(
+        output.get("parent_checks"),
+        {
+            "bootstrap_external_check",
+            "cmdline_hex",
+            "cmdline_sha256",
+            "cwd",
+            "environment_check",
+            "leader_check",
+            "pid",
+            "start_time_clock_ticks",
+        },
+        "parent_checks",
+    )
+    parent_cmdline_hex = parent_checks["cmdline_hex"]
+    if (
+        not isinstance(parent_cmdline_hex, str)
+        or len(parent_cmdline_hex) > 65_536
+        or len(parent_cmdline_hex) % 2
+        or re.fullmatch(r"(?:[0-9a-f]{2})+", parent_cmdline_hex) is None
+        or parent_checks["cmdline_sha256"]
+        != _sha256(bytes.fromhex(parent_cmdline_hex))
+    ):
+        _fail("cache verifier live parent cmdline identity is malformed")
+    _cache_result_ascii(parent_checks["cwd"], "parent cwd", maximum=512)
+    _cache_result_integer(
+        parent_checks["pid"], "parent PID", minimum=1, maximum=(1 << 31) - 1
+    )
+    _cache_result_integer(
+        parent_checks["start_time_clock_ticks"],
+        "parent start time",
+        minimum=1,
+        maximum=(1 << 63) - 1,
+    )
+    parent_bootstrap_check = _cache_result_bootstrap_check(
+        parent_checks["bootstrap_external_check"],
+        control["parent"]["bootstrap_external"],
+        "parent bootstrap_external_check",
+    )
+    parent_environment_check = _cache_result_environment_check(
+        parent_checks["environment_check"],
+        control["parent"]["environment"],
+        "parent environment_check",
+    )
+    parent_leader_check = _cache_result_parent_leader_check(
+        parent_checks["leader_check"],
+        control["parent"]["leader"],
+        int(parent_checks["pid"]),
+    )
+    if status == "PASS" and (
+        parent_checks["cmdline_hex"] != control["parent"]["cmdline_hex"]
+        or parent_checks["cmdline_sha256"]
+        != control["parent"]["cmdline_sha256"]
+        or parent_checks["cwd"] != control["parent"]["cwd"]
+        or parent_checks["pid"] != control["parent"]["pid"]
+        or parent_checks["start_time_clock_ticks"]
+        != control["parent"]["start_time_clock_ticks"]
+        or parent_bootstrap_check["status"] != "MATCH"
+        or parent_environment_check["status"] != "MATCH"
+        or parent_leader_check["status"] != "MATCH"
+    ):
+        _fail("cache verifier live parent check differs")
+
+    transient = dict(accounting)
+    resource_ledger = _cache_result_object(
+        output.get("resource_ledger"),
+        {
+            "cache_verifier_transient_bytes",
+            "control_bytes",
+            "cpu_microseconds",
+            "filesystem_bytes_read",
+            "git_stderr_bytes",
+            "git_stdout_bytes",
+            "maximum_rss_bytes",
+            "measurement_scope",
+            "wall_nanoseconds",
+        },
+        "resource_ledger",
+    )
+    observed_transient = _cache_result_object(
+        resource_ledger["cache_verifier_transient_bytes"],
+        {
+            "control_allocated_bytes",
+            "control_logical_bytes",
+            "stderr_allocated_bytes",
+            "stderr_logical_bytes",
+            "stdout_allocated_bytes",
+            "stdout_logical_bytes",
+        },
+        "resource_ledger.cache_verifier_transient_bytes",
+    )
+    if observed_transient != transient or resource_ledger["control_bytes"] != transient[
+        "control_logical_bytes"
+    ]:
+        _fail("cache verifier transient-byte reconciliation differs")
+    for key in (
+        "control_bytes",
+        "cpu_microseconds",
+        "filesystem_bytes_read",
+        "git_stderr_bytes",
+        "git_stdout_bytes",
+        "maximum_rss_bytes",
+        "wall_nanoseconds",
+    ):
+        maximum = CACHE_CONTROL_LIMIT if key == "control_bytes" else (1 << 64) - 1
+        _cache_result_integer(resource_ledger[key], f"resource {key}", maximum=maximum)
+    if (
+        resource_ledger["measurement_scope"]
+        != "DIAGNOSTIC_PARENT_P_LEDGER_AUTHORITATIVE"
+        or transient["stdout_logical_bytes"] != 0
+        or transient["stderr_logical_bytes"] != 0
+    ):
+        _fail("cache verifier resource-ledger scope/output bytes differ")
+    _CURRENT_DIRECT_CHILD_PEAK_RSS = max(
+        _CURRENT_DIRECT_CHILD_PEAK_RSS,
+        int(resource_ledger["maximum_rss_bytes"]),
+    )
+
+    source_checks = output.get("source_checks")
+    source_files = source_manifest.get("source_files")
+    reviewed_by_path = {
+        item["path"]: item
+        for item in control["reviewed_python_sources"]
+        if isinstance(item, dict) and isinstance(item.get("path"), str)
+    }
+    if (
+        not isinstance(source_checks, list)
+        or len(source_checks) != 37
+        or not isinstance(source_files, list)
+        or len(source_files) != 37
+    ):
+        _fail("cache verifier complete source-check count differs")
+    for index, (raw, expected) in enumerate(zip(source_checks, source_files)):
+        if not isinstance(expected, dict):
+            _fail("cache verifier expected source manifest entry is malformed")
+        item = _cache_result_object(
+            raw,
+            {"git_blob", "git_matches", "path", "physical_matches", "sha256", "size_bytes"},
+            f"source_checks[{index}]",
+        )
+        _cache_result_git_oid(item["git_blob"], "source Git blob")
+        _cache_result_ascii(item["path"], "source path", maximum=512)
+        _cache_result_sha256(item["sha256"], "source SHA-256")
+        _cache_result_integer(
+            item["size_bytes"], "source size", maximum=(1 << 64) - 1
+        )
+        if (
+            not isinstance(item["git_matches"], bool)
+            or not isinstance(item["physical_matches"], bool)
+            or item["path"] != expected["path"]
+            or (
+                item["path"] in reviewed_by_path
+                and item["git_blob"] != reviewed_by_path[item["path"]]["git_blob"]
+            )
+            or (
+                status == "PASS"
+                and (
+                    item["sha256"] != expected["sha256"]
+                    or item["size_bytes"] != expected["size_bytes"]
+                    or not (item["git_matches"] and item["physical_matches"])
+                )
+            )
+        ):
+            _fail("cache verifier source-check identity/order differs")
+
+    verifier_process = _cache_result_object(
+        output.get("verifier_process"),
+        {
+            "bootstrap_external_check",
+            "cmdline_hex",
+            "cmdline_sha256",
+            "cwd",
+            "environment",
+            "flags",
+            "leader_check",
+            "pid",
+            "start_time_clock_ticks",
+        },
+        "verifier_process",
+    )
+    cmdline_hex = verifier_process["cmdline_hex"]
+    if (
+        not isinstance(cmdline_hex, str)
+        or len(cmdline_hex) > 65_536
+        or len(cmdline_hex) % 2
+        or re.fullmatch(r"(?:[0-9a-f]{2})+", cmdline_hex) is None
+    ):
+        _fail("cache verifier process cmdline hex is malformed")
+    cmdline_payload = bytes.fromhex(cmdline_hex)
+    expected_argv = [
+        "/proc/self/fd/197",
+        "-I",
+        "-B",
+        "-S",
+        str(CACHE_POLICY_VERIFIER),
+        "verify-parent-cache-policy",
+        "--control-fd",
+        "198",
+    ]
+    expected_cmdline_payload = b"\0".join(
+        argument.encode("utf-8") for argument in expected_argv
+    ) + b"\0"
+    verifier_bootstrap_check = _cache_result_bootstrap_check(
+        verifier_process["bootstrap_external_check"],
+        control["parent"]["bootstrap_external"],
+        "verifier bootstrap_external_check",
+    )
+    verifier_leader_check = _cache_result_verifier_leader_check(
+        verifier_process["leader_check"], control["parent"]["leader"]
+    )
+    if (
+        verifier_process["pid"] != verifier_pid
+        or _cache_result_integer(
+            verifier_process["start_time_clock_ticks"],
+            "verifier start time",
+            minimum=1,
+            maximum=(1 << 63) - 1,
+        )
+        <= 0
+        or cmdline_payload != expected_cmdline_payload
+        or verifier_process["cmdline_sha256"] != _sha256(cmdline_payload)
+        or verifier_process["cwd"] != "/"
+        or verifier_process["environment"] != CACHE_VERIFIER_ENVIRONMENT
+        or verifier_process["flags"]
+        != {
+            "dont_write_bytecode": 1,
+            "ignore_environment": 1,
+            "isolated": 1,
+            "no_site": 1,
+            "optimize": 0,
+        }
+        or (status == "PASS" and verifier_bootstrap_check["status"] != "MATCH")
+        or (status == "PASS" and verifier_leader_check["status"] != "MATCH")
+    ):
+        _fail("cache verifier process identity/flags/environment differs")
+
+
+def _run_cache_policy_verifier(
+    *,
+    staging: Path,
+    attempt_path: Path,
+    fixed_preimage: Mapping[str, Any],
+    startup_observation: Mapping[str, Any],
+    b_observation: Mapping[str, Any],
+    p_observation: Mapping[str, Any],
+    source_manifest: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, int]]:
+    control = {
+        "artifact_kind": "a4_v2_cache_policy_verifier_control",
+        "authority": fixed_preimage["authority"],
+        "cache_paths": fixed_preimage["cache_paths"],
+        "clone": fixed_preimage["clone"],
+        "output": fixed_preimage["independent_verifier"]["output"],
+        "parent": fixed_preimage["parent"],
+        "preterminal_observations": [dict(b_observation), dict(p_observation)],
+        "reviewed_python_sources": fixed_preimage["reviewed_python_sources"],
+        "schema_version": 1,
+        "startup_observation": dict(startup_observation),
+    }
+    control_payload = _canonical_document(control)
+    if len(control_payload) > CACHE_CONTROL_LIMIT:
+        _fail("cache verifier control exceeds its frozen one-MiB bound")
+    if fixed_preimage["independent_verifier"].get("control_transport") != {
+        "name": "saq-a4-v2-cache-policy-control",
+        "offset_bytes": 0,
+        "seals": [
+            "F_SEAL_SEAL",
+            "F_SEAL_SHRINK",
+            "F_SEAL_GROW",
+            "F_SEAL_WRITE",
+        ],
+        "transport": "SEALED_ANONYMOUS_MEMFD",
+    }:
+        _fail("cache verifier control transport preimage differs")
+    output_path = staging / "cache_policy_verification.json"
+    if not _cache_verifier_signal_retry_safe(output_path):
+        raise CachePolicyArtifactFailure(
+            "cache verifier output is present or unclassifiable before launch"
+        )
+    for descriptor in (FIXED_FD, CACHE_CONTROL_FD):
+        try:
+            os.fstat(descriptor)
+        except OSError:
+            pass
+        else:
+            _fail(f"cache verifier fixed descriptor is already open: {descriptor}")
+
+    control_fd = -1
+    leader_fd = -1
+    stdout_fd = -1
+    stderr_fd = -1
+    process: subprocess.Popen[Any] | None = None
+    reaped = False
+    descriptor_close_failure: OSError | None = None
+    result: _WaitResult
+    control_logical_bytes = 0
+    control_allocated_bytes = 0
+    try:
+        control_fd = os.memfd_create(
+            "saq-a4-v2-cache-policy-control",
+            getattr(os, "MFD_CLOEXEC", 0) | getattr(os, "MFD_ALLOW_SEALING", 0),
+        )
+        _write_all_descriptor(control_fd, control_payload)
+        seals = (
+            fcntl.F_SEAL_SEAL
+            | fcntl.F_SEAL_SHRINK
+            | fcntl.F_SEAL_GROW
+            | fcntl.F_SEAL_WRITE
+        )
+        fcntl.fcntl(control_fd, fcntl.F_ADD_SEALS, seals)
+        if fcntl.fcntl(control_fd, fcntl.F_GET_SEALS) != seals:
+            raise OSError("cache verifier control memfd seals differ")
+        control_stat = os.fstat(control_fd)
+        control_logical_bytes = int(control_stat.st_size)
+        control_allocated_bytes = int(control_stat.st_blocks) * 512
+        os.lseek(control_fd, 0, os.SEEK_SET)
+        leader_fd = os.open(
+            "/proc/self/exe", os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
+        )
+        os.dup2(leader_fd, FIXED_FD, inheritable=True)
+        os.dup2(control_fd, CACHE_CONTROL_FD, inheritable=True)
+        stdout_fd = os.memfd_create(
+            "saq-a4-v2-cache-policy-stdout", getattr(os, "MFD_CLOEXEC", 0)
+        )
+        stderr_fd = os.memfd_create(
+            "saq-a4-v2-cache-policy-stderr", getattr(os, "MFD_CLOEXEC", 0)
+        )
+        argv = list(fixed_preimage["independent_verifier"]["argv"])
+        process = subprocess.Popen(
+            argv,
+            cwd="/",
+            env=dict(CACHE_VERIFIER_ENVIRONMENT),
+            stdin=subprocess.DEVNULL,
+            stdout=stdout_fd,
+            stderr=stderr_fd,
+            pass_fds=(FIXED_FD, CACHE_CONTROL_FD),
+            close_fds=True,
+            start_new_session=True,
+        )
+        result = _wait_subprocess(process)
+        reaped = True
+        if result.exit_code == CACHE_VERIFIER_RESOURCE_EXIT:
+            _terminate_cache_verifier_group(process.pid)
+        elif result.exit_code >= 0:
+            _require_cache_verifier_group_empty(process.pid)
+    except BaseException as error:
+        cleanup_failures: list[BaseException] = []
+        if process is not None:
+            if not reaped:
+                terminated = False
+                try:
+                    _signal_cache_verifier_group(process.pid)
+                    terminated = True
+                except BaseException as cleanup_error:
+                    cleanup_failures.append(cleanup_error)
+                if terminated:
+                    try:
+                        _wait_subprocess(process)
+                        reaped = True
+                    except BaseException as cleanup_error:
+                        cleanup_failures.append(cleanup_error)
+            if reaped:
+                try:
+                    _wait_cache_verifier_group_empty(process.pid)
+                except BaseException as cleanup_error:
+                    cleanup_failures.append(cleanup_error)
+        if (process is None or reaped) and any(
+            descriptor >= 0 for descriptor in (control_fd, stdout_fd, stderr_fd)
+        ):
+            try:
+                failed_accounting = _cache_verifier_transient_accounting(
+                    control_allocated_bytes=control_allocated_bytes,
+                    control_logical_bytes=control_logical_bytes,
+                    control_fd=control_fd,
+                    stdout_fd=stdout_fd,
+                    stderr_fd=stderr_fd,
+                )
+                _register_cache_transient_accounting(
+                    staging, attempt_path, failed_accounting
+                )
+            except BaseException as cleanup_error:
+                cleanup_failures.append(cleanup_error)
+        for descriptor in (stdout_fd, stderr_fd):
+            if descriptor >= 0:
+                try:
+                    os.close(descriptor)
+                except OSError as cleanup_error:
+                    cleanup_failures.append(
+                        CachePolicyResourceFailure(
+                            "cannot close cache-verifier capture descriptor: "
+                            f"{cleanup_error}"
+                        )
+                    )
+        primary: BaseException
+        if isinstance(error, (OSError, MemoryError, TimeoutError)):
+            primary = CachePolicyResourceFailure(
+                f"cache verifier setup/spawn/wait resource failure: {error}"
+            )
+        elif isinstance(error, (CachePolicyResourceFailure, ParityFailure)):
+            primary = error
+        elif isinstance(error, KeyboardInterrupt):
+            primary = CachePolicyResourceFailure(
+                "cache verifier setup/spawn/wait was externally interrupted"
+            )
+        else:
+            primary = ParityFailure(
+                "cache verifier setup/spawn/wait implementation failure: "
+                f"{type(error).__name__}"
+            )
+        if cleanup_failures:
+            normalized_failures = [
+                _normalize_cache_cleanup_failure(failure)
+                for failure in cleanup_failures
+            ]
+            strongest = next(
+                (
+                    failure
+                    for failure in normalized_failures
+                    if isinstance(failure, ParityFailure)
+                ),
+                normalized_failures[0],
+            )
+            raise strongest from primary
+        raise primary
+    finally:
+        for descriptor in (FIXED_FD, CACHE_CONTROL_FD):
+            try:
+                os.close(descriptor)
+            except OSError as error:
+                if error.errno != errno.EBADF and descriptor_close_failure is None:
+                    descriptor_close_failure = error
+        for descriptor in (control_fd, leader_fd):
+            if descriptor >= 0 and descriptor not in {FIXED_FD, CACHE_CONTROL_FD}:
+                try:
+                    os.close(descriptor)
+                except OSError as error:
+                    if descriptor_close_failure is None:
+                        descriptor_close_failure = error
+        active_failure = sys.exc_info()[1]
+        if descriptor_close_failure is not None and active_failure is not None:
+            cleanup_resource = CachePolicyResourceFailure(
+                "cache verifier descriptor cleanup failed: "
+                f"{descriptor_close_failure}"
+            )
+            if isinstance(active_failure, ParityFailure):
+                raise active_failure from cleanup_resource
+            raise cleanup_resource from active_failure
+    if result.exit_code < 0:
+        try:
+            _terminate_cache_verifier_group(process.pid)
+            interrupted_accounting = _cache_verifier_transient_accounting(
+                control_allocated_bytes=control_allocated_bytes,
+                control_logical_bytes=control_logical_bytes,
+                stdout_fd=stdout_fd,
+                stderr_fd=stderr_fd,
+            )
+        except (OSError, CachePolicyResourceFailure) as error:
+            for descriptor in (stdout_fd, stderr_fd):
+                try:
+                    os.close(descriptor)
+                except OSError:
+                    pass
+            if isinstance(error, CachePolicyResourceFailure):
+                raise
+            raise CachePolicyResourceFailure(
+                f"cache verifier signal cleanup/accounting failed: {error}"
+            ) from error
+        _register_cache_transient_accounting(
+            staging, attempt_path, interrupted_accounting
+        )
+        close_failure: OSError | None = None
+        for descriptor in (stdout_fd, stderr_fd):
+            try:
+                os.close(descriptor)
+            except OSError as error:
+                if close_failure is None:
+                    close_failure = error
+        if close_failure is not None:
+            raise CachePolicyResourceFailure(
+                f"cache verifier signal capture close failed: {close_failure}"
+            ) from close_failure
+        if descriptor_close_failure is not None:
+            raise CachePolicyResourceFailure(
+                "cache verifier descriptor cleanup failed: "
+                f"{descriptor_close_failure}"
+            ) from descriptor_close_failure
+        if not _cache_verifier_signal_retry_safe(output_path):
+            raise CachePolicyResourceFailure(
+                "cache verifier was signal-terminated after its retry-safe boundary"
+            )
+        raise ExternalPhaseSignal(
+            -result.exit_code,
+            phase_peak_rss_bytes=_CURRENT_DIRECT_CHILD_PEAK_RSS,
+            retry_safe=True,
+        )
+    accounting = _cache_verifier_transient_accounting(
+        control_allocated_bytes=control_allocated_bytes,
+        control_logical_bytes=control_logical_bytes,
+        stdout_fd=stdout_fd,
+        stderr_fd=stderr_fd,
+    )
+    _register_cache_transient_accounting(staging, attempt_path, accounting)
+    capture_close_failure: OSError | None = None
+    try:
+        try:
+            stdout_payload = _read_memfd(
+                stdout_fd, "cache verifier stdout", maximum_bytes=65_536
+            )
+            stderr_payload = _read_memfd(
+                stderr_fd, "cache verifier stderr", maximum_bytes=65_536
+            )
+        except (OSError, ParityFailure) as error:
+            raise ParityFailure(
+                f"cache verifier post-reap output capture failed: {error}"
+            ) from error
+    finally:
+        for descriptor in (stdout_fd, stderr_fd):
+            try:
+                os.close(descriptor)
+            except OSError as error:
+                if capture_close_failure is None:
+                    capture_close_failure = error
+    if capture_close_failure is not None:
+        raise CachePolicyResourceFailure(
+            "cache verifier capture cleanup failed: "
+            f"{capture_close_failure}"
+        ) from capture_close_failure
+    if descriptor_close_failure is not None:
+        raise CachePolicyResourceFailure(
+            "cache verifier descriptor cleanup failed: "
+            f"{descriptor_close_failure}"
+        ) from descriptor_close_failure
+    if result.exit_code == CACHE_VERIFIER_RESOURCE_EXIT:
+        raise CachePolicyResourceFailure(
+            "cache verifier closed with its exact typed system/resource exit"
+        )
+    if result.exit_code != 0:
+        _fail(
+            "cache verifier ordinary nonzero exit is an implementation defect: "
+            f"exit={result.exit_code}, stderr={stderr_payload[:4096]!r}"
+        )
+    if stdout_payload or stderr_payload:
+        _fail("cache verifier wrote outside its sole P artifact")
+    try:
+        output_payload = _read_regular_nofollow(output_path)
+    except (OSError, ParityFailure) as error:
+        raise ParityFailure(
+            f"cache verifier output is absent, unreadable, or unstable: {error}"
+        ) from error
+    if len(output_payload) > CACHE_OUTPUT_LIMIT:
+        _fail("cache verifier output exceeds its frozen eight-MiB bound")
+    output = _parse_json(
+        output_payload, "cache policy verification", canonical=True
+    )
+    required = {
+        "artifact_kind",
+        "authority_checks",
+        "cache_checks",
+        "claim_ceiling",
+        "clone_checks",
+        "control_identity",
+        "control_preimage_hex",
+        "mismatches",
+        "module_checks",
+        "parent_checks",
+        "resource_ledger",
+        "schema_version",
+        "source_checks",
+        "status",
+        "verifier_process",
+    }
+    if not isinstance(output, dict) or set(output) != required:
+        _fail("cache verifier result top-level shape differs")
+    _validate_cache_policy_result(
+        output,
+        control=control,
+        control_payload=control_payload,
+        accounting=accounting,
+        source_manifest=source_manifest,
+        verifier_pid=(process.pid if process is not None else -1),
+    )
+    if output["status"] == "MISMATCH":
+        raise CachePolicyArtifactFailure(
+            "independent cache verifier reported a well-formed policy mismatch"
+        )
+    _clear_cache_transient_accounting(staging, attempt_path)
+    return output, accounting
+
+
 def run_par(
     start_cpu_microseconds: int,
     start_wall_nanoseconds: int,
@@ -2414,6 +3965,8 @@ def run_par(
     snapshot: Any,
     process_inventory: Any,
     prelaunch_observer: Any,
+    startup_capture: Mapping[str, Any],
+    cache_policy_observer: Any,
 ) -> int:
     """Run the future B/P event and terminate through finite PAR_report."""
 
@@ -2421,6 +3974,10 @@ def run_par(
 
     if Path.cwd().resolve() != REPOSITORY_ROOT:
         _fail("PAR must start at repository root")
+    if str(REPOSITORY_ROOT) != "/tmp/saq-a4-v2-par-r1-isolation/repo":
+        raise CachePolicyArtifactFailure(
+            "PAR repository root is not the bound isolated clone"
+        )
     if list(sys.argv) != EXPECTED_PAR_ARGV:
         _fail("PAR argv differs from the frozen command")
     if {
@@ -2440,6 +3997,19 @@ def run_par(
         _fail("implementation commit is not a full Git OID")
     if _capture(("git", "status", "--porcelain", "--untracked-files=all")):
         _fail("PAR requires a clean implementation commit")
+    cache_source_payload = _read_regular_nofollow(IMPLEMENTATION_MANIFEST)
+    cache_source_manifest = _parse_json(
+        cache_source_payload, "implementation source manifest", canonical=True
+    )
+    if not isinstance(cache_source_manifest, dict):
+        raise CachePolicyArtifactFailure(
+            "implementation source manifest is not an object"
+        )
+    cache_policy_preimage, cache_observation_map = _cache_policy_fixed_preimage(
+        implementation_commit=implementation_commit,
+        source_manifest=cache_source_manifest,
+        startup_capture=startup_capture,
+    )
     staging = root.with_name(root.name + ".staging")
     if staging.exists():
         _fail("PAR staging path already exists")
@@ -2467,6 +4037,7 @@ def run_par(
         "leader_binary_sha256": leader_binary_sha256,
         "leader_binary_size_bytes": leader_binary_size_bytes,
         "numpy_authority": numpy_authority,
+        "python_cache_policy": cache_policy_preimage,
         "tool_paths": [CMAKE_BINARY, NINJA_BINARY, CXX_BINARY],
     }
     environment_sha256 = _sha256(_canonical_body(environment_preimage))
@@ -2506,6 +4077,7 @@ def run_par(
     b_success_start: PhaseBoundary | None = None
     b_success_end: PhaseBoundary | None = None
     b_success_attempt = -1
+    b_cache_observation: dict[str, Any] | None = None
     prior_b: tuple[PhaseBoundary, PhaseBoundary, int, int, Path] | None = None
     for attempt_id in range(2):
         if attempt_id > 0:
@@ -2553,7 +4125,7 @@ def run_par(
             )
 
         def build_worker_ready() -> None:
-            nonlocal attempt_created, names, build_evidence_bytes
+            nonlocal attempt_created, names, build_evidence_bytes, b_cache_observation
 
             attempt_created = (
                 _tree_bytes(attempt_path)
@@ -2565,6 +4137,11 @@ def run_par(
             )
             build_evidence_bytes = sum(
                 (staging / name).stat().st_size for name in names
+            )
+            b_cache_observation = _observe_cache_checkpoint(
+                cache_policy_observer,
+                "B_PRETERMINAL",
+                cache_observation_map,
             )
 
         try:
@@ -2599,6 +4176,8 @@ def run_par(
             b_start = end
     if b_success_start is None or b_success_end is None:
         _fail("B_build did not reach a terminal successful attempt")
+    if b_cache_observation is None:
+        _fail("B_build lacks its preterminal cache observation")
 
     build_complete_receipt = _receipt_template(
         phase="B_build",
@@ -2693,9 +4272,60 @@ def run_par(
                         phase_peak_rss_bytes=family_peak,
                     )
                 _fail(f"P worker failed: {worker_message['detail']}")
-            attempt_created = _tree_bytes(attempt_path)
-            p_names = _move_attempt_files(
-                attempt_path, staging, PARITY_ARTIFACT_NAMES
+            p_cache_observation = _observe_cache_checkpoint(
+                cache_policy_observer,
+                "P_PRETERMINAL",
+                cache_observation_map,
+            )
+            _, cache_verifier_accounting = _run_cache_policy_verifier(
+                staging=staging,
+                attempt_path=attempt_path,
+                fixed_preimage=cache_policy_preimage,
+                startup_observation=startup_capture["observation"],
+                b_observation=b_cache_observation,
+                p_observation=p_cache_observation,
+                source_manifest=cache_source_manifest,
+            )
+            cache_verifier_logical_bytes = sum(
+                cache_verifier_accounting[name]
+                for name in (
+                    "control_logical_bytes",
+                    "stdout_logical_bytes",
+                    "stderr_logical_bytes",
+                )
+            )
+            cache_verifier_allocated_bytes = sum(
+                cache_verifier_accounting[name]
+                for name in (
+                    "control_allocated_bytes",
+                    "stdout_allocated_bytes",
+                    "stderr_allocated_bytes",
+                )
+            )
+            parity_live_hwm = max(
+                parity_live_hwm,
+                _tree_bytes(staging)
+                + _tree_bytes(attempt_path)
+                + _tree_bytes(PRODUCER_BINARY.parent)
+                + _tree_bytes(VERIFIER_BINARY.parent)
+                + cache_verifier_allocated_bytes,
+            )
+            attempt_created = _tree_bytes(attempt_path) + (
+                staging / "cache_policy_verification.json"
+            ).stat().st_size + cache_verifier_logical_bytes
+            science_names = tuple(
+                name
+                for name in PARITY_ARTIFACT_NAMES
+                if name != "cache_policy_verification.json"
+            )
+            moved_science_names = _move_attempt_files(
+                attempt_path, staging, science_names
+            )
+            p_names = tuple(
+                sorted(
+                    (*moved_science_names, "cache_policy_verification.json"),
+                    key=lambda value: value.encode("utf-8"),
+                )
             )
             if set(p_names) & set(BUILD_ARTIFACT_NAMES):
                 _fail("B/P artifact namespaces overlap")
@@ -2714,7 +4344,7 @@ def run_par(
                 "artifact_kind": "a4_v2_par_artifact_index",
                 "files": [_artifact_file(staging / name) for name in indexed_names],
                 "implementation_commit": implementation_commit,
-                "schema_version": 1,
+                "schema_version": 2,
             }
             _write_new(staging / "artifact_index.json", _canonical_document(artifact_index))
             complete_names = _regular_members(staging)
@@ -2832,7 +4462,11 @@ def run_par(
             )
             worker_reaped = True
             direct_peak = int(worker_message["direct_child_peak_rss_bytes"])
-            family_peak = max(worker_usage.peak_rss_bytes, direct_peak)
+            family_peak = max(
+                worker_usage.peak_rss_bytes,
+                direct_peak,
+                _CURRENT_DIRECT_CHILD_PEAK_RSS,
+            )
             if family_peak < worker_start_hwm:
                 _fail(
                     "fresh P worker did not naturally dominate inherited "

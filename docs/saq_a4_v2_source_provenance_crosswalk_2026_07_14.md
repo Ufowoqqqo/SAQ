@@ -115,9 +115,88 @@ strict `I < P < R < E` tree binding, and no-reread/no-rehash final trailer are
 reviewed directly against the 2026-07-14 erratum.  They are instrumentation,
 not a research contribution or executable evidence.
 
+## CACHE-I additive governance provenance
+
+`A4-V2-CACHE-I` adds artifact-governance code only.  It does not add or
+replace a quantizer, solver, representation, fixture, random stream, search
+rule, estimator, or scientific decision rule.  The two new filesystem sources
+have the following disjoint roles:
+
+| CACHE-I source | Additive responsibility | Explicit non-role |
+| --- | --- | --- |
+| `script/a4_v2_isolated_clone_prep.py` | standalone, stdlib-only supervisor for the separately authorized future isolated-clone preparation protocol | never imported by PAR, SRUN, producer, runner, parity, existing verifier, or SAQ |
+| `script/a4_v2_cache_policy_verifier.py` | standalone, stdlib-only, PAR-only independent verifier of the parent/cache/source/binding control | never imported as a helper, never invoked by SRUN, and never evaluates scientific output |
+
+Only `script/run_arbitrary_cardinality_a4_v2.py`, `script/a4_v2_runner.py`,
+`script/a4_v2_parity.py`, and `script/a4_v2_verifier.py` receive additive
+cache-governance changes.  The exact byte-level preservation and finite delta
+claim is not inferred from prose or an AST normalization: it is the complete
+baseline/candidate raw-byte partition in
+`docs/saq_a4_v2_cache_static_closure_2026_07_15.json`.  That object separately
+registers the frozen parent status-precedence functions, B/P external-signal
+retry blocks, and both post-P-report functions as equal raw slices.  The other
+four Python source blobs and all 27 native/CMake source blobs remain exact
+members of the implementation manifest.
+
+The file-source closure is therefore the prior 35 sources plus exactly these
+two governance sources.  The immutable ASCII-only inline PREP bootstrap is a
+separately identified executable unit, not a 38th filesystem path.  Its source
+and raw-prefix prologue identities and its call/import/open/mutation/terminal
+closure are bound by the additive cache authority and static-closure objects.
+The resulting accounting is exactly 37 file sources and 38 executable units.
+
+The cache-aware PAR build-manifest/PAR-index shapes, the seventh
+`python_cache_policy` environment-preimage field, and the P-owned
+`cache_policy_verification.json` artifact extend only the evidence DAG.  The
+preimage contains policy/control identities that exist before P; actual B/P
+observations and the independent result are written only in the P artifact.
+That artifact retains the exact bounded canonical control preimage as
+lowercase hex so its observation summaries and control identity can be
+independently recomputed, then enters the existing index/seal publication
+direction.  No earlier object predicts or hashes a future result.
+
 ## Claim boundary
 
 This provenance record can support only a static statement that the V2 source
 has named historical semantic authorities and a reviewable implementation
 delta. It cannot establish compile success, parity, independent replay, cost,
 representation validity, ANN behavior, or novelty.
+
+For CACHE-I the same ceiling is
+`GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS`.  It is not PREP readiness,
+PAR authority, a parity result, or scientific evidence.
+
+## CACHE-I exact source seal and syntax-only exception
+
+The final filesystem-source inventory is byte-sorted and contains exactly 37
+paths.  Its canonical path/SHA-256/size preimage hashes to
+`9568007588c78ddda9fb4c4e20e8773ee2fa1da10a7656f181fef06883de38a2`.
+The separately identified inline bootstrap is the 38th executable unit and
+has SHA-256
+`9c86fcf81df8d8d2b7b9b15a43682fd62f7c6ba35762d41e8d2a04785708487b`
+over 19,631 ASCII bytes.  It is not a filesystem source and is not included in
+the source-tree preimage.
+
+The exact six changed/new outer Python snapshots are:
+
+| Source | SHA-256 | Bytes |
+| --- | --- | ---: |
+| `script/a4_v2_cache_policy_verifier.py` | `37346b5a2777abb2ddd893c375b1a098507f4ba51f62ba5fce69104fcc83d58c` | 151,371 |
+| `script/a4_v2_isolated_clone_prep.py` | `29b73a7bac4d52c70dd67589eeeab47f12738de678172eaaa2bb26aa63343053` | 219,758 |
+| `script/a4_v2_parity.py` | `2a85d17aad5863dcd01c598a7f87c3991ac26766a04b0297511bd24dad99127a` | 168,467 |
+| `script/a4_v2_runner.py` | `134f61e3d1ae79a2f5f85f1870998427bc34184c4153fc4683a633c0a655bb91` | 360,127 |
+| `script/a4_v2_verifier.py` | `00589aafd2963021d705023fe9b934feea2a83da17d8c9dd342ad3eb7a04d4e3` | 250,023 |
+| `script/run_arbitrary_cardinality_a4_v2.py` | `016120c931a7e05312b7ed6d89d7aaba73497732d7caa880b3af1066e0782506` | 34,929 |
+
+The user separately authorized `A4-V2-CACHE-I-SYNTAX` after these bytes were
+locked.  `/usr/bin/python3.9` `compile()`-only checks passed for all six
+outer snapshots and the exact inline snapshot.  No code object was executed
+and no repository module was imported.  This is a syntax-only result, not
+evidence of importability, runtime behavior, correctness, schema acceptance,
+parity, cost, or scientific value.  It does not broaden PREP, PAR-R1, SRUN,
+data, quarantine, or SAQ/CAQ authority.
+
+The current worktree seal remains uncommitted nonevidence pending its exact
+22-path target commit and direct-child independent review.  Its maximum status
+is
+`STATIC_SEAL_COMPLETE_PENDING_EXACT_TARGET_COMMIT_AND_INDEPENDENT_REVIEW`.

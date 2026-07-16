@@ -61,6 +61,12 @@ GIT_BINARY = "/usr/bin/git"
 PROTOCOL_AUTHORITY_IDENTITY_PATH = (
     "docs/saq_a4_v2_protocol_authority_manifest_2026_07_14.json"
 )
+CACHE_PROTOCOL_AUTHORITY_IDENTITY_PATH = (
+    "docs/saq_a4_v2_cache_protocol_authority_manifest_2026_07_15.json"
+)
+CACHE_RUNTIME_SCHEMA_IDENTITY_PATH = (
+    "docs/saq_a4_v2_cache_runtime_schema_2026_07_15.json"
+)
 PAR_SEAL_SCHEMA_IDENTITY_PATH = (
     "docs/saq_a4_v2_par_report_seal_schema_2026_07_14.json"
 )
@@ -228,11 +234,12 @@ BUILD_COMMANDS = (
 )
 EXPECTED_PAR_COMMAND = (
     "python",
+    "-B",
     "script/run_arbitrary_cardinality_a4_v2.py",
     "par",
     PAR_DIRECTORY_IDENTITY_PATH,
 )
-EXPECTED_PAR_OUTER_ARGV = EXPECTED_PAR_COMMAND[1:]
+EXPECTED_PAR_OUTER_ARGV = EXPECTED_PAR_COMMAND[2:]
 EXPECTED_PRODUCER_NATIVE_ARGV_TEMPLATES = (
     ("/proc/self/fd/197", "manifest"),
     ("/proc/self/fd/197", "native-smoke", "{output}"),
@@ -338,13 +345,40 @@ VERIFIER_CMAKE_SOURCE_FILES = (
 )
 PYTHON_SOURCE_FILES = (
     "script/a4_v2_archive.py",
+    "script/a4_v2_cache_policy_verifier.py",
     "script/a4_v2_evidence.py",
+    "script/a4_v2_isolated_clone_prep.py",
     "script/a4_v2_parity.py",
     "script/a4_v2_producer.py",
     "script/a4_v2_producer_wire.py",
     "script/a4_v2_runner.py",
     "script/a4_v2_verifier.py",
     "script/run_arbitrary_cardinality_a4_v2.py",
+)
+CACHE_PATHS = (
+    "script/__pycache__",
+    "script/a4_v2_archive.pyc",
+    "script/a4_v2_cache_policy_verifier.pyc",
+    "script/a4_v2_evidence.pyc",
+    "script/a4_v2_isolated_clone_prep.pyc",
+    "script/a4_v2_parity.pyc",
+    "script/a4_v2_producer.pyc",
+    "script/a4_v2_producer_wire.pyc",
+    "script/a4_v2_runner.pyc",
+    "script/a4_v2_verifier.pyc",
+    "script/run_arbitrary_cardinality_a4_v2.pyc",
+)
+ALLOWED_INSTALLED_ORIGIN_ROOTS = (
+    "/usr/lib/python3.9",
+    "/usr/lib64/python3.9",
+    "/usr/lib64/python39.zip",
+    "/usr/local/lib/python3.9/site-packages",
+    "/usr/local/lib64/python3.9/site-packages",
+)
+CACHE_POLICY_CLAIM_CEILING = (
+    "Cooperative isolated-clone B/P cache-policy evidence only; no "
+    "malicious-writer, SRUN-child, parity, feasibility, systems, or "
+    "scientific claim."
 )
 EXPECTED_SOURCE_FILES = (
     "research/a4_v2/CMakeLists.txt",
@@ -458,6 +492,7 @@ PAR_INDEXED_FILE_NAMES = tuple(
             "producer_native_smoke.tsv",
             "producer_native_smoke.stdout",
             "producer_native_smoke.stderr",
+            "cache_policy_verification.json",
             "parity_summary.json",
         ),
         key=lambda value: value.encode("utf-8"),
@@ -1851,8 +1886,10 @@ def _validate_source_manifest(
         "artifact_schema_identity",
         "authorization_identity",
         "build_status",
+        "cache_protocol_identity",
         "contract_identity",
         "implementation_binding_identity",
+        "inline_executable_sources",
         "par_contract",
         "parent_protocol_commit",
         "parent_preregistration_identity",
@@ -1869,7 +1906,7 @@ def _validate_source_manifest(
         _fail("implementation source manifest has a nonfrozen top-level shape")
     if (
         manifest["artifact_kind"] != "a4_v2_implementation_manifest"
-        or manifest["schema_version"] != 1
+        or manifest["schema_version"] != 2
         or manifest["build_status"] != "NOT_AUTHORIZED_NOT_RUN"
     ):
         _fail("implementation source manifest authority/status mismatch")
@@ -1910,6 +1947,7 @@ def _validate_source_manifest(
         "source_provenance_identity": (
             "docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md"
         ),
+        "cache_protocol_identity": CACHE_PROTOCOL_AUTHORITY_IDENTITY_PATH,
     }
     for key, expected_path in expected_identity_paths.items():
         identity = _require_mapping(manifest[key], f"source manifest {key}")
@@ -1929,12 +1967,101 @@ def _validate_source_manifest(
         "protocol_identity",
         "artifact_schema_identity",
         "authorization_identity",
+        "cache_protocol_identity",
         "contract_identity",
         "implementation_binding_identity",
         "parent_preregistration_identity",
         "source_provenance_identity",
     ):
         _read_repo_identity(manifest[key], f"source manifest {key}", maximum_bytes=16 << 20)
+
+    cache_authority_bytes, _ = _read_repo_identity(
+        manifest["cache_protocol_identity"],
+        "source manifest cache_protocol_identity",
+        maximum_bytes=16 << 20,
+    )
+    cache_authority = _require_mapping(
+        parse_strict_json_document(
+            cache_authority_bytes, "additive cache protocol authority"
+        ),
+        "additive cache protocol authority",
+    )
+    expected_cache_authority_keys = {
+        "artifact_kind",
+        "authority_chain",
+        "claim_ceiling",
+        "commit_closure",
+        "future_authority_slots",
+        "generic_object_identities",
+        "implementation_parent_admission",
+        "inline_executable_source",
+        "no_execution_attestation",
+        "outcome_ceiling",
+        "prohibitions",
+        "protocol_components",
+        "runtime_policy",
+        "schema_version",
+        "source_closure",
+        "stage",
+    }
+    if (
+        set(cache_authority) != expected_cache_authority_keys
+        or cache_authority.get("schema_version") != 1
+        or cache_authority.get("stage") != "A4-V2-CACHE-I"
+    ):
+        _fail("additive cache protocol authority has a nonfrozen envelope")
+    inline_sources = _require_list(
+        manifest["inline_executable_sources"],
+        "implementation inline executable sources",
+    )
+    if len(inline_sources) != 1:
+        _fail("implementation manifest must bind exactly one inline executable source")
+    inline = _require_mapping(inline_sources[0], "inline PREP bootstrap")
+    inline_keys = {
+        "argv_template",
+        "encoding",
+        "id",
+        "maximal_argv",
+        "prologue_sha256",
+        "prologue_size_bytes",
+        "sha256",
+        "size_bytes",
+        "source",
+        "static_closure_unit_id",
+        "storage",
+    }
+    if set(inline) != inline_keys or dict(inline) != cache_authority.get(
+        "inline_executable_source"
+    ):
+        _fail("manifest/authority inline PREP bootstrap identity differs")
+    source = inline.get("source")
+    if (
+        inline.get("id") != "a4_v2_prep_c_bootstrap"
+        or inline.get("encoding") != "ASCII"
+        or not isinstance(source, str)
+        or not source.isascii()
+        or inline.get("size_bytes") != len(source.encode("ascii"))
+        or inline.get("sha256") != sha256_bytes(source.encode("ascii"))
+        or not isinstance(inline.get("prologue_size_bytes"), int)
+        or isinstance(inline.get("prologue_size_bytes"), bool)
+        or not 0 < inline["prologue_size_bytes"] <= inline["size_bytes"]
+        or inline.get("prologue_sha256")
+        != sha256_bytes(source.encode("ascii")[: inline["prologue_size_bytes"]])
+    ):
+        _fail("inline PREP bootstrap byte/prologue identity is malformed")
+    cache_static_closure_bytes = read_immutable_external(
+        REPOSITORY_ROOT / "docs/saq_a4_v2_cache_static_closure_2026_07_15.json",
+        "cache static closure",
+        maximum_bytes=16 << 20,
+    )
+    cache_static_closure = _require_mapping(
+        parse_strict_json_document(
+            cache_static_closure_bytes, "cache static closure"
+        ),
+        "cache static closure",
+    )
+    if cache_static_closure.get("inline_executable_source") != dict(inline):
+        _fail("static-closure inline PREP bootstrap identity differs")
 
     raw_files = _require_list(manifest["source_files"], "implementation source files")
     if not raw_files:
@@ -1991,7 +2118,7 @@ def _validate_source_manifest(
     if verifier_sources != list(VERIFIER_CMAKE_SOURCE_FILES):
         _fail("verifier CMake closure differs from the frozen translation-unit list")
     if manifest["python_source_files"] != list(PYTHON_SOURCE_FILES):
-        _fail("Python runtime closure differs from the frozen eight-file inventory")
+        _fail("Python runtime closure differs from the frozen ten-file inventory")
     par_contract = _require_mapping(manifest["par_contract"], "PAR contract")
     par_keys = {
         "build_commands",
@@ -2152,7 +2279,7 @@ def _validate_par_artifact_index(
         "schema_version",
     } or (
         index["artifact_kind"] != "a4_v2_par_artifact_index"
-        or index["schema_version"] != 1
+        or index["schema_version"] != 2
         or index["implementation_commit"] != implementation_commit
     ):
         _fail("PAR artifact index authority/commit is not frozen")
@@ -2191,6 +2318,360 @@ def _validate_par_artifact_index(
         "PAR artifact directory",
     )
     return result
+
+
+def _validate_cache_policy_artifact(
+    payload: bytes,
+    build_manifest: Mapping[str, Any],
+    source_manifest: Mapping[str, Any],
+) -> dict[str, int]:
+    if len(payload) > 8 << 20:
+        _fail("PAR cache-policy artifact exceeds its frozen byte ceiling")
+    result = dict(
+        _require_mapping(
+            parse_canonical_json_document(payload, "PAR cache-policy artifact"),
+            "PAR cache-policy artifact",
+        )
+    )
+    environment = _require_mapping(
+        build_manifest["environment_preimage"], "PAR environment preimage"
+    )
+    policy = _require_mapping(
+        environment["python_cache_policy"], "PAR Python cache-policy preimage"
+    )
+    schema_identity = _require_mapping(
+        _require_mapping(policy["authority"], "cache-policy authority")[
+            "runtime_schema"
+        ],
+        "cache runtime-schema identity",
+    )
+    schema_payload, _ = _read_repo_identity(
+        schema_identity,
+        "cache runtime-schema identity",
+        maximum_bytes=16 << 20,
+    )
+    runtime_schema = _require_mapping(
+        parse_strict_json_document(schema_payload, "cache runtime schema"),
+        "cache runtime schema",
+    )
+    SchemaRegistry(runtime_schema).validate_root(result, "PAR cache-policy artifact")
+    if (
+        result["artifact_kind"] != "a4_v2_cache_policy_verification"
+        or result["schema_version"] != 1
+        or result["status"] != "PASS"
+        or result["claim_ceiling"] != CACHE_POLICY_CLAIM_CEILING
+        or result["mismatches"] != []
+    ):
+        _fail("PAR cache-policy result is not a successful bounded observation")
+
+    control_preimage_hex = result["control_preimage_hex"]
+    if (
+        not isinstance(control_preimage_hex, str)
+        or not 2 <= len(control_preimage_hex) <= 2 * (1 << 20)
+        or len(control_preimage_hex) % 2
+        or re.fullmatch(r"(?:[0-9a-f]{2})+", control_preimage_hex) is None
+    ):
+        _fail("cache-policy persisted control is not bounded lowercase hex")
+    control_payload = bytes.fromhex(control_preimage_hex)
+    persisted_control = dict(
+        _require_mapping(
+            parse_canonical_json_document(
+                control_payload, "persisted cache-policy verifier control"
+            ),
+            "persisted cache-policy verifier control",
+        )
+    )
+    expected_control_keys = {
+        "artifact_kind",
+        "authority",
+        "cache_paths",
+        "clone",
+        "output",
+        "parent",
+        "preterminal_observations",
+        "reviewed_python_sources",
+        "schema_version",
+        "startup_observation",
+    }
+    preterminal_observations = persisted_control.get("preterminal_observations")
+    if (
+        set(persisted_control) != expected_control_keys
+        or persisted_control.get("artifact_kind")
+        != "a4_v2_cache_policy_verifier_control"
+        or persisted_control.get("schema_version") != 1
+        or persisted_control.get("authority") != policy["authority"]
+        or persisted_control.get("cache_paths") != policy["cache_paths"]
+        or persisted_control.get("clone") != policy["clone"]
+        or persisted_control.get("output")
+        != policy["independent_verifier"]["output"]
+        or persisted_control.get("parent") != policy["parent"]
+        or persisted_control.get("reviewed_python_sources")
+        != policy["reviewed_python_sources"]
+        or persisted_control.get("startup_observation")
+        != policy["startup_observation"]
+        or not isinstance(preterminal_observations, list)
+        or len(preterminal_observations) != 2
+        or any(not isinstance(item, dict) for item in preterminal_observations)
+        or [item.get("checkpoint") for item in preterminal_observations]
+        != ["B_PRETERMINAL", "P_PRETERMINAL"]
+    ):
+        _fail("persisted cache-policy control differs from its frozen preimage")
+
+    authority = _require_mapping(policy["authority"], "cache-policy authority")
+    authority_checks = _require_list(
+        result["authority_checks"], "cache-policy authority checks"
+    )
+    if len(authority_checks) != len(authority):
+        _fail("cache-policy authority-check count differs")
+    for raw, key in zip(authority_checks, sorted(authority)):
+        check = _require_mapping(raw, f"cache-policy authority check {key}")
+        expected = _require_mapping(authority[key], f"cache-policy authority {key}")
+        if check != {
+            "path": expected["path"],
+            "sha256": expected["sha256"],
+            "size_bytes": expected["size_bytes"],
+            "status": "MATCH",
+        }:
+            _fail(f"cache-policy authority check differs: {key}")
+
+    cache_checks = _require_list(result["cache_checks"], "cache-policy live checks")
+    if cache_checks != [
+        {"checkpoint": "VERIFIER_LIVE_P", "path": path, "state": "ABSENT"}
+        for path in CACHE_PATHS
+    ]:
+        _fail("cache-policy live cache inventory/order differs")
+
+    clone = _require_mapping(policy["clone"], "cache-policy clone preimage")
+    expected_clone = {
+        "branch_ref": "refs/heads/saq-arbitrary-cardinality-feasibility-v2",
+        "fetch_url": clone["origin_fetch_url"],
+        "head": clone["expected_commit"],
+        "push_url": clone["origin_push_url"],
+        "tree": clone["expected_tree_oid"],
+    }
+    if result["clone_checks"] != {
+        "expected": expected_clone,
+        "observed": expected_clone,
+        "status": "MATCH",
+    }:
+        _fail("cache-policy clone result differs from the immutable preimage")
+
+    control_identity = _require_mapping(
+        result["control_identity"], "cache-policy control identity"
+    )
+    if (
+        control_identity["name"] != "saq-a4-v2-cache-policy-control"
+        or control_identity["offset_bytes"] != 0
+        or control_identity["seals"]
+        != [
+            "F_SEAL_SEAL",
+            "F_SEAL_SHRINK",
+            "F_SEAL_GROW",
+            "F_SEAL_WRITE",
+        ]
+        or control_identity["transport"] != "SEALED_ANONYMOUS_MEMFD"
+        or control_identity["sha256"] != sha256_bytes(control_payload)
+        or control_identity["size_bytes"] != len(control_payload)
+        or control_identity["size_bytes"] > 1 << 20
+    ):
+        _fail("cache-policy control transport/result differs")
+
+    module_checks = _require_list(result["module_checks"], "cache module checks")
+    persisted_observations = [
+        persisted_control["startup_observation"],
+        *preterminal_observations,
+    ]
+    expected_module_checks = [
+        {
+            "a4_module_count": len(observation["a4_modules"]),
+            "checkpoint": checkpoint,
+            "identity_sha256": sha256_bytes(
+                canonical_json_without_lf(observation)
+            ),
+            "retained_module_count": len(observation["retained_modules"]),
+            "seen_reviewed_source_count": len(
+                {item["source_path"] for item in observation["a4_modules"]}
+            ),
+            "sys_meta_path_count": len(observation["sys_meta_path"]),
+            "sys_path_count": len(observation["sys_path"]),
+        }
+        for observation, checkpoint in zip(
+            persisted_observations,
+            ("STARTUP_PREIMPORT", "B_PRETERMINAL", "P_PRETERMINAL"),
+        )
+    ]
+    if module_checks != expected_module_checks:
+        _fail("cache-policy module summaries differ from persisted observations")
+
+    parent = _require_mapping(policy["parent"], "cache-policy parent preimage")
+    parent_checks = _require_mapping(
+        result["parent_checks"], "cache-policy parent checks"
+    )
+    expected_bootstrap = parent["bootstrap_external"]
+    expected_leader = parent["leader"]
+    bootstrap_check = _require_mapping(
+        parent_checks["bootstrap_external_check"],
+        "cache-policy parent bootstrap check",
+    )
+    environment_check = _require_mapping(
+        parent_checks["environment_check"],
+        "cache-policy parent environment check",
+    )
+    leader_check = _require_mapping(
+        parent_checks["leader_check"], "cache-policy parent leader check"
+    )
+
+    def leader_core(value: Mapping[str, Any]) -> tuple[Any, ...]:
+        return tuple(
+            value[key]
+            for key in (
+                "device",
+                "inode",
+                "mode",
+                "resolved_path",
+                "sha256",
+                "size_bytes",
+            )
+        )
+
+    parent_command = _require_mapping(
+        leader_check["command_observed"], "cache-policy parent command observed"
+    )
+    parent_proc = _require_mapping(
+        leader_check["proc_exe_observed"], "cache-policy parent proc-exe observed"
+    )
+    if (
+        parent_checks["cmdline_hex"] != parent["cmdline_hex"]
+        or parent_checks["cmdline_sha256"] != parent["cmdline_sha256"]
+        or parent_checks["cwd"] != parent["cwd"]
+        or parent_checks["pid"] != parent["pid"]
+        or parent_checks["start_time_clock_ticks"]
+        != parent["start_time_clock_ticks"]
+        or bootstrap_check
+        != {
+            "expected": expected_bootstrap,
+            "observed": expected_bootstrap,
+            "status": "MATCH",
+        }
+        or environment_check
+        != {
+            "expected": parent["environment"],
+            "observed": parent["environment"],
+            "status": "MATCH",
+        }
+        or leader_check["expected"] != expected_leader
+        or leader_check["status"] != "MATCH"
+        or parent_command != expected_leader["command"]
+        or parent_proc["path"] != f"/proc/{parent['pid']}/exe"
+        or leader_core(parent_proc) != leader_core(expected_leader["proc_self_exe"])
+        or leader_core(parent_command) != leader_core(parent_proc)
+        or not stat.S_ISREG(parent_command["mode"])
+        or not stat.S_ISREG(parent_proc["mode"])
+    ):
+        _fail("cache-policy live parent result differs from sealed preimage")
+
+    source_files = _require_list(
+        source_manifest["source_files"], "implementation source files"
+    )
+    reviewed = {
+        item["path"]: item
+        for item in _require_list(
+            policy["reviewed_python_sources"], "reviewed Python sources"
+        )
+    }
+    source_checks = _require_list(result["source_checks"], "cache source checks")
+    if len(source_checks) != len(source_files):
+        _fail("cache-policy complete source-check count differs")
+    for raw, expected in zip(source_checks, source_files):
+        check = _require_mapping(raw, "cache-policy source check")
+        reviewed_entry = reviewed.get(expected["path"])
+        if (
+            check["path"] != expected["path"]
+            or check["sha256"] != expected["sha256"]
+            or check["size_bytes"] != expected["size_bytes"]
+            or check["git_matches"] is not True
+            or check["physical_matches"] is not True
+            or (
+                reviewed_entry is not None
+                and check["git_blob"] != reviewed_entry["git_blob"]
+            )
+        ):
+            _fail("cache-policy source-check identity/order differs")
+
+    verifier_process = _require_mapping(
+        result["verifier_process"], "cache verifier process"
+    )
+    expected_verifier_argv = _require_mapping(
+        policy["independent_verifier"], "cache independent verifier"
+    )["argv"]
+    expected_cmdline = b"\0".join(
+        argument.encode("utf-8") for argument in expected_verifier_argv
+    ) + b"\0"
+    verifier_bootstrap_check = _require_mapping(
+        verifier_process["bootstrap_external_check"],
+        "cache verifier bootstrap check",
+    )
+    verifier_leader_check = _require_mapping(
+        verifier_process["leader_check"], "cache verifier leader check"
+    )
+    descriptor_observed = _require_mapping(
+        verifier_leader_check["descriptor_observed"],
+        "cache verifier descriptor observed",
+    )
+    verifier_proc_observed = _require_mapping(
+        verifier_leader_check["proc_exe_observed"],
+        "cache verifier proc-exe observed",
+    )
+    if (
+        verifier_process["cmdline_hex"] != expected_cmdline.hex()
+        or verifier_process["cmdline_sha256"] != sha256_bytes(expected_cmdline)
+        or verifier_process["cwd"] != "/"
+        or verifier_process["environment"]
+        != {"LANG": "C", "LC_ALL": "C", "PATH": "/usr/bin:/bin"}
+        or verifier_process["flags"]
+        != {
+            "dont_write_bytecode": 1,
+            "ignore_environment": 1,
+            "isolated": 1,
+            "no_site": 1,
+            "optimize": 0,
+        }
+        or verifier_bootstrap_check
+        != {
+            "expected": expected_bootstrap,
+            "observed": expected_bootstrap,
+            "status": "MATCH",
+        }
+        or verifier_leader_check["expected"] != expected_leader
+        or verifier_leader_check["status"] != "MATCH"
+        or descriptor_observed["path"] != "/proc/self/fd/197"
+        or verifier_proc_observed["path"] != "/proc/self/exe"
+        or leader_core(descriptor_observed)
+        != leader_core(expected_leader["proc_self_exe"])
+        or leader_core(descriptor_observed) != leader_core(verifier_proc_observed)
+        or not stat.S_ISREG(descriptor_observed["mode"])
+        or not stat.S_ISREG(verifier_proc_observed["mode"])
+    ):
+        _fail("cache verifier process identity differs")
+
+    resource_ledger = _require_mapping(
+        result["resource_ledger"], "cache verifier resource ledger"
+    )
+    transient = dict(
+        _require_mapping(
+            resource_ledger["cache_verifier_transient_bytes"],
+            "cache verifier transient bytes",
+        )
+    )
+    if (
+        resource_ledger["control_bytes"] != transient["control_logical_bytes"]
+        or transient["stdout_logical_bytes"] != 0
+        or transient["stderr_logical_bytes"] != 0
+        or resource_ledger["measurement_scope"]
+        != "DIAGNOSTIC_PARENT_P_LEDGER_AUTHORITATIVE"
+    ):
+        _fail("cache verifier resource/transient-byte reconciliation differs")
+    return transient
 
 
 def _validate_par_review_binding(
@@ -2477,6 +2958,11 @@ def _validate_par_review_binding(
         _fail("PAR artifact index build manifest differs from admitted build bytes")
     if indexed_payloads.get("parity_summary.json") != parity_summary_bytes:
         _fail("PAR artifact index parity summary differs from the reviewed seal")
+    cache_transient = _validate_cache_policy_artifact(
+        indexed_payloads["cache_policy_verification.json"],
+        build_manifest,
+        source_manifest,
+    )
     indexed_evidence_bytes = len(artifact_index_bytes) + sum(
         len(payload) for payload in indexed_payloads.values()
     )
@@ -2493,6 +2979,23 @@ def _validate_par_review_binding(
             _fail("PAR byte ledger reports a forbidden permanent intermediate bundle")
         if item["research_evidence_archive_bytes"] > RESEARCH_EVIDENCE_CAP_BYTES:
             _fail("PAR byte ledger entry exceeds the research-evidence ceiling")
+    p_ledger = byte_ledger[1]
+    if (
+        p_ledger["created_temporary_bytes"]
+        - p_ledger["deleted_partial_bytes"]
+        != p_ledger["research_evidence_archive_bytes"]
+        + cache_transient["control_logical_bytes"]
+        or p_ledger["maximum_live_owned_temporary_bytes"]
+        < sum(
+            cache_transient[key]
+            for key in (
+                "control_allocated_bytes",
+                "stdout_allocated_bytes",
+                "stderr_allocated_bytes",
+            )
+        )
+    ):
+        _fail("PAR P byte ledger does not charge cache-verifier transient bytes")
     par_tree_blobs = {
         PAR_SEAL_IDENTITY_PATH: par_seal_bytes,
         PAR_ARTIFACT_INDEX_IDENTITY_PATH: artifact_index_bytes,
@@ -3100,7 +3603,296 @@ def _observed_numpy_distribution_authority() -> dict[str, Any]:
     return {"files": files, "version": distribution.version}
 
 
-def _validate_par_build_run_authority(build: Mapping[str, Any]) -> None:
+def _validate_python_cache_policy_preimage(
+    value: Any,
+    build: Mapping[str, Any],
+    source_manifest: Mapping[str, Any],
+) -> SchemaRegistry:
+    policy = dict(_require_mapping(value, "PAR Python cache-policy preimage"))
+    policy_keys = {
+        "artifact_kind",
+        "authority",
+        "cache_paths",
+        "clone",
+        "independent_verifier",
+        "parent",
+        "reviewed_python_sources",
+        "schema_version",
+        "startup_observation",
+    }
+    if (
+        set(policy) != policy_keys
+        or policy["artifact_kind"] != "a4_v2_python_cache_policy_preimage"
+        or policy["schema_version"] != 1
+        or policy["cache_paths"] != list(CACHE_PATHS)
+    ):
+        _fail("PAR Python cache-policy preimage envelope differs")
+
+    authority = dict(_require_mapping(policy["authority"], "cache-policy authority"))
+    authority_paths = {
+        "cache_prep_binding": "docs/saq_a4_v2_cache_prep_binding_2026_07_15.json",
+        "cache_protocol_authority": CACHE_PROTOCOL_AUTHORITY_IDENTITY_PATH,
+        "cache_static_closure": "docs/saq_a4_v2_cache_static_closure_2026_07_15.json",
+        "implementation_manifest": (
+            "docs/saq_a4_v2_implementation_manifest_2026_07_14.json"
+        ),
+        "par_r1_authorization": "docs/saq_a4_v2_par_r1_authorization_2026_07_15.md",
+        "runtime_schema": CACHE_RUNTIME_SCHEMA_IDENTITY_PATH,
+    }
+    if set(authority) != set(authority_paths):
+        _fail("cache-policy authority inventory differs")
+    authority_payloads: dict[str, bytes] = {}
+    for key, path in authority_paths.items():
+        identity = _require_mapping(authority[key], f"cache-policy authority {key}")
+        if identity.get("path") != path:
+            _fail(f"cache-policy authority path differs: {key}")
+        payload, _ = _read_repo_identity(
+            identity, f"cache-policy authority {key}", maximum_bytes=16 << 20
+        )
+        authority_payloads[key] = payload
+    if authority["cache_protocol_authority"] != source_manifest[
+        "cache_protocol_identity"
+    ]:
+        _fail("cache preimage/additive-authority identity differs from source manifest")
+    if authority["implementation_manifest"] != build["source_manifest"]:
+        _fail("cache preimage implementation-manifest identity differs from build")
+    runtime_schema = _require_mapping(
+        parse_strict_json_document(
+            authority_payloads["runtime_schema"], "cache runtime schema"
+        ),
+        "cache runtime schema",
+    )
+    runtime_registry = SchemaRegistry(runtime_schema)
+
+    clone = dict(_require_mapping(policy["clone"], "cache-policy clone"))
+    clone_keys = {
+        "allowed_installed_origin_roots",
+        "branch",
+        "expected_commit",
+        "expected_tree_oid",
+        "origin_fetch_url",
+        "origin_push_url",
+        "par_staging_relative_path",
+        "root",
+        "source_tree_sha256",
+    }
+    if (
+        set(clone) != clone_keys
+        or clone["allowed_installed_origin_roots"]
+        != list(ALLOWED_INSTALLED_ORIGIN_ROOTS)
+        or clone["branch"] != "saq-arbitrary-cardinality-feasibility-v2"
+        or clone["expected_commit"] != build["implementation_commit"]
+        or clone["origin_fetch_url"] != "https://github.com/Ufowoqqqo/SAQ.git"
+        or clone["origin_push_url"] != "git@github.com:Ufowoqqqo/SAQ.git"
+        or clone["par_staging_relative_path"]
+        != "docs/saq_a4_v2_par_artifacts_2026_07_14.staging"
+        or clone["root"] != "/tmp/saq-a4-v2-par-r1-isolation/repo"
+        or clone["source_tree_sha256"] != source_manifest["source_tree_sha256"]
+    ):
+        _fail("cache-policy clone preimage differs")
+    _require_git_oid(clone["expected_tree_oid"], "cache-policy expected tree OID")
+
+    verifier = dict(
+        _require_mapping(policy["independent_verifier"], "cache-policy verifier")
+    )
+    verifier_keys = {
+        "argv",
+        "control_fd",
+        "control_maximum_bytes",
+        "control_transport",
+        "cwd",
+        "environment",
+        "output",
+    }
+    expected_verifier_argv = [
+        "/proc/self/fd/197",
+        "-I",
+        "-B",
+        "-S",
+        (
+            "/tmp/saq-a4-v2-par-r1-isolation/repo/"
+            "script/a4_v2_cache_policy_verifier.py"
+        ),
+        "verify-parent-cache-policy",
+        "--control-fd",
+        "198",
+    ]
+    if (
+        set(verifier) != verifier_keys
+        or verifier["argv"] != expected_verifier_argv
+        or verifier["control_fd"] != 198
+        or verifier["control_maximum_bytes"] != 1 << 20
+        or verifier["cwd"] != "/"
+        or verifier["environment"]
+        != {"LANG": "C", "LC_ALL": "C", "PATH": "/usr/bin:/bin"}
+        or verifier["control_transport"]
+        != {
+            "name": "saq-a4-v2-cache-policy-control",
+            "offset_bytes": 0,
+            "seals": [
+                "F_SEAL_SEAL",
+                "F_SEAL_SHRINK",
+                "F_SEAL_GROW",
+                "F_SEAL_WRITE",
+            ],
+            "transport": "SEALED_ANONYMOUS_MEMFD",
+        }
+        or verifier["output"]
+        != {
+            "artifact_name": "cache_policy_verification.json",
+            "maximum_bytes": 8 << 20,
+            "staging_relative_path": clone["par_staging_relative_path"],
+        }
+    ):
+        _fail("cache-policy independent-verifier preimage differs")
+
+    parent = dict(_require_mapping(policy["parent"], "cache-policy parent"))
+    if set(parent) != {
+        "bootstrap_external",
+        "cmdline_hex",
+        "cmdline_sha256",
+        "cwd",
+        "environment",
+        "leader",
+        "pid",
+        "start_time_clock_ticks",
+    }:
+        _fail("cache-policy parent preimage shape differs")
+    expected_cmdline = b"\0".join(
+        argument.encode("ascii") for argument in EXPECTED_PAR_COMMAND
+    ) + b"\0"
+    leader_group = _require_mapping(
+        parent["leader"], "cache-policy parent leader aliases"
+    )
+    if set(leader_group) != {"command", "proc_self_exe", "sys_executable"}:
+        _fail("cache-policy parent leader-alias inventory differs")
+    leader_keys = {
+        "device",
+        "inode",
+        "mode",
+        "path",
+        "resolved_path",
+        "sha256",
+        "size_bytes",
+    }
+    leader_records: list[Mapping[str, Any]] = []
+    for name in ("command", "proc_self_exe", "sys_executable"):
+        record = _require_mapping(
+            leader_group[name], f"cache-policy parent leader {name}"
+        )
+        if set(record) != leader_keys:
+            _fail("cache-policy parent leader record shape differs")
+        leader_records.append(record)
+    bootstrap = _require_mapping(
+        parent["bootstrap_external"], "cache-policy parent bootstrap"
+    )
+    if set(bootstrap) != {
+        "device",
+        "inode",
+        "mode",
+        "path",
+        "sha256",
+        "size_bytes",
+    }:
+        _fail("cache-policy parent bootstrap record shape differs")
+    if (
+        parent["cmdline_hex"] != expected_cmdline.hex()
+        or parent["cmdline_sha256"] != sha256_bytes(expected_cmdline)
+        or parent["cwd"] != clone["root"]
+        or parent["environment"]
+        != {
+            "python_prefixed_names": [],
+            "thread_environment": {
+                "MKL_NUM_THREADS": "1",
+                "OMP_NUM_THREADS": "1",
+                "OPENBLAS_NUM_THREADS": "1",
+            },
+        }
+        or len({(item["device"], item["inode"]) for item in leader_records}) != 1
+        or any(
+            _require_nonnegative_integer(
+                item["device"], "cache-policy leader device"
+            )
+            < 0
+            or _require_nonnegative_integer(
+                item["inode"], "cache-policy leader inode"
+            )
+            == 0
+            or not isinstance(item["mode"], int)
+            or isinstance(item["mode"], bool)
+            or not stat.S_ISREG(item["mode"])
+            or not isinstance(item["path"], str)
+            or not os.path.isabs(item["path"])
+            or os.path.normpath(item["path"]) != item["path"]
+            or item["resolved_path"] != "/usr/bin/python3.9"
+            or item["sha256"]
+            != "c87babf8337b668da60e26d897d694df7bd9a5b7907416e4eda078b9c33d05e0"
+            or item["size_bytes"] != 15_448
+            for item in leader_records
+        )
+        or bootstrap["path"]
+        != "/usr/lib64/python3.9/importlib/_bootstrap_external.py"
+        or bootstrap["sha256"]
+        != "8373612b2866d0971f9167ced3a0254204fef058c975f2e30fbb3138797e21d4"
+        or bootstrap["size_bytes"] != 66_447
+        or _require_nonnegative_integer(
+            bootstrap["device"], "cache-policy bootstrap device"
+        )
+        < 0
+        or _require_nonnegative_integer(
+            bootstrap["inode"], "cache-policy bootstrap inode"
+        )
+        == 0
+        or not isinstance(bootstrap["mode"], int)
+        or isinstance(bootstrap["mode"], bool)
+        or not stat.S_ISREG(bootstrap["mode"])
+        or _require_nonnegative_integer(parent["pid"], "cache-policy parent PID") == 0
+        or _require_nonnegative_integer(
+            parent["start_time_clock_ticks"], "cache-policy parent start time"
+        )
+        == 0
+    ):
+        _fail("cache-policy parent identity differs")
+
+    reviewed = _require_list(
+        policy["reviewed_python_sources"], "reviewed Python cache sources"
+    )
+    source_by_path = {
+        item["path"]: item
+        for item in source_manifest["source_files"]
+        if isinstance(item, dict) and item.get("path") in PYTHON_SOURCE_FILES
+    }
+    if len(reviewed) != len(PYTHON_SOURCE_FILES):
+        _fail("cache-policy reviewed Python source count differs")
+    for index, (raw, path) in enumerate(zip(reviewed, PYTHON_SOURCE_FILES)):
+        item = dict(_require_mapping(raw, f"reviewed Python cache source {index}"))
+        expected = source_by_path.get(path)
+        if (
+            set(item)
+            != {"family", "git_blob", "path", "role", "sha256", "size_bytes"}
+            or expected is None
+            or {key: item[key] for key in ("family", "path", "role", "sha256", "size_bytes")}
+            != expected
+        ):
+            _fail("cache-policy reviewed Python source identity/order differs")
+        _require_git_oid(item["git_blob"], f"reviewed Python source {index} blob")
+
+    startup = policy["startup_observation"]
+    runtime_registry.validate_definition(
+        startup, "observation", "cache-policy startup observation"
+    )
+    if (
+        startup.get("checkpoint") != "STARTUP_PREIMPORT"
+        or startup.get("a4_modules") != []
+        or any(item.get("state") != "ABSENT" for item in startup["cache_paths"])
+    ):
+        _fail("cache-policy startup observation differs from pre-import authority")
+    return runtime_registry
+
+
+def _validate_par_build_run_authority(
+    build: Mapping[str, Any], source_manifest: Mapping[str, Any]
+) -> None:
     environment = dict(
         _require_mapping(build["environment_preimage"], "PAR environment preimage")
     )
@@ -3110,10 +3902,11 @@ def _validate_par_build_run_authority(build: Mapping[str, Any]) -> None:
         "leader_binary_sha256",
         "leader_binary_size_bytes",
         "numpy_authority",
+        "python_cache_policy",
         "tool_paths",
     }
     if set(environment) != environment_keys:
-        _fail("PAR environment preimage does not have the exact six-field shape")
+        _fail("PAR environment preimage does not have the exact seven-field shape")
     implementation_commit = _require_git_oid(
         build["implementation_commit"], "build implementation commit"
     )
@@ -3148,6 +3941,10 @@ def _validate_par_build_run_authority(build: Mapping[str, Any]) -> None:
         )
     if numpy_authority != _observed_numpy_distribution_authority():
         _fail("PAR NumPy distribution/PCG64 closure differs from independent rehash")
+
+    _validate_python_cache_policy_preimage(
+        environment["python_cache_policy"], build, source_manifest
+    )
 
     leader_sha256 = _require_sha256(
         environment["leader_binary_sha256"], "PAR CPython leader SHA-256"
@@ -3304,7 +4101,7 @@ def _validate_build_manifest(
         or _require_nonnegative_integer(
             build["schema_version"], "build schema_version"
         )
-        != 1
+        != 2
     ):
         _fail("native build manifest top-level authority mismatch")
     _require_git_oid(build["implementation_commit"], "build implementation commit")
@@ -3467,7 +4264,7 @@ def _validate_build_manifest(
         "prelaunch_observation",
         "PAR build prelaunch observation",
     )
-    _validate_par_build_run_authority(build)
+    _validate_par_build_run_authority(build, source_manifest)
     return build
 
 

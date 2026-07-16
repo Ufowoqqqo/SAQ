@@ -26,7 +26,7 @@ A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
 A4-V2-PAR   pre-build executable identity admission    ARTIFACT_INVALID / REVIEWED_TERMINAL
 A4-V2-I-R1  executable-identity source repair           COMPLETED_REVIEW_PASS
 A4-V2-CACHE-P cache/staging documentation protocol      COMPLETED_OPERATIONAL_PROTOCOL_CLOSURE
-A4-V2-CACHE-I generic source/schema/static review       AUTHORIZATION_EXACT_TARGET_REVIEW_PASS_PENDING_REVIEW_RECORD_CLOSURE
+A4-V2-CACHE-I generic source/schema/static review       STATIC_SEAL_COMPLETE_PENDING_EXACT_TARGET_COMMIT_AND_REVIEW
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
 data        benchmark/base/query/index reads           NOT_AUTHORIZED
@@ -207,6 +207,23 @@ The target reaches `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`. Before source
 changes, commit/push this direct-child review, satisfy its live review-head
 closure, and perform the distinct implementation-parent admission probe whose
 result must be frozen in the additive cache-authority manifest.
+
+The direct-child authorization review is now committed and pushed at
+`187e363ee08d1f63888137c21fd5a533555bb248`; its live closure and the distinct
+implementation-parent admission predicate succeeded.  The implementation
+worktree is sealed to the frozen 22-path delta, exactly 37 filesystem sources,
+38 executable units, and canonical source-tree SHA-256
+`9568007588c78ddda9fb4c4e20e8773ee2fa1da10a7656f181fef06883de38a2`.
+It remains WIP/nonevidence until the exact target is committed and its
+direct-child independent review passes.
+
+The user separately authorized `A4-V2-CACHE-I-SYNTAX` after the exact source
+bytes were locked.  Compile-only Python 3.9 checks passed for the six
+changed/new outer sources and the inline PREP bootstrap.  No code object was
+executed and no module was imported.  This establishes syntax acceptance only
+and does not authorize or evidence importability, build, fixture, RNG, PREP,
+cache-verifier, PAR-R1, SRUN, data, quarantine, SAQ/CAQ behavior, correctness,
+or scientific value.
 
 The completed erratum stage permitted only additive authority documents,
 static review, focused commits, push, and Meeting Summary Handoff. It permitted

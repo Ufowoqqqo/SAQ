@@ -165,6 +165,28 @@ pushed, the live review-head closure must succeed, and the distinct
 implementation-parent admission probe must be recorded in the later additive
 cache-authority manifest.
 
+That review record was subsequently committed and pushed at
+`187e363ee08d1f63888137c21fd5a533555bb248`; its live review-head closure and
+the distinct implementation-parent admission predicate succeeded.  The
+CACHE-I implementation worktree is now statically sealed to exactly 37
+filesystem sources, 38 executable units, and source-tree SHA-256
+`9568007588c78ddda9fb4c4e20e8773ee2fa1da10a7656f181fef06883de38a2`.
+Its exact changed-path closure is the 22 paths frozen in the machine contract.
+Until that target is committed and its direct-child independent review passes,
+the files are WIP/nonevidence and the stage status is only
+`STATIC_SEAL_COMPLETE_PENDING_EXACT_TARGET_COMMIT_AND_INDEPENDENT_REVIEW`.
+
+After the source bytes were locked, the user separately authorized the narrow
+`A4-V2-CACHE-I-SYNTAX` edge.  `/usr/bin/python3.9` `compile()`-only
+syntax checks passed for the exact six changed/new outer Python sources and
+the exact inline PREP bootstrap.  No code object was executed and no module
+was imported.  This narrow check establishes syntax acceptance only; it does
+not establish importability, executability, correctness, schema validity,
+runtime behavior, or scientific evidence.  It does not authorize build,
+fixture, RNG, PREP, cache-verifier, PAR-R1, SRUN, data, quarantine, or SAQ/CAQ
+work.  Preserve the original CACHE-I machine-attestation literals and record
+this later exception separately.
+
 The completed `A4-V2-P-ERRATUM` permitted only additive protocol-authority
 documents, branch status documents, focused commits, static independent
 review, push, and the required Meeting Summary Handoff. Do not edit or commit
@@ -410,6 +432,11 @@ identities, SHA-256 values, byte sizes, canonical source-tree recomputation,
 exact raw-slice crosswalk inspection, diff/whitespace checks, no-clone remote-
 equality probes, and independent review. Do not invoke Python for syntax or
 schema checks and do not create the isolated clone or PREP state.
+
+The sole exception is the separately authorized, already completed
+`A4-V2-CACHE-I-SYNTAX` check recorded above.  It permits no further Python
+invocation and must not be generalized into import, schema, build, test, or
+runtime authority.
 
 The one authorized `A4-V2-PAR` invocation used the following exact command
 from clean reviewed execution base `2e983a0`:

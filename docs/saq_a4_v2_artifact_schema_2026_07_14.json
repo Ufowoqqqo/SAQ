@@ -16,7 +16,8 @@
     {"$ref": "#/$defs/archive_body_v2"},
     {"$ref": "#/$defs/resource_ledger_v2"},
     {"$ref": "#/$defs/decision_v2"},
-    {"$ref": "#/$defs/artifact_index_v2"}
+    {"$ref": "#/$defs/artifact_index_v2"},
+    {"$ref": "saq_a4_v2_cache_runtime_schema_2026_07_15.json"}
   ],
   "$defs": {
     "id": {"type": "integer", "minimum": 0},
@@ -168,6 +169,62 @@
         },
         "threads": {"const": 1},
         "turbo": {"const": "enabled; intel_pstate/no_turbo=0"}
+      }
+    },
+    "cache_policy_verifier_launch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["argv", "control_fd", "control_maximum_bytes", "control_transport", "cwd", "environment", "output"],
+      "properties": {
+        "argv": {
+          "const": [
+            "/proc/self/fd/197",
+            "-I",
+            "-B",
+            "-S",
+            "/tmp/saq-a4-v2-par-r1-isolation/repo/script/a4_v2_cache_policy_verifier.py",
+            "verify-parent-cache-policy",
+            "--control-fd",
+            "198"
+          ]
+        },
+        "control_fd": {"const": 198},
+        "control_maximum_bytes": {"const": 1048576},
+        "control_transport": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "offset_bytes", "seals", "transport"],
+          "properties": {
+            "name": {"const": "saq-a4-v2-cache-policy-control"},
+            "offset_bytes": {"const": 0},
+            "seals": {"const": ["F_SEAL_SEAL", "F_SEAL_SHRINK", "F_SEAL_GROW", "F_SEAL_WRITE"]},
+            "transport": {"const": "SEALED_ANONYMOUS_MEMFD"}
+          }
+        },
+        "cwd": {"const": "/"},
+        "environment": {"$ref": "saq_a4_v2_cache_runtime_schema_2026_07_15.json#/$defs/verifier_environment"},
+        "output": {"$ref": "saq_a4_v2_cache_runtime_schema_2026_07_15.json#/$defs/output_control"}
+      }
+    },
+    "python_cache_policy_preimage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_kind", "authority", "cache_paths", "clone", "independent_verifier", "parent", "reviewed_python_sources", "schema_version", "startup_observation"],
+      "properties": {
+        "artifact_kind": {"const": "a4_v2_python_cache_policy_preimage"},
+        "authority": {"$ref": "saq_a4_v2_cache_runtime_schema_2026_07_15.json#/$defs/authority_control"},
+        "cache_paths": {"$ref": "saq_a4_v2_cache_runtime_schema_2026_07_15.json#/$defs/cache_paths"},
+        "clone": {"$ref": "saq_a4_v2_cache_runtime_schema_2026_07_15.json#/$defs/clone_control"},
+        "independent_verifier": {"$ref": "#/$defs/cache_policy_verifier_launch"},
+        "parent": {"$ref": "saq_a4_v2_cache_runtime_schema_2026_07_15.json#/$defs/parent_control"},
+        "reviewed_python_sources": {
+          "type": "array",
+          "items": {"$ref": "saq_a4_v2_cache_runtime_schema_2026_07_15.json#/$defs/reviewed_source"},
+          "minItems": 10,
+          "maxItems": 10
+        },
+        "schema_version": {"const": 1},
+        "startup_observation": {"$ref": "saq_a4_v2_cache_runtime_schema_2026_07_15.json#/$defs/observation"}
       }
     },
     "pid_filter_record": {
