@@ -224,14 +224,45 @@ it found zero issues at LOW or above and assigned the documentation verdict
 `PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`.
 
 That verdict is not the future whole-stage ceiling
-`ISOLATED_CLONE_PREPARED_REVIEW_PASS` and does not authorize actual PREP.  The
-unique PREP authorization-review-head probe was not run and remains unspent:
-it is both review-head closure and immediate execution-base admission and may
-run only immediately before a separately user-authorized PREP, with no
-intervening source-branch/worktree mutation.  If that cannot hold, stop for
-new authority.  This review record remains WIP/nonevidence until committed
-and pushed.  No clone, token, PREP, receipt, CACHE-BIND, PAR-R1, data,
-quarantine, or SAQ/CAQ action follows from this record.
+`ISOLATED_CLONE_PREPARED_REVIEW_PASS` and did not authorize actual PREP.  At
+that historical checkpoint, the unique PREP authorization-review-head probe
+had not run and was unspent; under the then-current contract it would have
+served both review-head closure and immediate execution-base admission.  The
+later host mismatch retired that path before use, as recorded below.  The old
+probe was never run and must never run or be reused.  The review record was
+committed and pushed at
+`16a8201ac36e6c8c514848d55ad5ef607eb053b9`.  No clone, token, PREP,
+receipt, CACHE-BIND, PAR-R1, data, quarantine, or SAQ/CAQ action followed.
+
+Before the subsequently authorized actual PREP invocation, static prelaunch
+checking found that `/usr/bin/python3.9` had been replaced by the root-level
+RPM update from `python3-3.9.25-7.el9_8` to
+`python3-3.9.25-7.el9_8.2`.  The executable remained a 15,448-byte regular
+file but its SHA-256 changed from `c87babf...05e0` to `c7b3d12b...f42b`.
+Because the bootstrap writes and fsyncs durable START before checking that
+leader, PREP and the reserved probe were deliberately not run.
+
+On 2026-07-16 the user instructed exactly
+`为当前 .el9_8.2 做一个 bounded host-identity rebind/erratum`.  This opens
+only the documentation stage `A4-V2-PREP-HOST-P`: the two additive protocol
+objects, exact-commit independent review, push, and mandatory Meeting Summary
+Handoff.  Its maximum verdict is
+`HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS`, never
+`HOST_IDENTITY_REBOUND`.  It permits no existing source, manifest, schema,
+witness, runtime-authority, or historical-protocol edit and no Python, PREP,
+probe, clone, token, build, data, quarantine, or SAQ/CAQ action.
+
+The current WIP protocol paths, which become authority only after exact
+commit, independent review, push, and closure, are:
+
+- `docs/saq_a4_v2_prep_host_identity_rebind_erratum_protocol_2026_07_16.md`;
+- `docs/saq_a4_v2_prep_host_identity_rebind_erratum_contract_2026_07_16.json`.
+
+The old PREP review remains historical but is stale for activation.  Its
+invocation authority is unspent but nontransferable, and its unique probe is
+unspent but superseded and must never run or be reused.  Future source rebind,
+fresh PREP authorization/review, a new actual invocation grant, and a newly
+registered immediate probe are separate unauthorized nodes.
 
 The completed `A4-V2-P-ERRATUM` permitted only additive protocol-authority
 documents, branch status documents, focused commits, static independent
@@ -297,7 +328,12 @@ A4-V2-I-R1  executable-identity source repair           COMPLETED_REVIEW_PASS
 A4-V2-CACHE-P cache/staging documentation protocol      COMPLETED_OPERATIONAL_PROTOCOL_CLOSURE
 A4-V2-CACHE-I generic source/schema/static review       GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS
 A4-V2-CACHE-PREP-AUTH authorization record/review       PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
-A4-V2-CACHE-PREP-ISO one isolated-clone PREP attempt    NOT_AUTHORIZED
+A4-V2-CACHE-PREP-ISO original one-shot authority        UNSPENT_BUT_NONTRANSFERABLE
+A4-V2-PREP-HOST-P host-rebind erratum protocol/review   IN_PROGRESS_DOCUMENTATION_ONLY
+A4-V2-PREP-HOST-I-AUTH source-rebind authorization      NOT_AUTHORIZED
+A4-V2-PREP-HOST-I coherent source/authority rebind      NOT_AUTHORIZED
+A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
+A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event only  NOT_AUTHORIZED
 ```

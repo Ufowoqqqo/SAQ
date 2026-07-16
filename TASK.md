@@ -28,7 +28,12 @@ A4-V2-I-R1  executable-identity source repair           COMPLETED_REVIEW_PASS
 A4-V2-CACHE-P cache/staging documentation protocol      COMPLETED_OPERATIONAL_PROTOCOL_CLOSURE
 A4-V2-CACHE-I generic source/schema/static review       GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS
 A4-V2-CACHE-PREP-AUTH authorization record/review       PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
-A4-V2-CACHE-PREP-ISO one isolated-clone PREP attempt    NOT_AUTHORIZED
+A4-V2-CACHE-PREP-ISO original one-shot authority        UNSPENT_BUT_NONTRANSFERABLE
+A4-V2-PREP-HOST-P host-rebind erratum protocol/review   IN_PROGRESS_DOCUMENTATION_ONLY
+A4-V2-PREP-HOST-I-AUTH source-rebind authorization      NOT_AUTHORIZED
+A4-V2-PREP-HOST-I coherent source/authority rebind      NOT_AUTHORIZED
+A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
+A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
 data        benchmark/base/query/index reads           NOT_AUTHORIZED
@@ -262,14 +267,47 @@ It found zero issues at LOW or above and reached only
 `NOT_AUTHORIZED`, and the future whole-stage ceiling remains only
 `ISOLATED_CLONE_PREPARED_REVIEW_PASS`.
 
-The PREP authorization-review-head probe was not run during this documentation
-stage and remains unspent.  The frozen contract makes that single future probe
-both live review closure and immediate PREP execution-base admission; it may
-run only immediately before a separately user-authorized PREP, with no
-intervening source-branch/worktree mutation.  If that condition cannot hold,
-stop for new authority.  The three-path review record remains WIP/nonevidence
-until committed and pushed.  No clone, token, PREP invocation, receipt,
-CACHE-BIND, PAR-R1, data, quarantine, or SAQ/CAQ action is authorized now.
+At that historical documentation checkpoint, the PREP authorization-review-
+head probe had not run and was unspent.  The then-current contract would have
+made that single future probe both live review closure and immediate PREP
+execution-base admission.  The later host mismatch retired that path before
+use: the old probe was never run and must never run or be reused.  The
+three-path review record was committed and pushed at
+`16a8201ac36e6c8c514848d55ad5ef607eb053b9`.  No clone, token, PREP
+invocation, receipt, CACHE-BIND, PAR-R1, data, quarantine, or SAQ/CAQ action
+followed.
+
+Before the later authorized actual invocation, static prelaunch checking
+found that a root-level RPM transaction had replaced the frozen
+`python3-3.9.25-7.el9_8` leader with
+`python3-3.9.25-7.el9_8.2`.  The regular file retained size 15,448 but its
+SHA-256 became `c7b3d12b...f42b`, so invocation would write durable START and
+then necessarily reject the leader.  PREP and the unique delayed probe were
+therefore not run; no contract terminal status was created.
+
+The user's 2026-07-16 instruction
+`为当前 .el9_8.2 做一个 bounded host-identity rebind/erratum` opens only
+`A4-V2-PREP-HOST-P`, a documentation-only additive protocol and contract,
+exact-commit independent review, push, and Meeting Summary Handoff.  The
+current WIP paths become authority only after exact commit, independent
+review, push, and closure:
+
+1. `docs/saq_a4_v2_prep_host_identity_rebind_erratum_protocol_2026_07_16.md`;
+2. `docs/saq_a4_v2_prep_host_identity_rebind_erratum_contract_2026_07_16.json`.
+
+The maximum result after exact review is
+`HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS`, not
+`HOST_IDENTITY_REBOUND`.  Existing sources, manifests, schemas, witnesses,
+runtime authorities, and historical protocols must remain unchanged in this
+stage.  Python, PREP, the old or a new execution-base probe, clone/token,
+build, PAR-R1, SRUN, data, quarantine, and SAQ/CAQ actions are forbidden.
+
+The old PREP review remains historical but stale for activation.  Its actual
+invocation authority is unspent but nontransferable; its unique delayed probe
+is unspent but superseded and may never run or be reused.  A future coherent
+five-source/derived-authority rebind, fresh PREP authorization/review, new
+explicit one-invocation grant, and newly registered immediate probe each
+remain separately unauthorized.
 
 The completed erratum stage permitted only additive authority documents,
 static review, focused commits, push, and Meeting Summary Handoff. It permitted

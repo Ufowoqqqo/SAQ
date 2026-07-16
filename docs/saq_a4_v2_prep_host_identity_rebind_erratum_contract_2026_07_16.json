@@ -1,0 +1,250 @@
+{
+  "artifact_kind": "a4_v2_prep_host_identity_rebind_erratum_contract",
+  "authority": {
+    "date": "2026-07-16",
+    "exact_user_instruction": "为当前 .el9_8.2 做一个 bounded host-identity rebind/erratum",
+    "interpretation": "documentation-only additive protocol, machine contract, exact-commit independent review, push, and Meeting Summary Handoff",
+    "parent_commit": "16a8201ac36e6c8c514848d55ad5ef607eb053b9",
+    "parent_tree": "dd0745b6979bb9564006d7766846fd5a16d94181",
+    "stage": "A4-V2-PREP-HOST-P"
+  },
+  "claim_ceiling": {
+    "host_identity_rebound": false,
+    "maximum_current_outcome": "HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS",
+    "performance": "PERFORMANCE_NOT_YET_MEASURED",
+    "prep_readiness": false,
+    "scientific_decision": "NONE",
+    "scope": "artifact-governance protocol/review only"
+  },
+  "current_commit_closure": {
+    "review_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_prep_host_identity_rebind_erratum_independent_review_2026_07_16.md"
+    ],
+    "review_is_direct_child": true,
+    "target_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_prep_host_identity_rebind_erratum_contract_2026_07_16.json",
+      "docs/saq_a4_v2_prep_host_identity_rebind_erratum_protocol_2026_07_16.md"
+    ],
+    "target_parent": "16a8201ac36e6c8c514848d55ad5ef607eb053b9",
+    "unlisted_tracked_blobs_and_modes": "BYTE_IDENTICAL"
+  },
+  "current_prohibitions": [
+    "NO_EXISTING_SOURCE_MANIFEST_SCHEMA_WITNESS_RUNTIME_AUTHORITY_OR_HISTORICAL_PROTOCOL_EDIT",
+    "NO_PYTHON_IMPORT_SYNTAX_COMPILER_BUILD_TEST_FIXTURE_RNG_OR_NATIVE_EXECUTION",
+    "NO_PREP_EXECUTION_BASE_PROBE_PREP_CLONE_TOKEN_CAPTURE_JOURNAL_RECEIPT_OR_CACHE_BIND",
+    "NO_PAR_R1_SRUN_QUARANTINE_DATA_INDEX_GENERATED_RESULT_OR_SAQ_CAQ_ACTION",
+    "NO_HOST_PACKAGE_INSTALL_DOWNGRADE_REPLACEMENT_OR_ENVIRONMENT_MUTATION",
+    "NO_UNTRACKED_OR_WIP_EVIDENCE"
+  ],
+  "future_authority_dag": [
+    {
+      "authorized": true,
+      "id": "A4-V2-PREP-HOST-P",
+      "maximum_outcome": "HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS",
+      "role": "documentation target and independent review"
+    },
+    {
+      "authorized": false,
+      "id": "A4-V2-PREP-HOST-I-AUTH",
+      "role": "fresh source-rebind authorization target and review"
+    },
+    {
+      "authorized": false,
+      "id": "A4-V2-PREP-HOST-I",
+      "role": "five-source and derived-authority rebind target and review"
+    },
+    {
+      "authorized": false,
+      "id": "A4-V2-CACHE-PREP-R1-AUTH",
+      "role": "fresh PREP authorization target and review bound to the new source head"
+    },
+    {
+      "authorized": false,
+      "id": "A4-V2-CACHE-PREP-ISO-R1",
+      "requires": [
+        "fresh pushed PREP authorization-review head",
+        "new explicit one-invocation user authorization",
+        "one newly registered immediate review-head HTTPS equality probe"
+      ],
+      "role": "one future actual PREP invocation"
+    }
+  ],
+  "future_source_rebind": {
+    "authorized": false,
+    "authorization_review_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_prep_host_identity_rebind_implementation_authorization_independent_review_2026_07_16.md"
+    ],
+    "authorization_target_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_prep_host_identity_rebind_implementation_authorization_2026_07_16.md"
+    ],
+    "derived_authority_paths": [
+      "docs/saq_a4_v2_cache_protocol_authority_manifest_2026_07_15.json",
+      "docs/saq_a4_v2_cache_runtime_maximal_instance_2026_07_15.json",
+      "docs/saq_a4_v2_cache_runtime_schema_2026_07_15.json",
+      "docs/saq_a4_v2_cache_static_closure_2026_07_15.json",
+      "docs/saq_a4_v2_implementation_binding_2026_07_14.md",
+      "docs/saq_a4_v2_implementation_manifest_2026_07_14.json",
+      "docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md"
+    ],
+    "exact_source_paths": [
+      "script/a4_v2_cache_policy_verifier.py",
+      "script/a4_v2_isolated_clone_prep.py",
+      "script/a4_v2_runner.py",
+      "script/a4_v2_verifier.py",
+      "script/run_arbitrary_cardinality_a4_v2.py"
+    ],
+    "frozen_counts": {
+      "executable_units": 38,
+      "filesystem_sources": 37,
+      "native_and_cmake_sources": 27,
+      "python_sources": 10,
+      "unchanged_python_sources": 5
+    },
+    "invariants": [
+      "sole new leader digest replaces all seven active old-digest source occurrences",
+      "27 native/CMake and five unaffected Python source bytes remain unchanged",
+      "inline source is identical across PREP source, cache authority, static closure, and implementation manifest",
+      "raw 2778-byte pre-START prologue remains byte-identical; otherwise stop for another erratum",
+      "runtime schema and every maximal-witness leader alias use the sole new digest",
+      "canonical 37-source-tree identity is independently recomputed",
+      "build_status remains NOT_AUTHORIZED_NOT_RUN",
+      "old CACHE-I-SYNTAX identities remain historical and are not rewritten",
+      "no scientific, control-flow, status, retry, resource, timer, path, token, receipt, cache, or evidence-boundary change"
+    ],
+    "overlay_rule": "the updated cache authority binds this exact reviewed erratum contract as an additive protocol component while preserving historical base-component identities",
+    "root_status_paths": [
+      "AGENTS.md",
+      "TASK.md"
+    ],
+    "source_review_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_prep_host_identity_rebind_implementation_independent_review_2026_07_16.md"
+    ],
+    "source_target_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_cache_protocol_authority_manifest_2026_07_15.json",
+      "docs/saq_a4_v2_cache_runtime_maximal_instance_2026_07_15.json",
+      "docs/saq_a4_v2_cache_runtime_schema_2026_07_15.json",
+      "docs/saq_a4_v2_cache_static_closure_2026_07_15.json",
+      "docs/saq_a4_v2_implementation_binding_2026_07_14.md",
+      "docs/saq_a4_v2_implementation_manifest_2026_07_14.json",
+      "docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md",
+      "script/a4_v2_cache_policy_verifier.py",
+      "script/a4_v2_isolated_clone_prep.py",
+      "script/a4_v2_runner.py",
+      "script/a4_v2_verifier.py",
+      "script/run_arbitrary_cardinality_a4_v2.py"
+    ],
+    "unexpected_path_rule": "STOP_AND_REQUEST_ADDITIVE_PROTOCOL_AUTHORITY"
+  },
+  "fresh_prep_authorization": {
+    "authorized": false,
+    "review_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_isolated_clone_prep_authorization_independent_review_2026_07_15.md"
+    ],
+    "target_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_isolated_clone_prep_authorization_2026_07_15.md"
+    ],
+    "why_existing_paths": "preserve the authorization paths embedded in the reviewed inline bootstrap while Git retains the old blobs as history"
+  },
+  "historical_authority_disposition": {
+    "original_actual_prep_authority": "UNSPENT_BUT_NONTRANSFERABLE",
+    "original_authorization_review_commit": "16a8201ac36e6c8c514848d55ad5ef607eb053b9",
+    "original_authorization_review_status": "HISTORICAL_VALID_STALE_FOR_ACTIVATION",
+    "original_unique_probe": "UNSPENT_BUT_SUPERSEDED_NEVER_RUN_OR_REUSED",
+    "permanent_start_token": "ABSENT_NOT_CONSUMED"
+  },
+  "host_observation": {
+    "bootstrap_external": {
+      "path": "/usr/lib64/python3.9/importlib/_bootstrap_external.py",
+      "rpm_provenance": "python3-libs-3.9.25-7.el9_8.2.x86_64",
+      "sha256": "8373612b2866d0971f9167ced3a0254204fef058c975f2e30fbb3138797e21d4",
+      "size_bytes": 66447,
+      "status": "BYTES_MATCH_OLD_PIN",
+      "type": "regular"
+    },
+    "classification": [
+      "STATIC_PRELAUNCH_HOST_IDENTITY_MISMATCH",
+      "PREP_NOT_INVOKED",
+      "START_NOT_CREATED",
+      "OLD_UNIQUE_PROBE_NOT_RUN"
+    ],
+    "current_leader": {
+      "path": "/usr/bin/python3.9",
+      "rpm_file_digest_equal": true,
+      "rpm_provenance": "python3-3.9.25-7.el9_8.2.x86_64",
+      "sha256": "c7b3d12b0bcda9356ce5a7e21e66c41476310d595c54b5689bca1e38abd8f42b",
+      "size_bytes": 15448,
+      "source_rpm_provenance": "python3.9-3.9.25-7.el9_8.2.src.rpm",
+      "type": "regular"
+    },
+    "dnf_transaction": {
+      "actor_claim": "UID_0_TRANSACTION_EXACT_HUMAN_OR_AUTOMATION_INITIATOR_UNKNOWN",
+      "id": 205,
+      "install_time": "2026-07-16T17:01:48+08:00",
+      "new_release": "3.9.25-7.el9_8.2",
+      "old_release": "3.9.25-7.el9_8",
+      "package_changelog_claim": "security fix for CVE-2026-15308"
+    },
+    "old_leader": {
+      "path": "/usr/bin/python3.9",
+      "rpm_provenance": "python3-3.9.25-7.el9_8.x86_64",
+      "sha256": "c87babf8337b668da60e26d897d694df7bd9a5b7907416e4eda078b9c33d05e0",
+      "size_bytes": 15448,
+      "type": "regular"
+    },
+    "other_frozen_host_objects": {
+      "count": 12,
+      "status": "MATCH",
+      "whole_host_identity_claim": false
+    },
+    "unbound_inputs_remain_unbound": [
+      "dynamic loader",
+      "libpython",
+      "libc",
+      "OpenSSL",
+      "other mapped shared libraries"
+    ]
+  },
+  "replacement_rule": {
+    "accepted_leader_digest_count": 1,
+    "fallback_to_old_digest": false,
+    "package_version_only_admission": false,
+    "runtime_rpm_query": false,
+    "wildcard_or_prefix_admission": false
+  },
+  "superseded_base_fields": [
+    "CACHE-P protocol section 5.3 CPython executable SHA-256 prose",
+    "CACHE-P protocol section 6.1 CPython executable SHA-256 prose",
+    "CACHE-P protocol section 6.1 python3 RPM provenance prose",
+    "CACHE-P protocol section 6.1 python3-libs RPM provenance prose",
+    "CACHE-P contract /host_execution_identity/cpython/executable/sha256",
+    "CACHE-P contract /host_execution_identity/cpython/executable/rpm",
+    "CACHE-P contract /host_execution_identity/cpython/bootstrap_external/rpm"
+  ],
+  "review_requirements": [
+    "exact target parent, direct-child review, path projections, modes, clean status, and pushed heads",
+    "independent path/type/size/SHA-256/RPM provenance observation without executing Python",
+    "independent confirmation that the other twelve frozen host objects match",
+    "complete five-source and derived-authority closure inventory",
+    "no source, existing machine object, reserved probe, PREP state, quarantine, data, or SAQ action",
+    "old digest appears only in labeled historical or supersession text in the new documents",
+    "future source rebind, fresh PREP authorization, actual invocation, and new probe remain unauthorized",
+    "ordinary documentation remote equality is not represented as PREP execution-base admission"
+  ],
+  "schema_version": 1
+}
