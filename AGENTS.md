@@ -243,7 +243,7 @@ Because the bootstrap writes and fsyncs durable START before checking that
 leader, PREP and the reserved probe were deliberately not run.
 
 On 2026-07-16 the user instructed exactly
-`为当前 .el9_8.2 做一个 bounded host-identity rebind/erratum`.  This opens
+`为当前 .el9_8.2 做一个 bounded host-identity rebind/erratum`.  This opened
 only the documentation stage `A4-V2-PREP-HOST-P`: the two additive protocol
 objects, exact-commit independent review, push, and mandatory Meeting Summary
 Handoff.  Its maximum verdict is
@@ -252,11 +252,21 @@ Handoff.  Its maximum verdict is
 witness, runtime-authority, or historical-protocol edit and no Python, PREP,
 probe, clone, token, build, data, quarantine, or SAQ/CAQ action.
 
-The current WIP protocol paths, which become authority only after exact
-commit, independent review, push, and closure, are:
+The exact four-path protocol target was committed and pushed at
+`5a47fed05321af39a236d2dfb56d2c0f43708db3`.  A fresh direct-child static
+review found no issue at LOW severity or above.  The completed protocol,
+contract, and review paths are:
 
 - `docs/saq_a4_v2_prep_host_identity_rebind_erratum_protocol_2026_07_16.md`;
-- `docs/saq_a4_v2_prep_host_identity_rebind_erratum_contract_2026_07_16.json`.
+- `docs/saq_a4_v2_prep_host_identity_rebind_erratum_contract_2026_07_16.json`;
+- `docs/saq_a4_v2_prep_host_identity_rebind_erratum_independent_review_2026_07_16.md`.
+
+The resulting ceiling is `HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS`; it is
+not `HOST_IDENTITY_REBOUND`, PREP readiness, parity, feasibility, performance,
+or scientific evidence.  The review ran no Python, DNF, remote probe, PREP,
+clone, token, build, test, data, or SAQ/CAQ action.  One earlier procedurally
+invalid reviewer attempt is explicitly excluded in the review memo and
+supports no conclusion.
 
 The old PREP review remains historical but is stale for activation.  Its
 invocation authority is unspent but nontransferable, and its unique probe is
@@ -329,7 +339,7 @@ A4-V2-CACHE-P cache/staging documentation protocol      COMPLETED_OPERATIONAL_PR
 A4-V2-CACHE-I generic source/schema/static review       GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS
 A4-V2-CACHE-PREP-AUTH authorization record/review       PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-CACHE-PREP-ISO original one-shot authority        UNSPENT_BUT_NONTRANSFERABLE
-A4-V2-PREP-HOST-P host-rebind erratum protocol/review   IN_PROGRESS_DOCUMENTATION_ONLY
+A4-V2-PREP-HOST-P host-rebind erratum protocol/review   COMPLETED_REVIEW_PASS
 A4-V2-PREP-HOST-I-AUTH source-rebind authorization      NOT_AUTHORIZED
 A4-V2-PREP-HOST-I coherent source/authority rebind      NOT_AUTHORIZED
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED

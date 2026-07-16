@@ -29,7 +29,7 @@ A4-V2-CACHE-P cache/staging documentation protocol      COMPLETED_OPERATIONAL_PR
 A4-V2-CACHE-I generic source/schema/static review       GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS
 A4-V2-CACHE-PREP-AUTH authorization record/review       PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-CACHE-PREP-ISO original one-shot authority        UNSPENT_BUT_NONTRANSFERABLE
-A4-V2-PREP-HOST-P host-rebind erratum protocol/review   IN_PROGRESS_DOCUMENTATION_ONLY
+A4-V2-PREP-HOST-P host-rebind erratum protocol/review   COMPLETED_REVIEW_PASS
 A4-V2-PREP-HOST-I-AUTH source-rebind authorization      NOT_AUTHORIZED
 A4-V2-PREP-HOST-I coherent source/authority rebind      NOT_AUTHORIZED
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
@@ -286,14 +286,17 @@ then necessarily reject the leader.  PREP and the unique delayed probe were
 therefore not run; no contract terminal status was created.
 
 The user's 2026-07-16 instruction
-`为当前 .el9_8.2 做一个 bounded host-identity rebind/erratum` opens only
+`为当前 .el9_8.2 做一个 bounded host-identity rebind/erratum` opened only
 `A4-V2-PREP-HOST-P`, a documentation-only additive protocol and contract,
 exact-commit independent review, push, and Meeting Summary Handoff.  The
-current WIP paths become authority only after exact commit, independent
-review, push, and closure:
+exact four-path target was committed and pushed at
+`5a47fed05321af39a236d2dfb56d2c0f43708db3`; a fresh direct-child static
+review then found no issue at LOW severity or above.  The completed authority
+and review paths are:
 
 1. `docs/saq_a4_v2_prep_host_identity_rebind_erratum_protocol_2026_07_16.md`;
-2. `docs/saq_a4_v2_prep_host_identity_rebind_erratum_contract_2026_07_16.json`.
+2. `docs/saq_a4_v2_prep_host_identity_rebind_erratum_contract_2026_07_16.json`;
+3. `docs/saq_a4_v2_prep_host_identity_rebind_erratum_independent_review_2026_07_16.md`.
 
 The maximum result after exact review is
 `HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS`, not
@@ -301,6 +304,8 @@ The maximum result after exact review is
 runtime authorities, and historical protocols must remain unchanged in this
 stage.  Python, PREP, the old or a new execution-base probe, clone/token,
 build, PAR-R1, SRUN, data, quarantine, and SAQ/CAQ actions are forbidden.
+The valid review used none of them.  Its memo explicitly excludes one earlier
+procedurally invalid reviewer attempt, which supports no conclusion.
 
 The old PREP review remains historical but stale for activation.  Its actual
 invocation authority is unspent but nontransferable; its unique delayed probe
