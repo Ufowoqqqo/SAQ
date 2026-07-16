@@ -24,8 +24,9 @@ Current summary inventory:
 - `docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` is the current,
   unpresented successor draft. It queues `R07`, `R08`, `R10`, `R11`, and
   `R12`; its Attempt 4 scientific snapshot is
-  `saq-arbitrary-cardinality-feasibility-v2@b89dabe`, whose latest material
-  milestone is host-rebind erratum target/review `5a47fed/@b89dabe`.
+  `saq-arbitrary-cardinality-feasibility-v2@71e6bec`, whose latest material
+  milestone is HOST-I-AUTH target/review `212a67b/@71e6bec`, following the
+  preserved host-rebind erratum target/review `5a47fed/@b89dabe`.
 
 ## Current Attempt 4 Boundary
 
@@ -45,7 +46,8 @@ A4-V2-CACHE-P EXACT_TARGET_INDEPENDENT_REVIEW_PASS
 A4-V2-CACHE-I GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS
 A4-V2-CACHE-PREP-AUTH PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-PREP-HOST-P HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS
-A4-V2-PREP-HOST-I-AUTH / HOST-I NOT_AUTHORIZED
+A4-V2-PREP-HOST-I-AUTH AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
+A4-V2-PREP-HOST-I NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 NOT_AUTHORIZED
 A4-V2-SRUN NOT_AUTHORIZED
 ```
@@ -111,16 +113,31 @@ feasibility, performance, or scientific evidence. The old invocation
 authority is unspent but nontransferable, and the old probe is unspent but
 superseded and must never run or be reused.
 
+HOST-I-AUTH exact target `212a67b` and direct-child independent review
+`71e6bec` then passed with 0 LOW+ findings. The exact ceiling is:
+
+```text
+A4-V2-PREP-HOST-I-AUTH  AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
+A4-V2-PREP-HOST-I       NOT_AUTHORIZED
+HOST_IDENTITY_REBOUND   NOT_ESTABLISHED
+PYTHON/PREP              NOT_AUTHORIZED_NOT_RUN
+```
+
+This is authorization-document governance only. No five-source or seven-
+derived-object rebind, Python, START, PREP, build, data access, or scientific
+execution occurred.
+
 ## Next Admissible Summary Work
 
 There is no active source-branch execution authority. The next admissible
 source-branch node is a separately user-authorized
-`A4-V2-PREP-HOST-I-AUTH`; only after its review could a separately authorized
-HOST-I coherently update the five affected sources and seven derived
-authority objects. Fresh PREP authorization/review, a new actual-invocation
-grant and immediate probe, CACHE-BIND, PAR-R1, SRUN, data reads, generated
-scientific evidence, and SAQ changes all remain unauthorized. This summary
-handoff grants none of them.
+`A4-V2-PREP-HOST-I` implementation target and its direct-child independent
+review, coherently updating only the five affected sources and seven derived
+authority objects under the frozen fourteen-path closure. Fresh PREP
+authorization/review, a new actual-invocation grant and newly registered
+immediate probe, actual PREP, receipt review, CACHE-BIND, explicit PAR-R1,
+SRUN, data reads, generated scientific evidence, and SAQ changes all remain
+unauthorized. This summary handoff grants none of them.
 
 For the next handoff, re-read `AGENTS.md` and the registry, fetch, require this
 worktree to be clean and equal to its remote, record that remote commit, and
