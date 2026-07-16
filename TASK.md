@@ -27,7 +27,7 @@ A4-V2-PAR   pre-build executable identity admission    ARTIFACT_INVALID / REVIEW
 A4-V2-I-R1  executable-identity source repair           COMPLETED_REVIEW_PASS
 A4-V2-CACHE-P cache/staging documentation protocol      COMPLETED_OPERATIONAL_PROTOCOL_CLOSURE
 A4-V2-CACHE-I generic source/schema/static review       GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS
-A4-V2-CACHE-PREP-AUTH authorization record/review       TARGET_FORMATION_AUTHORIZED / WIP_NONEVIDENCE
+A4-V2-CACHE-PREP-AUTH authorization record/review       PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-CACHE-PREP-ISO one isolated-clone PREP attempt    NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
@@ -248,21 +248,28 @@ unauthorized.
 On 2026-07-16 the user instructed exactly
 `授权 PREP authorization/review`.  The instruction opens only the fixed
 three-path PREP authorization target and its fixed direct-child three-path
-independent review.  The current worktree target is WIP/nonevidence; its
-maximum documentation verdict after exact committed review is
+independent review.  Exact target
+`e7f940e924a338022bfe8fffcbb3496f12a5a75c` is committed and pushed with
+direct parent `5db302537793bc05f541aede119255213ea49e14`, tree
+`0386af8066a93d84ca772604990a08737a34aa33`, and exactly the registered
+three-path delta.  The distinct PREP parent-admission probe and the target-head
+closure each returned their exact remote OID with no sandbox preflight.
+
+The sole independent review is
+`docs/saq_a4_v2_isolated_clone_prep_authorization_independent_review_2026_07_15.md`.
+It found zero issues at LOW or above and reached only
 `PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`.  Actual PREP remains
 `NOT_AUTHORIZED`, and the future whole-stage ceiling remains only
 `ISOLATED_CLONE_PREPARED_REVIEW_PASS`.
 
-The distinct PREP parent-admission probe already returned exact remote OID
-`5db3025` with no sandbox preflight and is recorded in the authorization
-document.  Do not run the PREP authorization-review-head probe during this
-documentation stage.  The frozen contract makes that single probe both live
-review closure and immediate PREP execution-base admission; it may run only
-immediately before a separately user-authorized PREP, with no intervening
-source-branch/worktree mutation.  If that condition cannot hold, stop for new
-authority.  No clone, token, PREP invocation, receipt, CACHE-BIND, PAR-R1,
-data, quarantine, or SAQ/CAQ action is authorized now.
+The PREP authorization-review-head probe was not run during this documentation
+stage and remains unspent.  The frozen contract makes that single future probe
+both live review closure and immediate PREP execution-base admission; it may
+run only immediately before a separately user-authorized PREP, with no
+intervening source-branch/worktree mutation.  If that condition cannot hold,
+stop for new authority.  The three-path review record remains WIP/nonevidence
+until committed and pushed.  No clone, token, PREP invocation, receipt,
+CACHE-BIND, PAR-R1, data, quarantine, or SAQ/CAQ action is authorized now.
 
 The completed erratum stage permitted only additive authority documents,
 static review, focused commits, push, and Meeting Summary Handoff. It permitted
