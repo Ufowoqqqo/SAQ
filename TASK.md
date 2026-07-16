@@ -26,7 +26,7 @@ A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
 A4-V2-PAR   pre-build executable identity admission    ARTIFACT_INVALID / REVIEWED_TERMINAL
 A4-V2-I-R1  executable-identity source repair           COMPLETED_REVIEW_PASS
 A4-V2-CACHE-P cache/staging documentation protocol      COMPLETED_OPERATIONAL_PROTOCOL_CLOSURE
-A4-V2-CACHE-I generic source/schema/static review       STATIC_SEAL_COMPLETE_PENDING_EXACT_TARGET_COMMIT_AND_REVIEW
+A4-V2-CACHE-I generic source/schema/static review       GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
 data        benchmark/base/query/index reads           NOT_AUTHORIZED
@@ -214,8 +214,8 @@ implementation-parent admission predicate succeeded.  The implementation
 worktree is sealed to the frozen 22-path delta, exactly 37 filesystem sources,
 38 executable units, and canonical source-tree SHA-256
 `9568007588c78ddda9fb4c4e20e8773ee2fa1da10a7656f181fef06883de38a2`.
-It remains WIP/nonevidence until the exact target is committed and its
-direct-child independent review passes.
+At that point it remained WIP/nonevidence until the exact target was committed
+and its direct-child independent review passed.
 
 The user separately authorized `A4-V2-CACHE-I-SYNTAX` after the exact source
 bytes were locked.  Compile-only Python 3.9 checks passed for the six
@@ -224,6 +224,23 @@ executed and no module was imported.  This establishes syntax acceptance only
 and does not authorize or evidence importability, build, fixture, RNG, PREP,
 cache-verifier, PAR-R1, SRUN, data, quarantine, SAQ/CAQ behavior, correctness,
 or scientific value.
+
+The exact CACHE-I implementation target is now committed and pushed at
+`c33a2bff7e0ec9c98596498fd43a7e629ccf47fe`, with direct parent
+`187e363ee08d1f63888137c21fd5a533555bb248` and tree
+`66eaf2f5df8792c3470b247e59857fc2e7a25461`.  The direct-child review in
+`docs/saq_a4_v2_cache_implementation_independent_review_2026_07_15.md`
+found zero issues at LOW or above.  The registered target-head probe returned
+the exact target from the remote branch; the memo separately discloses a
+preceding sandbox DNS failure that returned no remote observation and is not
+used as evidence.  The maximum result is
+`GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS`.  This result is static
+artifact governance only, not PREP readiness, parity, feasibility, an SAQ
+limitation, performance, novelty, or method evidence.  The three-path review
+record remains WIP/nonevidence until committed, and its later pushed review
+head must satisfy the registered live non-evidentiary closure.  PREP,
+CACHE-BIND, PAR-R1, SRUN, data, quarantine, and SAQ/CAQ work remain
+unauthorized.
 
 The completed erratum stage permitted only additive authority documents,
 static review, focused commits, push, and Meeting Summary Handoff. It permitted

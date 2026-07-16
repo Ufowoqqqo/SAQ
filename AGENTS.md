@@ -172,8 +172,9 @@ CACHE-I implementation worktree is now statically sealed to exactly 37
 filesystem sources, 38 executable units, and source-tree SHA-256
 `9568007588c78ddda9fb4c4e20e8773ee2fa1da10a7656f181fef06883de38a2`.
 Its exact changed-path closure is the 22 paths frozen in the machine contract.
-Until that target is committed and its direct-child independent review passes,
-the files are WIP/nonevidence and the stage status is only
+At formation of that seal, before its exact target commit and direct-child
+independent review, the files were WIP/nonevidence and the stage status was
+only
 `STATIC_SEAL_COMPLETE_PENDING_EXACT_TARGET_COMMIT_AND_INDEPENDENT_REVIEW`.
 
 After the source bytes were locked, the user separately authorized the narrow
@@ -186,6 +187,22 @@ runtime behavior, or scientific evidence.  It does not authorize build,
 fixture, RNG, PREP, cache-verifier, PAR-R1, SRUN, data, quarantine, or SAQ/CAQ
 work.  Preserve the original CACHE-I machine-attestation literals and record
 this later exception separately.
+
+The exact CACHE-I implementation target was subsequently committed and pushed
+at `c33a2bff7e0ec9c98596498fd43a7e629ccf47fe`, with direct parent
+`187e363ee08d1f63888137c21fd5a533555bb248` and tree
+`66eaf2f5df8792c3470b247e59857fc2e7a25461`.  Its direct-child independent
+review is
+`docs/saq_a4_v2_cache_implementation_independent_review_2026_07_15.md`.
+That review found zero issues at LOW or above, recorded the successful exact
+target-head remote-equality closure, disclosed and excluded an earlier
+sandbox-only DNS failure that returned no remote observation, and assigned
+the maximum outcome
+`GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS`.  This is artifact-governance
+source/static-review evidence only.  The review record remains WIP/nonevidence
+until committed; after its commit and push, the live review-head closure is a
+required non-evidentiary predicate.  No PREP, CACHE-BIND, PAR-R1, SRUN, data,
+quarantine, or SAQ/CAQ authority follows from this result.
 
 The completed `A4-V2-P-ERRATUM` permitted only additive protocol-authority
 documents, branch status documents, focused commits, static independent
