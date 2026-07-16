@@ -1,0 +1,219 @@
+{
+  "artifact_kind": "a4_v2_prep_host_identity_rebind_implementation_erratum_contract",
+  "authority": {
+    "date": "2026-07-16",
+    "exact_user_instruction": "授权 A4-V2-PREP-HOST-I-ERRATUM",
+    "interpretation": "documentation-only additive protocol correction, exact-commit independent review, push, and Meeting Summary Handoff",
+    "parent_commit": "71e6bec01dbabaf29333ac75dcd9ef7a238a079d",
+    "parent_tree": "36f5a2a0a767711010fccbf8ec8eca7696f1a609",
+    "stage": "A4-V2-PREP-HOST-I-ERRATUM"
+  },
+  "blocked_parent_authority": {
+    "cache_authority": {
+      "git_blob": "2eeee6890ddcd41cbafd7d0f90f564f94c16b486",
+      "path": "docs/saq_a4_v2_cache_protocol_authority_manifest_2026_07_15.json",
+      "sha256": "5bbb08b98eaddf6e828c13c9c8daf968f1be5912ff8fd93b71383fa34ef6ceec",
+      "size_bytes": 42903
+    },
+    "cache_policy_verifier": {
+      "git_blob": "6f4f6c2afc963066c3eb1a0dc053b4987ee70337",
+      "path": "script/a4_v2_cache_policy_verifier.py",
+      "sha256": "37346b5a2777abb2ddd893c375b1a098507f4ba51f62ba5fce69104fcc83d58c",
+      "size_bytes": 151371
+    },
+    "classification": "PROTOCOL_UNSATISFIABLE_EIGHTH_COMPONENT_CLOSURE",
+    "host_i_auth": {
+      "path": "docs/saq_a4_v2_prep_host_identity_rebind_implementation_authorization_2026_07_16.md",
+      "sha256": "7a07e05eb2b96c7ecd57facf9f1b7405a63f0d6d66d2af3cad3a1eeb626ce3b0",
+      "size_bytes": 11928
+    },
+    "host_i_auth_review": {
+      "path": "docs/saq_a4_v2_prep_host_identity_rebind_implementation_authorization_independent_review_2026_07_16.md",
+      "sha256": "bda4f52b549e28b69cca5c012c21e12867266e0c5920eda27f7df87e478d69e9",
+      "size_bytes": 14740
+    },
+    "host_p_contract": {
+      "path": "docs/saq_a4_v2_prep_host_identity_rebind_erratum_contract_2026_07_16.json",
+      "sha256": "c8e182dd8f7a661e465aa9ce03fa2d7bfed233124209dff43826ea0b32510b09",
+      "size_bytes": 10684
+    },
+    "host_p_protocol": {
+      "path": "docs/saq_a4_v2_prep_host_identity_rebind_erratum_protocol_2026_07_16.md",
+      "sha256": "0cef593b0532070c87be49d3b7b469abe755ff20a072b8bfff915a2bf848289e",
+      "size_bytes": 14350
+    },
+    "host_p_review": {
+      "path": "docs/saq_a4_v2_prep_host_identity_rebind_erratum_independent_review_2026_07_16.md",
+      "sha256": "dea30436db0cd1fd031274e6847a4f11e9d84b36d0ec90fc5a32c227be2b9a86",
+      "size_bytes": 6540
+    },
+    "reason": "the authority requires an eighth additive protocol component while the verifier accepts exactly seven and the AUTH permits only seven digest substitutions"
+  },
+  "claim_ceiling": {
+    "host_identity_rebound": false,
+    "maximum_current_outcome": "HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS",
+    "performance": "PERFORMANCE_NOT_YET_MEASURED",
+    "prep": "NOT_AUTHORIZED_NOT_RUN",
+    "scientific_decision": "NONE",
+    "scope": "artifact-governance protocol correction only"
+  },
+  "current_commit_closure": {
+    "review_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_prep_host_identity_rebind_implementation_erratum_independent_review_2026_07_16.md"
+    ],
+    "review_is_direct_child": true,
+    "target_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_prep_host_identity_rebind_implementation_erratum_contract_2026_07_16.json",
+      "docs/saq_a4_v2_prep_host_identity_rebind_implementation_erratum_protocol_2026_07_16.md"
+    ],
+    "target_parent": "71e6bec01dbabaf29333ac75dcd9ef7a238a079d",
+    "tracked_path_modes": "100644",
+    "unlisted_tracked_blobs_and_modes": "BYTE_IDENTICAL"
+  },
+  "future_source_rebind": {
+    "authorized": false,
+    "cache_authority_component_closure": {
+      "future_component_count": 8,
+      "historical_component_count": 7,
+      "historical_component_keys": [
+        "cache_contract",
+        "cache_i_authorization",
+        "cache_i_authorization_review",
+        "cache_p_independent_review",
+        "cache_primary_review",
+        "cache_primary_sources",
+        "cache_protocol"
+      ],
+      "new_component": {
+        "key": "prep_host_identity_rebind_erratum_contract",
+        "path": "docs/saq_a4_v2_prep_host_identity_rebind_erratum_contract_2026_07_16.json",
+        "sha256": "c8e182dd8f7a661e465aa9ce03fa2d7bfed233124209dff43826ea0b32510b09",
+        "size_bytes": 10684
+      },
+      "preserve_historical_identities": true
+    },
+    "exact_source_paths": [
+      "script/a4_v2_cache_policy_verifier.py",
+      "script/a4_v2_isolated_clone_prep.py",
+      "script/a4_v2_runner.py",
+      "script/a4_v2_verifier.py",
+      "script/run_arbitrary_cardinality_a4_v2.py"
+    ],
+    "exact_source_review_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_prep_host_identity_rebind_implementation_independent_review_2026_07_16.md"
+    ],
+    "exact_source_target_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_cache_protocol_authority_manifest_2026_07_15.json",
+      "docs/saq_a4_v2_cache_runtime_maximal_instance_2026_07_15.json",
+      "docs/saq_a4_v2_cache_runtime_schema_2026_07_15.json",
+      "docs/saq_a4_v2_cache_static_closure_2026_07_15.json",
+      "docs/saq_a4_v2_implementation_binding_2026_07_14.md",
+      "docs/saq_a4_v2_implementation_manifest_2026_07_14.json",
+      "docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md",
+      "script/a4_v2_cache_policy_verifier.py",
+      "script/a4_v2_isolated_clone_prep.py",
+      "script/a4_v2_runner.py",
+      "script/a4_v2_verifier.py",
+      "script/run_arbitrary_cardinality_a4_v2.py"
+    ],
+    "exact_source_target_path_rule": "ALL_AND_ONLY_LISTED_PATHS_CHANGE_AS_MODE_100644",
+    "future_parent_rule": "direct child of the clean pushed publication-closed A4-V2-PREP-HOST-I-ERRATUM independent-review head",
+    "implementation_manifest_rule": "preserve schema and bind the existing authorization_identity to the committed HOST-I AUTH record",
+    "reauthorization_required": true,
+    "root_status_paths": [
+      "AGENTS.md",
+      "TASK.md"
+    ],
+    "source_delta": {
+      "cache_verifier_future_size_bytes": 151568,
+      "cache_verifier_inserted_bytes": 197,
+      "leader_digest_partition_by_source": [1, 2, 2, 1, 1],
+      "leader_digest_substitution_count": 7,
+      "new_digest": "c7b3d12b0bcda9356ce5a7e21e66c41476310d595c54b5689bca1e38abd8f42b",
+      "old_digest": "c87babf8337b668da60e26d897d694df7bd9a5b7907416e4eda078b9c33d05e0",
+      "verifier_constant_additions": [
+        {
+          "container": "PROTOCOL_COMPONENT_KEYS",
+          "key": "prep_host_identity_rebind_erratum_contract",
+          "operation": "ADD_EXACTLY_ONE_SET_MEMBER"
+        },
+        {
+          "container": "PROTOCOL_COMPONENT_PATHS",
+          "key": "prep_host_identity_rebind_erratum_contract",
+          "operation": "ADD_EXACTLY_ONE_KEY_PATH_MAPPING",
+          "path": "docs/saq_a4_v2_prep_host_identity_rebind_erratum_contract_2026_07_16.json"
+        }
+      ]
+    }
+  },
+  "known_excluded_downstream_limitation": {
+    "authorization_to_repair": false,
+    "classification": "FUTURE_CACHE_VERIFIER_SOURCE_HISTORY_MISMATCH",
+    "effect": "after the five-source rebind, current expected blobs differ from old registered CACHE-I/PREP history commits and later cache-verifier or PAR execution would report SOURCE_HISTORY_MISMATCH",
+    "not_blocked": [
+      "current documentation erratum",
+      "future source-only HOST-I static review",
+      "PREP itself"
+    ],
+    "required_before": "any future cache-verifier or PAR readiness/execution claim",
+    "separate_protocol_and_source_authorization_required": true
+  },
+  "overhead_disclosure": {
+    "construction_or_query_work_change": "NONE",
+    "future_permanent_byte_delta": "MEASURE_EXACTLY_AT_FUTURE_SOURCE_TARGET",
+    "future_verifier_delta": "one additional existing-loop _check_identity invocation; physical success increments the existing aggregate filesystem_bytes_read counter by exactly 10684; fallback additionally increments existing git_stdout_bytes and git_stderr_bytes by observed lengths, while any readable mismatched physical payload remains counted in filesystem_bytes_read by observed length and an absent or unreadable payload adds no filesystem bytes; physical failure records the existing mismatch; no ledger key or schema entry is added",
+    "loop_body_caps_status_and_error_precedence": "BYTE_IDENTICAL",
+    "performance_claim": "NONE"
+  },
+  "preserved_invariants": [
+    "37 filesystem sources and 38 executable units",
+    "27 native/CMake and five unaffected Python sources byte-identical",
+    "canonical sorted 37-source-tree identity independently recomputed",
+    "inline source identical across all four bindings",
+    "raw 2778-byte pre-START prologue byte-identical",
+    "runtime schema and maximal witness aliases use only the new leader digest",
+    "build_status remains NOT_AUTHORIZED_NOT_RUN",
+    "CACHE-I-SYNTAX stays historical and is not relabeled",
+    "no ninth component or alternate key/path",
+    "no behavior change other than the disclosed eighth-component identity check"
+  ],
+  "prohibitions": [
+    "NO_EXISTING_IMPLEMENTATION_SOURCE_OR_DERIVED_AUTHORITY_EDIT",
+    "NO_EXISTING_HOST_P_HOST_I_AUTH_HISTORICAL_PREP_SCHEMA_WITNESS_OR_MANIFEST_EDIT",
+    "NO_PYTHON_DNF_SYNTAX_IMPORT_COMPILER_BUILD_TEST_FIXTURE_RNG_OR_NATIVE_EXECUTION",
+    "NO_CACHE_VERIFIER_PREP_PROBE_CLONE_START_TOKEN_CAPTURE_JOURNAL_RECEIPT_OR_CACHE_BIND",
+    "NO_PAR_R1_SRUN_QUARANTINE_DATA_INDEX_RESULT_OR_SAQ_CAQ_ACTION",
+    "NO_HOST_OR_ENVIRONMENT_MUTATION",
+    "NO_UNTRACKED_OR_WIP_EVIDENCE"
+  ],
+  "publication_checks": {
+    "implementation_or_prep_admission": false,
+    "review_head": "at most one ordinary remote-equality check after review commit and push",
+    "target_head": "at most one ordinary remote-equality check after target commit and push, recorded only in the direct-child review"
+  },
+  "review_requirements": [
+    "exact target parent, direct-child review, path projections, modes, and clean pushed heads",
+    "independent proof of exact-set rejection for an eighth component under the parent verifier",
+    "necessity and sufficiency of one set-member and one path-map addition only for eighth-component exact-key/path admission, not cache-verifier or PAR PASS",
+    "exact one-extra-identity-check verification and evidence overhead disclosure",
+    "independent proof of the future SOURCE_HISTORY_MISMATCH, its exclusion from this erratum, and no cache-verifier or PAR readiness claim",
+    "unchanged fourteen-path future target and three-path future review",
+    "future target parent moved only to the reviewed erratum head",
+    "future HOST-I reauthorization remains required",
+    "zero findings at LOW severity or above"
+  ],
+  "schema_version": 1,
+  "superseded_future_clauses": [
+    "HOST-I AUTH section 5 source-target direct-parent rule",
+    "HOST-I AUTH section 6 sole-source-semantic-delta rule",
+    "HOST-I AUTH section 6 invariant 10 only to disclose one additional protocol-component identity check"
+  ]
+}

@@ -31,7 +31,8 @@ A4-V2-CACHE-PREP-AUTH authorization record/review       PREP_AUTHORIZATION_EXACT
 A4-V2-CACHE-PREP-ISO original one-shot authority        UNSPENT_BUT_NONTRANSFERABLE
 A4-V2-PREP-HOST-P host-rebind erratum protocol/review   COMPLETED_REVIEW_PASS
 A4-V2-PREP-HOST-I-AUTH source-rebind authorization      AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
-A4-V2-PREP-HOST-I coherent source/authority rebind      NOT_AUTHORIZED
+A4-V2-PREP-HOST-I-ERRATUM source-authority correction   TARGET_FORMED_PENDING_INDEPENDENT_REVIEW
+A4-V2-PREP-HOST-I coherent source/authority rebind      REAUTHORIZATION_REQUIRED_NOT_RUN
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
@@ -332,6 +333,47 @@ Its maximum verdict is `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`.
 object rebind occurred, and the AUTH node ran no Python, DNF, syntax, build,
 PREP, probe, clone/token, data, quarantine, or SAQ/CAQ work.  After Meeting
 Summary Handoff, stop for a separate explicit HOST-I instruction.
+
+The user next instructed exactly `授权 A4-V2-PREP-HOST-I`.  A complete
+pre-edit static closure check found a BLOCKER in the publication-closed AUTH:
+it simultaneously required preservation of seven cache-authority protocol
+components, addition of an eighth HOST-P contract, and no verifier source
+semantic delta beyond seven leader-digest substitutions.  The committed cache
+verifier enforces exact equality to the old seven key/path pairs, so the
+required authority would be rejected.  Adding the eighth verifier key/path
+also adds one path and one existing-loop identity read/hash, contradicting the
+old no-path/resource/evidence-change clause.  Work stopped before any HOST-I
+target, implementation edit, WIP evidence, Python, probe, PREP, build, data,
+quarantine, or SAQ/CAQ action.
+
+On 2026-07-16 the user instructed exactly
+`授权 A4-V2-PREP-HOST-I-ERRATUM`.  This authorizes only a four-path additive
+documentation target, its three-path direct-child independent review, push,
+and Meeting Summary Handoff.  The governing objects are:
+
+1. `docs/saq_a4_v2_prep_host_identity_rebind_implementation_erratum_protocol_2026_07_16.md`;
+2. `docs/saq_a4_v2_prep_host_identity_rebind_implementation_erratum_contract_2026_07_16.json`; and
+3. after the target commit, the registered independent review memo.
+
+The erratum freezes the only extra future source loci as one new member of
+`PROTOCOL_COMPONENT_KEYS` and the matching exact HOST-P-contract mapping in
+`PROTOCOL_COMPONENT_PATHS`.  The resulting eighth entry receives exactly one
+additional invocation of the existing identity-check loop, including its
+unchanged fallback/mismatch/ledger semantics.  It also changes the future
+HOST-I parent rule to the publication-closed erratum review head.  The future
+fourteen-path target and three-path review remain otherwise unchanged.  The
+conditional ceiling is
+`HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS`; it is not
+`HOST_IDENTITY_REBOUND` or PREP readiness.  A fresh explicit HOST-I
+authorization remains required after review and handoff.
+
+The same static audit found a separate excluded downstream limitation: after
+the five-source rebind, the cache verifier would compare the new current
+source blobs with old CACHE-I/PREP history commits and report
+`SOURCE_HISTORY_MISMATCH`.  This does not block source-only HOST-I or PREP,
+which does not run that verifier, but it forbids any cache-verifier/PAR-
+readiness claim.  Repair is outside this erratum and requires separate
+protocol and source authorization.
 
 The completed erratum stage permitted only additive authority documents,
 static review, focused commits, push, and Meeting Summary Handoff. It permitted
