@@ -63,6 +63,63 @@ Before starting a substantial implementation or review, record:
   serialization, and rare failure-path engineering whenever authorization
   permits it.
 
+### Performance And SOTA Discipline
+
+Treat paper-relevant performance as a first-class scientific acceptance
+criterion, not as optional polish after the implementation is complete. Scope
+this discipline to the scientific hot path and the overheads that can change a
+paper claim; do not optimize support or evidence machinery merely to make it
+more elaborate.
+
+- A cheap feasibility or correctness prototype may be slow, but label it
+  `PROTOTYPE_NOT_PERFORMANCE_EVIDENCE`. It cannot establish paper viability,
+  affordability, or SOTA movement, and it must not silently become the final
+  measured implementation.
+- After a direction passes its correctness gate and before substantial
+  performance-oriented implementation, freeze a performance contract that
+  names: the closest SOTA baselines and exact revisions; dataset and workload;
+  bit budget and matched recall/accuracy operating point; hardware, compiler,
+  flags, thread count, affinity/NUMA policy, and warmup/repetition protocol;
+  primary latency/throughput and resource metrics; and a quantitative pass or
+  stop condition.
+- Identify the scientific hot path explicitly. Before optimizing it, state the
+  expected algorithmic complexity, dominant data movement, allocation and copy
+  behavior, and likely bottleneck. Review per-query/per-candidate allocation,
+  cache locality, indirection, branches, batching, SIMD/vectorization, and
+  parallelism where they are relevant.
+- Unless a measured comparison justifies it, keep Python loops, logging, JSON
+  serialization, provenance capture, process supervision, and other evidence
+  work outside the timed query/build hot path. If instrumentation cannot be
+  isolated, measure its overhead separately and include it in the reported
+  result.
+- Establish a correct, reproducible baseline measurement before optimization.
+  Profile a minimal representative workload with standard tools, optimize the
+  largest measured bottleneck, and then remeasure. Do not perform a broad
+  performance rewrite based only on intuition.
+- Prefer the repository's benchmark framework, compiler diagnostics, `perf`,
+  and existing profilers. Do not build a custom profiler, timing framework, or
+  benchmark orchestrator unless standard tools are demonstrably insufficient
+  and the user has approved its scope and expected line count.
+- Every claimed optimization must report before/after absolute values under
+  the same frozen conditions, repetition count and dispersion, correctness or
+  recall parity, and any trade-off in build time, memory, index size, or
+  construction overhead. A name, asymptotic argument, or code-level intuition
+  is not performance evidence.
+- Compare against SOTA fairly: use equivalent hardware resources, compiler
+  optimization, threads, quality/recall, bit budget, and tuning opportunity.
+  Report at least latency distribution or QPS as appropriate, index/build
+  time, peak memory, and serialized index size. Never obtain a speed win by
+  weakening accuracy, recall, or baseline settings without showing the full
+  trade-off frontier.
+- Treat a material hot-path regression as a scientific regression even when
+  functional tests pass. Preserve a cheap representative performance check
+  once the workload is stable, while avoiding noisy thresholds that encourage
+  benchmark gaming.
+- Mark a direction paper-viable only after a reproducible fair comparison
+  moves at least one relevant Pareto frontier against the frozen SOTA baseline.
+  If it misses the frozen performance gate, stop, narrow the claim, or obtain
+  explicit user approval before investing in further hardening.
+
 ### Multi-Agent And Review Limits
 
 - Use at most one implementation owner and one independent reviewer for one
@@ -127,6 +184,11 @@ At every user checkpoint, report concisely:
 - unresolved findings by severity;
 - whether anything has compiled, executed, or been independently reproduced;
 - approximate implementation/support-code ratio; and
+- performance status (`PROTOTYPE_NOT_PERFORMANCE_EVIDENCE`, profiled,
+  optimized native path, or SOTA-compared), the identified scientific hot
+  path, and whether instrumentation is excluded from timed regions;
+- the best fair-comparison delta against the frozen SOTA baseline, or the
+  explicit statement `PERFORMANCE_NOT_YET_MEASURED`; and
 - the smallest next action, expected cost, and stop condition.
 
 If no new scientific evidence was produced, say so directly. Code volume,
