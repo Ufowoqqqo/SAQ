@@ -34,7 +34,7 @@ A4-V2-PREP-HOST-I-AUTH source-rebind authorization      AUTHORIZATION_EXACT_TARG
 A4-V2-PREP-HOST-I-ERRATUM source-authority correction   HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
 A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH
 A4-V2-PREP-HOST-I-R1-P correction-only repair protocol HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS
-A4-V2-PREP-HOST-I-R1 correction-only artifact repair    HOST_I_R1_CORRECTION_ONLY_REPAIR_TARGET_FORMED_REVIEW_PENDING
+A4-V2-PREP-HOST-I-R1 correction-only artifact repair    HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
@@ -489,6 +489,21 @@ imported, compiled, built, tested, or executed.  R1 permits no Python, PREP,
 cache-verifier, PAR, data, quarantine, or SAQ/CAQ action.  The separately
 known `SOURCE_HISTORY_MISMATCH` remains unresolved and continues to forbid
 cache-verifier/PAR-readiness claims.
+
+Exact correction-only target
+`e17f8870e090be693adcd3bce4b8aea07432f064`, tree
+`533c27fbc3b9545829153d6ec5c95e81a7fe832a`, was committed and pushed as the
+direct child of `b1a7429cda3e4817d7df494f304bbce24bec2b92`.  Its sole
+independent static review found zero LOW-or-higher findings.  The durable
+review is
+`docs/saq_a4_v2_prep_host_identity_rebind_r1_correction_only_repair_independent_review_2026_07_17.md`.
+Its exact outcome is `HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS`,
+conditional on the exact three-path review record being committed and pushed,
+and its bounded host result is
+`HOST_IDENTITY_REBOUND = ESTABLISHED_FOR_REGISTERED_13_OBJECT_BUNDLE_ONLY`.
+This is not whole-host identity, PREP/cache/PAR readiness, execution evidence,
+performance evidence, or a scientific result.  `SOURCE_HISTORY_MISMATCH`
+remains unresolved and all downstream stages remain separately unauthorized.
 
 ## A4-V2-P-ERRATUM Deliverables
 

@@ -442,6 +442,20 @@ compiler/build/test, cache verifier, PREP, probe, clone, data, quarantine, or
 SAQ/CAQ action.  `SOURCE_HISTORY_MISMATCH` remains outside this repair and
 continues to forbid cache-verifier/PAR-readiness claims.
 
+The exact correction-only target was committed and pushed at
+`e17f8870e090be693adcd3bce4b8aea07432f064`, tree
+`533c27fbc3b9545829153d6ec5c95e81a7fe832a`, with direct parent
+`b1a7429cda3e4817d7df494f304bbce24bec2b92`.  Its sole independent static
+review found zero issues at LOW severity or above.  The durable memo is
+`docs/saq_a4_v2_prep_host_identity_rebind_r1_correction_only_repair_independent_review_2026_07_17.md`.
+The exact review outcome is
+`HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS`, conditional on this exact
+three-path review being committed and pushed.  It establishes
+`HOST_IDENTITY_REBOUND = ESTABLISHED_FOR_REGISTERED_13_OBJECT_BUNDLE_ONLY`;
+whole-host identity remains unestablished.  No execution or scientific
+evidence follows, `SOURCE_HISTORY_MISMATCH` remains open, and PREP plus every
+downstream stage still require separate authorization.
+
 ## Review And Protocol Outcome
 
 The bounded review returned `GO_PROTOCOL_DESIGN`. The original reviewed
@@ -507,7 +521,7 @@ A4-V2-PREP-HOST-I-AUTH source-rebind authorization      AUTHORIZATION_EXACT_TARG
 A4-V2-PREP-HOST-I-ERRATUM source-authority correction   HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
 A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH
 A4-V2-PREP-HOST-I-R1-P correction-only repair protocol HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS
-A4-V2-PREP-HOST-I-R1 correction-only artifact repair    HOST_I_R1_CORRECTION_ONLY_REPAIR_TARGET_FORMED_REVIEW_PENDING
+A4-V2-PREP-HOST-I-R1 correction-only artifact repair    HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED
