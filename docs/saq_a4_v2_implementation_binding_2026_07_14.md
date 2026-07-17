@@ -1002,7 +1002,7 @@ pushed, publication-closed HOST-I source-authority-erratum review head
 | HOST-P rebind contract admitted as the eighth cache component | `c8e182dd8f7a661e465aa9ce03fa2d7bfed233124209dff43826ea0b32510b09` | 10,684 |
 | HOST-I source-authority erratum protocol at target `6fe8544` | `5d9ac7222f93f00de5f2cd96b6df16d389b9f3123b604115c515bae963a1088d` | 14,716 |
 | HOST-I source-authority erratum contract at target `6fe8544` | `01dadbe2ba73a429a67d7029b5e4dafafb6b400a6067767a1aac161e9457977a` | 10,967 |
-| HOST-I source-authority erratum review at head `9fa9528` | `c670d368647fbd13bfe4133241e2c37e29101e91538687a64349a606bd059f2a` | 11,426 |
+| HOST-I source-authority erratum review at head `9fa9528` | `c670d3685256d94812ee03d4932df304e0bd2ed6a61eeb670a618a9ac6eab331` | 11,426 |
 | HOST-I authorization record | `7a07e05eb2b96c7ecd57facf9f1b7405a63f0d6d66d2af3cad3a1eeb626ce3b0` | 11,928 |
 | HOST-I authorization independent review | `bda4f52b549e28b69cca5c012c21e12867266e0c5920eda27f7df87e478d69e9` | 14,740 |
 

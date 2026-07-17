@@ -34,7 +34,7 @@ A4-V2-PREP-HOST-I-AUTH source-rebind authorization      AUTHORIZATION_EXACT_TARG
 A4-V2-PREP-HOST-I-ERRATUM source-authority correction   HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
 A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH
 A4-V2-PREP-HOST-I-R1-P correction-only repair protocol HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS
-A4-V2-PREP-HOST-I-R1 correction-only artifact repair    NOT_AUTHORIZED
+A4-V2-PREP-HOST-I-R1 correction-only artifact repair    HOST_I_R1_CORRECTION_ONLY_REPAIR_TARGET_FORMED_REVIEW_PENDING
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
@@ -470,6 +470,25 @@ its protocol-only verdict is
 `HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS`, conditional on the
 exact three-path review record being committed and pushed.  It does not
 authorize or form the five-path R1 repair.
+
+The user's 2026-07-17 instruction `授权 A4-V2-PREP-HOST-I-R1` now authorizes
+only that exact correction-only target and its direct-child review.  The
+target is the direct child of clean, pushed protocol-review head
+`b1a7429cda3e4817d7df494f304bbce24bec2b92` and changes exactly five
+mode-`100644` paths: `AGENTS.md`, `TASK.md`, the implementation binding, the
+implementation manifest, and the source-provenance crosswalk.  The two prose
+objects each receive exactly one false-to-true immutable-review SHA-256
+replacement; the manifest receives only their two dependent corrected
+SHA-256 scalars.  All replacements are equal length, every filesystem source
+and other authority object remains byte-identical, and the identity cascade
+terminates at the manifest.
+
+Before exact direct-child review, the target status is
+`HOST_I_R1_CORRECTION_ONLY_REPAIR_TARGET_FORMED_REVIEW_PENDING`.  Nothing was
+imported, compiled, built, tested, or executed.  R1 permits no Python, PREP,
+cache-verifier, PAR, data, quarantine, or SAQ/CAQ action.  The separately
+known `SOURCE_HISTORY_MISMATCH` remains unresolved and continues to forbid
+cache-verifier/PAR-readiness claims.
 
 ## A4-V2-P-ERRATUM Deliverables
 

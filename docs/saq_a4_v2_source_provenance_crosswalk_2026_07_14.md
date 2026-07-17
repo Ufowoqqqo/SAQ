@@ -214,7 +214,7 @@ HOST-P component contract
 (14,716),
 `01dadbe2ba73a429a67d7029b5e4dafafb6b400a6067767a1aac161e9457977a`
 (10,967), and
-`c670d368647fbd13bfe4133241e2c37e29101e91538687a64349a606bd059f2a`
+`c670d3685256d94812ee03d4932df304e0bd2ed6a61eeb670a618a9ac6eab331`
 (11,426), plus the committed HOST-I authorization/review identities
 `7a07e05eb2b96c7ecd57facf9f1b7405a63f0d6d66d2af3cad3a1eeb626ce3b0`
 (11,928) and

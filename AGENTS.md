@@ -422,6 +422,26 @@ instruction naming `A4-V2-PREP-HOST-I-R1`.  Even a later repair PASS would
 leave `SOURCE_HISTORY_MISMATCH` unresolved and would not authorize PREP,
 cache-verifier, PAR, data, or SAQ/CAQ work.
 
+On 2026-07-17 the user instructed exactly
+`授权 A4-V2-PREP-HOST-I-R1`.  This authorizes only the correction-only target
+and direct-child review frozen by R1-P.  The target is the direct child of the
+clean, pushed protocol-review head
+`b1a7429cda3e4817d7df494f304bbce24bec2b92` and changes all and only
+`AGENTS.md`, `TASK.md`, the implementation binding, the implementation
+manifest, and the source-provenance crosswalk.  Its semantic delta is exactly
+one false-to-true immutable-review SHA-256 substitution in each prose object
+and their two dependent SHA-256 scalar substitutions in the manifest.  No
+filesystem source or other authority object may change.
+
+Before direct-child review, the maximum status is
+`HOST_I_R1_CORRECTION_ONLY_REPAIR_TARGET_FORMED_REVIEW_PENDING`.  The exact
+three-path review must independently reproduce every frozen identity with zero
+LOW-or-higher findings before it may assign the bounded registered-object
+rebind result.  This stage permits no Python, DNF, syntax/import,
+compiler/build/test, cache verifier, PREP, probe, clone, data, quarantine, or
+SAQ/CAQ action.  `SOURCE_HISTORY_MISMATCH` remains outside this repair and
+continues to forbid cache-verifier/PAR-readiness claims.
+
 ## Review And Protocol Outcome
 
 The bounded review returned `GO_PROTOCOL_DESIGN`. The original reviewed
@@ -487,7 +507,7 @@ A4-V2-PREP-HOST-I-AUTH source-rebind authorization      AUTHORIZATION_EXACT_TARG
 A4-V2-PREP-HOST-I-ERRATUM source-authority correction   HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
 A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH
 A4-V2-PREP-HOST-I-R1-P correction-only repair protocol HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS
-A4-V2-PREP-HOST-I-R1 correction-only artifact repair    NOT_AUTHORIZED
+A4-V2-PREP-HOST-I-R1 correction-only artifact repair    HOST_I_R1_CORRECTION_ONLY_REPAIR_TARGET_FORMED_REVIEW_PENDING
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED
