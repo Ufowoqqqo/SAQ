@@ -8,7 +8,7 @@ Date: 2026-07-13
 
 Presentation status: **CURRENT DRAFT -- not yet presented at a meeting.**
 
-Latest revision: 2026-07-17. Incorporates the 2026-07-13 audit of
+Latest revision: 2026-07-18. Incorporates the 2026-07-13 audit of
 [White and Singal, arXiv:2606.00289v1](https://arxiv.org/abs/2606.00289)
 and its pinned official code, the terminal A4-1S snapshot
 `saq-arbitrary-cardinality-analysis@f1b464b`, and the corrected A4 V2 source
@@ -32,7 +32,12 @@ correction target `@e17f887`, independently reviewed at `@e10bde7` with
 `HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS`, followed by the bounded
 source-history epoch-correction protocol target `@dcaed57`, independently
 reviewed at `@e98a3e4` with
-`SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS`.
+`SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS`. The first authorized
+source-history implementation then stopped before target because its frozen
+ten-path closure was unsatisfiable. Correction-only path-closure erratum
+target `@150e5b3`, independently reviewed at `@7749491`, reached
+`SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS` and freezes only an
+eight-path/five-derived-object future correction boundary.
 
 Audience assumption: familiar with vector search and vector quantization at a
 high level, but not with SAQ's transform, segmentation, or the experiments in
@@ -83,8 +88,14 @@ unchanged source/authority closure, and all 13 registered host objects.
 bundle; whole-host identity is unestablished. Source-history protocol
 target/review `dcaed57/@e98a3e4` then passed with zero LOW-or-higher findings,
 freezing a strict four-legacy/six-active epoch rule and rejecting adaptive or
-either-epoch matching. It is protocol-only: `SOURCE_HISTORY_MISMATCH` remains
-unresolved in source, and `A4-V2-SOURCE-HISTORY-I` is unauthorized.
+either-epoch matching. The first authorized `A4-V2-SOURCE-HISTORY-I` stopped
+before target because required runtime-schema and maximal-witness changes had
+no legitimate semantic, output, or ledger delta. Path-closure erratum
+target/review `150e5b3/@7749491` then passed with zero LOW-or-higher findings,
+freezing a necessary-and-sufficient eight-path/five-derived-object cascade
+while preserving the two unchanged runtime artifacts exactly. It is still
+protocol governance: `SOURCE_HISTORY_MISMATCH` remains unresolved in source,
+and future `A4-V2-SOURCE-HISTORY-I-R1` is unauthorized.
 Fresh PREP authority, actual PREP, CACHE-BIND, PAR-R1, SRUN, real-base reads,
 and SAQ integration remain unauthorized.
 
@@ -145,7 +156,9 @@ A later correction-only target passed exact review and establishes rebound
 only for the registered 13-object bundle. It ran no execution and does not
 establish whole-host, PREP, cache-verifier/PAR, or scientific readiness. A
 later reviewed source-history protocol specifies a fail-closed two-epoch
-repair, but does not implement or authorize it.
+repair. Its first implementation authorization stopped before target on an
+unsatisfiable ten-path projection; the reviewed path-closure erratum freezes
+only the corrected future eight-path boundary and does not implement it.
 ```
 
 Speaker notes:
@@ -179,8 +192,11 @@ Speaker notes:
   repaired only that provenance defect and passed independent review across
   all 13 registered host objects. This is bounded bundle identity, not whole-
   host or execution readiness. The later source-history protocol passed
-  independent review and freezes a strict future one-source repair, but the
-  mismatch remains open in source and implementation is not authorized.
+  independent review, but its first implementation authorization stopped
+  before target on an unsatisfiable ten-path closure. The reviewed path-closure
+  erratum freezes a strict future eight-path/five-derived-object repair; the
+  mismatch remains open in source and `A4-V2-SOURCE-HISTORY-I-R1` is not
+  authorized.
 
 ---
 
@@ -205,7 +221,9 @@ Attempt 4 A4 V2 HOST-I:                SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORIT
 Attempt 4 A4 V2 HOST-I-R1-P:           HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS
 Attempt 4 A4 V2 HOST-I-R1:             HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS
 Attempt 4 A4 V2 SOURCE-HISTORY-P:      SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS
-Attempt 4 A4 V2 SOURCE-HISTORY-I:      NOT AUTHORIZED
+Attempt 4 A4 V2 SOURCE-HISTORY-I:      STOPPED PRE-TARGET; TEN-PATH CLOSURE UNSATISFIABLE
+Attempt 4 A4 V2 SOURCE-HISTORY-I-R1-P: SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS
+Attempt 4 A4 V2 SOURCE-HISTORY-I-R1:   NOT AUTHORIZED
 Attempt 4 A4 V2 PREP/BIND:             NOT AUTHORIZED
 Attempt 4 A4 V2 cache/PAR readiness:   NOT ESTABLISHED; SOURCE_HISTORY_MISMATCH OPEN IN SOURCE
 Attempt 4 A4 V2 direct PAR-R1:         NO-GO / NOT AUTHORIZED
@@ -257,7 +275,7 @@ the old `5/2` real-data projection does not transfer.
 | 1B. Lossy `D -> d` projection | Can a PCA head plus a compact tail surrogate beat native full-D SAQ? | GIST sample50k, `960 -> 576`, favorable exact surrogate | Gate A failed; projected SAQ not built |
 | 2. Exact scalar-codebook DP | Does histogram-exact 1D DP improve shared dimensionwise scalar quantization over Lloyd, and is any method novelty left after prior work? | audio, PCA CIFAR60K, PCA DEEP1M; arXiv/code audit | Stronger offline baseline; inner DP is prior art; no stable recall dominance |
 | 3. Distance-quality re-evaluation | Does `1/Ratio@k` change a frozen Recall-based Pareto conclusion? | GIST sample100k B=4; DEEP sample100k B=4/B=5 controls | Closed as metric-sensitivity evidence |
-| 4. Arbitrary-cardinality fixed-rate words | Does the power-of-two restriction waste material capacity at unchanged fixed payload and lookup granularity? | A4-0 synthetic witness; terminal A4-1S correctness/cost gate; reviewed A4 V2 protocol/source, terminal pre-build PAR identity failure, static-only I-R1 repair, CACHE-P/CACHE-I governance, PREP authorization, host-rebind governance, the failed HOST-I source-static target, its reviewed R1 correction, and a reviewed source-history epoch protocol; registered real-base gates remain unauthorized | preserve A4-1S `NO_GO_EXACT_SOLVER_COST` and A4-V2-PAR `ARTIFACT_INVALID / NO_SCIENTIFIC_DECISION`; R1 established rebound only for the registered 13-object bundle; source-history protocol `dcaed57/@e98a3e4` passed but source implementation remains unauthorized, so `SOURCE_HISTORY_MISMATCH` stays open in source and PREP/CACHE-BIND/PAR-R1 remain unauthorized |
+| 4. Arbitrary-cardinality fixed-rate words | Does the power-of-two restriction waste material capacity at unchanged fixed payload and lookup granularity? | A4-0 synthetic witness; terminal A4-1S correctness/cost gate; reviewed A4 V2 protocol/source, terminal pre-build PAR identity failure, static-only I-R1 repair, CACHE-P/CACHE-I governance, PREP authorization, host-rebind governance, the failed HOST-I source-static target, its reviewed R1 correction, and reviewed source-history protocol/path-closure governance; registered real-base gates remain unauthorized | preserve A4-1S `NO_GO_EXACT_SOLVER_COST` and A4-V2-PAR `ARTIFACT_INVALID / NO_SCIENTIFIC_DECISION`; R1 established rebound only for the registered 13-object bundle; the first source-history implementation stopped before target on an unsatisfiable ten-path closure, and erratum `150e5b3/@7749491` passed only for a future eight-path repair; `SOURCE_HISTORY_MISMATCH` stays open in source and PREP/CACHE-BIND/PAR-R1 remain unauthorized |
 
 Speaker notes:
 
@@ -2278,7 +2296,10 @@ case study, not an independent database-systems method.
 ## 59. Attempt 4: Research Question, Old Stop, And V2 Boundary
 
 Current R12 reviewed snapshot:
-`saq-arbitrary-cardinality-feasibility-v2@e98a3e4`
+`saq-arbitrary-cardinality-feasibility-v2@7749491`
+
+Source-history R1 path-closure erratum target/direct-child review:
+`saq-arbitrary-cardinality-feasibility-v2@150e5b3/@7749491`
 
 Source-history epoch-correction protocol target/direct-child review:
 `saq-arbitrary-cardinality-feasibility-v2@dcaed57/@e98a3e4`
@@ -2340,7 +2361,9 @@ Preserved terminal A4-1S snapshot:
 | A4-V2-PREP-HOST-I-R1-P | `HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS` | target/review `ddfef99/@b1a7429` freeze only a future exact five-path correction target, corrected identities, cascade boundary, and direct-child review projection; zero LOW-or-higher findings, no repair authority, and no execution |
 | A4-V2-PREP-HOST-I-R1 | `HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS` | target/review `e17f887/@e10bde7` changed only the exact five paths, reproduced all frozen identities and 13/13 registered host objects with zero LOW-or-higher findings, and establishes `HOST_IDENTITY_REBOUND` only for that registered bundle; whole-host identity remains unestablished and no execution ran |
 | A4-V2-SOURCE-HISTORY-P | `SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS` | target/review `dcaed57/@e98a3e4` independently reproduced the exact five legacy blobs, other 32 preserved sources, and strict four-legacy/six-active role partition; it rejects either-epoch/adaptive matching and authorizes no source edit or execution |
-| A4-V2-SOURCE-HISTORY-I | `NOT_AUTHORIZED` | the protocol freezes a possible one-source/ten-path static repair plus sole ninth component, but `SOURCE_HISTORY_MISMATCH` remains open in source and cache-verifier/PAR readiness is not established |
+| first A4-V2-SOURCE-HISTORY-I | `STOPPED_PRE_TARGET_PATH_CLOSURE_UNSATISFIABLE` | exact projection proved the required ten-path target impossible because the runtime schema and maximal witness had no authorized semantic, output, observation, or ledger delta; no source target or execution occurred |
+| A4-V2-SOURCE-HISTORY-I-R1-P | `SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS` | target/review `150e5b3/@7749491` froze the necessary-and-sufficient future eight-path/five-derived-object cascade, preserved the two runtime artifacts exactly, and retained the original contract as the sole ninth review component; zero LOW-or-higher findings and governance only |
+| future A4-V2-SOURCE-HISTORY-I-R1 | `NOT_AUTHORIZED` | the corrected source-static repair remains separate; `SOURCE_HISTORY_MISMATCH` is open in source and cache-verifier/PAR readiness is not established |
 | actual PREP / receipt review / CACHE-BIND | `NOT_AUTHORIZED` | one preparation attempt, its committed independent receipt review, and binding remain separate non-transitive stages |
 | A4-V2-PAR-R1 | `NOT_AUTHORIZED` | direct PAR-R1 is no-go; it can be considered only after every separately authorized isolation stage passes and the user explicitly authorizes PAR-R1 |
 | A4-V2-SRUN | `NOT_AUTHORIZED` | the synthetic event remains a separate, non-transitive future stage and cannot start from invalid PAR authority |
@@ -2453,7 +2476,9 @@ A4-V2-PREP-HOST-I-R1 HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS
 HOST_IDENTITY_REBOUND ESTABLISHED FOR REGISTERED 13-OBJECT BUNDLE ONLY
 WHOLE-HOST IDENTITY NOT ESTABLISHED
 A4-V2-SOURCE-HISTORY-P SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS
-A4-V2-SOURCE-HISTORY-I NOT AUTHORIZED
+A4-V2-SOURCE-HISTORY-I STOPPED PRE-TARGET; TEN-PATH CLOSURE UNSATISFIABLE
+A4-V2-SOURCE-HISTORY-I-R1-P SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS
+A4-V2-SOURCE-HISTORY-I-R1 NOT AUTHORIZED
 SOURCE_HISTORY_MISMATCH OPEN IN SOURCE / CACHE-VERIFIER AND PAR READINESS NOT ESTABLISHED
 ACTUAL PREP AND CACHE-BIND NOT AUTHORIZED
 A4-V2-PAR-R1 NOT AUTHORIZED
@@ -2521,9 +2546,13 @@ and Python/PREP remain `NOT_AUTHORIZED_NOT_RUN`. Correction-only protocol target
 for the registered 13-object bundle; whole-host identity remains unestablished.
 Source-history protocol target/review `dcaed57/@e98a3e4` subsequently reached
 `SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS`, freezing an exact
-role-preassigned two-epoch rule without implementing it. Therefore
-`SOURCE_HISTORY_MISMATCH` remains open in source and readiness claims remain
-forbidden.
+role-preassigned two-epoch rule. The first implementation authorization then
+stopped before target because its ten-path closure was unsatisfiable.
+Path-closure erratum target/review `150e5b3/@7749491` subsequently reached
+`SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS`, freezing only an exact
+future eight-path/five-derived-object correction boundary. Therefore
+`SOURCE_HISTORY_MISMATCH` remains open in source, future R1 implementation is
+unauthorized, and readiness claims remain forbidden.
 
 ---
 
@@ -2640,8 +2669,11 @@ independent review across all 13 registered host objects. Bundle rebound is
 established; whole-host identity and execution readiness are not. The unresolved future
 `SOURCE_HISTORY_MISMATCH` independently keeps cache-verifier/PAR readiness
 unestablished. Source-history protocol target/review `dcaed57/@e98a3e4`
-passed and freezes a strict future two-epoch repair, but it made no source
-change and grants no implementation authority.
+passed and froze a strict future two-epoch repair. The first authorized
+implementation stopped before target on its unsatisfiable ten-path closure;
+path-closure erratum target/review `150e5b3/@7749491` then passed only for a
+future exact eight-path/five-derived-object correction. It made no source
+change and grants no R1 implementation authority.
 Fresh PREP authority, actual PREP, receipt review, CACHE-BIND, PAR-R1, SRUN,
 base, and query reads all remain unauthorized.
 
@@ -2949,9 +2981,11 @@ with zero LOW-or-higher findings after reproducing the frozen four artifact
 substitutions, closure, and 13/13 host identities. `HOST_IDENTITY_REBOUND` is
 established only for the registered 13-object bundle; whole-host identity is
 not established. Source-history protocol target/review `dcaed57/@e98a3e4`
-passed, but its future one-source correction remains unauthorized and
-unimplemented, so `SOURCE_HISTORY_MISMATCH` still prevents cache-verifier/PAR
-readiness.
+passed. The first authorized implementation stopped before target on its
+unsatisfiable ten-path closure, and path-closure erratum target/review
+`150e5b3/@7749491` passed only for a future eight-path/five-derived-object
+repair. That R1 repair remains unauthorized and unimplemented, so
+`SOURCE_HISTORY_MISMATCH` still prevents cache-verifier/PAR readiness.
 
 Future stages are separate and non-transitive:
 
@@ -2971,7 +3005,9 @@ Future stages are separate and non-transitive:
 | `A4-V2-PREP-HOST-I-R1-P` | freeze a correction-only exact five-path target and its direct-child review projection | `HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS`; target/review `ddfef99/@b1a7429`, documentation governance only |
 | `A4-V2-PREP-HOST-I-R1` | apply only the frozen authority-identity correction and review it | `HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS`; target/review `e17f887/@e10bde7`; rebound established for registered 13-object bundle only, with no execution |
 | `A4-V2-SOURCE-HISTORY-P` | freeze an exact fail-closed two-epoch correction protocol | `SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS`; target/review `dcaed57/@e98a3e4`, zero LOW+, protocol governance only |
-| `A4-V2-SOURCE-HISTORY-I` | implement the frozen one-source/ten-path epoch correction | `NOT_AUTHORIZED`; `SOURCE_HISTORY_MISMATCH` remains open in source |
+| first `A4-V2-SOURCE-HISTORY-I` | validate and implement the frozen ten-path projection | `STOPPED_PRE_TARGET_PATH_CLOSURE_UNSATISFIABLE`; runtime schema and maximal witness had no legitimate delta |
+| `A4-V2-SOURCE-HISTORY-I-R1-P` | correct only the future path-closure projection | `SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS`; target/review `150e5b3/@7749491`, zero LOW+, protocol governance only |
+| future `A4-V2-SOURCE-HISTORY-I-R1` | implement the corrected exact eight-path/five-derived-object repair | `NOT_AUTHORIZED`; `SOURCE_HISTORY_MISMATCH` remains open in source |
 | one sanitized preparation + receipt/review | prepare without reading quarantine, then commit and review its receipt | `NOT_AUTHORIZED` |
 | `A4-V2-CACHE-BIND` | bind only the independently reviewed sanitized preparation | `NOT_AUTHORIZED` |
 | `A4-V2-PAR-R1` | at most one corrected frozen build/parity event after the full isolation chain | `NOT_AUTHORIZED`; direct transition rejected |
@@ -2988,7 +3024,7 @@ Future stages are separate and non-transitive:
 | 1B lossy `D -> d` | exact head and norm terms in favorable oracle | tail norms reduce RMSE from 0.0445 to 0.00248 | omitted tail IP still worsens ranking versus native SAQ |
 | 2 exact scalar DP | exact bin-boundary partition SSE using raw bin moments; final midpoint-nearest-centroid raw SSE is evaluated, not reoptimized; outer optimum is conditional on `E[j,b]` | audio B=4 raw MSE `-15.5%`, R@100 `+0.004` | inner-DP novelty is foreclosed by prior art; no full-scale raw optimum or recall guarantee; cross-regime reversals |
 | 3 distance-quality re-evaluation | paper-exact metric semantics; no method guarantee | GIST measured point: higher `1/Ratio`, `1.078x` QPS at the frozen target | one positive setting; DEEP controls remain negative; metric is prior work |
-| 4 arbitrary-cardinality fixed-rate words | the arbitrary positive-integer feasible set contains the dyadic set for exact factorized SSE | frozen `(3,5)` witness and A4-1S parity; later positive records are protocol/source/artifact-governance evidence only | preserve A4-1S `NO_GO_EXACT_SOLVER_COST` and PAR `ARTIFACT_INVALID / NO_SCIENTIFIC_DECISION`; R1 established registered-bundle rebound only; source-history protocol passed but implementation is unauthorized, so `SOURCE_HISTORY_MISMATCH` remains open in source and PREP/binding/PAR-R1 remain unauthorized |
+| 4 arbitrary-cardinality fixed-rate words | the arbitrary positive-integer feasible set contains the dyadic set for exact factorized SSE | frozen `(3,5)` witness and A4-1S parity; later positive records are protocol/source/artifact-governance evidence only | preserve A4-1S `NO_GO_EXACT_SOLVER_COST` and PAR `ARTIFACT_INVALID / NO_SCIENTIFIC_DECISION`; R1 established registered-bundle rebound only; the first source-history implementation stopped before target and its path-closure erratum passed only as governance, so `SOURCE_HISTORY_MISMATCH` remains open in source and PREP/binding/PAR-R1 remain unauthorized |
 
 Cross-attempt lesson:
 
@@ -3112,9 +3148,12 @@ host rebound not established. Correction-only protocol target/review
 the registered 13-object bundle. Whole-host identity remains unestablished and
 no Python, build, PREP, or scientific execution ran. A future
 `SOURCE_HISTORY_MISMATCH` now has reviewed protocol target/review
-`dcaed57/@e98a3e4`, but the source correction remains unimplemented and
-unauthorized, so cache-verifier/PAR readiness is not established. No next
-node is currently authorized; stop for a user checkpoint. Fresh PREP
+`dcaed57/@e98a3e4`. Its first implementation authorization stopped before
+target on the unsatisfiable ten-path closure; reviewed path-closure erratum
+`150e5b3/@7749491` freezes only a future eight-path/five-derived-object R1
+repair. That correction remains unimplemented and unauthorized, so cache-
+verifier/PAR readiness is not established. No next node is currently
+authorized; stop for a user checkpoint. Fresh PREP
 authorization/review, a new invocation grant and newly registered immediate
 probe, actual PREP, receipt review, CACHE-BIND, explicit PAR-R1, and SRUN all
 remain separate and unauthorized; base/query inputs, SAQ changes, and the old
@@ -3234,7 +3273,8 @@ target/review `@e7f940e/@16a8201`, and host-rebind erratum target/review
 `@4602585/@e8e9c79`, followed by HOST-I-R1 correction-only repair protocol
 target/review `@ddfef99/@b1a7429` and correction target/review
 `@e17f887/@e10bde7`, then source-history epoch-correction protocol
-target/review `@dcaed57/@e98a3e4`:
+target/review `@dcaed57/@e98a3e4`, followed by source-history path-closure
+erratum target/review `@150e5b3/@7749491`:
 
 ```text
 docs/saq_a4_v2_primary_source_metadata_2026_07_14.json
@@ -3293,6 +3333,9 @@ docs/saq_a4_v2_prep_host_identity_rebind_r1_correction_only_repair_independent_r
 docs/saq_a4_v2_source_history_epoch_correction_protocol_2026_07_17.md
 docs/saq_a4_v2_source_history_epoch_correction_contract_2026_07_17.json
 docs/saq_a4_v2_source_history_epoch_correction_protocol_independent_review_2026_07_17.md
+docs/saq_a4_v2_source_history_i_r1_path_closure_erratum_protocol_2026_07_18.md
+docs/saq_a4_v2_source_history_i_r1_path_closure_erratum_contract_2026_07_18.json
+docs/saq_a4_v2_source_history_i_r1_path_closure_erratum_independent_review_2026_07_18.md
 ```
 
 A4-0 and A4-1S parity are outcome evidence only at their stated instrument
@@ -3326,8 +3369,11 @@ then passed with zero LOW-or-higher findings. Exact R1 target/review
 registered 13-object bundle; whole-host identity remains unestablished and no
 execution ran. A separate `SOURCE_HISTORY_MISMATCH` source repair is still required
 before cache-verifier or PAR readiness; its protocol target/review
-`dcaed57/@e98a3e4` passed, but source implementation is unauthorized. Fresh
-PREP authority, actual PREP,
+`dcaed57/@e98a3e4` passed, the first implementation authorization stopped
+before target on an unsatisfiable ten-path projection, and path-closure
+erratum target/review `150e5b3/@7749491` passed only for a corrected future
+eight-path repair. `A4-V2-SOURCE-HISTORY-I-R1` is unauthorized. Fresh PREP
+authority, actual PREP,
 receipt review, CACHE-BIND, PAR-R1, A4-V2-SRUN, and all data access remain
 unauthorized until their own reviewed and explicit authorities exist.
 
@@ -3411,8 +3457,11 @@ higher findings across the correction, closure, and 13/13 registered host
 objects. This establishes only registered-bundle rebound, not whole-host or
 execution readiness. Source-history protocol target `dcaed57`, independently
 reviewed at `e98a3e4`, subsequently passed and froze a strict two-epoch future
-repair. It made no source change, so PREP remains unauthorized and cache-
-verifier/PAR readiness is still unestablished.
+repair. The first implementation authorization stopped before target on an
+unsatisfiable ten-path closure. Path-closure erratum target `150e5b3`,
+independently reviewed at `7749491`, then passed only for a corrected future
+eight-path/five-derived-object repair. It made no source change, so PREP
+remains unauthorized and cache-verifier/PAR readiness is still unestablished.
 
 Project decision:
 Keep Attempts 1--3 as rigorous negative or partial evidence. Do not rescue
@@ -3433,8 +3482,9 @@ host rebound. Its later correction-only protocol passed direct-child review,
 and actual R1 subsequently passed direct-child review, establishing only the
 registered 13-object bundle identity. Do not promote that result to whole-host,
 PREP, cache/PAR, performance, or scientific readiness. Treat the reviewed
-source-history protocol as correction governance only; its future
-implementation remains unauthorized. Fresh PREP
+source-history protocol and path-closure erratum as correction governance
+only; the first implementation attempt stopped before target and its future
+R1 implementation remains unauthorized. Fresh PREP
 authorization/review, a
 new invocation grant and immediate probe, actual PREP, receipt review,
 CACHE-BIND, separately explicit PAR-R1, and SRUN remain a strictly ordered
