@@ -487,6 +487,19 @@ clone, data, quarantine, or SAQ/CAQ action.  Its conditional ceiling is only
 `SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS`; it establishes no
 cache-verifier/PAR readiness or scientific evidence.
 
+The exact protocol target was committed and pushed at
+`dcaed57aaae6fe0f120377281921b6ea5336eb7f`, tree
+`d0069768c8848327f04a23b444fae0b635eb2d78`, with direct parent
+`e10bde78eff21802301549e4c796cc3f49c9d32b`.  Its sole independent static
+review found zero issues at LOW severity or above.  The durable memo is
+`docs/saq_a4_v2_source_history_epoch_correction_protocol_independent_review_2026_07_17.md`.
+The exact conditional protocol-only outcome is
+`SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS`, once this exact
+three-path review is committed and pushed.  No source correction,
+derived-authority edit, execution, cache-verifier/PAR readiness, or scientific
+evidence follows.  A future source-static target remains unauthorized and
+requires a new explicit instruction naming `A4-V2-SOURCE-HISTORY-I`.
+
 ## Review And Protocol Outcome
 
 The bounded review returned `GO_PROTOCOL_DESIGN`. The original reviewed
@@ -553,7 +566,7 @@ A4-V2-PREP-HOST-I-ERRATUM source-authority correction   HOST_I_SOURCE_AUTHORITY_
 A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH
 A4-V2-PREP-HOST-I-R1-P correction-only repair protocol HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS
 A4-V2-PREP-HOST-I-R1 correction-only artifact repair    HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS
-A4-V2-SOURCE-HISTORY-P epoch-correction protocol         PROTOCOL_TARGET_FORMED_REVIEW_PENDING
+A4-V2-SOURCE-HISTORY-P epoch-correction protocol         SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS
 A4-V2-SOURCE-HISTORY-I future source correction          NOT_AUTHORIZED
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
