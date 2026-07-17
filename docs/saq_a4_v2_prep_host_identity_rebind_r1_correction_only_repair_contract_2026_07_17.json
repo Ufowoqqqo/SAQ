@@ -1,0 +1,137 @@
+{
+  "artifact_kind": "a4_v2_prep_host_i_r1_correction_only_repair_contract",
+  "authority": {
+    "exact_user_instruction": "授权 A4-V2-PREP-HOST-I-R1-P correction-only repair protocol + direct-child review",
+    "future_r1_requires_separate_explicit_user_authorization": true
+  },
+  "current_failure": {
+    "false_review_sha256": "c670d368647fbd13bfe4133241e2c37e29101e91538687a64349a606bd059f2a",
+    "negative_review_commit": "e8e9c799fae39284688ff87d5c138be9ade80e51",
+    "negative_review_tree": "2185c5dd3dc696be5527b56302e4fcc3cb3547cd",
+    "source_static_target_commit": "46025854ce1657e09fa64ac9277e53a87c8e15b2",
+    "source_static_target_tree": "c5080470082912475bc7df11accbfc214de1ebe6",
+    "status": "SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH"
+  },
+  "future_repair_review": {
+    "exact_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_prep_host_identity_rebind_r1_correction_only_repair_independent_review_2026_07_17.md"
+    ],
+    "mode_rule": "ALL_AND_ONLY_MODE_100644",
+    "pass_outcome": "HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS",
+    "pass_requires_zero_low_or_higher_findings": true,
+    "registered_host_identity_outcome_on_pass": "ESTABLISHED_FOR_REGISTERED_13_OBJECT_BUNDLE_ONLY"
+  },
+  "future_repair_target": {
+    "allowed_delta": {
+      "docs/saq_a4_v2_implementation_binding_2026_07_14.md": "exactly one false-review-SHA to true-review-SHA replacement and no other byte change",
+      "docs/saq_a4_v2_implementation_manifest_2026_07_14.json": "replace exactly implementation_binding_identity.sha256 and source_provenance_identity.sha256 with the frozen corrected identities",
+      "docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md": "exactly one false-review-SHA to true-review-SHA replacement and no other byte change"
+    },
+    "direct_parent": "publication-closed direct-child review head of this protocol after separate explicit A4-V2-PREP-HOST-I-R1 authorization",
+    "exact_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_implementation_binding_2026_07_14.md",
+      "docs/saq_a4_v2_implementation_manifest_2026_07_14.json",
+      "docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md"
+    ],
+    "formation_status": "HOST_I_R1_CORRECTION_ONLY_REPAIR_TARGET_FORMED_REVIEW_PENDING",
+    "mode_rule": "ALL_AND_ONLY_MODE_100644",
+    "separate_authorization_stage_name": "A4-V2-PREP-HOST-I-R1"
+  },
+  "frozen_correction": {
+    "corrected_objects": {
+      "implementation_binding": {
+        "git_blob": "44e412562b82d7dd484c7d37a6cb3aab5a92c6f4",
+        "path": "docs/saq_a4_v2_implementation_binding_2026_07_14.md",
+        "sha256": "457eec708fa16246752b963a33de29c911e6944eba39297a863f1e75756901a2",
+        "size_bytes": 60272
+      },
+      "implementation_manifest": {
+        "git_blob": "f33adb28d5385e78d8edb882e9351e104bc5f757",
+        "path": "docs/saq_a4_v2_implementation_manifest_2026_07_14.json",
+        "sha256": "de08c638b20821c039a9ef3659f9cbab1fedca32a04aba62989bf5c361490daa",
+        "size_bytes": 34789
+      },
+      "source_provenance_crosswalk": {
+        "git_blob": "269831087d463ee48d3cfe37bb2f5cab73f42613",
+        "path": "docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md",
+        "sha256": "ae892a728424fd62c4e2798435cc257359534ed55038b085e1a65ca0c8d933cb",
+        "size_bytes": 18455
+      }
+    },
+    "false_review_sha256": "c670d368647fbd13bfe4133241e2c37e29101e91538687a64349a606bd059f2a",
+    "manifest_old_identity_values": {
+      "implementation_binding_identity_sha256": "5d6b62bcd74a0626a2f807050dfde3c68b29f3f28ccfa171518af0ed89cc5245",
+      "source_provenance_identity_sha256": "529d15a5407a18a247598005cae59d2710213e699b8ff9aeb6c94a1bb7ebba24"
+    },
+    "replacement_cardinality": {
+      "binding": 1,
+      "manifest_scalar_values": 2,
+      "source_provenance_crosswalk": 1
+    },
+    "true_review_identity": {
+      "commit": "9fa9528f4181d51fe6e060c1de14ea568eb31c4a",
+      "git_blob": "2a59fc202c71e2ec736f1b6dc1fccf635ceb5b3e",
+      "path": "docs/saq_a4_v2_prep_host_identity_rebind_implementation_erratum_independent_review_2026_07_16.md",
+      "sha256": "c670d3685256d94812ee03d4932df304e0bd2ed6a61eeb670a618a9ac6eab331",
+      "size_bytes": 11426
+    }
+  },
+  "preserved_closure": {
+    "build_status": "NOT_AUTHORIZED_NOT_RUN",
+    "cache_i_syntax_remains_historical": true,
+    "executable_unit_count": 38,
+    "filesystem_source_count": 37,
+    "identity_cascade_terminates_at": "docs/saq_a4_v2_implementation_manifest_2026_07_14.json",
+    "manifest_schema_and_key_order_unchanged": true,
+    "source_files_changed": 0,
+    "source_tree_sha256": "97f676357e6f8916a570ba28b7dabcdb358d7138f4485e7ca005a5e746a5e07a"
+  },
+  "protocol_review": {
+    "exact_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_prep_host_identity_rebind_r1_correction_only_repair_protocol_independent_review_2026_07_17.md"
+    ],
+    "mode_rule": "ALL_AND_ONLY_MODE_100644",
+    "pass_outcome": "HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS",
+    "pass_requires_zero_low_or_higher_findings": true
+  },
+  "protocol_target": {
+    "direct_parent": "e8e9c799fae39284688ff87d5c138be9ade80e51",
+    "exact_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_prep_host_identity_rebind_r1_correction_only_repair_contract_2026_07_17.json",
+      "docs/saq_a4_v2_prep_host_identity_rebind_r1_correction_only_repair_protocol_2026_07_17.md"
+    ],
+    "mode_rule": "ALL_AND_ONLY_MODE_100644"
+  },
+  "prohibitions": [
+    "NO_HISTORY_REWRITE_REVERT_FORCE_PUSH_OR_RELABELING_OF_4602585_E8E9C79",
+    "NO_ACTUAL_R1_REPAIR_UNDER_R1_P_AUTHORITY",
+    "NO_IMPLEMENTATION_SCHEMA_WITNESS_CACHE_AUTHORITY_STATIC_CLOSURE_OR_SAQ_CAQ_EDIT",
+    "NO_PYTHON_DNF_SYNTAX_IMPORT_COMPILER_BUILD_TEST_FIXTURE_RNG_OR_REPOSITORY_EXECUTABLE",
+    "NO_CACHE_VERIFIER_PREP_PROBE_CLONE_START_TOKEN_RECEIPT_CACHE_BIND_PAR_R1_OR_SRUN",
+    "NO_QUARANTINE_DATA_INDEX_RESULT_OR_HOST_ENVIRONMENT_MUTATION",
+    "NO_READINESS_FEASIBILITY_PERFORMANCE_SCIENTIFIC_NOVELTY_OR_METHOD_CLAIM"
+  ],
+  "separate_excluded_downstream_limitation": {
+    "repair_authorized": false,
+    "status": "SOURCE_HISTORY_MISMATCH",
+    "effect": "forbids cache-verifier and PAR readiness claims",
+    "does_not_block": [
+      "this protocol",
+      "future correction-only static repair",
+      "PREP itself"
+    ]
+  },
+  "stage": "A4-V2-PREP-HOST-I-R1-P",
+  "stage_claim_ceiling": "DOCUMENTATION_PROTOCOL_GOVERNANCE_ONLY",
+  "stage_outcome_before_review": "PROTOCOL_TARGET_FORMED_REVIEW_PENDING",
+  "stage_outcome_on_review_pass": "HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS",
+  "schema_version": 1
+}

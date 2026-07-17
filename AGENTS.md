@@ -394,6 +394,24 @@ syntax/import, compiler/build/test, cache verifier, PREP, clone, data,
 quarantine, or SAQ/CAQ action occurred.  PREP, cache-verifier/PAR readiness,
 performance, and scientific conclusions remain unestablished.
 
+On 2026-07-17 the user instructed exactly
+`授权 A4-V2-PREP-HOST-I-R1-P correction-only repair protocol + direct-child review`.
+This opens only the four-path documentation target defined by
+`docs/saq_a4_v2_prep_host_identity_rebind_r1_correction_only_repair_protocol_2026_07_17.md`
+and its machine contract, followed by one exact three-path direct-child
+independent review, focused commits/push, and mandatory Meeting Summary
+Handoff.  The current target status is
+`PROTOCOL_TARGET_FORMED_REVIEW_PENDING`.
+
+R1-P freezes a separately authorized future five-path correction: root status,
+one false-to-true review-digest substitution in each of the implementation
+binding and source-provenance crosswalk, and only their two dependent SHA-256
+fields in the implementation manifest.  It permits no repair now, no source or
+runtime-authority edit, and no execution.  A future target requires a new user
+instruction naming `A4-V2-PREP-HOST-I-R1`.  Even a later repair PASS would
+leave `SOURCE_HISTORY_MISMATCH` unresolved and would not authorize PREP,
+cache-verifier, PAR, data, or SAQ/CAQ work.
+
 ## Review And Protocol Outcome
 
 The bounded review returned `GO_PROTOCOL_DESIGN`. The original reviewed
@@ -458,6 +476,8 @@ A4-V2-PREP-HOST-P host-rebind erratum protocol/review   COMPLETED_REVIEW_PASS
 A4-V2-PREP-HOST-I-AUTH source-rebind authorization      AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-PREP-HOST-I-ERRATUM source-authority correction   HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
 A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH
+A4-V2-PREP-HOST-I-R1-P correction-only repair protocol PROTOCOL_TARGET_FORMED_REVIEW_PENDING
+A4-V2-PREP-HOST-I-R1 correction-only artifact repair    NOT_AUTHORIZED
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED

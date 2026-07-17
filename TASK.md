@@ -33,6 +33,8 @@ A4-V2-PREP-HOST-P host-rebind erratum protocol/review   COMPLETED_REVIEW_PASS
 A4-V2-PREP-HOST-I-AUTH source-rebind authorization      AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-PREP-HOST-I-ERRATUM source-authority correction   HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
 A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH
+A4-V2-PREP-HOST-I-R1-P correction-only repair protocol PROTOCOL_TARGET_FORMED_REVIEW_PENDING
+A4-V2-PREP-HOST-I-R1 correction-only artifact repair    NOT_AUTHORIZED
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
@@ -439,6 +441,24 @@ The registered three-path review projection permits only this status update
 and its negative review memo; it cannot repair the two target documents or
 their dependent manifest identities.  No correction, PREP, cache-verifier,
 PAR, performance, or scientific claim is authorized or established.
+
+On 2026-07-17 the user instructed exactly
+`授权 A4-V2-PREP-HOST-I-R1-P correction-only repair protocol + direct-child review`.
+This authorizes only a four-path protocol target, its exact three-path
+direct-child independent review, commit/push, and mandatory Meeting Summary
+Handoff.  The governing protocol and contract are:
+
+1. `docs/saq_a4_v2_prep_host_identity_rebind_r1_correction_only_repair_protocol_2026_07_17.md`;
+2. `docs/saq_a4_v2_prep_host_identity_rebind_r1_correction_only_repair_contract_2026_07_17.json`.
+
+The protocol freezes a possible later five-path correction-only target.  It
+would replace the false review digest exactly once in the binding and once in
+the crosswalk, then update only their two whole-file SHA-256 fields in the
+implementation manifest.  R1-P does not perform that repair and grants no
+source, Python, build, PREP, cache-verifier, PAR, data, quarantine, or SAQ/CAQ
+authority.  A separate future instruction naming
+`A4-V2-PREP-HOST-I-R1` remains mandatory.  The current protocol target status
+is `PROTOCOL_TARGET_FORMED_REVIEW_PENDING`.
 
 ## A4-V2-P-ERRATUM Deliverables
 
