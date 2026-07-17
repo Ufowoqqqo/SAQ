@@ -24,7 +24,10 @@ HOST-I-AUTH target `@212a67b`, independently reviewed at `@71e6bec`, followed
 by the source-authority erratum target `@6fe8544`, independently reviewed at
 `@9fa9528`, and the subsequent HOST-I source-static target `@4602585`, whose
 direct-child independent review at `@e8e9c79` recorded one HIGH and a
-terminal source-static target review failure.
+terminal source-static target review failure, followed by the bounded
+HOST-I-R1 correction-only repair protocol target `@ddfef99`, independently
+reviewed at `@b1a7429` with
+`HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS`.
 
 Audience assumption: familiar with vector search and vector quantization at a
 high level, but not with SAQ's transform, segmentation, or the experiments in
@@ -66,8 +69,11 @@ Python, build, PREP, or data access. Its exact direct-child review failed with
 one HIGH because the binding and crosswalk cite a false SHA-256 for the
 governing erratum review. The terminal status is
 `SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH` and
-`HOST_IDENTITY_REBOUND` remains `NOT_ESTABLISHED`; correction is not
-authorized. The separate `SOURCE_HISTORY_MISMATCH` also remains unresolved.
+`HOST_IDENTITY_REBOUND` remains `NOT_ESTABLISHED`. The later correction-only
+repair protocol target/review `ddfef99/@b1a7429` passed with zero LOW-or-higher
+findings, but it freezes only a future exact five-path correction edge: actual
+`A4-V2-PREP-HOST-I-R1` is not authorized or executed. The separate
+`SOURCE_HISTORY_MISMATCH` also remains unresolved.
 Fresh PREP authority, actual PREP, CACHE-BIND, PAR-R1, SRUN, real-base reads,
 and SAQ integration remain unauthorized.
 
@@ -124,7 +130,8 @@ stopped before edits on a seven-versus-eight contract contradiction; its
 reviewed additive erratum repairs only that source-authority contract and
 enabled a later source-static target. That target's direct-child review found
 one HIGH authority-identity mismatch, so the target failed and host rebound
-remains unestablished. No correction or execution is authorized.
+remains unestablished. A later correction-only repair protocol passed exact-
+target review, but no correction or execution is authorized.
 ```
 
 Speaker notes:
@@ -155,7 +162,9 @@ Speaker notes:
   component. The later 14-path HOST-I source-static target was created, but
   its exact review failed with one HIGH because two authority documents bind
   the wrong governing-review SHA-256. Host rebound remains unestablished; a
-  separate historical-source mismatch also remains outside this repair.
+  later reviewed correction-only protocol freezes a five-path R1 repair edge
+  but grants no repair authority. A separate historical-source mismatch also
+  remains outside this repair.
 
 ---
 
@@ -177,6 +186,8 @@ Attempt 4 A4 V2 HOST-I-AUTH:           AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 Attempt 4 A4 V2 HOST-I-ERRATUM:        HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
 Attempt 4 A4 V2 host rebound:          NOT ESTABLISHED
 Attempt 4 A4 V2 HOST-I:                SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH
+Attempt 4 A4 V2 HOST-I-R1-P:           HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS
+Attempt 4 A4 V2 HOST-I-R1:             NOT AUTHORIZED / NOT RUN
 Attempt 4 A4 V2 PREP/BIND:             NOT AUTHORIZED
 Attempt 4 A4 V2 cache/PAR readiness:   NOT ESTABLISHED; SOURCE_HISTORY_MISMATCH OPEN
 Attempt 4 A4 V2 direct PAR-R1:         NO-GO / NOT AUTHORIZED
@@ -228,7 +239,7 @@ the old `5/2` real-data projection does not transfer.
 | 1B. Lossy `D -> d` projection | Can a PCA head plus a compact tail surrogate beat native full-D SAQ? | GIST sample50k, `960 -> 576`, favorable exact surrogate | Gate A failed; projected SAQ not built |
 | 2. Exact scalar-codebook DP | Does histogram-exact 1D DP improve shared dimensionwise scalar quantization over Lloyd, and is any method novelty left after prior work? | audio, PCA CIFAR60K, PCA DEEP1M; arXiv/code audit | Stronger offline baseline; inner DP is prior art; no stable recall dominance |
 | 3. Distance-quality re-evaluation | Does `1/Ratio@k` change a frozen Recall-based Pareto conclusion? | GIST sample100k B=4; DEEP sample100k B=4/B=5 controls | Closed as metric-sensitivity evidence |
-| 4. Arbitrary-cardinality fixed-rate words | Does the power-of-two restriction waste material capacity at unchanged fixed payload and lookup granularity? | A4-0 synthetic witness; terminal A4-1S correctness/cost gate; reviewed A4 V2 protocol/source, terminal pre-build PAR identity failure, static-only I-R1 repair, CACHE-P/CACHE-I governance, PREP authorization, host-rebind governance, and the failed HOST-I source-static target; registered real-base gates remain unauthorized | preserve A4-1S `NO_GO_EXACT_SOLVER_COST` and A4-V2-PAR `ARTIFACT_INVALID / NO_SCIENTIFIC_DECISION`; HOST-I target review failed on an authority-identity mismatch, host identity is not rebound, correction is not authorized, `SOURCE_HISTORY_MISMATCH` remains open, and PREP/CACHE-BIND/PAR-R1 are unauthorized |
+| 4. Arbitrary-cardinality fixed-rate words | Does the power-of-two restriction waste material capacity at unchanged fixed payload and lookup granularity? | A4-0 synthetic witness; terminal A4-1S correctness/cost gate; reviewed A4 V2 protocol/source, terminal pre-build PAR identity failure, static-only I-R1 repair, CACHE-P/CACHE-I governance, PREP authorization, host-rebind governance, the failed HOST-I source-static target, and its reviewed correction-only protocol; registered real-base gates remain unauthorized | preserve A4-1S `NO_GO_EXACT_SOLVER_COST` and A4-V2-PAR `ARTIFACT_INVALID / NO_SCIENTIFIC_DECISION`; HOST-I target review failed on an authority-identity mismatch, the correction-only protocol passed but actual R1 is not authorized or run, host identity is not rebound, `SOURCE_HISTORY_MISMATCH` remains open, and PREP/CACHE-BIND/PAR-R1 are unauthorized |
 
 Speaker notes:
 
@@ -2249,7 +2260,10 @@ case study, not an independent database-systems method.
 ## 59. Attempt 4: Research Question, Old Stop, And V2 Boundary
 
 Current R12 reviewed snapshot:
-`saq-arbitrary-cardinality-feasibility-v2@e8e9c79`
+`saq-arbitrary-cardinality-feasibility-v2@b1a7429`
+
+HOST-I-R1 correction-only repair protocol target/direct-child review:
+`saq-arbitrary-cardinality-feasibility-v2@ddfef99/@b1a7429`
 
 HOST-I source-static target/direct-child review:
 `saq-arbitrary-cardinality-feasibility-v2@4602585/@e8e9c79`
@@ -2299,6 +2313,8 @@ Preserved terminal A4-1S snapshot:
 | attempted A4-V2-PREP-HOST-I | `STOPPED_BEFORE_TARGET` | exact checking exposed an unsatisfiable seven-versus-eight protocol-component closure before any source edit, Python, or PREP |
 | A4-V2-PREP-HOST-I-ERRATUM | `HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS` | target/review `6fe8544/@9fa9528` admit the eighth component and freeze its exact accounting/projection only; no implementation-source/derived-authority rebind or execution occurred |
 | A4-V2-PREP-HOST-I | `SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH` | target `4602585` changed exactly the registered 14 paths without execution; direct-child review `e8e9c79` found one HIGH because the binding and crosswalk cite a false governing-review SHA-256; all other registered static checks passed, but host rebound is not established and correction is not authorized |
+| A4-V2-PREP-HOST-I-R1-P | `HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS` | target/review `ddfef99/@b1a7429` freeze only a future exact five-path correction target, corrected identities, cascade boundary, and direct-child review projection; zero LOW-or-higher findings, no repair authority, and no execution |
+| A4-V2-PREP-HOST-I-R1 | `NOT_AUTHORIZED_NOT_RUN` | the correction-only source/authority repair remains a separate future action requiring explicit authorization; host rebound is still not established |
 | historical-source repair | `NOT_AUTHORIZED` | the future `SOURCE_HISTORY_MISMATCH` in cache-verifier/PAR history comparisons is disclosed but outside the source-authority erratum; readiness cannot be claimed until a separate protocol/source repair passes |
 | actual PREP / receipt review / CACHE-BIND | `NOT_AUTHORIZED` | one preparation attempt, its committed independent receipt review, and binding remain separate non-transitive stages |
 | A4-V2-PAR-R1 | `NOT_AUTHORIZED` | direct PAR-R1 is no-go; it can be considered only after every separately authorized isolation stage passes and the user explicitly authorizes PAR-R1 |
@@ -2407,6 +2423,8 @@ A4-V2-PREP-HOST-I-AUTH AUTHORIZATION_EXACT_TARGET_REVIEW_PASS ONLY
 A4-V2-PREP-HOST-I ATTEMPT STOPPED BEFORE TARGET ON 7-VS-8 CONTRADICTION
 A4-V2-PREP-HOST-I-ERRATUM HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS ONLY
 A4-V2-PREP-HOST-I SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH
+A4-V2-PREP-HOST-I-R1-P HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS ONLY
+A4-V2-PREP-HOST-I-R1 NOT AUTHORIZED / NOT RUN
 HOST_IDENTITY_REBOUND NOT ESTABLISHED
 SOURCE_HISTORY_MISMATCH OPEN / CACHE-VERIFIER AND PAR READINESS NOT ESTABLISHED
 ACTUAL PREP AND CACHE-BIND NOT AUTHORIZED
@@ -2467,8 +2485,11 @@ direct-child review
 `e8e9c79` found one HIGH: the binding and crosswalk contain a false digest for
 the governing erratum review. Therefore the status is
 `SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH`,
-`HOST_IDENTITY_REBOUND` remains `NOT_ESTABLISHED`, correction is not
-authorized, and Python/PREP remain `NOT_AUTHORIZED_NOT_RUN`. Review also
+`HOST_IDENTITY_REBOUND` remains `NOT_ESTABLISHED`, and Python/PREP remain
+`NOT_AUTHORIZED_NOT_RUN`. Correction-only protocol target/review
+`ddfef99/@b1a7429` later reached
+`HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS`, but actual
+`A4-V2-PREP-HOST-I-R1` remains `NOT_AUTHORIZED_NOT_RUN`. Review also
 preserves a separate future
 `SOURCE_HISTORY_MISMATCH` in cache-verifier/PAR history comparisons; the
 erratum does not repair it, so readiness claims remain forbidden.
@@ -2581,7 +2602,9 @@ implementation source or derived authority object and grants no HOST-I
 authority. The later source-static target/review `4602585/@e8e9c79` ended at
 `SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH`: one HIGH false
 governing-review digest in the binding and crosswalk, with host rebound not
-established and no correction authorized. The unresolved future
+established. Correction-only protocol target/review `ddfef99/@b1a7429`
+subsequently passed with zero LOW-or-higher findings, but actual R1 correction
+remains unauthorized and unexecuted. The unresolved future
 `SOURCE_HISTORY_MISMATCH` independently keeps cache-verifier/PAR readiness
 unestablished.
 Fresh PREP authority, actual PREP, receipt review, CACHE-BIND, PAR-R1, SRUN,
@@ -2724,6 +2747,9 @@ Source-authority erratum target/review:
 
 HOST-I source-static target/review:
 `saq-arbitrary-cardinality-feasibility-v2@4602585/@e8e9c79`
+
+HOST-I-R1 correction-only protocol target/review:
+`saq-arbitrary-cardinality-feasibility-v2@ddfef99/@b1a7429`
 
 The review preserves the old A4-1S result and changes the next question, not
 the result. A4-1S timed exact construction together with full canonical
@@ -2879,7 +2905,9 @@ but changes no implementation source or derived authority object. The later
 source-static target `4602585` was independently reviewed at `e8e9c79` and
 failed with one HIGH authority-identity mismatch: two derived documents cite
 the wrong governing-review SHA-256. Thus `HOST_IDENTITY_REBOUND` remains
-`NOT_ESTABLISHED`, correction is not authorized, and the distinct future
+`NOT_ESTABLISHED`. The correction-only protocol target/review
+`ddfef99/@b1a7429` passed with zero LOW-or-higher findings, but actual R1 is
+not authorized or run, and the distinct future
 `SOURCE_HISTORY_MISMATCH` still prevents cache-verifier/PAR readiness.
 
 Future stages are separate and non-transitive:
@@ -2897,6 +2925,8 @@ Future stages are separate and non-transitive:
 | attempted `A4-V2-PREP-HOST-I` | validate the frozen projection before source editing | `STOPPED_BEFORE_TARGET`; exact seven-versus-eight contradiction |
 | `A4-V2-PREP-HOST-I-ERRATUM` | admit the eighth protocol component and freeze exact future accounting | `HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS`; documentation governance only |
 | `A4-V2-PREP-HOST-I` | implement and independently review the coherent five-source/seven-derived-authority rebind | `SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH`; target/review `4602585/@e8e9c79`, one HIGH, host rebound not established, correction not authorized |
+| `A4-V2-PREP-HOST-I-R1-P` | freeze a correction-only exact five-path target and its direct-child review projection | `HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS`; target/review `ddfef99/@b1a7429`, documentation governance only |
+| `A4-V2-PREP-HOST-I-R1` | apply only the frozen authority-identity correction and review it | `NOT_AUTHORIZED_NOT_RUN`; host rebound not established |
 | historical-source repair | reconcile future authority-source history comparisons after rebind | `NOT_AUTHORIZED`; `SOURCE_HISTORY_MISMATCH` remains open |
 | one sanitized preparation + receipt/review | prepare without reading quarantine, then commit and review its receipt | `NOT_AUTHORIZED` |
 | `A4-V2-CACHE-BIND` | bind only the independently reviewed sanitized preparation | `NOT_AUTHORIZED` |
@@ -2914,7 +2944,7 @@ Future stages are separate and non-transitive:
 | 1B lossy `D -> d` | exact head and norm terms in favorable oracle | tail norms reduce RMSE from 0.0445 to 0.00248 | omitted tail IP still worsens ranking versus native SAQ |
 | 2 exact scalar DP | exact bin-boundary partition SSE using raw bin moments; final midpoint-nearest-centroid raw SSE is evaluated, not reoptimized; outer optimum is conditional on `E[j,b]` | audio B=4 raw MSE `-15.5%`, R@100 `+0.004` | inner-DP novelty is foreclosed by prior art; no full-scale raw optimum or recall guarantee; cross-regime reversals |
 | 3 distance-quality re-evaluation | paper-exact metric semantics; no method guarantee | GIST measured point: higher `1/Ratio`, `1.078x` QPS at the frozen target | one positive setting; DEEP controls remain negative; metric is prior work |
-| 4 arbitrary-cardinality fixed-rate words | the arbitrary positive-integer feasible set contains the dyadic set for exact factorized SSE | frozen `(3,5)` witness and A4-1S parity; later positive records are protocol/source/artifact-governance evidence only | preserve A4-1S `NO_GO_EXACT_SOLVER_COST` and PAR `ARTIFACT_INVALID / NO_SCIENTIFIC_DECISION`; HOST-I source-static target review failed on one HIGH authority-identity mismatch, host identity is not rebound, correction is not authorized, `SOURCE_HISTORY_MISMATCH` remains open, and PREP/binding/PAR-R1 remain unauthorized |
+| 4 arbitrary-cardinality fixed-rate words | the arbitrary positive-integer feasible set contains the dyadic set for exact factorized SSE | frozen `(3,5)` witness and A4-1S parity; later positive records are protocol/source/artifact-governance evidence only | preserve A4-1S `NO_GO_EXACT_SOLVER_COST` and PAR `ARTIFACT_INVALID / NO_SCIENTIFIC_DECISION`; HOST-I source-static target review failed on one HIGH authority-identity mismatch, its correction-only protocol passed but actual R1 remains unauthorized and unexecuted, host identity is not rebound, `SOURCE_HISTORY_MISMATCH` remains open, and PREP/binding/PAR-R1 remain unauthorized |
 
 Cross-attempt lesson:
 
@@ -2948,9 +2978,10 @@ source/authority rebind, Python, or PREP ran. Its attempted HOST-I edge stopped
 before edits on a seven-versus-eight component contradiction. The reviewed
 source-authority erratum fixed that contract admission. The later source-
 static target was formed, but its direct-child review failed on one HIGH
-authority-identity mismatch. Host rebound remains unestablished, correction
-is not authorized, and the disclosed historical-source mismatch requires its
-own later repair before readiness can be claimed.
+authority-identity mismatch. Host rebound remains unestablished. Its later
+correction-only protocol passed exact review, but actual R1 is not authorized
+or run, and the disclosed historical-source mismatch requires its own later
+repair before readiness can be claimed.
 ```
 
 ---
@@ -2995,7 +3026,9 @@ authorization review as a dormant contract rather than a completed clone or
 feasibility result; treating HOST-I-AUTH and the source-authority erratum as
 governance only; and treating the later HOST-I source-static target as a
 failed authority-DAG artifact whose otherwise passing static checks do not
-establish host rebound, PREP readiness, or cache-verifier/PAR readiness?
+establish host rebound, PREP readiness, or cache-verifier/PAR readiness; while
+treating its reviewed correction-only protocol as governance rather than an
+executed repair or repair authority?
 ```
 
 The current authorization boundary is narrow:
@@ -3024,11 +3057,14 @@ component contradiction. Source-authority erratum target/review
 `HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS`. The subsequently authorized
 HOST-I target/review `4602585/@e8e9c79` ended at
 `SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH`: one HIGH,
-host rebound not established, and correction not authorized. A future
+host rebound not established. Correction-only protocol target/review
+`ddfef99/@b1a7429` then reached
+`HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS`, but actual R1 remains
+unauthorized and unexecuted. A future
 `SOURCE_HISTORY_MISMATCH` still needs a separate protocol/source repair before
-cache-verifier/PAR readiness. The next admissible node would require fresh
-explicit authority for a topology- and authority-corrected repair protocol,
-target, and exact review. Fresh PREP
+cache-verifier/PAR readiness. The next admissible node requires fresh explicit
+authority naming `A4-V2-PREP-HOST-I-R1` for only the frozen five-path correction
+target and its direct-child review. Fresh PREP
 authorization/review, a new invocation grant and newly registered immediate
 probe, actual PREP, receipt review, CACHE-BIND, explicit PAR-R1, and SRUN all
 remain separate and unauthorized; base/query inputs, SAQ changes, and the old
@@ -3145,7 +3181,8 @@ target/review `@e7f940e/@16a8201`, and host-rebind erratum target/review
 `@5a47fed/@b89dabe`, followed by HOST-I-AUTH target/review
 `@212a67b/@71e6bec`, then source-authority erratum target/review
 `@6fe8544/@9fa9528`, and finally HOST-I source-static target/review
-`@4602585/@e8e9c79`:
+`@4602585/@e8e9c79`, followed by HOST-I-R1 correction-only repair protocol
+target/review `@ddfef99/@b1a7429`:
 
 ```text
 docs/saq_a4_v2_primary_source_metadata_2026_07_14.json
@@ -3197,6 +3234,9 @@ docs/saq_a4_v2_prep_host_identity_rebind_implementation_erratum_protocol_2026_07
 docs/saq_a4_v2_prep_host_identity_rebind_implementation_erratum_contract_2026_07_16.json
 docs/saq_a4_v2_prep_host_identity_rebind_implementation_erratum_independent_review_2026_07_16.md
 docs/saq_a4_v2_prep_host_identity_rebind_implementation_independent_review_2026_07_16.md
+docs/saq_a4_v2_prep_host_identity_rebind_r1_correction_only_repair_protocol_2026_07_17.md
+docs/saq_a4_v2_prep_host_identity_rebind_r1_correction_only_repair_contract_2026_07_17.json
+docs/saq_a4_v2_prep_host_identity_rebind_r1_correction_only_repair_protocol_independent_review_2026_07_17.md
 ```
 
 A4-0 and A4-1S parity are outcome evidence only at their stated instrument
@@ -3224,7 +3264,9 @@ erratum reached only `HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS` and changed
 no implementation source or derived authority object. The later HOST-I
 source-static target/review `4602585/@e8e9c79` failed on one HIGH false
 governing-review digest, so host rebound remains unestablished and correction
-is not authorized. A separate `SOURCE_HISTORY_MISMATCH` repair is still
+was not performed. Correction-only protocol target/review `ddfef99/@b1a7429`
+then passed with zero LOW-or-higher findings, but actual R1 remains
+unauthorized and unexecuted. A separate `SOURCE_HISTORY_MISMATCH` repair is still
 required before cache-verifier or PAR readiness. Fresh PREP authority, actual PREP,
 receipt review, CACHE-BIND, PAR-R1, A4-V2-SRUN, and all data access remain
 unauthorized until their own reviewed and explicit authorities exist.
@@ -3302,9 +3344,11 @@ target `6fe8544`, independently reviewed at `9fa9528`, reached only
 source or derived authority object. The later source-static target `4602585`,
 independently reviewed at `e8e9c79`, failed with one HIGH because two
 authority documents cite the wrong governing-review SHA-256. Host rebound is
-not established, correction and actual PREP remain unauthorized, and a
-separate future `SOURCE_HISTORY_MISMATCH` repair is still required before
-cache-verifier/PAR readiness.
+not established. Correction-only protocol target `ddfef99`, independently
+reviewed at `b1a7429`, then passed with zero LOW-or-higher findings and froze
+only a future exact five-path R1 edge. Actual R1 correction and PREP remain
+unauthorized, and a separate future `SOURCE_HISTORY_MISMATCH` repair is still
+required before cache-verifier/PAR readiness.
 
 Project decision:
 Keep Attempts 1--3 as rigorous negative or partial evidence. Do not rescue
@@ -3321,8 +3365,9 @@ it freezes only the contract/projection for a possible future source edge and
 grants no HOST-I authority. Treat the source-authority erratum as a correction
 of that projection only, not source implementation, host rebound, or
 readiness. Treat the later HOST-I target as a failed authority-DAG target, not
-host rebound; any correction needs a new explicit protocol/target/review
-authority. The disclosed historical-source comparison needs a separate later
+host rebound. Its later correction-only protocol passed direct-child review,
+but actual `A4-V2-PREP-HOST-I-R1` still needs explicit authorization and has
+not run. The disclosed historical-source comparison needs a separate later
 repair. Fresh PREP authorization/review, a
 new invocation grant and immediate probe, actual PREP, receipt review,
 CACHE-BIND, separately explicit PAR-R1, and SRUN remain a strictly ordered
