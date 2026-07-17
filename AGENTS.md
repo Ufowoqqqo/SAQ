@@ -500,6 +500,31 @@ derived-authority edit, execution, cache-verifier/PAR readiness, or scientific
 evidence follows.  A future source-static target remains unauthorized and
 requires a new explicit instruction naming `A4-V2-SOURCE-HISTORY-I`.
 
+The user then instructed exactly `授权 A4-V2-SOURCE-HISTORY-I`.  Static
+pre-target closure inspection found that the reviewed ten-path projection was
+unsatisfiable: the epoch correction changes neither the generic runtime schema
+nor its already maximal syntactic witness, while the protocol required both
+paths to change and simultaneously forbade any new output, status, parser,
+observation, or ledger field.  A provisional verifier edit was fully reverted;
+no target, review, execution, or evidence was formed.
+
+On 2026-07-18 the user instructed exactly
+`A4-V2-SOURCE-HISTORY-I-R1-P correction-only path-closure erratum + direct-child review`.
+This opens only the additive four-path documentation target defined by
+`docs/saq_a4_v2_source_history_i_r1_path_closure_erratum_protocol_2026_07_18.md`
+and its machine contract, followed by one exact three-path direct-child static
+review, focused commit/push, and mandatory Meeting Summary Handoff.
+
+The erratum may supersede only the impossible future path projection: the
+separately authorized future R1 target has exactly eight paths and five changed
+derived objects, while the runtime schema and maximal witness retain their
+exact current blobs.  All epoch, five-override, ninth-component, line-budget,
+runtime, overhead, prohibition, and future review clauses remain unchanged.
+The erratum is not a tenth component and permits no implementation or
+execution.  Before direct-child review, the maximum status is
+`PATH_CLOSURE_ERRATUM_TARGET_FORMED_REVIEW_PENDING`; future implementation
+requires a separate explicit `A4-V2-SOURCE-HISTORY-I-R1` instruction.
+
 ## Review And Protocol Outcome
 
 The bounded review returned `GO_PROTOCOL_DESIGN`. The original reviewed
@@ -567,7 +592,9 @@ A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_REV
 A4-V2-PREP-HOST-I-R1-P correction-only repair protocol HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS
 A4-V2-PREP-HOST-I-R1 correction-only artifact repair    HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS
 A4-V2-SOURCE-HISTORY-P epoch-correction protocol         SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS
-A4-V2-SOURCE-HISTORY-I future source correction          NOT_AUTHORIZED
+A4-V2-SOURCE-HISTORY-I original source correction        STOPPED_PRE_TARGET_PATH_CLOSURE_UNSATISFIABLE
+A4-V2-SOURCE-HISTORY-I-R1-P path-closure erratum         PATH_CLOSURE_ERRATUM_TARGET_FORMED_REVIEW_PENDING
+A4-V2-SOURCE-HISTORY-I-R1 corrected source target        NOT_AUTHORIZED
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED

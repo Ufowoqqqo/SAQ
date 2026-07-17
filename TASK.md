@@ -36,7 +36,9 @@ A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_REV
 A4-V2-PREP-HOST-I-R1-P correction-only repair protocol HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS
 A4-V2-PREP-HOST-I-R1 correction-only artifact repair    HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS
 A4-V2-SOURCE-HISTORY-P epoch-correction protocol         SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS
-A4-V2-SOURCE-HISTORY-I future source correction          NOT_AUTHORIZED
+A4-V2-SOURCE-HISTORY-I original source correction        STOPPED_PRE_TARGET_PATH_CLOSURE_UNSATISFIABLE
+A4-V2-SOURCE-HISTORY-I-R1-P path-closure erratum         PATH_CLOSURE_ERRATUM_TARGET_FORMED_REVIEW_PENDING
+A4-V2-SOURCE-HISTORY-I-R1 corrected source target        NOT_AUTHORIZED
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
@@ -550,6 +552,33 @@ three-path review record is committed and pushed.  This does not authorize or
 establish the future source correction, derived-authority edits, PREP,
 cache-verifier/PAR readiness, execution, performance, or scientific evidence.
 `A4-V2-SOURCE-HISTORY-I` remains separately unauthorized.
+
+The user subsequently authorized `A4-V2-SOURCE-HISTORY-I`.  Before a target,
+static closure inspection proved the frozen ten-path projection impossible:
+the internal role-to-epoch correction does not change the generic runtime
+schema or its already maximal witness, but the protocol required both files to
+change while forbidding any new output or ledger shape.  The provisional
+verifier edit was completely reverted.  No immutable target, review,
+execution, or evidence resulted.
+
+On 2026-07-18 the user authorized exactly
+`A4-V2-SOURCE-HISTORY-I-R1-P correction-only path-closure erratum + direct-child review`.
+This stage permits only a four-path additive erratum target, its exact
+three-path direct-child review, focused commit/push, and Meeting Summary
+Handoff.  Its protocol and contract are:
+
+1. `docs/saq_a4_v2_source_history_i_r1_path_closure_erratum_protocol_2026_07_18.md`;
+2. `docs/saq_a4_v2_source_history_i_r1_path_closure_erratum_contract_2026_07_18.json`.
+
+The erratum changes only the future path closure from ten paths/seven changed
+derived objects to eight paths/five changed derived objects.  Runtime schema
+and maximal witness blobs remain exact.  The original epoch model, five
+overrides, sole ninth component, line limits, runtime behavior, overhead, and
+future review projection remain authoritative; the erratum is not a tenth
+component.  Before review the maximum status is
+`PATH_CLOSURE_ERRATUM_TARGET_FORMED_REVIEW_PENDING`.  It permits no source or
+derived-authority edit and no execution.  Future implementation remains
+separately unauthorized as `A4-V2-SOURCE-HISTORY-I-R1`.
 
 ## A4-V2-P-ERRATUM Deliverables
 

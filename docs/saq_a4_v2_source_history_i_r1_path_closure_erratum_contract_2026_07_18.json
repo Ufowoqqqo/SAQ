@@ -1,0 +1,159 @@
+{
+  "artifact_kind": "a4_v2_source_history_i_r1_path_closure_erratum_contract",
+  "authority": {
+    "exact_user_instruction": "授权：\nA4-V2-SOURCE-HISTORY-I-R1-P\ncorrection-only path-closure erratum + direct-child review",
+    "future_implementation_requires_separate_explicit_user_authorization": true,
+    "future_stage_name": "A4-V2-SOURCE-HISTORY-I-R1"
+  },
+  "claim_ceiling": {
+    "cache_verifier_or_par_readiness": "NOT_ESTABLISHED",
+    "current_stage": "DOCUMENTATION_PROTOCOL_GOVERNANCE_ONLY",
+    "maximum_current_outcome": "SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS",
+    "performance": "PERFORMANCE_NOT_YET_MEASURED",
+    "scientific_decision": "NONE"
+  },
+  "current_blocker": {
+    "classification": "FROZEN_TARGET_PATH_CLOSURE_UNSATISFIABLE",
+    "discovered_before_immutable_implementation_target": true,
+    "finding_severity": "BLOCKER",
+    "legitimate_changed_path_count": 8,
+    "original_required_changed_path_count": 10,
+    "provisional_source_wip_fully_reverted": true,
+    "unsupported_required_paths": [
+      "docs/saq_a4_v2_cache_runtime_maximal_instance_2026_07_15.json",
+      "docs/saq_a4_v2_cache_runtime_schema_2026_07_15.json"
+    ]
+  },
+  "erratum_review": {
+    "exact_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_source_history_i_r1_path_closure_erratum_independent_review_2026_07_18.md"
+    ],
+    "mode_rule": "ALL_AND_ONLY_MODE_100644",
+    "pass_outcome": "SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS",
+    "pass_requires_zero_low_or_higher_findings": true
+  },
+  "erratum_target": {
+    "direct_parent": "e98a3e401639cae4f11ea97d21883120e9b797fb",
+    "direct_parent_tree": "dfc5df62443618c4af18391d25d28d5321c096de",
+    "exact_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_source_history_i_r1_path_closure_erratum_contract_2026_07_18.json",
+      "docs/saq_a4_v2_source_history_i_r1_path_closure_erratum_protocol_2026_07_18.md"
+    ],
+    "mode_rule": "ALL_AND_ONLY_MODE_100644"
+  },
+  "future_implementation_review": {
+    "exact_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_source_history_epoch_correction_implementation_independent_review_2026_07_17.md"
+    ],
+    "mode_rule": "ALL_AND_ONLY_MODE_100644",
+    "pass_outcome": "SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS",
+    "pass_requires_zero_low_or_higher_findings": true
+  },
+  "future_implementation_target": {
+    "direct_parent": "clean pushed publication-closed direct-child review head of this erratum after explicit A4-V2-SOURCE-HISTORY-I-R1 authorization",
+    "exact_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_cache_protocol_authority_manifest_2026_07_15.json",
+      "docs/saq_a4_v2_cache_static_closure_2026_07_15.json",
+      "docs/saq_a4_v2_implementation_binding_2026_07_14.md",
+      "docs/saq_a4_v2_implementation_manifest_2026_07_14.json",
+      "docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md",
+      "script/a4_v2_cache_policy_verifier.py"
+    ],
+    "formation_status": "SOURCE_HISTORY_EPOCH_CORRECTION_R1_TARGET_FORMED_REVIEW_PENDING",
+    "mode_rule": "ALL_AND_ONLY_MODE_100644",
+    "separate_authorization_stage_name": "A4-V2-SOURCE-HISTORY-I-R1"
+  },
+  "immutable_original_authority": {
+    "contract": {
+      "git_blob": "9c08aaf63d1e524cfa3579a764fd8ea14176cde8",
+      "path": "docs/saq_a4_v2_source_history_epoch_correction_contract_2026_07_17.json",
+      "sha256": "d8150681aa9d7116d1d131ca61f9a027ea737b3a6245bf8ee2e000b88548ea48",
+      "size_bytes": 11379,
+      "target_commit": "dcaed57aaae6fe0f120377281921b6ea5336eb7f"
+    },
+    "protocol": {
+      "git_blob": "2297c34e227a1ad7fe21d15b2674a4987e44e858",
+      "path": "docs/saq_a4_v2_source_history_epoch_correction_protocol_2026_07_17.md",
+      "sha256": "289e0acb8c1e8122e027fad1757f9fcc6b721ccf49affebce1141f51adfe2650",
+      "size_bytes": 16130,
+      "target_commit": "dcaed57aaae6fe0f120377281921b6ea5336eb7f"
+    },
+    "review": {
+      "git_blob": "d59a56082c52eec113856eb33e918999415f6201",
+      "path": "docs/saq_a4_v2_source_history_epoch_correction_protocol_independent_review_2026_07_17.md",
+      "review_commit": "e98a3e401639cae4f11ea97d21883120e9b797fb",
+      "sha256": "58bf7a3deb89e1ba9ab0bbe63c6f66e96d1abf6c44d2c7e47189bd38388c627e",
+      "size_bytes": 13478
+    }
+  },
+  "preserved_original_contract": {
+    "active_role_count": 6,
+    "adaptive_or_either_epoch_matching_forbidden": true,
+    "existing_component_count": 8,
+    "future_component_count": 9,
+    "legacy_override_count": 5,
+    "legacy_role_count": 4,
+    "line_budget": {
+      "expected_changed_logical_lines_in_verifier": "25_TO_45_APPROXIMATE",
+      "stop_if_net_changed_verifier_lines_exceed": 80,
+      "stop_if_new_parser_status_git_observation_output_or_ledger_field_required": true,
+      "stop_if_second_source_file_required": true
+    },
+    "ninth_component": {
+      "erratum_is_not_a_component": true,
+      "key": "source_history_epoch_correction_contract",
+      "path": "docs/saq_a4_v2_source_history_epoch_correction_contract_2026_07_17.json"
+    },
+    "source_file_count": 37,
+    "source_files_changed": 1
+  },
+  "preserved_runtime_objects": {
+    "runtime_maximal_instance": {
+      "git_blob": "51a03242b7ef667a4bd4275d8565122f49222674",
+      "path": "docs/saq_a4_v2_cache_runtime_maximal_instance_2026_07_15.json",
+      "reason_unchanged": "already maximal generic witness; no source epoch or component identity and no new output or ledger field",
+      "sha256": "5a373bd002b48041e150588002a193a9c068cf98977897e6f5cc5f3339e71a42",
+      "size_bytes": 4439071
+    },
+    "runtime_schema": {
+      "git_blob": "4d0c93f7fea77fec649ff2a9ab4168f1a340a3cf",
+      "path": "docs/saq_a4_v2_cache_runtime_schema_2026_07_15.json",
+      "reason_unchanged": "existing generic 37-source checks PASS or MISMATCH statuses and uint64 filesystem byte ledger already cover the correction",
+      "sha256": "47bfcd039acddebbf9c6e5058b1c20ca9a743a5d2518ff31d4fef72ae103f896",
+      "size_bytes": 23762
+    }
+  },
+  "prohibitions": [
+    "NO_ACTUAL_SOURCE_HISTORY_IMPLEMENTATION_UNDER_R1_P_AUTHORITY",
+    "NO_EDIT_TO_ORIGINAL_PROTOCOL_CONTRACT_OR_REVIEW",
+    "NO_RUNTIME_SCHEMA_MAXIMAL_WITNESS_PADDING_OR_TENTH_COMPONENT",
+    "NO_SOURCE_DERIVED_AUTHORITY_MANIFEST_BINDING_OR_CROSSWALK_EDIT",
+    "NO_HISTORY_REWRITE_REVERT_FORCE_PUSH_OR_RELABELING",
+    "NO_PYTHON_DNF_SYNTAX_IMPORT_COMPILER_BUILD_TEST_OR_REPOSITORY_EXECUTION",
+    "NO_CACHE_VERIFIER_PREP_PROBE_CLONE_CACHE_BIND_PAR_R1_OR_SRUN",
+    "NO_QUARANTINE_DATA_QUERY_INDEX_RESULT_OR_HOST_ENVIRONMENT_ACCESS_OR_MUTATION",
+    "NO_READINESS_FEASIBILITY_PERFORMANCE_SCIENTIFIC_NOVELTY_OR_METHOD_CLAIM"
+  ],
+  "schema_version": 1,
+  "stage": "A4-V2-SOURCE-HISTORY-I-R1-P",
+  "stage_outcome_before_review": "PATH_CLOSURE_ERRATUM_TARGET_FORMED_REVIEW_PENDING",
+  "stage_outcome_on_review_pass": "SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS",
+  "supersession": {
+    "preserved_review_projection": true,
+    "supersedes_only": [
+      "original future implementation exact changed-path set of ten",
+      "original count of seven changed derived authority or document objects",
+      "original protocol-review assertion that the ten-path set is necessary"
+    ],
+    "replacement_changed_derived_object_count": 5,
+    "replacement_future_target_changed_path_count": 8
+  }
+}
