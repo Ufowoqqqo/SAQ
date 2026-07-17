@@ -456,6 +456,37 @@ whole-host identity remains unestablished.  No execution or scientific
 evidence follows, `SOURCE_HISTORY_MISMATCH` remains open, and PREP plus every
 downstream stage still require separate authorization.
 
+On 2026-07-17 the user instructed exactly
+`授权 bounded SOURCE_HISTORY_MISMATCH correction protocol + direct-child review`.
+This opens only documentation stage `A4-V2-SOURCE-HISTORY-P`: formation,
+commit, push, and one exact direct-child independent review of
+`docs/saq_a4_v2_source_history_epoch_correction_protocol_2026_07_17.md` and
+its machine contract, followed by mandatory Meeting Summary Handoff.
+
+The protocol target is the direct child of clean, pushed R1 review head
+`e10bde78eff21802301549e4c796cc3f49c9d32b` and changes all and only those
+two new protocol objects plus `AGENTS.md` and `TASK.md`.  Its direct-child
+review may change only the two root status files and
+`docs/saq_a4_v2_source_history_epoch_correction_protocol_independent_review_2026_07_17.md`.
+Before review, the maximum status is
+`PROTOCOL_TARGET_FORMED_REVIEW_PENDING`.
+
+The protocol freezes a possible later exact two-epoch source-history rule:
+the four immutable CACHE-I/original-PREP-authorization commit roles retain
+the exact pre-host-rebind five-blob overrides, while six future receipt,
+CACHE-BIND, and PAR roles use only the active 37-source authority.  Every
+non-null role has exactly one preassigned epoch; an either-epoch or adaptive
+match is forbidden.  A future correction may change only the cache-policy
+verifier plus the seven derived authority documents and root status, and must
+bind this contract as one ninth protocol component.  That future source
+target requires a new explicit instruction naming `A4-V2-SOURCE-HISTORY-I`.
+
+This protocol stage permits no implementation or derived-authority edit and
+no Python, syntax/import, compiler/build/test, cache verifier, PREP, probe,
+clone, data, quarantine, or SAQ/CAQ action.  Its conditional ceiling is only
+`SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS`; it establishes no
+cache-verifier/PAR readiness or scientific evidence.
+
 ## Review And Protocol Outcome
 
 The bounded review returned `GO_PROTOCOL_DESIGN`. The original reviewed
@@ -522,6 +553,8 @@ A4-V2-PREP-HOST-I-ERRATUM source-authority correction   HOST_I_SOURCE_AUTHORITY_
 A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH
 A4-V2-PREP-HOST-I-R1-P correction-only repair protocol HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS
 A4-V2-PREP-HOST-I-R1 correction-only artifact repair    HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS
+A4-V2-SOURCE-HISTORY-P epoch-correction protocol         PROTOCOL_TARGET_FORMED_REVIEW_PENDING
+A4-V2-SOURCE-HISTORY-I future source correction          NOT_AUTHORIZED
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED

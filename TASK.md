@@ -35,6 +35,8 @@ A4-V2-PREP-HOST-I-ERRATUM source-authority correction   HOST_I_SOURCE_AUTHORITY_
 A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH
 A4-V2-PREP-HOST-I-R1-P correction-only repair protocol HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS
 A4-V2-PREP-HOST-I-R1 correction-only artifact repair    HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS
+A4-V2-SOURCE-HISTORY-P epoch-correction protocol         PROTOCOL_TARGET_FORMED_REVIEW_PENDING
+A4-V2-SOURCE-HISTORY-I future source correction          NOT_AUTHORIZED
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
@@ -504,6 +506,37 @@ and its bounded host result is
 This is not whole-host identity, PREP/cache/PAR readiness, execution evidence,
 performance evidence, or a scientific result.  `SOURCE_HISTORY_MISMATCH`
 remains unresolved and all downstream stages remain separately unauthorized.
+
+On 2026-07-17 the user instructed exactly
+`授权 bounded SOURCE_HISTORY_MISMATCH correction protocol + direct-child review`.
+This authorizes only `A4-V2-SOURCE-HISTORY-P`: a four-path documentation
+target, its exact three-path direct-child review, focused commit/push, and
+mandatory Meeting Summary Handoff.  The governing objects are:
+
+1. `docs/saq_a4_v2_source_history_epoch_correction_protocol_2026_07_17.md`;
+2. `docs/saq_a4_v2_source_history_epoch_correction_contract_2026_07_17.json`;
+3. after the target commit, the registered protocol-review memo.
+
+The frozen correction model assigns each registered history role exactly one
+source epoch.  The four immutable CACHE-I and original PREP-authorization
+roles use the exact five pre-host-rebind Git-blob overrides; six future PREP-
+receipt, CACHE-BIND, and PAR roles use only the active 37-source authority.
+An old-or-new disjunction, observed-byte inference, ancestry/date/branch/host
+selection, warning downgrade, or history rewrite is forbidden.
+
+The protocol does not edit source.  A later source-static target would require
+a separate explicit `A4-V2-SOURCE-HISTORY-I` instruction and could change only
+the cache-policy verifier, seven derived authority/document objects, and root
+status: exactly ten paths.  It must bind the committed contract as the sole
+ninth cache-authority protocol component.  The present target's maximum status
+before review is `PROTOCOL_TARGET_FORMED_REVIEW_PENDING`; even a protocol PASS
+does not establish cache-verifier/PAR readiness, PREP, execution, performance,
+or scientific evidence.
+
+No Python, syntax/import, compiler/build/test, cache verifier, PREP, probe,
+clone, CACHE-BIND, PAR, data, quarantine, or SAQ/CAQ action is authorized.
+The stage stops after its direct-child review, push, Meeting Summary Handoff,
+and user checkpoint.
 
 ## A4-V2-P-ERRATUM Deliverables
 
