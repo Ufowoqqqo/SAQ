@@ -400,8 +400,18 @@ This opens only the four-path documentation target defined by
 `docs/saq_a4_v2_prep_host_identity_rebind_r1_correction_only_repair_protocol_2026_07_17.md`
 and its machine contract, followed by one exact three-path direct-child
 independent review, focused commits/push, and mandatory Meeting Summary
-Handoff.  The current target status is
-`PROTOCOL_TARGET_FORMED_REVIEW_PENDING`.
+Handoff.
+
+The exact protocol target was committed and pushed at
+`ddfef99104eec67e9f5d6236e12ec9805f560a86`, tree
+`134aa95ee85259553d55275713e8af0c513f0900`, with direct parent
+`e8e9c799fae39284688ff87d5c138be9ade80e51`.  Its sole independent
+Git/hash/text review found zero issues at LOW severity or above.  The durable
+memo is
+`docs/saq_a4_v2_prep_host_identity_rebind_r1_correction_only_repair_protocol_independent_review_2026_07_17.md`.
+The resulting protocol-only ceiling is
+`HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS`, conditional on this
+exact three-path review being committed and pushed.
 
 R1-P freezes a separately authorized future five-path correction: root status,
 one false-to-true review-digest substitution in each of the implementation
@@ -476,7 +486,7 @@ A4-V2-PREP-HOST-P host-rebind erratum protocol/review   COMPLETED_REVIEW_PASS
 A4-V2-PREP-HOST-I-AUTH source-rebind authorization      AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-PREP-HOST-I-ERRATUM source-authority correction   HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
 A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH
-A4-V2-PREP-HOST-I-R1-P correction-only repair protocol PROTOCOL_TARGET_FORMED_REVIEW_PENDING
+A4-V2-PREP-HOST-I-R1-P correction-only repair protocol HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS
 A4-V2-PREP-HOST-I-R1 correction-only artifact repair    NOT_AUTHORIZED
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
