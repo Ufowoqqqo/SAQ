@@ -525,6 +525,19 @@ execution.  Before direct-child review, the maximum status is
 `PATH_CLOSURE_ERRATUM_TARGET_FORMED_REVIEW_PENDING`; future implementation
 requires a separate explicit `A4-V2-SOURCE-HISTORY-I-R1` instruction.
 
+The exact erratum target was committed and pushed at
+`150e5b38aa5b3e30dafe4e15632db5fb5add4a68`, tree
+`29fa489d25a348997bb1eadeb5208dabd1717e0d`, with direct parent
+`e98a3e401639cae4f11ea97d21883120e9b797fb`.  Its sole independent static
+review found zero issues at LOW severity or above.  The durable memo is
+`docs/saq_a4_v2_source_history_i_r1_path_closure_erratum_independent_review_2026_07_18.md`.
+The exact conditional documentation-only result is
+`SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS`, once this exact
+three-path review is committed and pushed.  It establishes only the corrected
+future eight-path/five-derived-object projection.  It authorizes no source or
+derived-authority edit, execution, readiness, or scientific claim; future
+implementation still requires explicit `A4-V2-SOURCE-HISTORY-I-R1` authority.
+
 ## Review And Protocol Outcome
 
 The bounded review returned `GO_PROTOCOL_DESIGN`. The original reviewed
@@ -593,7 +606,7 @@ A4-V2-PREP-HOST-I-R1-P correction-only repair protocol HOST_I_R1_CORRECTION_ONLY
 A4-V2-PREP-HOST-I-R1 correction-only artifact repair    HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS
 A4-V2-SOURCE-HISTORY-P epoch-correction protocol         SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS
 A4-V2-SOURCE-HISTORY-I original source correction        STOPPED_PRE_TARGET_PATH_CLOSURE_UNSATISFIABLE
-A4-V2-SOURCE-HISTORY-I-R1-P path-closure erratum         PATH_CLOSURE_ERRATUM_TARGET_FORMED_REVIEW_PENDING
+A4-V2-SOURCE-HISTORY-I-R1-P path-closure erratum         SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS
 A4-V2-SOURCE-HISTORY-I-R1 corrected source target        NOT_AUTHORIZED
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED

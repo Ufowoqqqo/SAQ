@@ -37,7 +37,7 @@ A4-V2-PREP-HOST-I-R1-P correction-only repair protocol HOST_I_R1_CORRECTION_ONLY
 A4-V2-PREP-HOST-I-R1 correction-only artifact repair    HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS
 A4-V2-SOURCE-HISTORY-P epoch-correction protocol         SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS
 A4-V2-SOURCE-HISTORY-I original source correction        STOPPED_PRE_TARGET_PATH_CLOSURE_UNSATISFIABLE
-A4-V2-SOURCE-HISTORY-I-R1-P path-closure erratum         PATH_CLOSURE_ERRATUM_TARGET_FORMED_REVIEW_PENDING
+A4-V2-SOURCE-HISTORY-I-R1-P path-closure erratum         SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS
 A4-V2-SOURCE-HISTORY-I-R1 corrected source target        NOT_AUTHORIZED
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
@@ -579,6 +579,20 @@ component.  Before review the maximum status is
 `PATH_CLOSURE_ERRATUM_TARGET_FORMED_REVIEW_PENDING`.  It permits no source or
 derived-authority edit and no execution.  Future implementation remains
 separately unauthorized as `A4-V2-SOURCE-HISTORY-I-R1`.
+
+Exact erratum target `150e5b38aa5b3e30dafe4e15632db5fb5add4a68`, tree
+`29fa489d25a348997bb1eadeb5208dabd1717e0d`, was committed and pushed as the
+direct child of `e98a3e401639cae4f11ea97d21883120e9b797fb`.  Its sole
+independent static review found zero LOW-or-higher findings.  The durable
+review is
+`docs/saq_a4_v2_source_history_i_r1_path_closure_erratum_independent_review_2026_07_18.md`.
+Its exact conditional documentation-only result is
+`SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS`, once the exact
+three-path review is committed and pushed.  This establishes only the
+corrected future eight-path/five-derived-object projection.  It does not
+authorize source or derived-authority edits, execution, PREP/cache/PAR
+readiness, performance, or scientific evidence.  The future implementation
+still requires explicit `A4-V2-SOURCE-HISTORY-I-R1` authority.
 
 ## A4-V2-P-ERRATUM Deliverables
 
