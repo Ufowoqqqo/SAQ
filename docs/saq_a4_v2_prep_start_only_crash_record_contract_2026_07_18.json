@@ -1,0 +1,124 @@
+{
+  "authority": "user instruction: authorize A4-V2-CACHE-PREP-ISO-R1-CRASH-P",
+  "current_protocol": {
+    "maximum_outcome": "START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS",
+    "parent_commit": "eb1b89318d58ef06bff878219346e7b277ab9aea",
+    "parent_tree": "b4003faf2e2db2e871ab2c9604915ed05c0eb946",
+    "review_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_prep_start_only_crash_record_protocol_independent_review_2026_07_18.md"
+    ],
+    "target_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_prep_start_only_crash_record_contract_2026_07_18.json",
+      "docs/saq_a4_v2_prep_start_only_crash_record_protocol_2026_07_18.md"
+    ]
+  },
+  "date": "2026-07-18",
+  "event": {
+    "classification": "CRASH_OR_UNKNOWN",
+    "execution_base_commit": "eb1b89318d58ef06bff878219346e7b277ab9aea",
+    "invocation_disposition": "CONSUMED_NO_RETRY_NO_RESUME",
+    "isolation_root": {
+      "expected_state": "ABSENT",
+      "path": "/tmp/saq-a4-v2-par-r1-isolation"
+    },
+    "operator_observation": {
+      "evidence_class": "NOT_REGISTERED_CAPTURE_EVIDENCE",
+      "executor_exit_code": 1,
+      "reported_terminal_exception": "NotADirectoryError: [Errno 20] Not a directory: 'self'"
+    },
+    "primary_machine_rule": "valid START plus absent or noncanonical TERMINAL is only CRASH_OR_UNKNOWN",
+    "probe_disposition": "IMMEDIATE_EXECUTION_BASE_PROBE_CONSUMED_NO_REUSE",
+    "scientific_decision": "NO_SCIENTIFIC_DECISION"
+  },
+  "future_record": {
+    "authorization_required": "A4-V2-CACHE-PREP-ISO-R1-CRASH-I",
+    "forbidden_status_reclassification": [
+      "IMPLEMENTATION_INVALID",
+      "LAUNCHER_INCOMPLETE_NO_DECISION",
+      "RESOURCE_INCOMPLETE_NO_DECISION"
+    ],
+    "record_path": "docs/saq_a4_v2_isolated_clone_prep_start_only_crash_2026_07_18.md",
+    "review_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_isolated_clone_prep_start_only_crash_independent_review_2026_07_18.md"
+    ],
+    "review_path": "docs/saq_a4_v2_isolated_clone_prep_start_only_crash_independent_review_2026_07_18.md",
+    "target_changed_paths": [
+      "AGENTS.md",
+      "TASK.md",
+      "docs/saq_a4_v2_isolated_clone_prep_start_only_crash_2026_07_18.md"
+    ],
+    "terminal_claim": "CRASH_OR_UNKNOWN / NO_PAR_AUTHORITY / NO_SCIENTIFIC_DECISION"
+  },
+  "publication_closure": {
+    "checks_are_not_prep_admission": true,
+    "review_head_result": "live non-evidentiary predicate after review push",
+    "rule": "target and review are direct-parent exact-path commits; one bounded sanitized HTTPS equality observation follows each push",
+    "target_result": "mandatory content independently checked in direct-child review"
+  },
+  "runtime_snapshot": {
+    "admission_semantics": "EXPECTED_INPUT_NOT_TERMINAL_EVIDENCE_UNTIL_SEPARATE_RECORD_REVIEW",
+    "captures": [
+      {
+        "mode_octal": "0600",
+        "path": "/rwproject/kdd-db/kluaq/saq/.git/saq-a4-v2-isolated-prep.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      {
+        "mode_octal": "0600",
+        "path": "/rwproject/kdd-db/kluaq/saq/.git/saq-a4-v2-isolated-prep.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      }
+    ],
+    "drift_status": "RUNTIME_ARTIFACT_STATE_DRIFT_NO_RECORD",
+    "token": {
+      "claimed_authorization": {
+        "sha256": "89e831d1d3fc712ae7b2095c4e2a48eff73b221398b691a00ba887e0ee34e20e",
+        "size_bytes": 18877
+      },
+      "claimed_authorization_review": {
+        "sha256": "4058a2dd8b1887157b92e0bc7338af788c875708171ee5a6ecc64007d4d4ef59",
+        "size_bytes": 16578
+      },
+      "claimed_bootstrap": {
+        "sha256": "d14feb020a1389a6c90f9c3696033f07d0747a9e135be7c9905aeb08d1810b56",
+        "size_bytes": 19631
+      },
+      "claimed_execution_base_commit": "eb1b89318d58ef06bff878219346e7b277ab9aea",
+      "claimed_prologue": {
+        "sha256": "0111488a71573dd058308a3e20590cb8def3d4f5e8601b0e566800fd10b0d3a7",
+        "size_bytes": 2778
+      },
+      "line_count": 1,
+      "mode_octal": "0600",
+      "path": "/rwproject/kdd-db/kluaq/saq/.git/saq-a4-v2-isolated-prep.lock",
+      "record_sequence": ["START"],
+      "sha256": "ef0b9d435a14e0d95f48e72833bad6208134fc1da64a431188f34a4af08d5604",
+      "size_bytes": 1295,
+      "terminal_present": false
+    }
+  },
+  "source_consistency": {
+    "classification": "STATIC_CAUSE_CANDIDATE_NOT_RUNTIME_REPRODUCTION",
+    "mechanism": "no-follow component reader is called for /proc/self/stat and fallback process identity calls the same kernel_start path",
+    "prep_source_blob": "d671531132eb0c490dec1953ca778e8d03913b3d",
+    "prep_source_path": "script/a4_v2_isolated_clone_prep.py",
+    "prep_source_sha256": "823bb00711e036c832f96f66e1979c69931866460af0d38a48f93c3fa9c03de2",
+    "prep_source_size_bytes": 219758
+  },
+  "stage": "A4-V2-CACHE-PREP-ISO-R1-CRASH-P",
+  "stop_rules": [
+    "no retry, resume, source repair, or actual crash-record formation",
+    "no runtime artifact mutation",
+    "any LOW-or-higher review finding forces stop",
+    "artifact drift forces stop without inferred classification",
+    "no CACHE-BIND, PAR-R1, SRUN, data, SAQ, or CAQ authority"
+  ]
+}

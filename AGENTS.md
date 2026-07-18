@@ -660,6 +660,36 @@ head PREP probe was not run.  Actual `A4-V2-CACHE-PREP-ISO-R1`, PREP
 readiness, execution, performance, and scientific evidence remain
 unestablished and separately unauthorized.
 
+The user then explicitly authorized exactly one
+`A4-V2-CACHE-PREP-ISO-R1` invocation.  Its immediate review-head HTTPS probe
+returned exact execution base `eb1b89318d58ef06bff878219346e7b277ab9aea`,
+and the one invocation is permanently consumed.  The bootstrap durably wrote
+the canonical 1,295-byte START token and created both empty capture sidecars,
+then exited before entering PREP `run_from_bootstrap`; no TERMINAL, isolation
+root, clone, journal, receipt, build, verifier, PAR artifact, or scientific
+result exists.  Under the frozen precedence the only status is
+`CRASH_OR_UNKNOWN / NO_PAR_AUTHORITY / NO_SCIENTIFIC_DECISION`.  No retry,
+resume, cleanup, token/capture mutation, source repair, or downstream action
+is authorized.
+
+The user has now instructed exactly
+`授权 A4-V2-CACHE-PREP-ISO-R1-CRASH-P`.  This opens only the additive
+documentation protocol and machine contract at
+`docs/saq_a4_v2_prep_start_only_crash_record_{protocol,contract}_2026_07_18.*`,
+focused root status, one immutable target, one exact direct-child independent
+review, push/publication closure, and mandatory Meeting Summary Handoff.  It
+freezes a future terminal-record path while preserving the primary
+`CRASH_OR_UNKNOWN` status and the distinction between machine state,
+unregistered executor output, and a static source-consistency candidate.
+
+Before review its maximum status is
+`START_ONLY_CRASH_RECORD_PROTOCOL_TARGET_FORMED_REVIEW_PENDING`.  Zero
+LOW-or-higher findings are required for the documentation-only ceiling
+`START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS`.  This stage does not form the
+actual crash record.  That later target requires a separate explicit
+`A4-V2-CACHE-PREP-ISO-R1-CRASH-I` instruction and may not repair source or
+retry PREP.
+
 ## Review And Protocol Outcome
 
 The bounded review returned `GO_PROTOCOL_DESIGN`. The original reviewed
@@ -731,7 +761,9 @@ A4-V2-SOURCE-HISTORY-I original source correction        STOPPED_PRE_TARGET_PATH
 A4-V2-SOURCE-HISTORY-I-R1-P path-closure erratum         SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS
 A4-V2-SOURCE-HISTORY-I-R1 corrected source target        SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
-A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
+A4-V2-CACHE-PREP-ISO-R1 consumed PREP attempt           CRASH_OR_UNKNOWN / START_ONLY
+A4-V2-CACHE-PREP-ISO-R1-CRASH-P record protocol         TARGET_FORMED_REVIEW_PENDING
+A4-V2-CACHE-PREP-ISO-R1-CRASH-I terminal record         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event only  NOT_AUTHORIZED
 ```

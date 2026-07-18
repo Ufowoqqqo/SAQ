@@ -40,7 +40,9 @@ A4-V2-SOURCE-HISTORY-I original source correction        STOPPED_PRE_TARGET_PATH
 A4-V2-SOURCE-HISTORY-I-R1-P path-closure erratum         SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS
 A4-V2-SOURCE-HISTORY-I-R1 corrected source target        SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
-A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
+A4-V2-CACHE-PREP-ISO-R1 consumed PREP attempt           CRASH_OR_UNKNOWN / START_ONLY
+A4-V2-CACHE-PREP-ISO-R1-CRASH-P record protocol         TARGET_FORMED_REVIEW_PENDING
+A4-V2-CACHE-PREP-ISO-R1-CRASH-I terminal record         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
 data        benchmark/base/query/index reads           NOT_AUTHORIZED
@@ -683,6 +685,28 @@ review is committed and pushed.  The ordinary target-head publication
 observation matched `cd1757e`; the reserved immediate review-head probe was
 not run.  Actual PREP remains `NOT_AUTHORIZED`, and no readiness,
 performance, or scientific evidence follows.
+
+The user subsequently authorized exactly one
+`A4-V2-CACHE-PREP-ISO-R1` execution.  The exact immediate review-head HTTPS
+probe passed at `eb1b89318d58ef06bff878219346e7b277ab9aea`; both that probe
+and the invocation are consumed and forbidden for reuse.  The invocation
+left one canonical 1,295-byte START record and two empty capture sidecars,
+then exited before PREP `run_from_bootstrap`.  TERMINAL, isolation root,
+journal, clone, receipt, build, verifier, PAR output, and scientific evidence
+are absent.  The frozen status is only
+`CRASH_OR_UNKNOWN / NO_PAR_AUTHORITY / NO_SCIENTIFIC_DECISION`.
+
+The current explicit authority is now
+`A4-V2-CACHE-PREP-ISO-R1-CRASH-P`.  It is documentation-only and permits the
+additive START-only crash-record protocol, machine contract, focused status,
+one exact direct-child review, push/publication closure, and mandatory Meeting
+Summary Handoff.  It permits no actual terminal memo, token/capture mutation,
+retry, resume, source repair, PREP, CACHE-BIND, PAR-R1, SRUN, data, or SAQ/CAQ
+action.  Before review its ceiling is
+`START_ONLY_CRASH_RECORD_PROTOCOL_TARGET_FORMED_REVIEW_PENDING`; zero
+LOW-or-higher findings are required for
+`START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS`.  A future record requires a
+separate exact `A4-V2-CACHE-PREP-ISO-R1-CRASH-I` instruction.
 
 ## A4-V2-P-ERRATUM Deliverables
 
