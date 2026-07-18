@@ -707,6 +707,27 @@ execution was performed.  The actual crash record remains unauthorized; no
 retry, repair, PREP, CACHE-BIND, PAR, performance, or scientific claim
 follows.
 
+The project has separately closed Attempt 4 V2 with portfolio status
+`STOP_NO_FURTHER_ARTIFACT_RECOVERY`. The authoritative decision memo is
+`docs/saq_a4_v2_project_stop_no_further_artifact_recovery_2026_07_18.md`.
+This does not resolve or reclassify machine state: the consumed PREP attempt
+remains `CRASH_OR_UNKNOWN / START_ONLY`, while
+`A4-V2-CACHE-PREP-ISO-R1-CRASH-I` remains `NOT_AUTHORIZED / NOT_RUN`.
+
+Do not form a crash terminal record, inspect or mutate machine-state paths,
+clean or retry PREP, repair toward another invocation, bind artifacts, run
+PAR-R1 or SRUN, or read data under this closure. Preserve all committed
+evidence and leave ignored or untracked machine outputs untouched. There is no
+artifact-validity terminal result, scientific conclusion, performance result,
+or independent runtime reproduction.
+
+This stop applies the project efficiency gate: the governance/recovery chain
+produced no scientific execution evidence, and its support cost exceeds the
+zero executed scientific core of Attempt 4 V2. Reopening requires a new
+explicit user decision with a new research question and fresh cost-justified
+protocol from a clean branch or named snapshot. It may not reuse the consumed
+PREP authority or infer terminal state from START.
+
 ## Review And Protocol Outcome
 
 The bounded review returned `GO_PROTOCOL_DESIGN`. The original reviewed
@@ -783,6 +804,7 @@ A4-V2-CACHE-PREP-ISO-R1-CRASH-P record protocol         START_ONLY_CRASH_RECORD_
 A4-V2-CACHE-PREP-ISO-R1-CRASH-I terminal record         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event only  NOT_AUTHORIZED
+A4-V2 portfolio decision                                STOP_NO_FURTHER_ARTIFACT_RECOVERY
 ```
 
 Authorization for one stage never implies the next. No stage above permits

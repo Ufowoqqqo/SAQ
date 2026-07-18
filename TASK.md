@@ -45,6 +45,7 @@ A4-V2-CACHE-PREP-ISO-R1-CRASH-P record protocol         START_ONLY_CRASH_RECORD_
 A4-V2-CACHE-PREP-ISO-R1-CRASH-I terminal record         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
+A4-V2 portfolio decision                              STOP_NO_FURTHER_ARTIFACT_RECOVERY
 data        benchmark/base/query/index reads           NOT_AUTHORIZED
 ```
 
@@ -722,6 +723,26 @@ publication closure succeeds.  No token/capture/isolation state was mutated
 and no execution or scientific evidence was produced.  CRASH-I and every
 retry, source-repair, PREP, CACHE-BIND, PAR, data, and SAQ/CAQ action remain
 unauthorized.
+
+The project has now made a separate portfolio decision to stop Attempt 4 V2
+without further artifact recovery. Its status is
+`STOP_NO_FURTHER_ARTIFACT_RECOVERY`, recorded in
+`docs/saq_a4_v2_project_stop_no_further_artifact_recovery_2026_07_18.md`.
+This does not alter machine/runtime status: the consumed PREP attempt remains
+`CRASH_OR_UNKNOWN / START_ONLY`, and
+`A4-V2-CACHE-PREP-ISO-R1-CRASH-I` remains `NOT_AUTHORIZED / NOT_RUN`.
+
+The stop is a research-resource decision. The multi-stage governance and
+repair chain produced no scientific execution result, and its support burden
+clearly exceeds the zero executed scientific core of this attempt. No retry,
+cleanup, machine-state inspection or mutation, CRASH-I record, CACHE-BIND,
+PAR-R1, SRUN, or data access is part of the closure. Existing evidence remains
+preserved, and unresolved state is not promoted to an artifact terminal claim.
+
+Attempt 4 V2 is closed with no scientific or performance conclusion.
+`PERFORMANCE_NOT_YET_MEASURED` remains the only valid performance statement.
+Reopening requires a new explicit user decision, a new research question, and
+a fresh cost-justified protocol; it may not reuse the consumed PREP authority.
 
 ## A4-V2-P-ERRATUM Deliverables
 
