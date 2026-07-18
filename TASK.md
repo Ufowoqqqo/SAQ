@@ -39,7 +39,7 @@ A4-V2-SOURCE-HISTORY-P epoch-correction protocol         SOURCE_HISTORY_EPOCH_CO
 A4-V2-SOURCE-HISTORY-I original source correction        STOPPED_PRE_TARGET_PATH_CLOSURE_UNSATISFIABLE
 A4-V2-SOURCE-HISTORY-I-R1-P path-closure erratum         SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS
 A4-V2-SOURCE-HISTORY-I-R1 corrected source target        SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS
-A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       PREP_R1_AUTHORIZATION_TARGET_FORMED_REVIEW_PENDING
+A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
@@ -670,6 +670,19 @@ clone, token, capture, journal, receipt, CACHE-BIND, PAR, data, quarantine,
 environment, or SAQ/CAQ action is authorized.  Actual PREP remains the
 separate `A4-V2-CACHE-PREP-ISO-R1` node and requires a new explicit user
 instruction after review/push/handoff.
+
+Exact target `cd1757e880d4a9480ada141d3883feb5142f925f`, tree
+`4e3c0fe0e99106a8d7b4e1b8922f25af07ac73c9`, is committed and pushed as
+the direct child of `a1198c4c1e38743377db10dca96d3ab28d6b6dba`.  Its sole
+independent static review found zero LOW-or-higher findings.  The durable
+memo is
+`docs/saq_a4_v2_isolated_clone_prep_authorization_independent_review_2026_07_15.md`.
+Its exact conditional documentation-only outcome is
+`PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`, once the exact three-path
+review is committed and pushed.  The ordinary target-head publication
+observation matched `cd1757e`; the reserved immediate review-head probe was
+not run.  Actual PREP remains `NOT_AUTHORIZED`, and no readiness,
+performance, or scientific evidence follows.
 
 ## A4-V2-P-ERRATUM Deliverables
 
