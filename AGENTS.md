@@ -579,6 +579,19 @@ performance, scientific, novelty, or method claim.  After exact target commit,
 push, direct-child review, and mandatory Meeting Summary Handoff, stop for a
 user checkpoint; every downstream stage remains separately unauthorized.
 
+The exact corrected source-static target was committed and pushed at
+`e9b5c83823040c0ffe67b69e349a2ef6169292ae`, tree
+`861a1d0de04e3018d7447e9aff222b475af96bbb`, with direct parent
+`774949179582c8a9acbf79d5bc1f2d9fc851957a`.  Its sole independent static
+review found zero issues at LOW severity or above.  The durable memo is
+`docs/saq_a4_v2_source_history_epoch_correction_implementation_independent_review_2026_07_17.md`.
+The exact conditional result is
+`SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS`, once this exact
+three-path review is committed and pushed.  This establishes only the frozen
+static source-history correction; no syntax, execution, cache-verifier/PAR
+readiness, performance, or scientific evidence follows, and every downstream
+stage remains separately unauthorized.
+
 ## Review And Protocol Outcome
 
 The bounded review returned `GO_PROTOCOL_DESIGN`. The original reviewed
@@ -648,7 +661,7 @@ A4-V2-PREP-HOST-I-R1 correction-only artifact repair    HOST_I_R1_CORRECTION_ONL
 A4-V2-SOURCE-HISTORY-P epoch-correction protocol         SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS
 A4-V2-SOURCE-HISTORY-I original source correction        STOPPED_PRE_TARGET_PATH_CLOSURE_UNSATISFIABLE
 A4-V2-SOURCE-HISTORY-I-R1-P path-closure erratum         SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS
-A4-V2-SOURCE-HISTORY-I-R1 corrected source target        SOURCE_HISTORY_EPOCH_CORRECTION_R1_TARGET_FORMED_REVIEW_PENDING
+A4-V2-SOURCE-HISTORY-I-R1 corrected source target        SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED

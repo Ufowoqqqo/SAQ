@@ -38,7 +38,7 @@ A4-V2-PREP-HOST-I-R1 correction-only artifact repair    HOST_I_R1_CORRECTION_ONL
 A4-V2-SOURCE-HISTORY-P epoch-correction protocol         SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS
 A4-V2-SOURCE-HISTORY-I original source correction        STOPPED_PRE_TARGET_PATH_CLOSURE_UNSATISFIABLE
 A4-V2-SOURCE-HISTORY-I-R1-P path-closure erratum         SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS
-A4-V2-SOURCE-HISTORY-I-R1 corrected source target        SOURCE_HISTORY_EPOCH_CORRECTION_R1_TARGET_FORMED_REVIEW_PENDING
+A4-V2-SOURCE-HISTORY-I-R1 corrected source target        SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
@@ -621,6 +621,20 @@ probe, clone, CACHE-BIND, PAR, data, quarantine, environment, or SAQ/CAQ
 action is authorized.  No readiness, performance, or scientific evidence is
 formed.  After exact target commit/push, direct-child review, and Meeting
 Summary Handoff, stop for a user checkpoint.
+
+Exact corrected source-static target
+`e9b5c83823040c0ffe67b69e349a2ef6169292ae`, tree
+`861a1d0de04e3018d7447e9aff222b475af96bbb`, was committed and pushed as the
+direct child of `774949179582c8a9acbf79d5bc1f2d9fc851957a`.  Its sole
+independent static review found zero LOW-or-higher findings.  The durable
+review is
+`docs/saq_a4_v2_source_history_epoch_correction_implementation_independent_review_2026_07_17.md`.
+Its exact conditional result is
+`SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS`, once the exact
+three-path review is committed and pushed.  This is a source-static result
+only: syntax, execution, cache-verifier/PAR readiness, performance, and
+scientific evidence remain unestablished, and every downstream stage remains
+separately unauthorized.
 
 ## A4-V2-P-ERRATUM Deliverables
 
