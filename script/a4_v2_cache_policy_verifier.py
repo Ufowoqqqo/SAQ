@@ -335,6 +335,32 @@ PROTOCOL_COMPONENT_KEYS = frozenset(
         "cache_primary_sources",
         "cache_protocol",
         "prep_host_identity_rebind_erratum_contract",
+        "source_history_epoch_correction_contract",
+    }
+)
+SOURCE_HISTORY_LEGACY_GIT_BLOB_OVERRIDES = {
+    "script/a4_v2_cache_policy_verifier.py": "6f4f6c2afc963066c3eb1a0dc053b4987ee70337",
+    "script/a4_v2_isolated_clone_prep.py": "884214fb70461ac2ec2ccf4ed58aaaf3cf78ffa7",
+    "script/a4_v2_runner.py": "4c0e35855fb8d51223f133fa75f00eeb983de49d",
+    "script/a4_v2_verifier.py": "4d5964ed1996c8aceb202191b6bf48b78b23a94c",
+    "script/run_arbitrary_cardinality_a4_v2.py": "69d0ba6734c9fe9435b4dccaf8990cc60cf2dbbe",
+}
+SOURCE_HISTORY_LEGACY_ROLES = frozenset(
+    {
+        "cache_i_review_commit",
+        "cache_i_target_commit",
+        "prep_authorization_review_commit",
+        "prep_authorization_target_commit",
+    }
+)
+SOURCE_HISTORY_ACTIVE_ROLES = frozenset(
+    {
+        "cache_bind_review_commit",
+        "cache_bind_target_commit",
+        "par_review_commit",
+        "par_target_commit",
+        "prep_receipt_review_commit",
+        "prep_receipt_target_commit",
     }
 )
 GENERIC_OBJECT_KEYS = frozenset(
@@ -589,6 +615,9 @@ PROTOCOL_COMPONENT_PATHS = {
     ),
     "prep_host_identity_rebind_erratum_contract": (
         "docs/saq_a4_v2_prep_host_identity_rebind_erratum_contract_2026_07_16.json"
+    ),
+    "source_history_epoch_correction_contract": (
+        "docs/saq_a4_v2_source_history_epoch_correction_contract_2026_07_17.json"
     ),
 }
 GENERIC_OBJECT_PATHS = {
@@ -3582,19 +3611,27 @@ def _verify(control: Mapping[str, Any], control_payload: bytes) -> dict[str, Any
                 )
                 git_tree = {}
         history_commits = [
-            binding_commits["cache_i_target_commit"],
-            binding_commits["cache_i_review_commit"],
-            binding_commits["prep_authorization_target_commit"],
-            binding_commits["prep_authorization_review_commit"],
-            binding_commits["prep_receipt_target_commit"],
-            binding_commits["prep_receipt_review_commit"],
-            cache_bind_target_commit,
-            cache_bind_review_commit,
-            par_target_commit,
-            par_review_commit,
+            ("cache_i_target_commit", binding_commits["cache_i_target_commit"]),
+            ("cache_i_review_commit", binding_commits["cache_i_review_commit"]),
+            ("prep_authorization_target_commit", binding_commits["prep_authorization_target_commit"]),
+            ("prep_authorization_review_commit", binding_commits["prep_authorization_review_commit"]),
+            ("prep_receipt_target_commit", binding_commits["prep_receipt_target_commit"]),
+            ("prep_receipt_review_commit", binding_commits["prep_receipt_review_commit"]),
+            ("cache_bind_target_commit", cache_bind_target_commit),
+            ("cache_bind_review_commit", cache_bind_review_commit),
+            ("par_target_commit", par_target_commit),
+            ("par_review_commit", par_review_commit),
         ]
         expected_source_blobs = {
             path: item["git_blob"] for path, item in authority_sources_by_path.items()
+        }
+        legacy_expected_source_blobs = {
+            path: SOURCE_HISTORY_LEGACY_GIT_BLOB_OVERRIDES.get(path, blob)
+            for path, blob in expected_source_blobs.items()
+        }
+        expected_source_blobs_by_role = {
+            **dict.fromkeys(SOURCE_HISTORY_LEGACY_ROLES, legacy_expected_source_blobs),
+            **dict.fromkeys(SOURCE_HISTORY_ACTIVE_ROLES, expected_source_blobs),
         }
         if any(
             git_tree.get(path, {}).get("git_blob") != blob
@@ -3605,9 +3642,10 @@ def _verify(control: Mapping[str, Any], control_payload: bytes) -> dict[str, Any
                 "CURRENT_SOURCE_GIT_CLOSURE_MISMATCH",
                 "current commit does not retain the reviewed 37-source blobs",
             )
-        for commit in history_commits:
+        for role, commit in history_commits:
             if commit is None:
                 continue
+            role_expected_source_blobs = expected_source_blobs_by_role[role]
             code, history_stdout, history_stderr = _run_git_observation(
                 (
                     "-C",
@@ -3632,7 +3670,7 @@ def _verify(control: Mapping[str, Any], control_payload: bytes) -> dict[str, Any
             if any(
                 history_tree.get(path, {}).get("git_blob") != blob
                 or history_tree.get(path, {}).get("kind") != "blob"
-                for path, blob in expected_source_blobs.items()
+                for path, blob in role_expected_source_blobs.items()
             ):
                 mismatches.add(
                     "SOURCE_HISTORY_MISMATCH",

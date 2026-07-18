@@ -1068,3 +1068,67 @@ data, quarantine, or SAQ/CAQ operation was run.  Until the exact target's
 direct-child independent review passes, the maximum claim is only
 `HOST_I_SOURCE_STATIC_TARGET_FORMED_REVIEW_PENDING`; it is not yet an
 independently established `HOST_IDENTITY_REBOUND` result.
+
+### 13.3 A4-V2-SOURCE-HISTORY-I-R1 epoch correction
+
+The separately authorized source-history R1 target corrects only the cache
+verifier's historical-source epoch rule.  Its immutable authority is:
+
+| Authority object | Commit | SHA-256 | Bytes | Git blob |
+| --- | --- | --- | ---: | --- |
+| source-history protocol | `dcaed57aaae6fe0f120377281921b6ea5336eb7f` | `289e0acb8c1e8122e027fad1757f9fcc6b721ccf49affebce1141f51adfe2650` | 16,130 | `2297c34e227a1ad7fe21d15b2674a4987e44e858` |
+| source-history contract and sole ninth cache component | `dcaed57aaae6fe0f120377281921b6ea5336eb7f` | `d8150681aa9d7116d1d131ca61f9a027ea737b3a6245bf8ee2e000b88548ea48` | 11,379 | `9c08aaf63d1e524cfa3579a764fd8ea14176cde8` |
+| source-history protocol review | `e98a3e401639cae4f11ea97d21883120e9b797fb` | `58bf7a3deb89e1ba9ab0bbe63c6f66e96d1abf6c44d2c7e47189bd38388c627e` | 13,478 | `d59a56082c52eec113856eb33e918999415f6201` |
+| path-closure erratum protocol | `150e5b38aa5b3e30dafe4e15632db5fb5add4a68` | `f797d10b9a9ae3d7ad02000f6804858572bb6166b36564c797420b2c1493d3e3` | 10,684 | `2c0131a93b554f155a4e444bdd35fc3eba823eb2` |
+| path-closure erratum contract | `150e5b38aa5b3e30dafe4e15632db5fb5add4a68` | `ea4412c35cbf087f251b62e7877bdfe75cc72343f9c2106ea6b1646f4c531ee2` | 7,410 | `d7527a5576d25ba72cf390b8b28748bf28beca3d` |
+| path-closure erratum review and implementation parent | `774949179582c8a9acbf79d5bc1f2d9fc851957a` | `fa24897b393e878fe3f30ff20e95bd6c2e33f800cdcb655f0df1b2295309caab` | 10,142 | `fdb9c43987b845eef1f9cde5450f6379e4d8b2fa` |
+
+The current 37-source check remains bound only to the active authority.  The
+ten history roles are preassigned before observation: CACHE-I target/review
+and original PREP-authorization target/review use
+`LEGACY_PRE_HOST_REBIND`; future PREP-receipt, CACHE-BIND, and PAR target/
+review roles use `ACTIVE_CORRECTED_SOURCE`.  The legacy map is the active map
+with all and only the five immutable Git-blob overrides frozen by the
+protocol.  Null roles keep the existing skip rule.  No commit may match
+either epoch opportunistically or select an epoch from observed bytes,
+ancestry, date, branch, filesystem, host, or outcome.
+
+Exactly one source changes:
+
+| Source | SHA-256 | Bytes | Git blob | Permanent delta |
+| --- | --- | ---: | --- | ---: |
+| `script/a4_v2_cache_policy_verifier.py` | `8d0526273238ac510e0ef2e6887deee95157ae0e30c519f0cbb84207d922af9f` | 153,490 | `0797d0c860b69647a503b2a8e49ed19f16e61df5` | +1,922 bytes |
+
+The other 36 filesystem sources remain byte-identical.  The canonical sorted
+37-source tree is
+`2007875777e7af28a67e89d574b33ec35e71436d8bfaa203574c4343ef4cf973`.
+The complete changed derived-object closure is:
+
+| Derived object | SHA-256 | Bytes | Git blob |
+| --- | --- | ---: | --- |
+| cache static closure | `4c7787fb157b4d15985aeadca4133751160a34eb26cd62b4f19ed6b50849d292` | 218,872 | `e2db5963654746c37d33fcb9f72dbaddc0dc7ffb` |
+| cache protocol authority | `3d5482a5b3fe7fc3a3164f0c56d875c4b00ada666024f5d5db31b5bac7132c7f` | 43,349 | `cbd1099a0f2e4dae45534443efb6fdcfba8dfdd2` |
+
+Relative to parent `7749491`, verifier source grows by 1,922 permanent bytes,
+the static closure has zero byte delta, and the cache authority grows by 221
+bytes.  The source/static/authority subtotal is therefore +2,143 bytes; root
+status and explanatory provenance documents are reported separately.
+
+The runtime schema remains exact at
+`47bfcd039acddebbf9c6e5058b1c20ca9a743a5d2518ff31d4fef72ae103f896`
+over 23,762 bytes, and the runtime maximal witness remains exact at
+`5a373bd002b48041e150588002a193a9c068cf98977897e6f5cc5f3339e71a42`
+over 4,439,071 bytes.  The authority has exactly nine components; the erratum
+objects are not components.  The ninth component adds one existing-loop
+identity check.  On a future physical success it adds exactly 11,379 bytes to
+the existing `filesystem_bytes_read` ledger; no such runtime observation was
+made here.
+
+The implementation manifest keeps its existing schema,
+`authorization_identity`, and `build_status=NOT_AUTHORIZED_NOT_RUN`.  No
+status, parser, Git observation, output, retry, cap, timer, or ledger field
+changes.  No source was imported, syntax-checked, compiled, built, tested, or
+executed, and no verifier, PREP, CACHE-BIND, PAR, data, quarantine, or SAQ/CAQ
+operation ran.  Before direct-child review the ceiling is only
+`SOURCE_HISTORY_EPOCH_CORRECTION_R1_TARGET_FORMED_REVIEW_PENDING`, not
+cache-verifier/PAR readiness, performance evidence, or a scientific result.

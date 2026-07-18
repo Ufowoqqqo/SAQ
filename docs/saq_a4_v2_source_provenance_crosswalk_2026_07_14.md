@@ -266,3 +266,65 @@ or executed, and no PREP, data, quarantine, or SAQ/CAQ action occurred.  The
 target itself remains `HOST_I_SOURCE_STATIC_TARGET_FORMED_REVIEW_PENDING`
 until its exact direct-child independent review; that ceiling is not a
 performance or scientific result.
+
+## SOURCE-HISTORY-I-R1 static provenance correction
+
+`A4-V2-SOURCE-HISTORY-I-R1` changes no scientific owner or algorithm.  It
+corrects only the standalone cache verifier's historical-source expectation:
+four immutable pre-host-rebind commit roles use one closed five-override
+legacy map, while six future roles use only the active 37-source authority.
+The assignment is fixed by role before observation and never accepts whichever
+epoch happens to match.
+
+The exact immutable authority chain is source-history protocol target/review
+`dcaed57aaae6fe0f120377281921b6ea5336eb7f` /
+`e98a3e401639cae4f11ea97d21883120e9b797fb`, followed by path-closure erratum
+target/review `150e5b38aa5b3e30dafe4e15632db5fb5add4a68` /
+`774949179582c8a9acbf79d5bc1f2d9fc851957a`.  Their relevant immutable
+SHA-256 identities are respectively protocol
+`289e0acb8c1e8122e027fad1757f9fcc6b721ccf49affebce1141f51adfe2650`,
+contract
+`d8150681aa9d7116d1d131ca61f9a027ea737b3a6245bf8ee2e000b88548ea48`,
+protocol review
+`58bf7a3deb89e1ba9ab0bbe63c6f66e96d1abf6c44d2c7e47189bd38388c627e`,
+erratum protocol
+`f797d10b9a9ae3d7ad02000f6804858572bb6166b36564c797420b2c1493d3e3`,
+erratum contract
+`ea4412c35cbf087f251b62e7877bdfe75cc72343f9c2106ea6b1646f4c531ee2`,
+and erratum review
+`fa24897b393e878fe3f30ff20e95bd6c2e33f800cdcb655f0df1b2295309caab`.
+
+The only changed filesystem source is:
+
+| Source | SHA-256 | Bytes | Git blob |
+| --- | --- | ---: | --- |
+| `script/a4_v2_cache_policy_verifier.py` | `8d0526273238ac510e0ef2e6887deee95157ae0e30c519f0cbb84207d922af9f` | 153,490 | `0797d0c860b69647a503b2a8e49ed19f16e61df5` |
+
+All 36 other filesystem-source blobs remain exact.  The resulting canonical
+37-source tree is
+`2007875777e7af28a67e89d574b33ec35e71436d8bfaa203574c4343ef4cf973`.
+The changed static closure is
+`4c7787fb157b4d15985aeadca4133751160a34eb26cd62b4f19ed6b50849d292`
+over 218,872 bytes, and the changed cache authority is
+`3d5482a5b3fe7fc3a3164f0c56d875c4b00ada666024f5d5db31b5bac7132c7f`
+over 43,349 bytes.
+
+Relative to parent `7749491`, the verifier source grows by 1,922 permanent
+bytes, the static closure changes identity at unchanged size, and the cache
+authority grows by 221 bytes.  Their combined permanent delta is +2,143 bytes;
+status and provenance prose are separate governance-document overhead.
+
+The cache authority retains its original eight protocol components exactly
+and adds only the immutable 11,379-byte source-history contract as component
+nine.  The path-closure erratum is not a component.  Runtime schema and
+maximal witness bytes remain unchanged because no output, parser, status,
+observation, or ledger shape changes.  Permanent verifier-source growth is
+1,922 bytes; a future successful component identity read would add 11,379 to
+the existing filesystem-byte ledger, but no verifier was run here.
+
+The earlier CACHE-I-SYNTAX identities remain historical and do not apply to
+the changed source.  No Python, import, syntax, compiler, build, test,
+verifier, PREP, CACHE-BIND, PAR, data, quarantine, or SAQ/CAQ operation ran.
+Until direct-child review, the target supports only
+`SOURCE_HISTORY_EPOCH_CORRECTION_R1_TARGET_FORMED_REVIEW_PENDING`, not
+readiness, performance, scientific evidence, novelty, or a method claim.

@@ -538,6 +538,47 @@ future eight-path/five-derived-object projection.  It authorizes no source or
 derived-authority edit, execution, readiness, or scientific claim; future
 implementation still requires explicit `A4-V2-SOURCE-HISTORY-I-R1` authority.
 
+The user then instructed exactly `授权 A4-V2-SOURCE-HISTORY-I-R1`.  This
+authorizes only the corrected source-static target and its exact direct-child
+review frozen by the reviewed path-closure erratum.  The target is the direct
+child of clean, pushed erratum-review head
+`774949179582c8a9acbf79d5bc1f2d9fc851957a` and changes all and only:
+
+```text
+AGENTS.md
+TASK.md
+docs/saq_a4_v2_cache_protocol_authority_manifest_2026_07_15.json
+docs/saq_a4_v2_cache_static_closure_2026_07_15.json
+docs/saq_a4_v2_implementation_binding_2026_07_14.md
+docs/saq_a4_v2_implementation_manifest_2026_07_14.json
+docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md
+script/a4_v2_cache_policy_verifier.py
+```
+
+The sole source delta preassigns four immutable CACHE-I/original-PREP roles
+to the exact five-override legacy map and six future receipt/CACHE-BIND/PAR
+roles to the active 37-source map, then admits the immutable original
+source-history contract as the sole ninth cache-authority component.  The
+runtime schema and maximal witness remain byte-identical.  The verifier has
+38 net new lines, below the 80-line hard stop and within the approximate
+25--45-line semantic-core expectation.
+
+The target's formation-time ceiling is
+`SOURCE_HISTORY_EPOCH_CORRECTION_R1_TARGET_FORMED_REVIEW_PENDING`.  Its exact
+direct-child review may change only `AGENTS.md`, `TASK.md`, and
+`docs/saq_a4_v2_source_history_epoch_correction_implementation_independent_review_2026_07_17.md`.
+It must independently reproduce every frozen source, tree, derived-object,
+protocol, review, epoch, overhead, and preserved-runtime identity with zero
+LOW-or-higher findings before assigning the maximum static result
+`SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS`.
+
+This stage permits no Python, DNF, syntax/import, compiler/build/test,
+cache-verifier execution, PREP, probe, clone, CACHE-BIND, PAR, data,
+quarantine, host mutation, or SAQ/CAQ action.  It establishes no readiness,
+performance, scientific, novelty, or method claim.  After exact target commit,
+push, direct-child review, and mandatory Meeting Summary Handoff, stop for a
+user checkpoint; every downstream stage remains separately unauthorized.
+
 ## Review And Protocol Outcome
 
 The bounded review returned `GO_PROTOCOL_DESIGN`. The original reviewed
@@ -607,7 +648,7 @@ A4-V2-PREP-HOST-I-R1 correction-only artifact repair    HOST_I_R1_CORRECTION_ONL
 A4-V2-SOURCE-HISTORY-P epoch-correction protocol         SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS
 A4-V2-SOURCE-HISTORY-I original source correction        STOPPED_PRE_TARGET_PATH_CLOSURE_UNSATISFIABLE
 A4-V2-SOURCE-HISTORY-I-R1-P path-closure erratum         SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS
-A4-V2-SOURCE-HISTORY-I-R1 corrected source target        NOT_AUTHORIZED
+A4-V2-SOURCE-HISTORY-I-R1 corrected source target        SOURCE_HISTORY_EPOCH_CORRECTION_R1_TARGET_FORMED_REVIEW_PENDING
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED

@@ -38,7 +38,7 @@ A4-V2-PREP-HOST-I-R1 correction-only artifact repair    HOST_I_R1_CORRECTION_ONL
 A4-V2-SOURCE-HISTORY-P epoch-correction protocol         SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS
 A4-V2-SOURCE-HISTORY-I original source correction        STOPPED_PRE_TARGET_PATH_CLOSURE_UNSATISFIABLE
 A4-V2-SOURCE-HISTORY-I-R1-P path-closure erratum         SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS
-A4-V2-SOURCE-HISTORY-I-R1 corrected source target        NOT_AUTHORIZED
+A4-V2-SOURCE-HISTORY-I-R1 corrected source target        SOURCE_HISTORY_EPOCH_CORRECTION_R1_TARGET_FORMED_REVIEW_PENDING
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
@@ -593,6 +593,34 @@ corrected future eight-path/five-derived-object projection.  It does not
 authorize source or derived-authority edits, execution, PREP/cache/PAR
 readiness, performance, or scientific evidence.  The future implementation
 still requires explicit `A4-V2-SOURCE-HISTORY-I-R1` authority.
+
+The user has now explicitly authorized `A4-V2-SOURCE-HISTORY-I-R1`.  The
+current source-static target is the direct child of clean, pushed path-closure
+erratum-review head `774949179582c8a9acbf79d5bc1f2d9fc851957a` and changes
+exactly the eight mode-`100644` paths frozen by R1-P: root status, one cache
+verifier source, static closure, cache authority, implementation binding,
+implementation manifest, and source-provenance crosswalk.  Runtime schema and
+maximal witness remain exact and unchanged.
+
+The one source edit contains the exact five legacy Git-blob overrides,
+preassigns four legacy and six active history roles before observation,
+selects only that role's expected map in the existing history loop, and adds
+the original source-history contract as the sole ninth component.  It adds no
+status, parser, Git observation, output, retry, cap, timer, or ledger field.
+The verifier delta is 38 net lines; no second source is changed.
+
+Before direct-child review, the maximum status is
+`SOURCE_HISTORY_EPOCH_CORRECTION_R1_TARGET_FORMED_REVIEW_PENDING`.  The review
+must change only `AGENTS.md`, `TASK.md`, and the registered source-history
+implementation review memo and must find zero LOW-or-higher issues before the
+maximum static-only result
+`SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS` is allowed.
+
+No Python, syntax/import, compiler/build/test, cache-verifier execution, PREP,
+probe, clone, CACHE-BIND, PAR, data, quarantine, environment, or SAQ/CAQ
+action is authorized.  No readiness, performance, or scientific evidence is
+formed.  After exact target commit/push, direct-child review, and Meeting
+Summary Handoff, stop for a user checkpoint.
 
 ## A4-V2-P-ERRATUM Deliverables
 
