@@ -41,7 +41,7 @@ A4-V2-SOURCE-HISTORY-I-R1-P path-closure erratum         SOURCE_HISTORY_I_R1_PAT
 A4-V2-SOURCE-HISTORY-I-R1 corrected source target        SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-CACHE-PREP-ISO-R1 consumed PREP attempt           CRASH_OR_UNKNOWN / START_ONLY
-A4-V2-CACHE-PREP-ISO-R1-CRASH-P record protocol         TARGET_FORMED_REVIEW_PENDING
+A4-V2-CACHE-PREP-ISO-R1-CRASH-P record protocol         START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS
 A4-V2-CACHE-PREP-ISO-R1-CRASH-I terminal record         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
@@ -707,6 +707,21 @@ action.  Before review its ceiling is
 LOW-or-higher findings are required for
 `START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS`.  A future record requires a
 separate exact `A4-V2-CACHE-PREP-ISO-R1-CRASH-I` instruction.
+
+Exact target `1982865e8577eca9edd92de5073d030de89f81aa`, tree
+`75e37422900097860a862efa90ea303101be949e`, is the direct child of the
+execution base and changes exactly the four frozen mode-`100644` paths.  Its
+sole independent review found zero LOW-or-higher findings.  The durable
+review is
+`docs/saq_a4_v2_prep_start_only_crash_record_protocol_independent_review_2026_07_18.md`.
+The one ordinary target-head publication observation returned the exact
+target and was not PREP admission.  The exact conditional outcome is
+`START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS`, once this exact three-path
+direct-child review is committed and pushed and its later live review-head
+publication closure succeeds.  No token/capture/isolation state was mutated
+and no execution or scientific evidence was produced.  CRASH-I and every
+retry, source-repair, PREP, CACHE-BIND, PAR, data, and SAQ/CAQ action remain
+unauthorized.
 
 ## A4-V2-P-ERRATUM Deliverables
 

@@ -690,6 +690,23 @@ actual crash record.  That later target requires a separate explicit
 `A4-V2-CACHE-PREP-ISO-R1-CRASH-I` instruction and may not repair source or
 retry PREP.
 
+Exact protocol target `1982865e8577eca9edd92de5073d030de89f81aa`, tree
+`75e37422900097860a862efa90ea303101be949e`, is the direct child of
+`eb1b89318d58ef06bff878219346e7b277ab9aea` and changes exactly the frozen
+four mode-`100644` paths.  Its sole independent Git/hash/text/runtime-state
+review found zero issues at LOW severity or above.  The durable review is
+`docs/saq_a4_v2_prep_start_only_crash_record_protocol_independent_review_2026_07_18.md`.
+The ordinary target-head publication observation returned exact target
+`1982865e8577eca9edd92de5073d030de89f81aa`; it was not PREP admission.
+
+The exact conditional outcome is
+`START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS`, once this exact three-path
+direct-child review is committed and pushed and its later live review-head
+publication closure succeeds.  No runtime artifact was mutated and no
+execution was performed.  The actual crash record remains unauthorized; no
+retry, repair, PREP, CACHE-BIND, PAR, performance, or scientific claim
+follows.
+
 ## Review And Protocol Outcome
 
 The bounded review returned `GO_PROTOCOL_DESIGN`. The original reviewed
@@ -762,7 +779,7 @@ A4-V2-SOURCE-HISTORY-I-R1-P path-closure erratum         SOURCE_HISTORY_I_R1_PAT
 A4-V2-SOURCE-HISTORY-I-R1 corrected source target        SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS
 A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-CACHE-PREP-ISO-R1 consumed PREP attempt           CRASH_OR_UNKNOWN / START_ONLY
-A4-V2-CACHE-PREP-ISO-R1-CRASH-P record protocol         TARGET_FORMED_REVIEW_PENDING
+A4-V2-CACHE-PREP-ISO-R1-CRASH-P record protocol         START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS
 A4-V2-CACHE-PREP-ISO-R1-CRASH-I terminal record         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event only  NOT_AUTHORIZED
