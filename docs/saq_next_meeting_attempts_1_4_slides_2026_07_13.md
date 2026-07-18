@@ -1,3 +1,230 @@
+# What We Learned From Four Research Attempts
+
+Date: 2026-07-13
+
+Presentation status: **CURRENT DRAFT -- not yet presented at a meeting.**
+
+Latest revision: 2026-07-18. This main section explains the decisions in plain
+language. Exact commits, protocols, and evidence paths are preserved in the
+technical appendix and `docs/saq_research_direction_registry.md`.
+
+## 1. Today: What Do We Need To Decide?
+
+This is not a presentation of a finished method.
+
+- Should any of the four ideas continue as the next paper direction?
+- Which evidence is strong enough to keep?
+- Which attractive interpretations are not supported?
+- What must a new direction prove before we invest again?
+
+---
+
+## 2. One-Minute Background
+
+SAQ compresses each database vector so search can compare many candidates
+quickly. Compression saves work, but can distort which candidates look close.
+
+- **PCA means principal component analysis**: it rotates data to expose major
+  directions of variation.
+- **Recall means the fraction of true nearest neighbors found**.
+- **QPS means queries per second**: higher is faster.
+- Our bar is not “one metric improved.” We need better quality at comparable
+  speed, memory, and construction cost.
+
+---
+
+## 3. The Four-Attempt Map
+
+| Attempt | Plain-language question | Decision |
+|---|---|---|
+| 1 | Can a better rotation or smaller representation fix SAQ's error? | Stop |
+| 2 | Can exact scalar training improve both compression and search? | Keep as a baseline; stop as a method |
+| 3 | Did the chosen quality metric make an earlier result look worse? | Keep as measurement evidence; stop as a method |
+| 4 | Can non-power-of-two choices use a fixed bit budget better? | Portfolio closed |
+
+The purpose is research selection, not presenting every experiment as a win.
+
+---
+
+## 4. Attempt 1: The Intuition
+
+Imagine viewing the same cloud of points from another angle. A better angle
+might put the important variation into the parts SAQ represents most accurately.
+
+Attempt 1 tested two versions:
+
+- rotate all dimensions differently; or
+- keep fewer dimensions and summarize what was removed.
+
+A full-dimensional rotation preserves exact geometric distances. Removing
+dimensions does not, so the second version faced a stricter correctness test.
+
+---
+
+## 5. Attempt 1: Strongest Evidence And Stop
+
+- A promising signal on one benchmark dataset (GIST) did not repeat on a
+  second dataset (CIFAR).
+- The deliberately favorable reduced-dimension test still ranked worse than
+  native full-dimensional SAQ before we built a search index.
+- Therefore there is no general “better PCA” or “safe smaller SAQ” result.
+
+What remains: a useful warning that one-dataset estimator gains may not
+replicate. What stops: both proposed mechanisms.
+
+---
+
+## 6. Attempt 2: The Intuition
+
+A scalar codebook replaces numbers with a small set of representatives.
+Ordinary training can settle at a locally good answer; exact training finds the
+best answer for the frozen one-dimensional histogram.
+
+The question was whether that cleaner offline fit also improves actual
+nearest-neighbor search, after counting its training cost.
+
+---
+
+## 7. Attempt 2: Strongest Evidence And Stop
+
+- Exact training reduced reconstruction error—the difference between original
+  and compressed values—in some regimes.
+- Search quality did not improve consistently; the direction of the effect
+  changed across settings.
+- The inner exact one-dimensional optimizer is established prior work, so it
+  is not our novelty.
+
+What remains: a stronger offline baseline and evidence that lower compression
+error does not guarantee better search.
+What stops: presenting exact scalar training as a new database method.
+
+---
+
+## 8. Attempt 3: The Intuition
+
+Recall asks whether the returned item identifiers exactly match the true top
+items. A distance-ratio score instead asks how much farther the returned items
+are than the true ones.
+
+Two methods can have different Recall even when their returned distances are
+similar. Attempt 3 checked whether this changed an earlier decision.
+
+---
+
+## 9. Attempt 3: Strongest Evidence And Stop
+
+- At one GIST operating point, the distance-based interpretation differed from
+  the exact-identifier Recall interpretation.
+- Two control settings on a second dataset remained negative.
+- No new encoding or search mechanism was introduced.
+
+What remains: evidence that the conclusion can depend on the chosen quality
+metric. What stops: claiming a replicated method advantage from one changed
+interpretation.
+
+---
+
+## 10. Attempt 4: The (3,5) Versus (4,4) Example
+
+Suppose two factors must share one fixed word with at most 16 joint states.
+
+- Power-of-two choices naturally allow `(4,4)`: `4 × 4 = 16`.
+- Allowing arbitrary positive integers also allows `(3,5)`:
+  `3 × 5 = 15`.
+- The extra choice could fit uneven data better without increasing stored bits.
+
+This proves only that the feasible choice set is larger. It does not prove
+better search quality or lower system cost.
+
+---
+
+## 11. Attempt 4: Strongest Evidence And Stop
+
+- The exact frozen construction pipeline was correct on its registered
+  synthetic checks.
+- The original registered cost study projected about `24.17` CPU-hours,
+  above its preregistered 24-hour ceiling, so it stopped.
+- The later recovery attempt produced no scientific or performance result.
+  Its last run started but ended without a valid completion record, so its
+  runtime outcome remains unknown.
+- The project decided to stop recovering the failed experimental pipeline
+  (`STOP_NO_FURTHER_ARTIFACT_RECOVERY` in the registry).
+
+What remains: a mathematical possibility and a cost-stop record. What stops:
+further recovery work and every method, search, or performance claim.
+
+---
+
+## 12. Common Lesson Across The Four Attempts
+
+A better internal objective is not automatically a better search system.
+
+The recurring failure modes were:
+
+- a signal did not replicate;
+- discarded information mattered;
+- offline fit did not predict retrieval;
+- the metric changed interpretation but not mechanism; or
+- exact construction and evidence cost too much.
+
+---
+
+## 13. What We Should Keep
+
+- SAQ as a strong baseline.
+- Exact scalar training as a tougher offline comparison.
+- Both Recall and distance-quality views when they answer different questions.
+- Negative results with frozen thresholds and fair controls.
+- Early cost checks before building full experiment machinery.
+
+These assets improve the next study even though none is a new method.
+
+---
+
+## 14. What We Cannot Claim
+
+Unsafe interpretation:
+
+```text
+PCA is universally optimal, exact training never helps search, or arbitrary
+cardinalities cannot help.
+```
+
+Safe interpretation: the tested mechanisms did not produce a general,
+overhead-controlled improvement. The later Attempt 4 work has no valid final
+execution record, scientific decision, performance result, or production
+integration result.
+
+---
+
+## 15. Entry Gate For The Next Project
+
+Before opening another implementation branch, require:
+
+1. a clear problem that holds on at least two independent strong baselines;
+2. the most relevant published work, and why our idea is more than a direct
+   combination;
+3. one small, cheap test that can quickly show the idea is not worth pursuing,
+   with inputs and the stop threshold fixed in advance;
+4. construction, memory, and query overhead counted from the start; and
+5. a fair path to moving quality versus speed, not only an internal objective.
+
+No next Attempt 4 research or execution step is authorized.
+
+---
+
+## 16. Two Questions For Discussion
+
+1. Do we agree to close these four method lines while retaining their baselines
+   and negative evidence?
+2. For the next review, should we first select a new problem from primary work,
+   with no implementation until a small, low-cost stop test is approved?
+
+# Technical Appendix
+
+Normal presentation ends here. Use the following appendix only for questions
+about exact definitions, protocols, commits, or experiment details.
+
 # Post-SAQ Pivot: Attempts 1, 2, 3, And 4
 
 PCA Replacement, Lossy Projection, Exact Scalar-Codebook DP,

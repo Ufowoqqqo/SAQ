@@ -222,7 +222,7 @@ scientific milestone; such a row has no direction ID or scientific claim.
 | SAQ | `saq-ratio-metric-analysis` | `146dc16` | `PRIMARY` | `R11` | Attempt 3 closed |
 | SAQ | `saq-arbitrary-cardinality-analysis` | `f1b464b` | `PRIMARY` | `R12` | reviewed terminal snapshot `f1b464b`; cost evidence `9ce1052`; closed at A4-1S exact-pipeline cost gate |
 | SAQ | `saq-arbitrary-cardinality-feasibility-v2` | `3577edd` | `FOLLOWUP` | `R12` | Audited project closure is `STOP_NO_FURTHER_ARTIFACT_RECOVERY`. Runtime remains `CRASH_OR_UNKNOWN / START_ONLY`; no artifact terminal, science, or performance result exists. CRASH-I, retry, CACHE-BIND, PAR-R1, SRUN, and data remain `NOT_AUTHORIZED / NOT_RUN`; no next research or execution step is authorized. |
-| SAQ | `saq-meeting-summary` | `SELF` -- commit containing this registry; parent at reconciliation `5a36ab1` | `SUMMARY` | all | summary-only; no experiment execution |
+| SAQ | `saq-meeting-summary` | `SELF` -- commit containing this registry; parent at reconciliation `fb6d8fb` | `SUMMARY` | all | summary-only; no experiment execution |
 
 ### Sibling evidence snapshot
 
