@@ -50,7 +50,10 @@ captures before the PREP body. Frozen status is therefore
 `CRASH_OR_UNKNOWN / NO_PAR_AUTHORITY / NO_SCIENTIFIC_DECISION`. Additive
 crash-record protocol target `@1982865`, independently reviewed at
 `@8bec546`, reached `START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS`; the
-actual terminal record, retry, and source repair remain unauthorized.
+actual terminal record, retry, and source repair remain unauthorized. Audited
+closure `@3577edd` now records portfolio state
+`CLOSED / STOP_NO_FURTHER_ARTIFACT_RECOVERY` without changing START-only
+runtime status or creating an artifact, scientific, or performance result.
 
 Audience assumption: familiar with vector search and vector quantization at a
 high level, but not with SAQ's transform, segmentation, or the experiments in
@@ -265,9 +268,11 @@ Attempt 4 A4 V2 SOURCE-HISTORY-I-R1:   SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_ST
 Attempt 4 A4 V2 CACHE-PREP-R1-AUTH:    PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 Attempt 4 A4 V2 PREP-ISO-R1:           CRASH_OR_UNKNOWN / START_ONLY / NO SCIENTIFIC DECISION
 Attempt 4 A4 V2 PREP-ISO-R1-CRASH-P:   START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS
-Attempt 4 A4 V2 CRASH-I/BIND:          NOT AUTHORIZED
+Attempt 4 A4 V2 CRASH-I/BIND:          NOT AUTHORIZED / NOT RUN
 Attempt 4 A4 V2 cache/PAR readiness:   NOT ESTABLISHED; CORRECTED SOURCE NOT EXECUTED
-Attempt 4 A4 V2 direct PAR-R1:         NO-GO / NOT AUTHORIZED
+Attempt 4 A4 V2 direct PAR-R1:         NOT AUTHORIZED / NOT RUN
+Attempt 4 A4 V2 SRUN/data:             NOT AUTHORIZED / NOT RUN
+Attempt 4 A4 V2 portfolio:             CLOSED / STOP_NO_FURTHER_ARTIFACT_RECOVERY
 SAQ/index/search integration:          NOT AUTHORIZED
 ```
 
@@ -2337,7 +2342,11 @@ case study, not an independent database-systems method.
 ## 59. Attempt 4: Research Question, Old Stop, And V2 Boundary
 
 Current R12 reviewed snapshot:
-`saq-arbitrary-cardinality-feasibility-v2@8bec546`
+`saq-arbitrary-cardinality-feasibility-v2@3577edd`
+
+Authoritative project-stop decision:
+`saq-arbitrary-cardinality-feasibility-v2@3577edd`:
+`docs/saq_a4_v2_project_stop_no_further_artifact_recovery_2026_07_18.md`
 
 START-only crash-record protocol target/direct-child review:
 `saq-arbitrary-cardinality-feasibility-v2@1982865/@8bec546`
@@ -2417,9 +2426,10 @@ Preserved terminal A4-1S snapshot:
 | A4-V2-CACHE-PREP-R1-AUTH | `PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS` | target/review `cd1757e/@eb1b893` independently closed the reviewed source head, current source/authority identities, corrected source history, and registered-host ceiling with zero LOW-or-higher findings; documentation governance only, with the ordinary target-head observation distinct from the reserved immediate review-head probe |
 | A4-V2-CACHE-PREP-ISO-R1 | `CRASH_OR_UNKNOWN / START_ONLY / NO_SCIENTIFIC_DECISION` | the exact immediate probe passed and the unique invocation was consumed, but only durable START and empty captures exist; no TERMINAL, isolation root, clone, receipt, or PREP-body entry |
 | A4-V2-CACHE-PREP-ISO-R1-CRASH-P | `START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS` | target/review `1982865/@8bec546` freeze only the future reviewed terminal-record topology, with zero LOW-or-higher findings and no retry or repair authority |
-| A4-V2-CACHE-PREP-ISO-R1-CRASH-I / CACHE-BIND | `NOT_AUTHORIZED` | the actual terminal record, any source repair/retry, receipt path, and binding remain separate non-transitive stages |
-| A4-V2-PAR-R1 | `NOT_AUTHORIZED` | direct PAR-R1 is no-go; it can be considered only after every separately authorized isolation stage passes and the user explicitly authorizes PAR-R1 |
-| A4-V2-SRUN | `NOT_AUTHORIZED` | the synthetic event remains a separate, non-transitive future stage and cannot start from invalid PAR authority |
+| A4-V2-CACHE-PREP-ISO-R1-CRASH-I / CACHE-BIND | `NOT_AUTHORIZED / NOT_RUN` | no terminal record or binding was formed; portfolio closure does not reclassify START-only runtime state |
+| A4-V2-PAR-R1 | `NOT_AUTHORIZED / NOT_RUN` | no build or corrected parity event occurred |
+| A4-V2-SRUN / data | `NOT_AUTHORIZED / NOT_RUN` | no synthetic scientific event or benchmark/base/query/index read occurred |
+| A4-V2 project portfolio | `CLOSED / STOP_NO_FURTHER_ARTIFACT_RECOVERY` | audited closure `3577edd` stops investment in the recovery chain; it is not an artifact terminal, scientific result, or performance result |
 | SAQ/index/search integration | `NOT_AUTHORIZED` | no production representation or query-path change may be made |
 
 Research question:
@@ -2537,9 +2547,11 @@ A4-V2-CACHE-PREP-R1-AUTH PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS ONLY
 CACHE-VERIFIER AND PAR READINESS NOT ESTABLISHED
 A4-V2-CACHE-PREP-ISO-R1 CRASH_OR_UNKNOWN / START_ONLY / NO SCIENTIFIC DECISION
 A4-V2-CACHE-PREP-ISO-R1-CRASH-P START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS
-A4-V2-CACHE-PREP-ISO-R1-CRASH-I, REPAIR, RETRY, AND CACHE-BIND NOT AUTHORIZED
-A4-V2-PAR-R1 NOT AUTHORIZED
-A4-V2-SRUN, DATA, AND SAQ CHANGES NOT AUTHORIZED
+A4-V2-CACHE-PREP-ISO-R1-CRASH-I, REPAIR, RETRY, AND CACHE-BIND NOT AUTHORIZED / NOT RUN
+A4-V2-PAR-R1 NOT AUTHORIZED / NOT RUN
+A4-V2-SRUN, DATA, AND SAQ CHANGES NOT AUTHORIZED / NOT RUN
+A4-V2 PORTFOLIO CLOSED / STOP_NO_FURTHER_ARTIFACT_RECOVERY
+NO ARTIFACT TERMINAL / NO SCIENTIFIC DECISION / PERFORMANCE_NOT_YET_MEASURED
 ```
 
 The fixed-word opportunity remains a mathematical possibility, but the frozen
@@ -3066,9 +3078,12 @@ and the unique invocation was consumed but left only durable START and empty
 captures before the PREP body. Frozen status is `CRASH_OR_UNKNOWN /
 NO_SCIENTIFIC_DECISION`. Crash-record protocol target/review
 `1982865/@8bec546` then passed with zero LOW-or-higher findings; it does not
-form the record or authorize retry/repair.
+form the record or authorize retry/repair. Audited closure `3577edd` instead
+stops further artifact-recovery investment at portfolio level. There is no
+next authorized research or execution step; reopening requires a new explicit
+user decision, new question, and fresh cost-justified clean protocol.
 
-Future stages are separate and non-transitive:
+Closed downstream stages remain unauthorized and non-transitive:
 
 | Stage | Scope | Current authorization |
 |---|---|---|

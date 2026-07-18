@@ -24,11 +24,10 @@ Current summary inventory:
 - `docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` is the current,
   unpresented successor draft. It queues `R07`, `R08`, `R10`, `R11`, and
   `R12`; its Attempt 4 scientific snapshot is
-  `saq-arbitrary-cardinality-feasibility-v2@9fa9528`. Under HOST-I-AUTH
-  target/review `212a67b/@71e6bec`, the subsequently instructed HOST-I
-  projection was found unsatisfiable before any source target; the additive
-  source-authority erratum target/review `6fe8544/@9fa9528` now reaches only
-  `HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS`.
+  `saq-arbitrary-cardinality-feasibility-v2@3577edd`. The consumed PREP
+  attempt remains `CRASH_OR_UNKNOWN / START_ONLY`, but the independently
+  reviewed project decision closes the portfolio at
+  `STOP_NO_FURTHER_ARTIFACT_RECOVERY` without forming an artifact terminal.
 
 ## Current Attempt 4 Boundary
 
@@ -50,9 +49,13 @@ A4-V2-CACHE-PREP-AUTH PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-PREP-HOST-P HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS
 A4-V2-PREP-HOST-I-AUTH AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
 A4-V2-PREP-HOST-I-ERRATUM HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
-A4-V2-PREP-HOST-I REAUTHORIZATION_REQUIRED_NOT_RUN
-A4-V2-CACHE-PREP-ISO-R1 NOT_AUTHORIZED
-A4-V2-SRUN NOT_AUTHORIZED
+A4-V2-CACHE-PREP-ISO-R1 CRASH_OR_UNKNOWN / START_ONLY
+A4-V2-CACHE-PREP-ISO-R1-CRASH-P START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS
+A4-V2-CACHE-PREP-ISO-R1-CRASH-I NOT_AUTHORIZED / NOT_RUN
+A4-V2-PAR-R1 NOT_AUTHORIZED / NOT_RUN
+A4-V2-SRUN NOT_AUTHORIZED / NOT_RUN
+data NOT_AUTHORIZED / NOT_RUN
+A4-V2 portfolio CLOSED / STOP_NO_FURTHER_ARTIFACT_RECOVERY
 ```
 
 The six canonical A4-1S parity artifacts are committed at `335837e`; their
@@ -153,16 +156,17 @@ PREP, build, data access, or scientific execution occurred.
 
 ## Next Admissible Summary Work
 
-There is no active source-branch execution authority. The next admissible
-source-branch node is a fresh explicit user authorization for
-`A4-V2-PREP-HOST-I`, followed by its source-static target and direct-child
-independent review under the corrected fourteen-path closure. Even if that
-passes, the disclosed historical-source comparison needs its own later
-protocol/source authorization before cache-verifier or PAR readiness can be
-claimed. Fresh PREP authorization/review, a new actual-invocation grant and
-newly registered immediate probe, actual PREP, receipt review, CACHE-BIND,
-explicit PAR-R1, SRUN, data reads, generated scientific evidence, and SAQ
-changes all remain unauthorized. This summary handoff grants none of them.
+There is no active source-branch research or execution authority and no next
+authorized Attempt 4 step. Audited closure
+`saq-arbitrary-cardinality-feasibility-v2@3577edd` preserves runtime status
+`CRASH_OR_UNKNOWN / START_ONLY` while separately setting portfolio state
+`CLOSED / STOP_NO_FURTHER_ARTIFACT_RECOVERY`. It creates no artifact terminal,
+scientific decision, or performance result. CRASH-I, retry, CACHE-BIND,
+PAR-R1, SRUN, data reads, and SAQ changes remain `NOT_AUTHORIZED / NOT_RUN`.
+
+Reopening requires a new explicit user decision, new research question, and
+fresh cost-justified protocol from a clean branch or named snapshot. This
+summary handoff grants no such authority.
 
 For the next handoff, re-read `AGENTS.md` and the registry, fetch, require this
 worktree to be clean and equal to its remote, record that remote commit, and
