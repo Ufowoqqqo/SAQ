@@ -147,7 +147,8 @@ better search quality or lower system cost.
 - The later recovery attempt produced no scientific or performance result.
   Its last run started but ended without a valid completion record, so its
   runtime outcome remains unknown.
-- The project decided to stop recovering the failed experimental pipeline
+- The project decided to stop recovering the unresolved START-only
+  experimental pipeline
   (`STOP_NO_FURTHER_ARTIFACT_RECOVERY` in the registry).
 
 What remains: a mathematical possibility and a cost-stop record. What stops:
