@@ -30,6 +30,62 @@ Treat model context, reviewer attention, wall time, and generated code as
 research resources. Optimize for new decision-relevant evidence per token, not
 for the amount of code, documentation, or review traffic produced.
 
+### Model And Reasoning Routing
+
+The root session is the research coordinator and final decision owner. Its
+project default is `gpt-5.6-sol` with `medium` reasoning. The root should
+classify substantial work before acting, handle genuinely trivial integration
+directly, and use the least expensive custom agent that can reliably answer the
+bounded question.
+
+Project-scoped custom agents live under `.codex/agents/`:
+
+| Agent | Model / effort | Authorized role |
+| --- | --- | --- |
+| `routine_worker` | Luna / low | Deterministic extraction, formatting, configuration, and narrowly specified mechanical edits. |
+| `research_scout` | Terra / medium | Read-only repository, branch, execution-path, experiment, and primary-source evidence gathering. |
+| `research_engineer` | Terra / high | One well-specified implementation or experiment owner after hypotheses and validation criteria are frozen. |
+| `research_theorist` | Sol / max | Read-only work on a core lemma, mechanism, counterexample, novelty question, or high-impact direction decision. |
+| `research_reviewer` | Sol / xhigh | Read-only independent review of an immutable commit or named snapshot. |
+
+Apply these routing rules:
+
+1. Do not delegate a task when describing, spawning, and reconciling an agent
+   would cost more than doing the bounded task directly.
+2. Use `research_scout` before conclusions that depend on a large or unfamiliar
+   repository surface. Give it a fixed evidence question, not a request to
+   decide the research direction.
+3. Use `research_engineer` only after target behavior, protocol boundary,
+   affected files, and validation commands are explicit. It is the sole
+   implementation owner for that workstream.
+4. Use `research_theorist` only when ordinary evidence gathering leaves a
+   difficult conceptual, mathematical, novelty, or mechanism question. Do not
+   use it for broad scanning, routine coding, or log processing.
+5. Use `research_reviewer` for independent review required by a protocol, gate,
+   terminal decision, or paper-relevant claim. It must receive a fixed scope,
+   checklist, and immutable commit or named snapshot.
+6. Escalate only on new evidence: material ambiguity, conflicting sources or
+   measurements, two failed ordinary implementation attempts, an anomalous
+   result that changes the mechanism, or a decision that could redirect the
+   project. Do not repeatedly escalate the same unchanged evidence.
+7. `xhigh` is the configuration spelling for Extra High. Reserve `max` for one
+   tightly coupled hard question. Reserve `ultra` for an explicitly authorized,
+   naturally partitionable repository-wide audit; it is not the project
+   default and must still obey the concurrency and review limits below.
+8. The root must reconcile agent findings and separate verified evidence,
+   inference, and unresolved uncertainty. An agent response is not independent
+   reproduction unless it reran the frozen procedure from the named snapshot.
+
+The project caps open agent threads at three: the root plus at most one bounded
+owner and one independent reviewer. Direct children may not spawn agents. Do
+not run `routine_worker` and `research_engineer` as concurrent editors on the
+same workstream, and do not use multiple agents to read the same large files
+without disjoint, user-approved questions.
+
+Changing `AGENTS.md` or `.codex/config.toml` does not hot-switch an already
+running root session. Start a new Codex session (or select a model explicitly)
+to pick up root defaults; spawned custom agents use their own pinned settings.
+
 Before starting a substantial implementation or review, record:
 
 1. the smallest falsifiable question and the cheapest decisive check;
