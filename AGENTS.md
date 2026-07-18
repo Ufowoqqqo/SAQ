@@ -592,6 +592,59 @@ static source-history correction; no syntax, execution, cache-verifier/PAR
 readiness, performance, or scientific evidence follows, and every downstream
 stage remains separately unauthorized.
 
+On 2026-07-18 the user instructed exactly
+`授权 A4-V2-CACHE-PREP-R1-AUTH`.  This opens only the fresh dormant PREP
+authorization target and one exact direct-child independent review frozen by
+the reviewed HOST-P future-authority DAG.  It does not authorize an actual
+PREP invocation or its immediate execution-base probe.
+
+The exact target is the direct child of clean, pushed source-history review
+head `a1198c4c1e38743377db10dca96d3ab28d6b6dba`, tree
+`ebd28613ba6ec7063851be3a60edd6e194b1248f`, and changes all and only:
+
+```text
+AGENTS.md
+TASK.md
+docs/saq_a4_v2_isolated_clone_prep_authorization_2026_07_15.md
+```
+
+The exact direct-child review may change all and only `AGENTS.md`, `TASK.md`,
+and
+`docs/saq_a4_v2_isolated_clone_prep_authorization_independent_review_2026_07_15.md`.
+The two existing document paths are intentionally reused because the reviewed
+PREP source and inline bootstrap embed them; Git preserves their historical
+blobs.  The original target/review `e7f940e/@16a8201`, original actual-PREP
+authority, and original unique probe remain historical, nontransferable, and
+permanently forbidden for reuse.
+
+The fresh authorization record must bind the active 37-source tree
+`2007875777e7af28a67e89d574b33ec35e71436d8bfaa203574c4343ef4cf973`,
+38 executable units, current PREP tool and inline bootstrap/prologue, the
+reviewed registered 13-object `.el9_8.2` host bundle, the host/source-history
+governing chain, and all unchanged schemas, status precedence, resource caps,
+paths, and claim ceilings.  It may introduce no source, schema, parser,
+status, mechanism, threshold, retry, or evidence-boundary change.  The old
+CACHE-I-SYNTAX pass remains exact-snapshot evidence for the unchanged parity
+source only; it does not transfer to the five corrected Python sources or the
+current full inline bootstrap.
+
+Before direct-child review, the maximum status is
+`PREP_R1_AUTHORIZATION_TARGET_FORMED_REVIEW_PENDING`.  The review must find
+zero issues at LOW severity or above before assigning the documentation-only
+verdict `PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`.  The review may record
+one ordinary target-head publication-equality observation, but neither this
+target nor its review may run the newly reserved immediate review-head HTTPS
+probe.  That single probe remains inseparable from a later, separately
+authorized actual PREP invocation.
+
+This stage permits no Python, DNF, syntax/import, compiler/build/test,
+cache-verifier, PREP, probe-to-launch admission, clone, token, capture,
+journal, receipt, CACHE-BIND, PAR, data, quarantine, host mutation, or SAQ/CAQ
+action.  It establishes no PREP readiness, performance, scientific, novelty,
+or method claim.  After target commit/push, exact direct-child review,
+review commit/push, and mandatory Meeting Summary Handoff, stop for a user
+checkpoint; every downstream stage remains separately unauthorized.
+
 ## Review And Protocol Outcome
 
 The bounded review returned `GO_PROTOCOL_DESIGN`. The original reviewed
@@ -662,7 +715,7 @@ A4-V2-SOURCE-HISTORY-P epoch-correction protocol         SOURCE_HISTORY_EPOCH_CO
 A4-V2-SOURCE-HISTORY-I original source correction        STOPPED_PRE_TARGET_PATH_CLOSURE_UNSATISFIABLE
 A4-V2-SOURCE-HISTORY-I-R1-P path-closure erratum         SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS
 A4-V2-SOURCE-HISTORY-I-R1 corrected source target        SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS
-A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
+A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       PREP_R1_AUTHORIZATION_TARGET_FORMED_REVIEW_PENDING
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event only  NOT_AUTHORIZED

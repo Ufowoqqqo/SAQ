@@ -39,7 +39,7 @@ A4-V2-SOURCE-HISTORY-P epoch-correction protocol         SOURCE_HISTORY_EPOCH_CO
 A4-V2-SOURCE-HISTORY-I original source correction        STOPPED_PRE_TARGET_PATH_CLOSURE_UNSATISFIABLE
 A4-V2-SOURCE-HISTORY-I-R1-P path-closure erratum         SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS
 A4-V2-SOURCE-HISTORY-I-R1 corrected source target        SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS
-A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       NOT_AUTHORIZED
+A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       PREP_R1_AUTHORIZATION_TARGET_FORMED_REVIEW_PENDING
 A4-V2-CACHE-PREP-ISO-R1 one future PREP attempt         NOT_AUTHORIZED
 A4-V2-PAR-R1 corrected build/parity event               NOT_AUTHORIZED
 A4-V2-SRUN  one logical synthetic admission event     NOT_AUTHORIZED
@@ -635,6 +635,41 @@ three-path review is committed and pushed.  This is a source-static result
 only: syntax, execution, cache-verifier/PAR readiness, performance, and
 scientific evidence remain unestablished, and every downstream stage remains
 separately unauthorized.
+
+The user has now explicitly authorized `A4-V2-CACHE-PREP-R1-AUTH`.  This is a
+documentation-only fresh PREP authorization target and one exact direct-child
+review.  The target is the direct child of clean, pushed source-history review
+head `a1198c4c1e38743377db10dca96d3ab28d6b6dba`, tree
+`ebd28613ba6ec7063851be3a60edd6e194b1248f`, and changes only `AGENTS.md`,
+`TASK.md`, and the existing PREP authorization-record path.  The review may
+change only the two root status files and the existing PREP authorization
+review path.  Reusing those two document paths is required by the reviewed
+PREP source/inline bootstrap; their old blobs remain immutable Git history.
+
+The fresh record binds the active 37-source/38-unit closure and canonical tree
+`2007875777e7af28a67e89d574b33ec35e71436d8bfaa203574c4343ef4cf973`,
+the current PREP source and inline bootstrap/prologue, the registered
+13-object `.el9_8.2` bundle, the reviewed host/source-history chain, and every
+unchanged schema, status, path, resource, and claim boundary.  The original
+PREP target/review, actual authority, and unique probe remain historical,
+nontransferable, and forbidden for reuse.  No current source byte inherits the
+old CACHE-I-SYNTAX result except the unchanged parity source's exact snapshot;
+the result does not transfer to the five corrected Python sources or current
+full inline bootstrap.
+
+Before review the maximum status is
+`PREP_R1_AUTHORIZATION_TARGET_FORMED_REVIEW_PENDING`.  The sole reviewer must
+reproduce exact ancestry, three-path closures, protected-tree equality, all
+bound identities, historical-authority disposition, and the separation of an
+ordinary documentation target-head check from the one future immediate
+review-head probe.  Zero LOW-or-higher findings are required for
+`PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`.
+
+No Python, syntax/import, build/test, cache verifier, PREP, immediate probe,
+clone, token, capture, journal, receipt, CACHE-BIND, PAR, data, quarantine,
+environment, or SAQ/CAQ action is authorized.  Actual PREP remains the
+separate `A4-V2-CACHE-PREP-ISO-R1` node and requires a new explicit user
+instruction after review/push/handoff.
 
 ## A4-V2-P-ERRATUM Deliverables
 
