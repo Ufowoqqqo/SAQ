@@ -44,8 +44,13 @@ authorized exact correction target `@e9b5c83`, independently reviewed at
 LOW-or-higher findings. Fresh dormant PREP authorization target `@cd1757e`,
 independently reviewed at `@eb1b893`, then reached
 `PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS` with zero LOW-or-higher
-findings; the reserved immediate review-head probe and actual PREP were not
-run.
+findings. Its subsequently authorized unique probe returned `eb1b893`, and
+the unique invocation was consumed but left only durable START plus empty
+captures before the PREP body. Frozen status is therefore
+`CRASH_OR_UNKNOWN / NO_PAR_AUTHORITY / NO_SCIENTIFIC_DECISION`. Additive
+crash-record protocol target `@1982865`, independently reviewed at
+`@8bec546`, reached `START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS`; the
+actual terminal record, retry, and source repair remain unauthorized.
 
 Audience assumption: familiar with vector search and vector quantization at a
 high level, but not with SAQ's transform, segmentation, or the experiments in
@@ -111,10 +116,12 @@ the runtime schema and maximal witness remained byte-identical. This corrects
 the known source-history rule only in reviewed static source; no Python,
 syntax/import, build, verifier, PREP, data, or scientific execution occurred,
 so cache-verifier/PAR readiness remains unestablished.
-Fresh R1 PREP authorization/review is complete only as documentation
-governance. Actual `A4-V2-CACHE-PREP-ISO-R1`, its reserved immediate review-
-head probe, CACHE-BIND, PAR-R1, SRUN, real-base reads, and SAQ integration
-remain unauthorized.
+Fresh R1 PREP authorization/review remained documentation governance. Its one
+later authorized probe/invocation was consumed and stopped at START-only
+`CRASH_OR_UNKNOWN`, before the PREP body and without scientific evidence.
+Reviewed crash-record protocol `1982865/@8bec546` closes only the missing
+future record topology. Actual CRASH-I, source repair, retry, CACHE-BIND,
+PAR-R1, SRUN, real-base reads, and SAQ integration remain unauthorized.
 
 ---
 
@@ -180,8 +187,10 @@ then implemented only that static correction and passed direct-child review;
 it did not run the verifier or establish downstream readiness.
 Fresh dormant PREP authorization target/review `cd1757e/@eb1b893` then passed
 exact direct-child documentation review with zero LOW-or-higher findings. The
-ordinary target-head publication observation was not the reserved immediate
-review-head probe; no PREP or scientific execution occurred.
+later unique immediate probe passed and the unique invocation was consumed,
+but it stopped at durable START-only `CRASH_OR_UNKNOWN` before the PREP body.
+Crash-record protocol target/review `1982865/@8bec546` subsequently passed;
+it forms governance for a future terminal record, not execution evidence.
 ```
 
 Speaker notes:
@@ -221,8 +230,11 @@ Speaker notes:
   exact R1 target passed direct-child static review and corrects that known
   source rule only; no verifier, PREP, cache/PAR readiness, or scientific
   claim follows. Fresh dormant PREP authorization target/review
-  `cd1757e/@eb1b893` subsequently passed exact documentation review only; the
-  future immediate review-head probe and actual PREP remain unauthorized.
+  `cd1757e/@eb1b893` subsequently passed exact documentation review. Its
+  unique probe/invocation was later consumed and left only START plus empty
+  captures, so the status is `CRASH_OR_UNKNOWN / NO_SCIENTIFIC_DECISION`.
+  Crash-record protocol `1982865/@8bec546` passed review, but CRASH-I, repair,
+  retry, CACHE-BIND, and PAR-R1 remain unauthorized.
 
 ---
 
@@ -251,7 +263,9 @@ Attempt 4 A4 V2 SOURCE-HISTORY-I:      STOPPED PRE-TARGET; TEN-PATH CLOSURE UNSA
 Attempt 4 A4 V2 SOURCE-HISTORY-I-R1-P: SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS
 Attempt 4 A4 V2 SOURCE-HISTORY-I-R1:   SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS
 Attempt 4 A4 V2 CACHE-PREP-R1-AUTH:    PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
-Attempt 4 A4 V2 PREP-ISO-R1/BIND:      NOT AUTHORIZED
+Attempt 4 A4 V2 PREP-ISO-R1:           CRASH_OR_UNKNOWN / START_ONLY / NO SCIENTIFIC DECISION
+Attempt 4 A4 V2 PREP-ISO-R1-CRASH-P:   START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS
+Attempt 4 A4 V2 CRASH-I/BIND:          NOT AUTHORIZED
 Attempt 4 A4 V2 cache/PAR readiness:   NOT ESTABLISHED; CORRECTED SOURCE NOT EXECUTED
 Attempt 4 A4 V2 direct PAR-R1:         NO-GO / NOT AUTHORIZED
 SAQ/index/search integration:          NOT AUTHORIZED
@@ -302,7 +316,7 @@ the old `5/2` real-data projection does not transfer.
 | 1B. Lossy `D -> d` projection | Can a PCA head plus a compact tail surrogate beat native full-D SAQ? | GIST sample50k, `960 -> 576`, favorable exact surrogate | Gate A failed; projected SAQ not built |
 | 2. Exact scalar-codebook DP | Does histogram-exact 1D DP improve shared dimensionwise scalar quantization over Lloyd, and is any method novelty left after prior work? | audio, PCA CIFAR60K, PCA DEEP1M; arXiv/code audit | Stronger offline baseline; inner DP is prior art; no stable recall dominance |
 | 3. Distance-quality re-evaluation | Does `1/Ratio@k` change a frozen Recall-based Pareto conclusion? | GIST sample100k B=4; DEEP sample100k B=4/B=5 controls | Closed as metric-sensitivity evidence |
-| 4. Arbitrary-cardinality fixed-rate words | Does the power-of-two restriction waste material capacity at unchanged fixed payload and lookup granularity? | A4-0 synthetic witness; terminal A4-1S correctness/cost gate; reviewed A4 V2 protocol/source, terminal pre-build PAR identity failure, static-only I-R1 repair, CACHE-P/CACHE-I governance, historical PREP authorization, host-rebind governance, the failed HOST-I source-static target, its reviewed R1 correction, reviewed source-history protocol/path-closure/R1 static correction, and fresh R1 PREP authorization/review; registered real-base gates remain unauthorized | preserve A4-1S `NO_GO_EXACT_SOLVER_COST` and A4-V2-PAR `ARTIFACT_INVALID / NO_SCIENTIFIC_DECISION`; host R1 established rebound only for the registered 13-object bundle; the first source-history implementation stopped before target on an unsatisfiable ten-path closure, erratum `150e5b3/@7749491` froze the corrected eight-path boundary, exact target/review `e9b5c83/@a1198c4` passed static review only, and fresh PREP authorization `cd1757e/@eb1b893` passed documentation review only; the verifier and reserved immediate review-head probe were not run, and actual PREP/CACHE-BIND/PAR-R1 remain unauthorized |
+| 4. Arbitrary-cardinality fixed-rate words | Does the power-of-two restriction waste material capacity at unchanged fixed payload and lookup granularity? | A4-0 synthetic witness; terminal A4-1S correctness/cost gate; reviewed A4 V2 protocol/source, terminal pre-build PAR identity failure, static-only corrections, CACHE governance, and the consumed START-only PREP plus reviewed crash-record protocol; registered real-base gates remain unauthorized | preserve A4-1S `NO_GO_EXACT_SOLVER_COST` and A4-V2-PAR `ARTIFACT_INVALID / NO_SCIENTIFIC_DECISION`; source-history R1 passed static review only; the later unique PREP invocation stopped at `CRASH_OR_UNKNOWN / START_ONLY / NO_SCIENTIFIC_DECISION`; crash-record protocol `1982865/@8bec546` passed, but CRASH-I, repair/retry, CACHE-BIND, and PAR-R1 remain unauthorized |
 
 Speaker notes:
 
@@ -2323,7 +2337,10 @@ case study, not an independent database-systems method.
 ## 59. Attempt 4: Research Question, Old Stop, And V2 Boundary
 
 Current R12 reviewed snapshot:
-`saq-arbitrary-cardinality-feasibility-v2@eb1b893`
+`saq-arbitrary-cardinality-feasibility-v2@8bec546`
+
+START-only crash-record protocol target/direct-child review:
+`saq-arbitrary-cardinality-feasibility-v2@1982865/@8bec546`
 
 Fresh R1 PREP authorization target/direct-child review:
 `saq-arbitrary-cardinality-feasibility-v2@cd1757e/@eb1b893`
@@ -2398,7 +2415,9 @@ Preserved terminal A4-1S snapshot:
 | A4-V2-SOURCE-HISTORY-I-R1-P | `SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS` | target/review `150e5b3/@7749491` froze the necessary-and-sufficient future eight-path/five-derived-object cascade, preserved the two runtime artifacts exactly, and retained the original contract as the sole ninth review component; zero LOW-or-higher findings and governance only |
 | A4-V2-SOURCE-HISTORY-I-R1 | `SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS` | target/review `e9b5c83/@a1198c4` changed the exact eight paths and only one verifier source (`+38` net lines), independently reproduced five legacy overrides, the strict four-legacy/six-active role partition, nine-component boundary, and canonical 37-source tree, and preserved the runtime schema/maximal witness byte-for-byte; zero LOW-or-higher findings, but no syntax/import, verifier, build, PREP, data, or scientific execution |
 | A4-V2-CACHE-PREP-R1-AUTH | `PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS` | target/review `cd1757e/@eb1b893` independently closed the reviewed source head, current source/authority identities, corrected source history, and registered-host ceiling with zero LOW-or-higher findings; documentation governance only, with the ordinary target-head observation distinct from the reserved immediate review-head probe |
-| A4-V2-CACHE-PREP-ISO-R1 / receipt review / CACHE-BIND | `NOT_AUTHORIZED` | one actual preparation attempt and its immediate probe, committed independent receipt review, and binding remain separate non-transitive stages |
+| A4-V2-CACHE-PREP-ISO-R1 | `CRASH_OR_UNKNOWN / START_ONLY / NO_SCIENTIFIC_DECISION` | the exact immediate probe passed and the unique invocation was consumed, but only durable START and empty captures exist; no TERMINAL, isolation root, clone, receipt, or PREP-body entry |
+| A4-V2-CACHE-PREP-ISO-R1-CRASH-P | `START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS` | target/review `1982865/@8bec546` freeze only the future reviewed terminal-record topology, with zero LOW-or-higher findings and no retry or repair authority |
+| A4-V2-CACHE-PREP-ISO-R1-CRASH-I / CACHE-BIND | `NOT_AUTHORIZED` | the actual terminal record, any source repair/retry, receipt path, and binding remain separate non-transitive stages |
 | A4-V2-PAR-R1 | `NOT_AUTHORIZED` | direct PAR-R1 is no-go; it can be considered only after every separately authorized isolation stage passes and the user explicitly authorizes PAR-R1 |
 | A4-V2-SRUN | `NOT_AUTHORIZED` | the synthetic event remains a separate, non-transitive future stage and cannot start from invalid PAR authority |
 | SAQ/index/search integration | `NOT_AUTHORIZED` | no production representation or query-path change may be made |
@@ -2516,7 +2535,9 @@ A4-V2-SOURCE-HISTORY-I-R1 SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_P
 KNOWN SOURCE-HISTORY RULE CORRECTED IN STATIC SOURCE / VERIFIER NOT RUN
 A4-V2-CACHE-PREP-R1-AUTH PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS ONLY
 CACHE-VERIFIER AND PAR READINESS NOT ESTABLISHED
-A4-V2-CACHE-PREP-ISO-R1 AND CACHE-BIND NOT AUTHORIZED
+A4-V2-CACHE-PREP-ISO-R1 CRASH_OR_UNKNOWN / START_ONLY / NO SCIENTIFIC DECISION
+A4-V2-CACHE-PREP-ISO-R1-CRASH-P START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS
+A4-V2-CACHE-PREP-ISO-R1-CRASH-I, REPAIR, RETRY, AND CACHE-BIND NOT AUTHORIZED
 A4-V2-PAR-R1 NOT AUTHORIZED
 A4-V2-SRUN, DATA, AND SAQ CHANGES NOT AUTHORIZED
 ```
@@ -2593,8 +2614,11 @@ LOW-or-higher findings. It corrected only the known verifier source rule and
 five derived authority objects while preserving the two runtime artifacts;
 the verifier was not run, so all cache-verifier/PAR readiness claims remain
 forbidden. Fresh R1 PREP authorization target/review `cd1757e/@eb1b893`
-subsequently passed exact documentation review only; actual PREP and its
-reserved immediate review-head probe remain unauthorized.
+subsequently passed exact documentation review. Its later unique probe and
+invocation were consumed and stopped at START-only `CRASH_OR_UNKNOWN` before
+the PREP body. Reviewed protocol `1982865/@8bec546` closes only the future
+terminal-record topology; CRASH-I, repair, retry, and CACHE-BIND remain
+unauthorized.
 
 ---
 
@@ -2719,10 +2743,11 @@ direct-child review with zero LOW-or-higher findings. The corrected verifier
 was not run, so cache-verifier/PAR readiness remains unestablished.
 Fresh dormant PREP authorization target/review `cd1757e/@eb1b893` then
 reached `PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS` with zero LOW-or-higher
-findings. This is documentation governance only: the reserved immediate
-review-head probe was not run. Actual `A4-V2-CACHE-PREP-ISO-R1`, receipt
-review, CACHE-BIND, PAR-R1, SRUN, base, and query reads all remain
-unauthorized.
+findings. Its later unique immediate probe passed and invocation was consumed,
+but only durable START and empty captures exist; the frozen result is
+`CRASH_OR_UNKNOWN / NO_SCIENTIFIC_DECISION`. Crash-record protocol
+`1982865/@8bec546` passed independent review. CRASH-I, repair, retry,
+CACHE-BIND, PAR-R1, SRUN, base, and query reads remain unauthorized.
 
 ---
 
@@ -3036,8 +3061,12 @@ repair. Exact R1 target/review `e9b5c83/@a1198c4` then reached
 the known static verifier rule with zero LOW-or-higher findings. Because the
 verifier was not run, cache-verifier/PAR readiness remains unestablished.
 Fresh R1 PREP authorization target/review `cd1757e/@eb1b893` subsequently
-passed exact documentation review only; the reserved immediate review-head
-probe and actual PREP remain unauthorized.
+passed exact documentation review. Its later unique immediate probe passed,
+and the unique invocation was consumed but left only durable START and empty
+captures before the PREP body. Frozen status is `CRASH_OR_UNKNOWN /
+NO_SCIENTIFIC_DECISION`. Crash-record protocol target/review
+`1982865/@8bec546` then passed with zero LOW-or-higher findings; it does not
+form the record or authorize retry/repair.
 
 Future stages are separate and non-transitive:
 
@@ -3061,7 +3090,9 @@ Future stages are separate and non-transitive:
 | `A4-V2-SOURCE-HISTORY-I-R1-P` | correct only the future path-closure projection | `SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS`; target/review `150e5b3/@7749491`, zero LOW+, protocol governance only |
 | `A4-V2-SOURCE-HISTORY-I-R1` | implement and statically review the corrected exact eight-path/five-derived-object repair | `SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS`; target/review `e9b5c83/@a1198c4`, zero LOW+, no execution or readiness claim |
 | `A4-V2-CACHE-PREP-R1-AUTH` | freeze the current dormant one-invocation contract and exact review projection | `PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`; target/review `cd1757e/@eb1b893`, zero LOW+, documentation governance only |
-| `A4-V2-CACHE-PREP-ISO-R1` + receipt/review | run one sanitized preparation only after the reserved immediate review-head probe, then commit and review its receipt | `NOT_AUTHORIZED` |
+| `A4-V2-CACHE-PREP-ISO-R1` | run one sanitized preparation after the reserved immediate review-head probe | `CRASH_OR_UNKNOWN / START_ONLY / NO_SCIENTIFIC_DECISION`; unique probe/invocation consumed before PREP body |
+| `A4-V2-CACHE-PREP-ISO-R1-CRASH-P` | freeze a truthful future terminal-record topology | `START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS`; target/review `1982865/@8bec546`, governance only |
+| `A4-V2-CACHE-PREP-ISO-R1-CRASH-I` | form and independently review the START-only terminal record | `NOT_AUTHORIZED` |
 | `A4-V2-CACHE-BIND` | bind only the independently reviewed sanitized preparation | `NOT_AUTHORIZED` |
 | `A4-V2-PAR-R1` | at most one corrected frozen build/parity event after the full isolation chain | `NOT_AUTHORIZED`; direct transition rejected |
 | `A4-V2-SRUN` | one logical synthetic admission event | `NOT_AUTHORIZED` |
@@ -3077,7 +3108,7 @@ Future stages are separate and non-transitive:
 | 1B lossy `D -> d` | exact head and norm terms in favorable oracle | tail norms reduce RMSE from 0.0445 to 0.00248 | omitted tail IP still worsens ranking versus native SAQ |
 | 2 exact scalar DP | exact bin-boundary partition SSE using raw bin moments; final midpoint-nearest-centroid raw SSE is evaluated, not reoptimized; outer optimum is conditional on `E[j,b]` | audio B=4 raw MSE `-15.5%`, R@100 `+0.004` | inner-DP novelty is foreclosed by prior art; no full-scale raw optimum or recall guarantee; cross-regime reversals |
 | 3 distance-quality re-evaluation | paper-exact metric semantics; no method guarantee | GIST measured point: higher `1/Ratio`, `1.078x` QPS at the frozen target | one positive setting; DEEP controls remain negative; metric is prior work |
-| 4 arbitrary-cardinality fixed-rate words | the arbitrary positive-integer feasible set contains the dyadic set for exact factorized SSE | frozen `(3,5)` witness and A4-1S parity; later positive records are protocol/source/artifact-governance evidence only | preserve A4-1S `NO_GO_EXACT_SOLVER_COST` and PAR `ARTIFACT_INVALID / NO_SCIENTIFIC_DECISION`; host R1 established registered-bundle rebound only; source-history R1 corrected the known static rule, and fresh R1 PREP authorization passed documentation review, but the verifier and reserved immediate review-head probe were not run and actual PREP/binding/PAR-R1 remain unauthorized |
+| 4 arbitrary-cardinality fixed-rate words | the arbitrary positive-integer feasible set contains the dyadic set for exact factorized SSE | frozen `(3,5)` witness and A4-1S parity; later positive records are protocol/source/artifact-governance evidence only | preserve A4-1S `NO_GO_EXACT_SOLVER_COST` and PAR `ARTIFACT_INVALID / NO_SCIENTIFIC_DECISION`; source-history R1 corrected only the static rule; the unique PREP invocation later stopped at START-only `CRASH_OR_UNKNOWN`, and reviewed protocol `1982865/@8bec546` closes only the future record topology; CRASH-I, repair/retry, binding, and PAR-R1 remain unauthorized |
 
 Cross-attempt lesson:
 
@@ -3119,7 +3150,10 @@ ten-path implementation projection failed, an erratum and exact R1 target
 closed the static eight-path repair under direct-child review. The corrected
 verifier was not run, so cache/PAR readiness still cannot be claimed. Fresh
 R1 PREP authorization target/review `cd1757e/@eb1b893` then passed exact
-documentation review only; actual PREP remains unauthorized.
+documentation review. The subsequently authorized unique probe/invocation was
+consumed and stopped at START-only `CRASH_OR_UNKNOWN`; crash-record protocol
+`1982865/@8bec546` passed, while CRASH-I, repair, retry, and CACHE-BIND remain
+unauthorized.
 ```
 
 ---
@@ -3213,13 +3247,13 @@ Exact target/review `e9b5c83/@a1198c4` then reached
 The verifier was not run, so cache-verifier/PAR readiness is not established.
 Fresh dormant PREP authorization target/review `cd1757e/@eb1b893` then
 reached `PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS` with zero LOW+. Its
-ordinary target-head publication observation did not run or consume the
-reserved immediate review-head probe. No execution node is currently
-authorized; stop for a user checkpoint. A separately explicit
-`A4-V2-CACHE-PREP-ISO-R1` grant, its immediate probe, actual PREP, receipt
-review, CACHE-BIND, explicit PAR-R1, and SRUN all remain separate and
-unauthorized; base/query inputs, SAQ changes, and the old A4-1 gate remain
-unauthorized.
+later unique immediate probe and invocation were consumed and left only START
+plus empty captures before the PREP body, so the result is
+`CRASH_OR_UNKNOWN / NO_SCIENTIFIC_DECISION`. Crash-record protocol
+`1982865/@8bec546` passed independent review. No execution node is currently
+authorized; stop for a user checkpoint. CRASH-I, source repair/retry,
+CACHE-BIND, explicit PAR-R1, and SRUN remain separate and unauthorized;
+base/query inputs, SAQ changes, and the old A4-1 gate remain unauthorized.
 ```
 
 Speaker notes:
@@ -3338,7 +3372,8 @@ target/review `@ddfef99/@b1a7429` and correction target/review
 target/review `@dcaed57/@e98a3e4`, followed by source-history path-closure
 erratum target/review `@150e5b3/@7749491`, and exact source-history R1
 target/review `@e9b5c83/@a1198c4`, followed by fresh R1 PREP authorization
-target/review `@cd1757e/@eb1b893`:
+target/review `@cd1757e/@eb1b893`, the consumed START-only invocation, and
+crash-record protocol target/review `@1982865/@8bec546`:
 
 ```text
 docs/saq_a4_v2_primary_source_metadata_2026_07_14.json
@@ -3402,6 +3437,9 @@ docs/saq_a4_v2_source_history_i_r1_path_closure_erratum_contract_2026_07_18.json
 docs/saq_a4_v2_source_history_i_r1_path_closure_erratum_independent_review_2026_07_18.md
 script/a4_v2_cache_policy_verifier.py
 docs/saq_a4_v2_source_history_epoch_correction_implementation_independent_review_2026_07_17.md
+docs/saq_a4_v2_prep_start_only_crash_record_protocol_2026_07_18.md
+docs/saq_a4_v2_prep_start_only_crash_record_contract_2026_07_18.json
+docs/saq_a4_v2_prep_start_only_crash_record_protocol_independent_review_2026_07_18.md
 ```
 
 A4-0 and A4-1S parity are outcome evidence only at their stated instrument
@@ -3443,10 +3481,14 @@ only that static rule and reached
 `SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS` with zero LOW+.
 The verifier was not run, so readiness remains unestablished. Fresh dormant
 PREP authorization target/review `cd1757e/@eb1b893` then passed exact
-documentation review with zero LOW+, but did not run the reserved immediate
-review-head probe or PREP. Actual `A4-V2-CACHE-PREP-ISO-R1`, receipt review,
-CACHE-BIND, PAR-R1, A4-V2-SRUN, and all data access remain unauthorized until
-their own reviewed and explicit authorities exist.
+documentation review with zero LOW+. Its later unique immediate probe passed,
+but the consumed invocation left only durable START plus empty captures
+before the PREP body. Frozen status is `CRASH_OR_UNKNOWN /
+NO_SCIENTIFIC_DECISION`. Crash-record protocol target/review
+`1982865/@8bec546` then passed with zero LOW+, freezing only the future record
+topology. CRASH-I, repair/retry, CACHE-BIND, PAR-R1, A4-V2-SRUN, and all data
+access remain unauthorized until their own reviewed and explicit authorities
+exist.
 
 Current deck:
 
@@ -3538,9 +3580,10 @@ verifier, build, PREP, or data, so cache-verifier/PAR readiness is still
 unestablished. Fresh dormant PREP authorization target `cd1757e`, independently
 reviewed at `eb1b893`, then reached
 `PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS` with zero LOW-or-higher
-findings. This is documentation governance only: its ordinary target-head
-publication observation was not the reserved immediate review-head probe, and
-no PREP or scientific execution occurred.
+findings. Its later unique probe/invocation was consumed and stopped at
+START-only `CRASH_OR_UNKNOWN` before the PREP body. Crash-record protocol
+target/review `1982865/@8bec546` then passed, defining only a future terminal-
+record topology and no scientific or retry/repair authority.
 
 Project decision:
 Keep Attempts 1--3 as rigorous negative or partial evidence. Do not rescue
@@ -3566,8 +3609,10 @@ the first implementation attempt stopped before target, while the later exact
 R1 correction passed direct-child static review only. Do not promote that
 source result to executed verifier, PREP, cache/PAR, performance, or
 scientific readiness. Treat fresh R1 PREP authorization target/review
-`cd1757e/@eb1b893` as dormant documentation governance only. A separately
-explicit `A4-V2-CACHE-PREP-ISO-R1` grant and immediate probe, actual PREP,
-receipt review, CACHE-BIND, separately explicit PAR-R1, and SRUN remain a
-strictly ordered unauthorized chain; base, query, and SAQ gates remain closed.
+`cd1757e/@eb1b893` as the reviewed authority for the now-consumed unique
+probe/invocation. That invocation produced only START-only
+`CRASH_OR_UNKNOWN`, not PREP readiness or science. Treat reviewed protocol
+`1982865/@8bec546` as record governance only. CRASH-I, source repair/retry,
+CACHE-BIND, separately explicit PAR-R1, and SRUN remain a strictly ordered
+unauthorized chain; base, query, and SAQ gates remain closed.
 ```
