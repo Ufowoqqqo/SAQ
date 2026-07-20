@@ -81,6 +81,58 @@ exact retained part and an exact tail norm, before adding quantization error.
 
 ---
 
+## 4A. Attempt 1A: Learn The Rotation From What Search Actually Stores
+
+The first version kept every dimension. Only the data used to learn the PCA
+rotation changed.
+
+```text
+for each database vector x:
+    find its assigned IVF center c
+    residual r = x - c
+learn one full-dimensional PCA rotation from all residuals
+apply the same rotation to database vectors, centers, and queries
+run the unchanged SAQ planner, encoder, and distance estimator
+```
+
+**Small illustration — not an experimental result.** Suppose two clusters are
+far apart horizontally, while points vary mainly vertically inside each
+cluster. PCA on raw vectors puts the horizontal direction first because it
+mostly sees the separation between clusters. PCA on residuals removes that
+separation and puts the within-cluster vertical variation first. SAQ may then
+spend its accurate early bits on a different direction.
+
+Because this is a full-dimensional orthogonal rotation, exact Euclidean
+distances are unchanged before quantization. Only the coordinate order seen by
+SAQ changes.
+
+---
+
+## 4B. Attempt 1B: Keep The Head And Replace The Tail By One Norm
+
+The lossy version retained the first 576 PCA coordinates and summarized the
+remaining 384 coordinates by one tail norm.
+
+```text
+head distance = exact squared distance in the retained coordinates
+tail estimate = squared query-tail norm + squared database-tail norm
+estimated distance = head distance + tail estimate
+```
+
+The missing term is the tail inner product: it tells us whether the two tails
+point in the same or opposite direction.
+
+**Running example.** Let both retained heads be zero. If the query tail is
+`(+1)` and the database tail is also `(+1)`, the true tail distance is zero.
+The norm-only estimate is `1 + 1 = 2`. If the database tail is `(-1)`, both
+stored norms are still one, but the true distance is now four. One norm cannot
+distinguish these cases.
+
+This is why even an exact head and an exact tail norm can change rankings
+before any quantization error is added.
+
+---
+
 ## 5. Attempt 1: What The Evidence Says
 
 On GIST, residual PCA reduced distance-estimation error by about **0.60%** at
@@ -117,6 +169,32 @@ That sounds attractive, but it leaves two separate questions:
 
 The first question is about fitting compressed values. The second is the one
 the search system ultimately cares about.
+
+---
+
+## 6A. Attempt 2: Exact Scalar Training, Step By Step
+
+First sort the values of one coordinate. In one dimension, every optimal
+cluster is a consecutive interval in that sorted order.
+
+```text
+cost(a,b) = squared error from replacing sorted values a...b by their mean
+
+DP[k,m] = minimum cost for representing the first m values with k levels
+DP[k,m] = min over split j of DP[k-1,j-1] + cost(j,m)
+
+recover the best intervals and use each interval mean as a codebook value
+repeat for every allowed bit width; then allocate the fixed bit budget
+encode each database value with its nearest learned codebook value
+```
+
+**Running example.** For values `{0, 1, 9, 10}` and two codebook values, the
+best split is `{0,1} | {9,10}`. The stored representatives are `0.5` and `9.5`.
+The dynamic program checks all legal split positions systematically instead of
+depending on where an iterative trainer happened to start.
+
+This guarantees the smallest reconstruction error for the chosen histogram.
+It does not guarantee the best nearest-neighbor ranking for future queries.
 
 ---
 
@@ -157,6 +235,32 @@ about the encoder, index, or search procedure changed.
 
 ---
 
+## 8A. Attempt 3: Re-score The Same Returned Items
+
+Attempt 3 did not train a new index. It changed only the offline evaluation.
+
+```text
+run the unchanged search and save its top-k returned identifiers
+recompute the true distance to those returned items
+sort those k distances from smallest to largest
+compare position i with the true i-th-nearest distance
+average the distance ratios, then invert the result
+report this score together with Recall and query speed
+```
+
+**Running example with k=2.** Suppose the exact distances are `[1.0, 2.0]`,
+while the returned items have true distances `[1.0, 2.2]`.
+
+```text
+distance-quality score = 2 / (1.0/1.0 + 2.2/2.0) = 0.952
+```
+
+If the second identifier is different, Recall is only `1/2`, even though the
+replacement is just `0.2` farther away. The two metrics answer different
+questions; neither changes what the search system returned.
+
+---
+
 ## 9. Attempt 3: One Decision Changed, But No Method Emerged
 
 At the historical GIST reference point, the alternative plan could not reach
@@ -194,16 +298,50 @@ search quality at comparable speed and memory.
 
 ---
 
+## 10A. Attempt 4: Exact Curves, Flexible Products, Fixed Words
+
+One coordinate cannot expose this opportunity: with a capacity of 16, its best
+choice is simply all 16 levels. Two coordinates are the smallest case where
+the same word can be divided differently.
+
+```text
+for each coordinate i:
+    compute the globally optimal scalar error E_i(K), for every K=1...256
+
+for each adjacent coordinate pair (1,2) and word capacity S:
+    choose positive integers K1,K2 with K1*K2 <= S
+    minimize E_1(K1) + E_2(K2)
+
+encode labels (z1,z2) as one mixed-radix address:
+    address = z1 + K1*z2
+```
+
+**Running example.** The first coordinate has three equally important values
+`{-1,0,1}` and the second has five values `{-2,-1,0,1,2}`. With a 4-bit word,
+`K1=3, K2=5` represents all 15 combinations exactly. Restricting both counts
+to powers of two forces a choice such as `4 by 4`, so at least two values on
+the second coordinate must share a representative.
+
+This proves a representational opportunity, not a search improvement.
+
+---
+
 ## 11. Attempt 4: The Cost Gate Ended The Study
 
 The registered synthetic implementation passed its correctness checks. The
 next question was deliberately mundane: can we afford the exact construction
 and evidence pipeline before reading benchmark data?
 
-The projected cost was **24.17025 CPU-hours**, just above the frozen
-**24-hour** ceiling. According to the rule fixed in advance, that was a stop.
-It is a pipeline-cost result, not evidence that arbitrary cardinalities help
-or hurt search.
+The run used **9.67 CPU-hours** and completed only 61 of 128 scalar
+coordinates. The frozen rule projected two datasets plus a 25% margin, so this
+partial prefix already implied a lower bound of **24.17025 CPU-hours**, just
+above the **24-hour** ceiling.
+
+About **4.64 hours** were exact scalar construction and **5.03 hours** were
+canonical evidence serialization. Allocation, block-vector comparison, and
+encoding had not started. According to the rule fixed in advance, that was a
+stop. It is a result about the registered construction-and-evidence pipeline,
+not evidence that arbitrary cardinalities help or hurt search.
 
 A later attempt to rebuild a cleaner execution path never reached a valid
 scientific outcome. Its final invocation recorded that it started, but did not
@@ -299,18 +437,12 @@ registered source documents.
   `-0.0235%`; confidence and seed requirements failed.
 - Decision: close the one-dataset estimator effect.
 
-Source: `saq-transform-analysis@3d94840`,
-`docs/saq_transform_phase1b_external_replication_evidence_2026_07_10.md`.
-
 **Lossy 960-to-576 projection**
 
 - Favorable projected oracle top-100 agreement: `0.992890625`.
 - Native full-dimensional SAQ: `0.994617188`.
 - Decision: fail the early ranking gate; projected index construction was not
   authorized.
-
-Source: `saq-lossy-projection-analysis@051ec6a`,
-`docs/saq_lossy_projection_lp0_gate_a_evidence_2026_07_11.md`.
 
 ---
 
@@ -334,13 +466,11 @@ nearest-neighbor ranking.
 It does not support a new scalar-quantization method claim. Exact
 one-dimensional dynamic programming is prior work (Wu, 1991; Grønlund et al.,
 2017), and the outer allocation is a classical discrete rate-allocation
-problem. White and Singal (2026) is recent adjacent quantization work that
-explicitly treats exact one-dimensional k-means as an older baseline.
-
-Sources: `vectordb@f51b487`,
-`reports/scalar_training_exact_hist_audit_2026_06_30/README.md` and
-`docs/saq_limitation_transfer_memo_2026_07_02.md`; prior-work boundary at
-`saq-caq-one-shell-repair@433e8ea`.
+problem. White and Singal (2026) is adjacent work: for inner-product accuracy,
+it weights coordinate errors by how strongly future inputs use those
+coordinates. That supports our lesson that raw reconstruction error is not the
+whole downstream objective, but it does not optimize Recall or solve our
+shared-codebook bit allocation.
 
 ---
 
@@ -359,12 +489,9 @@ controls remained below their default distance-quality targets.
 Decision: keep this as metric-sensitivity evidence. Do not claim per-query
 dominance, cross-dataset replication, or a new mechanism.
 
-Source: `saq-ratio-metric-analysis@146dc16`,
-`docs/saq_attempt3_a3_2_a3_3_decision_2026_07_13.md`.
-
 ---
 
-## A5. Attempt 4 Evidence Boundary
+## A5. Attempt 4 Boundary
 
 The synthetic 16-state example showed a real feasible-set difference:
 
@@ -374,16 +501,16 @@ The synthetic 16-state example showed a real feasible-set difference:
 This was instrument validation only. No benchmark data or search evaluation
 was involved.
 
-The exact construction pipeline then projected
-`24.170246892361` CPU-hours against a frozen `24.0` CPU-hour ceiling. The
-registered decision was `NO_GO_EXACT_SOLVER_COST`.
+The partial run consumed `9.668` CPU-hours for 61 of 128 scalar coordinates.
+The frozen two-dataset-plus-margin rule converted that completed prefix into a
+strict lower bound of `24.17` CPU-hours against a `24.0` CPU-hour
+ceiling. Exact scalar construction used `4.64` hours and canonical evidence
+serialization used `5.03`; all later phases remained unexecuted. The registered
+decision was `NO_GO_EXACT_SOLVER_COST` for that full frozen pipeline.
 
 The later V2 execution path produced no valid terminal record. The audited
 project decision is to stop further artifact recovery; the runtime remains
 unknown rather than being reclassified as a scientific failure.
-
-Sources: `saq-arbitrary-cardinality-analysis@f1b464b` and
-`saq-arbitrary-cardinality-feasibility-v2@3577edd`.
 
 ---
 

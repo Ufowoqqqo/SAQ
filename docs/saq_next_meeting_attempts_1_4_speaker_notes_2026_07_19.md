@@ -3,17 +3,18 @@
 For:
 `docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md`
 
-PDF snapshot: current successor deck, 29 pages. Its scientific conclusions are
+PDF snapshot: expanded successor deck, expected 34 pages after compilation. Its scientific conclusions are
 unchanged from `saq-meeting-summary@9c21469`; the later deck update adds only
-the missing Attempt 2 references.
+algorithm explanations, running examples, and the missing Attempt 2 references.
 
 Status: meeting-preparation notes only. These notes do not change any research
 decision, reporting state, or authorization.
 
 ## How To Use These Notes
 
-- Target **11–12 minutes** for pages 1–18.
-- Pages 19–29 are backup slides. Do not present them in sequence.
+- Target **15–17 minutes** for pages 1–23. If time is limited, skip the five
+  algorithm-detail pages after giving their one-sentence intuition.
+- Pages 24–34 are backup slides. Do not present them in sequence.
 - Do not read commit identifiers, filenames, or protocol status names aloud.
 - Say “we stopped under the rule fixed in advance,” not “the idea is impossible.”
 - When a question becomes technical, answer the decision-level point first.
@@ -135,7 +136,45 @@ Transition:
 > quantization error. If it could not pass that test, building a complete
 > projected index would not be justified.
 
-### Page 9 — Attempt 1: What The Evidence Says
+### Page 9 — Attempt 1A Algorithm: Residual PCA
+
+**Time: 55 seconds**
+
+> The first implementation did not remove dimensions or change the search
+> algorithm. For every database vector, we subtracted its assigned cluster
+> center and learned PCA from those residual vectors. We then applied that one
+> full-dimensional rotation consistently to database vectors, centers, and
+> queries before running the unchanged SAQ pipeline.
+>
+> The small picture explains the motivation. Raw-data PCA may spend its first
+> direction describing how far cluster centers are from each other. Residual
+> PCA removes that separation and instead sees how points vary inside their
+> assigned clusters—the variation the compressed residual must represent.
+>
+> Because the rotation is full-dimensional and orthogonal, exact distances do
+> not change. What changes is which directions SAQ sees early and may represent
+> more accurately.
+
+Stress that the picture is illustrative, not a measured two-dimensional case.
+
+### Page 10 — Attempt 1B Algorithm: Head Plus Tail Norm
+
+**Time: 60 seconds**
+
+> The second implementation physically kept the first 576 coordinates. It
+> replaced the discarded 384-dimensional tail by one number: its length.
+>
+> The estimate adds three terms: exact distance in the retained head, squared
+> query-tail length, and squared database-tail length. What it cannot add is
+> the tail inner product, which says whether the two tails point together or
+> apart.
+>
+> In the example, tails plus one and plus one have true distance zero. Tails
+> plus one and minus one have true distance four. Both cases expose the same
+> two stored norms, so the estimator cannot distinguish them. This information
+> loss exists before quantization.
+
+### Page 11 — Attempt 1: What The Evidence Says
 
 **Time: 75 seconds**
 
@@ -162,7 +201,7 @@ Transition:
 > Attempt 2 exposed a different version of the same gap between an internal
 > objective and search quality.
 
-### Page 10 — Attempt 2: Does Exact Training Help Search?
+### Page 12 — Attempt 2: Does Exact Training Help Search?
 
 **Time: 45 seconds**
 
@@ -180,7 +219,28 @@ If asked what “dynamic programming” means, say:
 > It is a systematic way of combining optimal solutions to smaller intervals,
 > rather than repeatedly adjusting centers until they stop moving.
 
-### Page 11 — Attempt 2: A Better Fit Was Not A Reliable Search Win
+### Page 13 — Attempt 2 Algorithm: Exact Interval Dynamic Programming
+
+**Time: 65 seconds**
+
+> For one coordinate, we first sort the training values. In one dimension, an
+> optimal cluster is always a consecutive interval in that order.
+>
+> The table called DP stores the best cost for representing the first m values
+> with k representatives. To fill one entry, we try every legal place where
+> the last interval could begin and combine it with the already solved prefix.
+> After recovering the intervals, their means become codebook values. A second
+> allocation step decides how many bits each coordinate receives.
+>
+> In the example zero, one, nine, ten, the best two-level split is after one.
+> The two stored values are zero point five and nine point five. This is a
+> global reconstruction optimum for the selected histogram; it is not a
+> guarantee about future-query ranking.
+
+If asked about “exact,” clarify that the implementation is exact for its
+compressed histogram, then recomputes the final error over the raw values.
+
+### Page 14 — Attempt 2: A Better Fit Was Not A Reliable Search Win
 
 **Time: 70 seconds**
 
@@ -206,7 +266,7 @@ Transition:
 > Attempt 3 asked whether part of the apparent failure came from the quality
 > measure rather than the index itself.
 
-### Page 12 — Attempt 3: Were We Using The Wrong Quality Measure?
+### Page 15 — Attempt 3: Were We Using The Wrong Quality Measure?
 
 **Time: 50 seconds**
 
@@ -224,7 +284,23 @@ If asked why this matters, say:
 > Recall measures identity at a sharp boundary. Distance quality measures how
 > costly the boundary mistake actually is.
 
-### Page 13 — Attempt 3: One Decision Changed, But No Method Emerged
+### Page 16 — Attempt 3 Procedure: Re-score The Same Results
+
+**Time: 55 seconds**
+
+> This page is an evaluation procedure, not an index algorithm. We save the
+> identifiers returned by the unchanged search, recompute their true distances,
+> sort those distances, and compare them position by position with the exact
+> nearest-neighbor distances. We then report the inverted average ratio together
+> with Recall and query speed.
+>
+> In the example, the second returned item is only zero point two farther than
+> the exact second item. The distance-quality score is about zero point nine
+> five two. Recall can still fall to one half if that nearby replacement has a
+> different identifier. This is why the two measurements can disagree without
+> either one being incorrectly computed.
+
+### Page 17 — Attempt 3: One Decision Changed, But No Method Emerged
 
 **Time: 65 seconds**
 
@@ -245,7 +321,7 @@ Transition:
 > Attempt 4 was the most different idea. Its first obstacle was not search
 > quality but whether the exact construction was affordable enough to test.
 
-### Page 14 — Attempt 4: Can We Use A Fixed Bit Budget More Flexibly?
+### Page 18 — Attempt 4: Can We Use A Fixed Bit Budget More Flexibly?
 
 **Time: 45 seconds**
 
@@ -258,7 +334,26 @@ Transition:
 > This proves that the mathematical choice set is larger. It does not yet
 > show that we can construct the codebooks cheaply or improve real search.
 
-### Page 15 — Attempt 4: The Cost Gate Ended The Study
+### Page 19 — Attempt 4 Algorithm: Flexible Product Cardinalities
+
+**Time: 65 seconds**
+
+> We first compute the best scalar reconstruction error for every coordinate
+> and every number of representatives from one to 256. We then take adjacent
+> coordinate pairs. For each pair, we choose two positive integers whose
+> product fits in the fixed word and whose summed reconstruction error is
+> smallest. The two labels are packed into one mixed-radix address.
+>
+> One coordinate alone cannot show the benefit: with sixteen available states,
+> it simply uses sixteen levels. Two coordinates are the smallest case where
+> the capacity can be divided differently.
+>
+> In the example, one coordinate naturally has three values and the other has
+> five. Three by five represents all fifteen combinations exactly in a 4-bit
+> word. Restricting both counts to powers of two forces a shape such as four by
+> four and merges two values on the second coordinate.
+
+### Page 20 — Attempt 4: The Cost Gate Ended The Study
 
 **Time: 70 seconds**
 
@@ -266,9 +361,14 @@ Transition:
 > checks. Before reading benchmark data, we measured the cost of the exact
 > construction and evidence pipeline.
 >
-> The projected cost was 24.17025 processor-hours. The stopping limit fixed
-> before the run was 24 hours. Because the rule was fixed in advance, we
-> stopped rather than relaxing it after seeing the result.
+> The actual partial run used about 9.67 processor-hours and completed only 61
+> of 128 scalar coordinates. The rule fixed in advance multiplied one panel by
+> two datasets plus a 25 percent margin. The completed prefix therefore already
+> implied a lower bound of 24.17025 processor-hours, above the 24-hour limit.
+>
+> About 4.64 hours were the exact scalar calculation and 5.03 hours were spent
+> serializing the complete audit evidence. The later allocation, two-dimensional
+> comparison, and encoding stages had not started.
 >
 > This is important: the result says the registered evaluation pipeline was
 > too expensive. It does not say arbitrary cardinalities are bad for search;
@@ -281,7 +381,7 @@ Transition:
 
 If challenged on the small amount above 24 hours, answer from the Q&A card.
 
-### Page 16 — What These Four Attempts Have In Common
+### Page 21 — What These Four Attempts Have In Common
 
 **Time: 45 seconds**
 
@@ -296,7 +396,7 @@ If challenged on the small amount above 24 hours, answer from the Q&A card.
 > link first. We should not build a large experimental pipeline around a local
 > objective before checking whether it predicts the final search result.
 
-### Page 17 — What Is Still Useful
+### Page 22 — What Is Still Useful
 
 **Time: 40 seconds**
 
@@ -309,7 +409,7 @@ If challenged on the small amount above 24 hours, answer from the Q&A card.
 > These should strengthen the evaluation of the next project. They do not
 > need to become contributions by themselves.
 
-### Page 18 — My Recommendation
+### Page 23 — My Recommendation
 
 **Time: 55 seconds**
 
@@ -330,22 +430,22 @@ Stop speaking. Let the audience respond. Do not continue into the appendix.
 
 ## Backup Slides
 
-### Page 19 — Short Technical Appendix Divider
+### Page 24 — Short Technical Appendix Divider
 
 Do not show unless the discussion moves to exact evidence.
 
-### Page 20 — Appendix Purpose
+### Page 25 — Appendix Purpose
 
 Use only to remind the audience that detailed protocols and implementation
 records exist elsewhere. Do not explain the provenance machinery.
 
-### Page 21 — Terms Used In The Talk
+### Page 26 — Terms Used In The Talk
 
 Open when someone asks what SAQ, residual, Recall, distance quality, QPS, or a
 CPU-hour means. Give the definition on the slide, then return to the main
 question.
 
-### Page 22 — Attempt 1 Evidence Boundary
+### Page 27 — Attempt 1 Evidence Boundary
 
 Open when asked:
 
@@ -358,7 +458,7 @@ One-sentence answer:
 > The full-dimensional effect was small and did not replicate; the lossy
 > version ranked worse than native SAQ even before adding quantization error.
 
-### Page 23 — Attempt 2 Evidence Boundary
+### Page 28 — Attempt 2 Evidence Boundary
 
 Open when asked for a positive and a negative example.
 
@@ -367,7 +467,7 @@ One-sentence answer:
 > Exact training can reduce reconstruction error substantially, but the DEEP
 > counterexample shows that this does not determine Recall.
 
-### Page 24 — Attempt 3 Evidence Boundary
+### Page 29 — Attempt 3 Evidence Boundary
 
 Open when asked where the 1.078-times result comes from or whether every query
 improved.
@@ -377,7 +477,7 @@ One-sentence answer:
 > It is one measured GIST operating point; the aggregate improved, but 39.6%
 > of paired queries worsened and the DEEP controls remained negative.
 
-### Page 25 — Attempt 4 Evidence Boundary
+### Page 30 — Attempt 4 Boundary
 
 Open when asked whether the synthetic example or cost result says anything
 about real search.
@@ -387,7 +487,7 @@ One-sentence answer:
 > The example validates a mathematical opportunity, while the cost gate stops
 > the registered pipeline before any real-data or search claim.
 
-### Page 26 — What We Can And Cannot Say
+### Page 31 — What We Can And Cannot Say
 
 Open whenever a question is framed as a universal conclusion—for example,
 “Does this prove PCA is optimal?” or “Does exact training never help?”
@@ -397,18 +497,18 @@ Say:
 > No. Our decisions are about the tested mechanisms under their frozen gates,
 > not universal impossibility results.
 
-### Page 27 — Authoritative Source Snapshots
+### Page 32 — Authoritative Source Snapshots
 
 Use only if someone asks whether the results are committed and reviewed. Do
 not read identifiers aloud. Point out that each attempt has a fixed source
 snapshot and that the meeting-summary branch only summarizes it.
 
-### Page 28 — Authoritative Evidence Documents
+### Page 33 — Authoritative Evidence Documents
 
 Use only when someone wants the exact evidence document. Do not spend meeting
 time explaining filenames.
 
-### Page 29 — Selected References For Attempt 2
+### Page 34 — Selected References For Attempt 2
 
 Open when someone asks which work supports the prior-art statement.
 
@@ -424,7 +524,8 @@ Say:
 
 The talk is ready when all five conditions hold:
 
-1. pages 1–18 finish within 12 minutes;
+1. pages 1–23 finish within 17 minutes, or within 12 minutes when the five
+   optional algorithm-detail pages are skipped;
 2. each attempt can be summarized without reading the slide;
 3. the presenter never describes a local metric improvement as a method;
 4. the presenter can explain the Attempt 4 stop without implying a real-data

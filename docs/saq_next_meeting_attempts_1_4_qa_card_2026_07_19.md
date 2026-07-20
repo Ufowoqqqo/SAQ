@@ -56,9 +56,18 @@ queries became worse.
 **Attempt 4 exceeded 24 hours by only about ten minutes. Why enforce the stop?**
 
 The 24-hour ceiling was fixed before observing the result; relaxing it
-afterward would make the gate meaningless. More importantly, 24.17 hours is a
-projection for the frozen construction-and-evidence pipeline, not a nearly
-complete real-data search result.
+afterward would make the gate meaningless. More importantly, the actual
+partial run used 9.67 CPU-hours and finished only 61 of 128 scalar coordinates.
+The frozen two-dataset-plus-margin rule converted that completed prefix into a
+24.17-hour lower bound; this was not a nearly complete real-data search result.
+
+**Why did Attempt 4 pair exactly two coordinates?**
+
+With one coordinate and 16 available states, the best scalar quantizer simply
+uses all 16, so non-power-of-two counts add no opportunity. Two coordinates
+are the smallest case where the same word can be split differently, such as
+`3 by 5` instead of power-of-two factors. Larger groups are possible but would
+mix the cardinality question with a larger joint-quantization change.
 
 **Does Attempt 4 prove arbitrary cardinalities are too expensive or do not
 help?**
@@ -94,7 +103,8 @@ boundary are approved.
 - Attempt 2 audio reconstruction improvement: about `15.5%`; Recall gain was
   small and not stable across settings.
 - Attempt 3 measured GIST speed ratio: `1.07793`; paired queries worse: `39.6%`.
-- Attempt 4 projected cost: `24.17025` CPU-hours; frozen ceiling: `24.0`.
+- Attempt 4 partial CPU: `9.668` hours; frozen projected lower bound:
+  `24.17025` CPU-hours; ceiling: `24.0`.
 
 ## Phrases To Avoid
 

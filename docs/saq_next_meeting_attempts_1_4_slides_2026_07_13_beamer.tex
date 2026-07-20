@@ -220,6 +220,54 @@ early test: an exact retained part and an exact tail norm, before adding
 quantization error.
 \end{frame}
 
+\begin{frame}[fragile]{4A. Attempt 1A: Learn The Rotation From What Search Actually Stores}
+\small
+The first version kept every dimension. Only the data used to learn the
+PCA rotation changed.
+
+\begin{verbatim}
+for each database vector x:
+    find its assigned IVF center c
+    residual r = x - c
+learn one full-dimensional PCA rotation from all residuals
+apply the same rotation to database vectors, centers, and queries
+run the unchanged SAQ planner, encoder, and distance estimator
+\end{verbatim}
+
+\textbf{Small illustration --- not an experimental result.} Suppose two
+clusters are far apart horizontally, while points vary mainly vertically
+inside each cluster. Raw-data PCA puts the between-cluster horizontal
+direction first. Residual PCA removes that separation and may put the
+within-cluster vertical direction first.
+
+Because this is a full-dimensional orthogonal rotation, exact Euclidean
+distances are unchanged before quantization. Only the coordinate order seen
+by SAQ changes.
+\end{frame}
+
+\begin{frame}[fragile]{4B. Attempt 1B: Keep The Head And Replace The Tail By One Norm}
+\small
+The lossy version retained the first 576 PCA coordinates and summarized
+the remaining 384 coordinates by one tail norm.
+
+\begin{verbatim}
+head distance = exact squared distance in retained coordinates
+tail estimate = squared query-tail norm + squared database-tail norm
+estimated distance = head distance + tail estimate
+\end{verbatim}
+
+The missing term is the tail inner product: it tells us whether the two
+tails point in the same or opposite direction.
+
+\textbf{Running example.} Let both retained heads be zero. If the query
+tail is $(+1)$ and the database tail is also $(+1)$, the true tail distance
+is zero, while the norm-only estimate is $1+1=2$. If the database tail is
+$(-1)$, both stored norms are still one, but the true distance is four.
+
+One norm cannot distinguish these cases. Rankings can therefore change
+before any quantization error is added.
+\end{frame}
+
 \begin{frame}{5. Attempt 1: What The Evidence Says}
 \protect\phantomsection\label{5-attempt-1-what-the-evidence-says}
 On GIST, residual PCA reduced distance-estimation error by about
@@ -263,6 +311,30 @@ The first question is about fitting compressed values. The second is the
 one the search system ultimately cares about.
 \end{frame}
 
+\begin{frame}[fragile]{6A. Attempt 2: Exact Scalar Training, Step By Step}
+\small
+First sort the values of one coordinate. In one dimension, every optimal
+cluster is a consecutive interval in that order.
+
+\begin{verbatim}
+cost(a,b) = error from replacing sorted values a...b by their mean
+DP[k,m]   = best cost for the first m values using k levels
+DP[k,m]   = min over split j of DP[k-1,j-1] + cost(j,m)
+
+recover intervals and use each interval mean as a codebook value
+repeat for every allowed bit width; allocate the fixed bit budget
+encode each value with its nearest learned codebook value
+\end{verbatim}
+
+\textbf{Running example.} For values $\{0,1,9,10\}$ and two codebook
+values, the best split is $\{0,1\}\mid\{9,10\}$. The representatives are
+$0.5$ and $9.5$. The dynamic program checks every legal split
+systematically instead of depending on an iterative trainer's starting point.
+
+This guarantees the smallest reconstruction error for the chosen histogram,
+not the best ranking for future queries.
+\end{frame}
+
 \begin{frame}{7. Attempt 2: A Better Fit Was Not A Reliable Search Win}
 \protect\phantomsection\label{7-attempt-2-a-better-fit-was-not-a-reliable-search-win}
 There were genuine positive cases. On the audio dataset, one setting
@@ -302,6 +374,31 @@ item with another hurts Recall, even when the geometric loss is tiny.
 
 We therefore replayed two frozen SAQ plans and reported both measures.
 Nothing about the encoder, index, or search procedure changed.
+\end{frame}
+
+\begin{frame}[fragile]{8A. Attempt 3: Re-score The Same Returned Items}
+\small
+Attempt 3 did not train a new index. It changed only the offline evaluation.
+
+\begin{verbatim}
+run unchanged search and save its top-k returned identifiers
+recompute true distances to those returned items
+sort those k distances from smallest to largest
+compare position i with the true i-th-nearest distance
+average the distance ratios, then invert the result
+report this score together with Recall and query speed
+\end{verbatim}
+
+\textbf{Running example with $k=2$.} Exact distances are $[1.0,2.0]$,
+while the returned items have true distances $[1.0,2.2]$:
+
+\[
+\text{distance quality}=\frac{2}{1.0/1.0+2.2/2.0}=0.952.
+\]
+
+If the second identifier differs, Recall is only $1/2$, although the
+replacement is just $0.2$ farther away. The two metrics answer different
+questions; neither changes what search returned.
 \end{frame}
 
 \begin{frame}{9. Attempt 3: One Decision Changed, But No Method Emerged}
@@ -352,16 +449,47 @@ We still have to construct the codebooks at acceptable cost and then
 show better search quality at comparable speed and memory.
 \end{frame}
 
+\begin{frame}[fragile]{10A. Attempt 4: Exact Curves, Flexible Products, Fixed Words}
+\small
+One coordinate cannot expose this opportunity: with capacity 16, its best
+choice is simply all 16 levels. Two coordinates are the smallest case where
+the same word can be divided differently.
+
+\begin{verbatim}
+for each coordinate i:
+    compute the globally optimal error E_i(K), for K=1...256
+for each adjacent pair and word capacity S:
+    choose K1,K2 with K1*K2 <= S
+    minimize E_1(K1) + E_2(K2)
+encode (z1,z2) as address = z1 + K1*z2
+\end{verbatim}
+
+\textbf{Running example.} Coordinate one has values $\{-1,0,1\}$ and
+coordinate two has $\{-2,-1,0,1,2\}$. With a 4-bit word, $3\times5=15$
+represents every combination exactly. Power-of-two counts force a choice
+such as $4\times4$, so two values on the second coordinate must share a
+representative.
+
+This proves a representational opportunity, not a search improvement.
+\end{frame}
+
 \begin{frame}{11. Attempt 4: The Cost Gate Ended The Study}
 \protect\phantomsection\label{11-attempt-4-the-cost-gate-ended-the-study}
 The registered synthetic implementation passed its correctness checks.
 The next question was deliberately mundane: can we afford the exact
 construction and evidence pipeline before reading benchmark data?
 
-The projected cost was \textbf{24.17025 CPU-hours}, just above the
-frozen \textbf{24-hour} ceiling. According to the rule fixed in advance,
-that was a stop. It is a pipeline-cost result, not evidence that
-arbitrary cardinalities help or hurt search.
+The run used \textbf{9.67 CPU-hours} and completed only 61 of 128 scalar
+coordinates. The frozen rule projected two datasets plus a 25\% margin,
+so this partial prefix already implied a lower bound of \textbf{24.17025
+CPU-hours}, just above the \textbf{24-hour} ceiling.
+
+About \textbf{4.64 hours} were exact scalar construction and \textbf{5.03
+hours} were canonical evidence serialization. Allocation, block-vector
+comparison, and encoding had not started. According to the rule fixed in
+advance, that was a stop. This is a result about the registered
+construction-and-evidence pipeline, not evidence that arbitrary
+cardinalities help or hurt search.
 
 A later attempt to rebuild a cleaner execution path never reached a
 valid scientific outcome. Its final invocation recorded that it started,
@@ -497,9 +625,6 @@ manifests remain in the registered source documents.
   Decision: close the one-dataset estimator effect.
 \end{itemize}
 
-Source: \texttt{saq-transform-analysis@3d94840},
-\texttt{docs/saq\_transform\_phase1b\_external\_replication\_evidence\_2026\_07\_10.md}.
-
 \textbf{Lossy 960-to-576 projection}
 
 \begin{itemize}
@@ -513,8 +638,6 @@ Source: \texttt{saq-transform-analysis@3d94840},
   was not authorized.
 \end{itemize}
 
-Source: \texttt{saq-lossy-projection-analysis@051ec6a},
-\texttt{docs/saq\_lossy\_projection\_lp0\_gate\_a\_evidence\_2026\_07\_11.md}.
 \end{frame}
 
 \begin{frame}[fragile]{A3. Attempt 2 Evidence Boundary}
@@ -541,14 +664,12 @@ guarantee better nearest-neighbor ranking.
 It does not support a new scalar-quantization method claim. Exact
 one-dimensional dynamic programming is prior work (Wu, 1991; Grønlund et
 al., 2017), and the outer allocation is a classical discrete
-rate-allocation problem. White and Singal (2026) is recent adjacent
-quantization work that explicitly treats exact one-dimensional k-means
-as an older baseline.
+rate-allocation problem. White and Singal (2026) is adjacent work: for
+inner-product accuracy, it weights coordinate errors by how strongly
+future inputs use those coordinates. That supports our lesson that raw
+reconstruction error is not the whole downstream objective, but it does
+not optimize Recall or solve our shared-codebook bit allocation.
 
-Sources: \texttt{vectordb@f51b487},
-\texttt{reports/scalar\_training\_exact\_hist\_audit\_2026\_06\_30/README.md}
-and \texttt{docs/saq\_limitation\_transfer\_memo\_2026\_07\_02.md};
-prior-work boundary at \texttt{saq-caq-one-shell-repair@433e8ea}.
 \end{frame}
 
 \begin{frame}[fragile]{A4. Attempt 3 Evidence Boundary}
@@ -573,11 +694,9 @@ DEEP controls remained below their default distance-quality targets.
 Decision: keep this as metric-sensitivity evidence. Do not claim
 per-query dominance, cross-dataset replication, or a new mechanism.
 
-Source: \texttt{saq-ratio-metric-analysis@146dc16},
-\texttt{docs/saq\_attempt3\_a3\_2\_a3\_3\_decision\_2026\_07\_13.md}.
 \end{frame}
 
-\begin{frame}[fragile]{A5. Attempt 4 Evidence Boundary}
+\begin{frame}[fragile]{A5. Attempt 4 Boundary}
 \protect\phantomsection\label{a5-attempt-4-evidence-boundary}
 The synthetic 16-state example showed a real feasible-set difference:
 
@@ -593,17 +712,20 @@ The synthetic 16-state example showed a real feasible-set difference:
 This was instrument validation only. No benchmark data or search
 evaluation was involved.
 
-The exact construction pipeline then projected \texttt{24.170246892361}
-CPU-hours against a frozen \texttt{24.0} CPU-hour ceiling. The
-registered decision was \texttt{NO\_GO\_EXACT\_SOLVER\_COST}.
+The partial run consumed \texttt{9.668} CPU-hours for 61 of 128 scalar
+coordinates. The frozen two-dataset-plus-margin rule converted that
+completed prefix into a strict lower bound of \texttt{24.17}
+CPU-hours against a \texttt{24.0} CPU-hour ceiling. Exact scalar
+construction used \texttt{4.64} hours and canonical evidence
+serialization used \texttt{5.03}; all later phases remained unexecuted.
+The registered decision was \texttt{NO\_GO\_EXACT\_SOLVER\_COST} for that
+full frozen pipeline.
 
 The later V2 execution path produced no valid terminal record. The
 audited project decision is to stop further artifact recovery; the
 runtime remains unknown rather than being reclassified as a scientific
 failure.
 
-Sources: \texttt{saq-arbitrary-cardinality-analysis@f1b464b} and
-\texttt{saq-arbitrary-cardinality-feasibility-v2@3577edd}.
 \end{frame}
 
 \begin{frame}{A6. What We Can And Cannot Say}
