@@ -16,7 +16,8 @@ before substantial implementation.
 - **Attempt 1:** a small GIST estimator improvement did not replicate on
   CIFAR; the favorable lossy-projection test also ranked worse than native SAQ.
 - **Attempt 2:** exact scalar training improved reconstruction more reliably
-  than it improved search, and its inner optimizer is prior work.
+  than it improved search; its inner optimizer is prior work (Wu 1991;
+  Grønlund et al. 2017).
 - **Attempt 3:** distance quality changed one GIST interpretation, but not the
   method; 39.6% of paired queries worsened and DEEP remained negative.
 - **Attempt 4:** the mathematical opportunity is real, but the registered exact

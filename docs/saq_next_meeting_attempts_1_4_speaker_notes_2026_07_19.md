@@ -3,7 +3,9 @@
 For:
 `docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md`
 
-PDF snapshot: `saq-meeting-summary@9c21469`, 28 pages.
+PDF snapshot: current successor deck, 29 pages. Its scientific conclusions are
+unchanged from `saq-meeting-summary@9c21469`; the later deck update adds only
+the missing Attempt 2 references.
 
 Status: meeting-preparation notes only. These notes do not change any research
 decision, reporting state, or authorization.
@@ -11,7 +13,7 @@ decision, reporting state, or authorization.
 ## How To Use These Notes
 
 - Target **11–12 minutes** for pages 1–18.
-- Pages 19–28 are backup slides. Do not present them in sequence.
+- Pages 19–29 are backup slides. Do not present them in sequence.
 - Do not read commit identifiers, filenames, or protocol status names aloud.
 - Say “we stopped under the rule fixed in advance,” not “the idea is impossible.”
 - When a question becomes technical, answer the decision-level point first.
@@ -192,11 +194,12 @@ If asked what “dynamic programming” means, say:
 > percent but made Recall worse. Across CIFAR and DEEP, the result depended on
 > the bit budget and allocation objective.
 >
-> There is also a novelty boundary. Exact one-dimensional scalar clustering
-> and discrete bit allocation are established techniques. Our experiments are
-> useful because they provide a stronger baseline and show that lower
-> reconstruction error is not a reliable search proxy. They do not establish
-> a new method.
+> There is also a novelty boundary. Wu established the exact one-dimensional
+> quantization dynamic program in 1991, and Grønlund and colleagues later
+> developed faster exact one-dimensional clustering algorithms. The recent
+> White–Singal quantization paper also treats exact one-dimensional k-means as
+> an older baseline. Our experiments remain useful as a stronger comparison,
+> but they do not establish a new method.
 
 Transition:
 
@@ -404,6 +407,18 @@ snapshot and that the meeting-summary branch only summarizes it.
 
 Use only when someone wants the exact evidence document. Do not spend meeting
 time explaining filenames.
+
+### Page 29 — Selected References For Attempt 2
+
+Open when someone asks which work supports the prior-art statement.
+
+Say:
+
+> Wu 1991 is the early exact one-dimensional quantization reference. Grønlund
+> and colleagues 2017 provide the later fast exact clustering result.
+> White–Singal 2026 is recent adjacent quantization work that explicitly treats
+> exact one-dimensional k-means as an existing baseline rather than its own
+> contribution.
 
 ## Final Rehearsal Check
 

@@ -135,10 +135,11 @@ But the relationship did not hold consistently:
 - across CIFAR and DEEP, the sign and size of the Recall change depended on
   the bit budget and allocation objective.
 
-There is also a novelty limit: exact one-dimensional scalar clustering is
-prior work, and the outer bit allocation is a classical discrete allocation
-problem. We keep this implementation as a demanding offline baseline, not as
-our method.
+There is also a novelty limit. Exact one-dimensional scalar clustering was
+already developed by Wu (1991) and later accelerated by Grønlund et al.
+(2017); the outer bit allocation is a classical discrete allocation problem.
+We keep this implementation as a demanding offline baseline, not as our
+method.
 
 ---
 
@@ -315,6 +316,10 @@ Source: `saq-lossy-projection-analysis@051ec6a`,
 
 ## A3. Attempt 2 Evidence Boundary
 
+```{=latex}
+\small
+```
+
 Representative results:
 
 - Audio, 4 bits: reconstruction error per value fell from `280,023` to
@@ -327,8 +332,10 @@ offline baseline, and lower reconstruction error does not guarantee better
 nearest-neighbor ranking.
 
 It does not support a new scalar-quantization method claim. Exact
-one-dimensional dynamic programming is prior work, and the outer allocation
-is a classical discrete rate-allocation problem.
+one-dimensional dynamic programming is prior work (Wu, 1991; Grønlund et al.,
+2017), and the outer allocation is a classical discrete rate-allocation
+problem. White and Singal (2026) is recent adjacent quantization work that
+explicitly treats exact one-dimensional k-means as an older baseline.
 
 Sources: `vectordb@f51b487`,
 `reports/scalar_training_exact_hist_audit_2026_06_30/README.md` and
@@ -433,3 +440,14 @@ Not supported:
 
 No further research or execution step is currently authorized for these four
 method lines.
+
+## A9. Selected References For Attempt 2
+
+- X. Wu. “Optimal Quantization by Matrix Searching.” *Journal of Algorithms*,
+  1991. <https://www.sciencedirect.com/science/article/pii/0196677491900392>
+- A. Grønlund, K. G. Larsen, A. Mathiasen, J. S. Nielsen, S. Schneider, and
+  M. Song. “Fast Exact k-Means, k-Medians and Bregman Divergence Clustering in
+  1D.” 2017. <https://arxiv.org/abs/1701.07204>
+- N. White and K. Singal. “Inner Product Aware Quantization: Provably Fast,
+  Accurate, and Adaptive Algorithms.” arXiv:2606.00289v1, 2026.
+  <https://arxiv.org/abs/2606.00289v1>

@@ -284,10 +284,11 @@ But the relationship did not hold consistently:
   on the bit budget and allocation objective.
 \end{itemize}
 
-There is also a novelty limit: exact one-dimensional scalar clustering
-is prior work, and the outer bit allocation is a classical discrete
-allocation problem. We keep this implementation as a demanding offline
-baseline, not as our method.
+There is also a novelty limit. Exact one-dimensional scalar clustering
+was already developed by Wu (1991) and later accelerated by Grønlund et
+al. (2017); the outer bit allocation is a classical discrete allocation
+problem. We keep this implementation as a demanding offline baseline,
+not as our method.
 \end{frame}
 
 \begin{frame}{8. Attempt 3: Were We Using The Wrong Quality Measure?}
@@ -518,6 +519,8 @@ Source: \texttt{saq-lossy-projection-analysis@051ec6a},
 
 \begin{frame}[fragile]{A3. Attempt 2 Evidence Boundary}
 \protect\phantomsection\label{a3-attempt-2-evidence-boundary}
+\small
+
 Representative results:
 
 \begin{itemize}
@@ -536,8 +539,11 @@ useful offline baseline, and lower reconstruction error does not
 guarantee better nearest-neighbor ranking.
 
 It does not support a new scalar-quantization method claim. Exact
-one-dimensional dynamic programming is prior work, and the outer
-allocation is a classical discrete rate-allocation problem.
+one-dimensional dynamic programming is prior work (Wu, 1991; Grønlund et
+al., 2017), and the outer allocation is a classical discrete
+rate-allocation problem. White and Singal (2026) is recent adjacent
+quantization work that explicitly treats exact one-dimensional k-means
+as an older baseline.
 
 Sources: \texttt{vectordb@f51b487},
 \texttt{reports/scalar\_training\_exact\_hist\_audit\_2026\_06\_30/README.md}
@@ -693,6 +699,25 @@ Not supported:
 
 No further research or execution step is currently authorized for these
 four method lines.
+\end{frame}
+
+\begin{frame}{A9. Selected References For Attempt 2}
+\protect\phantomsection\label{a9-selected-references-for-attempt-2}
+\begin{itemize}
+\tightlist
+\item
+  X. Wu. ``Optimal Quantization by Matrix Searching.'' \emph{Journal of
+  Algorithms}, 1991.
+  \url{https://www.sciencedirect.com/science/article/pii/0196677491900392}
+\item
+  A. Grønlund, K. G. Larsen, A. Mathiasen, J. S. Nielsen, S. Schneider,
+  and M. Song. ``Fast Exact k-Means, k-Medians and Bregman Divergence
+  Clustering in 1D.'' 2017. \url{https://arxiv.org/abs/1701.07204}
+\item
+  N. White and K. Singal. ``Inner Product Aware Quantization: Provably
+  Fast, Accurate, and Adaptive Algorithms.'' arXiv:2606.00289v1, 2026.
+  \url{https://arxiv.org/abs/2606.00289v1}
+\end{itemize}
 \end{frame}
 
 \end{document}
