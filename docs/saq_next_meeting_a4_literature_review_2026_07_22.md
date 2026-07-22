@@ -48,8 +48,9 @@ database vector
 The hoped-for contribution was to design both meanings together.
 
 Terms used below: **VQ** means vector quantization; **PQ** means product
-quantization; **ANN** means approximate nearest-neighbor search; **ADC** is the
-usual query-to-code lookup; and **k-means** is standard centroid training.
+quantization; **OPQ** means optimized PQ; **ANN** means approximate
+nearest-neighbor search; **ADC** is the usual query-to-code lookup; and
+**k-means** is standard centroid training.
 
 ---
 
