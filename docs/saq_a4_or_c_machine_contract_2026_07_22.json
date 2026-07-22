@@ -217,6 +217,17 @@
     }
   },
   "numeric_admission": {
+    "production_dp_comparison": {
+      "central_sse": "stable IEEE binary64 weighted-Welford central SSE with integer weights at most 2^53",
+      "rounding_environment": "round-to-nearest-ties-to-even; FTZ and DAZ disabled; no floating-point contraction",
+      "primitive_enclosure": "each binary64 arithmetic primitive is enclosed by one nextafter step outward toward negative and positive infinity; production uses neither epsilon comparisons, long double, nor arbitrary precision",
+      "cell_rule": "enumerate every predecessor independent of visitation order; let min_upper be the minimum candidate upper bound and plausible be every candidate whose lower bound is at most min_upper",
+      "certified_and_tied": "a singleton plausible set is the certified winner; if multiple plausible candidates have bitwise-equal central binary64 objectives, choose the smaller last-boundary rank as an exact binary64 tie",
+      "ambiguous": "if multiple plausible candidates have unequal central objectives, choose the smaller last-boundary rank provisionally and mark the cell unresolved",
+      "tiny_oracle_exception": "tiny fixtures only may clear an unresolved mark and accept the smaller boundary when the independent exact oracle proves the candidates have exactly equal objectives; an exact strict optimum that production marks resolved to another choice or that the oracle cannot recover from the provisional plausible set fails numeric admission",
+      "non_tiny_status": "any unresolved selected non-tiny DP path returns NUMERICALLY_UNRESOLVED",
+      "order_invariance": "forward, reverse, and fixed-shuffle candidate enumeration must produce identical objective bits, boundaries, and unresolved state"
+    },
     "mixed_radix_roundtrip": "all_valid_and_invalid_addresses_B4_B8",
     "lookup_vs_direct": "all_addresses_all_groups_both_rates",
     "nonfinite_or_negative_sse": "FAIL",
