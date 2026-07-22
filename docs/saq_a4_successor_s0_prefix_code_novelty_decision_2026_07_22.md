@@ -74,20 +74,20 @@ so `INCONCLUSIVE_SOURCE_GAP` does not apply.  Some cells that determine steps
 
 ## 4. Primary-source claim matrix
 
-| Primary work | FW | FR | AC | LA | NP | CO | FL | JT | SC | QC |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Muresan--Effros 2002 | YES | NO | YES | NO | NO | NO | NO | NO | YES | NO |
-| Brandt 2010 | YES | YES | NO | NO | NO | NO | YES | NO | YES | YES |
-| Finite Scalar Quantization 2024 | YES | YES | YES | NO | NO | NO | NO | NO | YES | NO |
-| Q-Palette 2025 | YES | NO | U | NO | NO | NO | NO | NO | YES | YES |
-| FibQuant 2026 | YES | NO | NO | NO | NO | NO | NO | NO | YES | YES |
-| Optimized Product Quantization 2013 | YES | YES | NO | NO | NO | NO | YES | NO | YES | YES |
-| Adaptive Bit Allocation PQ 2016 | YES | YES | NO | U | U | U | YES | U | YES | YES |
-| Quicker ADC 2021 | YES | YES | NO | NO | NO | NO | YES | NO | YES | YES |
-| Derived Codebooks 2019 | YES | YES | NO | YES | YES | YES | YES | NO | YES | YES |
-| Polysemous Codes 2016 | YES | YES | NO | YES | NO | YES | YES | NO | YES | YES |
-| Riskin et al. 1994 | YES | NO | NO | YES | YES | YES | NO | U | YES | U |
-| Chou--Lookabaugh--Gray 1989 | NO | NO | NO | NO | YES | YES | NO | YES | YES | U |
+| Primary work | FW | FR | AC | LA | NP | CO | FL | JT | SC | QC | Locator for every `YES`/`NO` |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Muresan--Effros 2002 | YES | NO | YES | NO | NO | NO | NO | NO | YES | NO | `FW,AC,SC`: §§II--IV, pp.303--308; all `NO`: complete scalar shortest-path method, §§II--V, pp.303--309 |
+| Brandt 2010 | YES | YES | NO | NO | NO | NO | YES | NO | YES | YES | `FW,FR,FL,SC,QC`: §§3.3--3.6, pp.1817--1819; all `NO`: complete codec/search definition, §§3.3--3.6 |
+| Finite Scalar Quantization 2024 | YES | YES | YES | NO | NO | NO | NO | NO | YES | NO | `FW,FR,AC,SC`: §3.1 and Table 1, p.3, §3.3 pp.3--4; all `NO`: complete FSQ mechanism, §§3.1--3.3 |
+| Q-Palette 2025 | YES | NO | U | NO | NO | NO | NO | NO | YES | YES | `FW,SC,QC`: §3 and Table 1, pp.3--4, App. C.3.1 p.18; all `NO`: quantizer/kernel definitions, §§3.1--3.3, pp.3--6 |
+| FibQuant 2026 | YES | NO | NO | NO | NO | NO | NO | NO | YES | YES | `FW,SC,QC`: §3.1, pp.3--4 and §5; all `NO`: block-code definition and scalar comparison, §§3--4, pp.3--7 |
+| Optimized Product Quantization 2013 | YES | YES | NO | NO | NO | NO | YES | NO | YES | YES | `FW,FR,FL,SC,QC`: §2 pp.2946--2948 and §4 pp.2950--2951; all `NO`: full objective/codec, §§2--3 |
+| Adaptive Bit Allocation PQ 2016 | YES | YES | NO | U | U | U | YES | U | YES | YES | all non-`U`: publisher primary text, §§2--4, especially unequal-bit objective and summed subspace-distance search |
+| Quicker ADC 2021 | YES | YES | NO | NO | NO | NO | YES | NO | YES | YES | all cells: §§3.1--3.4, pp.4--7; `AC=NO` follows explicit `2^b` 4/5/6-bit subquantizers in §3.1 |
+| Derived Codebooks 2019 | YES | YES | NO | YES | YES | YES | YES | NO | YES | YES | `FW,FR,LA,NP,CO,FL,SC,QC`: §§3.1--3.3, pp.3--5, Algorithms 2--3 and property P1; `AC,JT`: same complete construction |
+| Polysemous Codes 2016 | YES | YES | NO | YES | NO | YES | YES | NO | YES | YES | `FW,FR,LA,CO,FL,SC,QC`: §§3.1--3.3, Eqs.(1)--(7); `AC,NP,JT`: complete sequential PQ-then-bijection method, §§3--3.3 |
+| Riskin et al. 1994 | YES | U | U | YES | YES | YES | U | U | YES | U | all non-`U`: abstract and §I, pp.307--308: fixed-rate label, three assignments, progressive tree, intermediate reconstructions |
+| Chou--Lookabaugh--Gray 1989 | NO | U | U | U | YES | YES | U | YES | YES | `FW=NO`, `NP,CO,JT,SC=YES`: abstract and §II, pp.299--305, variable-rate tree pruning and successive approximation |
 
 ## 5. Exact source support
 
