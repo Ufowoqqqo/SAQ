@@ -7,13 +7,13 @@
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{booktabs,tabularx,array}
-\usepackage{xurl}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{\usepackage{url}}
 \hypersetup{hidelinks,pdftitle={Why We Stopped the Attempt 4 Prefix-Code Direction}}
 \newcommand{\paper}[1]{\textbf{#1}}
 \newcommand{\yes}{\textcolor{green!45!black}{Yes}}
 \newcommand{\no}{\textcolor{red!70!black}{No}}
 \title{Why We Stopped the Attempt 4 Prefix-Code Direction}
-\subtitle{What the closest papers already cover\\[2mm]\small Next-meeting draft --- not yet presented}
+\subtitle{\texorpdfstring{What the closest papers already cover\\[2mm]\small Next-meeting draft --- not yet presented}{What the closest papers already cover --- Next-meeting draft, not yet presented}}
 \author{}
 \date{2026-07-22}
 \begin{document}

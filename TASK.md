@@ -32,6 +32,7 @@ Current summary inventory:
 - `docs/saq_next_meeting_a4_literature_review_2026_07_22.md` and its Beamer
   source are the current unpresented successor draft. They explain the reviewed
   R12 literature boundary through `saq-a4-prefix-novelty-gate@7f4c001`.
+  The generated PDF is under `build/meeting-summary-literature-review/`.
 
 ## Current Attempt 4 Boundary
 
