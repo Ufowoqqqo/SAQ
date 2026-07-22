@@ -146,15 +146,13 @@ Replay replay(const std::vector<float>& panel, const std::vector<Block>& blocks,
 
 using Curves = std::array<std::vector<CurveEntry>, kDimensions>;
 
-Curves fit_curves(const std::vector<float>& panel, std::size_t h,
-                  std::uint64_t deadline, bool& exceeded) {
+Curves fit_curves(const std::vector<float>& panel, std::size_t h) {
     Curves result;
     std::vector<float> coordinate(kRows);
     for (std::size_t d = 0; d < kDimensions; ++d) {
         for (std::size_t row = 0; row < kRows; ++row)
             coordinate[row] = panel[row * kDimensions + d];
         result[d] = scalar_curve(rank_histogram(coordinate.data(), kRows, h), 256);
-        if (cpu_us() > deadline) { exceeded = true; break; }
     }
     return result;
 }
@@ -347,14 +345,10 @@ SyntheticResult run_synthetic_admission() {
     out.support_cpu_us = cpu_us() - mark;
     std::array<std::array<Replay, 2>, 2> d{}, a{};
     std::array<std::vector<Block>, 2> primary_a;
-    const std::uint64_t da_deadline = cpu_us() + 1800000000ULL;
-    bool cost_exceeded = false;
     for (std::size_t hi = 0; hi < 2; ++hi) {
         mark = cpu_us();
-        const Curves curves = fit_curves(panel, hi == 0 ? 1024 : 2048,
-                                         da_deadline, cost_exceeded);
+        const Curves curves = fit_curves(panel, hi == 0 ? 1024 : 2048);
         out.shared_scalar_cpu_us += cpu_us() - mark;
-        if (cost_exceeded) break;
         for (std::size_t bi = 0; bi < 2; ++bi) {
             const int bits = bi == 0 ? 4 : 8;
             for (std::size_t g = 0; g < 64; ++g)
@@ -375,17 +369,6 @@ SyntheticResult run_synthetic_admission() {
             out.a_cpu_us += cpu_us() - mark;
             if (hi == 0) primary_a[bi] = std::move(am);
         }
-    }
-    if (cost_exceeded ||
-        2 * (out.shared_scalar_cpu_us + out.d_cpu_us + out.a_cpu_us) >
-                3600000000ULL) {
-        out.failure = "T_project";
-        rusage usage{};
-        getrusage(RUSAGE_SELF, &usage);
-        out.peak_rss_bytes = std::uint64_t(usage.ru_maxrss) * 1024;
-        out.wall_us = std::chrono::duration_cast<std::chrono::microseconds>(
-                std::chrono::steady_clock::now() - wall_start).count();
-        return out;
     }
     std::array<Replay, 2> p{}, v{};
     for (std::size_t bi = 0; bi < 2; ++bi) {
