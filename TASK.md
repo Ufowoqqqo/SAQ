@@ -1,5 +1,19 @@
 # TASK.md
 
+## Original Attempt 4 Reopening Protocol (2026-07-22)
+
+The user has authorized source-only formulation of a new protocol for the
+original arbitrary-cardinality, mixed-radix Attempt 4. The protocol is
+`docs/saq_attempt4_original_reopening_protocol_2026_07_22.md` on branch
+`saq-a4-original-reopening-protocol`, based on reviewed R0 terminal commit
+`617ad25`.
+
+This authorization permits documentation and independent static review only.
+It does not authorize implementation, compilation, synthetic execution, data
+access, query evaluation, or revival of the prefix-code successor. The maximum
+outcome is `A4-OR-PROTOCOL_REVIEW_PASS`. Any later A4-OR-C numerical/cost
+admission requires separate explicit authorization.
+
 ## Current Research Milestone
 
 The bounded primary-source review, V2 protocol design, additive timing-closure
