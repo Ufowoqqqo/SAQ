@@ -47,6 +47,10 @@ database vector
 
 The hoped-for contribution was to design both meanings together.
 
+Terms used below: **VQ** means vector quantization; **PQ** means product
+quantization; **ANN** means approximate nearest-neighbor search; **ADC** is the
+usual query-to-code lookup; and **k-means** is standard centroid training.
+
 ---
 
 ## 3. The Review Question Was Deliberately Narrow
@@ -74,7 +78,7 @@ The primary papers did not leave such a gap.
 **Muresan--Effros (2002):** globally optimal scalar quantization by histogram
 segmentation. It covers learned scalar values and an integer number of levels.
 
-**Brandt (2010):** PCA, learned one-dimensional quantizers, integer bit
+**Brandt (2010):** principal component analysis, learned one-dimensional quantizers, integer bit
 allocation, packed database words, query lookup tables, and linear ANN scan.
 
 **Finite Scalar Quantization, FSQ (2024):** an implicit product codebook made
@@ -99,7 +103,7 @@ They do not give the new prefix meaning—but other papers do.
 2. split coordinates into independent subspaces;
 3. greedily assign each available bit to the subspace that most reduces total
    reconstruction error;
-4. train that subspace's codebook with k-means; and
+4. train that subspace's codebook with standard centroid training (k-means); and
 5. concatenate the ordinary subspace codeword indices.
 
 If one subspace receives 5 bits and another receives 3 bits, their codebooks
@@ -306,5 +310,12 @@ baselines and select a different problem.
 - Chou, Lookabaugh, and Gray. *Optimal Pruning with Applications to
   Tree-Structured Source Coding and Modeling*. IEEE TIT, 1989.
   <https://doi.org/10.1109/18.32124>
+- Andre et al. *Quicker ADC: Unlocking the Hidden Potential of Product
+  Quantization with SIMD*. <https://arxiv.org/abs/1812.09162>
+- Lee and Song. *Q-Palette: Fractional-Bit Quantizers Toward Optimal Bit
+  Allocation for Efficient LLM Deployment*. 2025.
+  <https://arxiv.org/abs/2509.20214>
+- Lee and Kim. *FibQuant: Universal Vector Quantization for Random-Access
+  KV-Cache Compression*. 2026. <https://arxiv.org/abs/2605.11478>
 - Reviewed S0 decision: `saq-a4-prefix-novelty-gate@7f4c001`,
   `docs/saq_a4_successor_s0_prefix_code_novelty_decision_2026_07_22.md`.

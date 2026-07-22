@@ -13,7 +13,7 @@
 \newcommand{\yes}{\textcolor{green!45!black}{Yes}}
 \newcommand{\no}{\textcolor{red!70!black}{No}}
 \title{Why We Stopped the Attempt 4 Prefix-Code Direction}
-\subtitle{What the closest papers already cover}
+\subtitle{What the closest papers already cover\\[2mm]\small Next-meeting draft --- not yet presented}
 \author{}
 \date{2026-07-22}
 \begin{document}
@@ -38,6 +38,7 @@
 \begin{tabular}{c|c} first $p$ bits & all $B$ bits\\ cheap score & accurate lookup
 \end{tabular}
 \end{center} The hoped-for contribution was to design both meanings together.
+\scriptsize Terms used below: VQ = vector quantization; PQ = product quantization; ANN = approximate nearest-neighbor search; ADC = query-to-code lookup; k-means = standard centroid training.
 \end{frame}
 \begin{frame}{3. The Review Question Was Narrow} We did not ask only whether a new optimizer could lower reconstruction error. We asked whether the two-stage code could be obtained by combining known factorized quantizers with known progressive or learned index assignments.
 \medskip A surviving direction needed at least one of:
@@ -50,7 +51,7 @@
 \begin{frame}{4. Papers That Already Cover the Fine Code}
 \paper{Muresan--Effros (2002)}: optimal scalar quantization by histogram segmentation; learned scalar values and an integer number of levels.
 \medskip
-\paper{Brandt (2010)}: principal-component rotation, learned one-dimensional quantizers, integer bit allocation, packed words, lookup tables, and ANN scan.
+\paper{Brandt (2010)}: principal-component rotation, learned one-dimensional quantizers, integer bit allocation, packed words, lookup tables, and approximate nearest-neighbor scan.
 \medskip
 \paper{Finite Scalar Quantization (2024)}: a product codebook made from small scalar level sets, including non-power-of-two factor sizes.
 \begin{block}{Already covered} Learn scalar values $+$ choose level counts $+$ form a product code $+$ pack a word.
@@ -61,7 +62,7 @@
 \begin{enumerate}
   \item rotate with principal component analysis and split into subspaces;
   \item give the next bit to the subspace that most reduces full reconstruction error;
-  \item fit that subspace codebook with k-means; and
+  \item fit that subspace codebook with standard centroid training (k-means); and
   \item concatenate ordinary subspace codeword indices.
 \end{enumerate} Five bits and three bits mean codebooks with 32 and 8 entries. The first three bits of the five-bit label are not a trained coarse code.
 \begin{block}{Boundary} BAPQ covers adaptive bit allocation, not a nested prefix or prefix/full joint training.
@@ -169,6 +170,9 @@ These close coding and systems side routes. Riskin, Derived Codebooks, and Polys
   \item Andre et al. ``Derived Codebooks for High-Accuracy Nearest Neighbor Search.'' 2019. \url{https://arxiv.org/abs/1905.06900}
   \item Douze et al. ``Polysemous Codes.'' ECCV 2016. \url{https://arxiv.org/abs/1609.01882}
   \item Chou, Lookabaugh, and Gray. ``Optimal Pruning with Applications to Tree-Structured Source Coding and Modeling.'' IEEE TIT, 1989. \url{https://doi.org/10.1109/18.32124}
+  \item Andre et al. ``Quicker ADC: Unlocking the Hidden Potential of Product Quantization with SIMD.'' \url{https://arxiv.org/abs/1812.09162}
+  \item Lee and Song. ``Q-Palette: Fractional-Bit Quantizers Toward Optimal Bit Allocation for Efficient LLM Deployment.'' 2025. \url{https://arxiv.org/abs/2509.20214}
+  \item Lee and Kim. ``FibQuant: Universal Vector Quantization for Random-Access KV-Cache Compression.'' 2026. \url{https://arxiv.org/abs/2605.11478}
   \item Reviewed decision: \texttt{saq-a4-prefix-novelty-gate@7f4c001}.
 \end{itemize}
 \end{frame}
