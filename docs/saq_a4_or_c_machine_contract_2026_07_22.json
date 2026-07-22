@@ -69,6 +69,28 @@
       "peeled_commit": "0ca9df4792b173d573044ee14ca0704780176e82",
       "license": "MIT",
       "build": "CPU_ONLY_NO_PYTHON_NO_GPU",
+      "cmake_cache": {
+        "BUILD_SHARED_LIBS": "OFF",
+        "BUILD_TESTING": "OFF",
+        "CMAKE_BUILD_TYPE": "Release",
+        "FAISS_ENABLE_C_API": "OFF",
+        "FAISS_ENABLE_EXTRAS": "OFF",
+        "FAISS_ENABLE_GPU": "OFF",
+        "FAISS_ENABLE_MKL": "OFF",
+        "FAISS_ENABLE_PYTHON": "OFF",
+        "FAISS_ENABLE_RAFT": "OFF",
+        "FAISS_OPT_LEVEL": "generic",
+        "BLA_VENDOR": "OpenBLAS"
+      },
+      "cpu_dispatch": "generic_no_avx_specialized_target",
+      "blas": {
+        "rpm": "openblas-0.3.29-1.el9.x86_64",
+        "library": "/usr/lib64/libopenblaso-r0.3.29.so",
+        "library_sha256": "3f5a35837d2505b805c296c38d643e99c6889d501fb3b9dd46cb816bfd9febb6",
+        "cblas_header": "/usr/include/cblas.h",
+        "cblas_header_sha256": "9c16a99da66723bc30912442ff22e01629256628c8434a3bc91859d6e9b65b7b",
+        "lapack_and_blas_library_argument": "/usr/lib64/libopenblaso-r0.3.29.so"
+      },
       "ordinary_control": "unrotated ProductQuantizer with 8-bit subquantizers",
       "block_control": "Faiss native Clustering, 8 deterministic redos",
       "blas_threads": 1
@@ -86,12 +108,16 @@
     "grouping": "adjacent_nonoverlapping_pairs",
     "payload_bytes": {"B4": 32, "B8": 64},
     "generator": {
-      "integer_arithmetic": "uint64_mod_2^64_twos_complement_for_signed_numerators",
+      "integer_arithmetic": "uint64 modulo 2^64 for hash expressions; signed int64 for label/noise/numerator after residues are reduced to their stated small ranges",
       "hash": "SplitMix64",
       "seed": "0xA40C202607220001",
       "row_multiplier": "0x9E3779B97F4A7C15",
       "coordinate_multiplier": "0xBF58476D1CE4E5B9",
       "second_stream_xor": "0x94D049BB133111EB",
+      "splitmix64": "z=x+0x9E3779B97F4A7C15; z=(z xor (z>>30))*0xBF58476D1CE4E5B9; z=(z xor (z>>27))*0x94D049BB133111EB; return z xor (z>>31); wrap after every add/multiply",
+      "base": "seed xor ((row_id+1)*row_multiplier) xor ((coordinate_id+1)*coordinate_multiplier), with uint64 wrap",
+      "hash1": "splitmix64(base)",
+      "hash2": "splitmix64(base xor second_stream_xor)",
       "states": "3+(coordinate_id mod 14)",
       "label": "hash1 mod states",
       "noise": "signed_integer(hash2 mod 17)-8",
@@ -111,11 +137,30 @@
   },
   "tiny_exact_suite": {
     "a4_zero_error_witness": true,
+    "historical_fixture_source": {
+      "commit": "9e65159",
+      "path": "script/a4_1s_runner.py",
+      "blob": "ad34004b15da79a2481650e64f1cc7cfaf93c20f",
+      "role": "READ_ONLY_DEFINITION_REEXPRESSED_NOT_IMPORTED_OR_EXECUTED"
+    },
+    "exhaustive_cases": "case_id increasing; support_size=1..4; lexicographic combinations of (-2,-1,0,1,2); lexicographic Cartesian weights in (1,2,3)^support_size; vector_ids=0..support_size-1; maximum_cardinality=support_size; exactly 780 cases",
+    "bit_pattern_cases_hex": [
+      "80000000,00000000|1,1",
+      "bf800000,80000000,00000000,3f800000|1,2,3,1",
+      "80000001,80000000,00000000,00000001|1,1,1,1",
+      "80800000,807fffff,007fffff,00800000|1,2,3,4",
+      "ff7fffff,bf800000,3f800000,7f7fffff|1,1,1,1",
+      "bf800000,00000000,3f800000|1,1,1",
+      "3f800000,3f800001|1,1",
+      "3f800001,3f800002|1,1"
+    ],
     "generated_case_count": 256,
-    "generator": "SplitMix64 seed 0xA40C202607220002",
-    "support_size_range": [1, 12],
-    "support_value_range": [-32, 32],
-    "weight_range": [1, 8],
+    "generated_case_ids": "788..1043",
+    "generator_seed": "0xA40C202607220002",
+    "generated_case_rule": "for suite_index i=0..255 set size=1+(i mod 12); for j=0..size-1 set base=seed xor ((i+1)*row_multiplier) xor ((j+1)*coordinate_multiplier), value=-32+(splitmix64(base) mod 65), weight=1+(splitmix64(base xor second_stream_xor) mod 8), vector_id=j; draw/order is i then j; maximum_cardinality=min(8,distinct values after aggregation)",
+    "bit_pattern_case_rule": "case_ids 780..787 in listed order; values are the listed raw binary32 words, weights follow the separator, vector_ids are 0..size-1, maximum_cardinality is the count of distinct decoded values after signed-zero canonicalization",
+    "case_order": "780 exhaustive, then 8 bit-pattern cases in listed order, then 256 generated cases",
+    "total_case_count": 1044,
     "reference": "independent bounded exhaustive contiguous-partition enumeration using signed __int128 integer moments",
     "objective_tolerance": "1e-10*max(1,abs(SSE_exact))",
     "cardinality_and_tie_match": "EXACT"
@@ -129,7 +174,21 @@
       "rotation": "none",
       "redos": 8,
       "iterations": 300,
-      "seed_base": 20260722
+      "seed": {"B4": 2026072204, "B8": 2026072208},
+      "faiss_fields": {
+        "train_type": "Train_default",
+        "niter": 300,
+        "nredo": 8,
+        "min_points_per_centroid": 1,
+        "max_points_per_centroid": 8192,
+        "use_faster_subsampling": false,
+        "spherical": false,
+        "int_centroids": false,
+        "update_index": true,
+        "verbose": false
+      },
+      "training_surface": "for each subspace instantiate Faiss Clustering with the frozen fields and seed, run eight redos, write the winning float32 centers into a Faiss ProductQuantizer, and encode with that ProductQuantizer; do not call a hidden/default second trainer",
+      "empty_cluster": "if any Faiss iteration stat nsplit is nonzero, CONTROL_INVALID"
     },
     "V": {
       "groups": 64,
@@ -137,7 +196,22 @@
       "centers": {"B4": 16, "B8": 256},
       "redos": 8,
       "iterations": 300,
-      "seed_base": 20260722,
+      "seed": "20260722 + B*10000 + group_id*8 + redo_id",
+      "start_0": "candidate A binary32-serialized then binary64-decoded Cartesian centers in mixed-radix order; if used_states<S, repeatedly append the raw row maximizing distance to its nearest current center, ties choose smallest row_id",
+      "starts_1_to_7": "empty initial centroid array; Faiss Clustering initialization with the frozen per-start seed",
+      "faiss_fields": {
+        "niter": 300,
+        "nredo": 1,
+        "min_points_per_centroid": 1,
+        "max_points_per_centroid": 8192,
+        "use_faster_subsampling": false,
+        "spherical": false,
+        "int_centroids": false,
+        "update_index": true,
+        "verbose": false
+      },
+      "empty_cluster": "if any Faiss iteration stat nsplit is nonzero, CONTROL_INVALID",
+      "winner": "lowest final direct-replay fitting SSE; ties choose smaller redo_id",
       "B8_relation_to_P": "same_model_class_separate_training_surface_not_independent_evidence"
     }
   },
@@ -174,6 +248,17 @@
     "NO_GO_REOPENING_COST",
     "PASS_A4_OR_C_SYNTHETIC_ONLY"
   ],
+  "failure_mapping": {
+    "DEPENDENCY_OR_BUILD_INVALID": ["Faiss source/ref/license mismatch", "CMake option or BLAS identity mismatch", "compile/link failure", "binary/build identity mismatch"],
+    "NUMERIC_ADMISSION_FAIL": ["tiny objective/cardinality/tie mismatch", "mixed-radix or pack roundtrip mismatch", "lookup/direct mismatch", "nonfinite value", "negative SSE", "A or D serialized-center collision", "allocation order dependence", "eta limit failure"],
+    "CONTROL_INVALID": ["P or V wrong shape", "wrong redo/iteration/seed/init", "Faiss nsplit nonzero", "P or V serialized-center collision", "any arm incomplete"],
+    "APPROXIMATION_SENSITIVE": ["H1024 versus H2048 changes any registered contrast sign or admission decision"],
+    "NUMERICALLY_UNRESOLVED": ["any within-envelope allocation changes the decision"],
+    "MEMORY_CEILING_FAIL": ["any arm peak RSS exceeds ceiling"],
+    "SUPPORT_OVERHEAD_FAIL": ["median support/scientific CPU ratio exceeds ceiling"],
+    "NO_GO_REOPENING_COST": ["T_project exceeds ceiling", "median A-specific/shared-scalar CPU ratio exceeds ceiling"],
+    "PASS_A4_OR_C_SYNTHETIC_ONLY": ["all earlier conditions pass"]
+  },
   "output": {
     "directory": "docs/saq_a4_or_c_synthetic_artifacts_2026_07_22",
     "files": [
@@ -183,7 +268,17 @@
       "timing_repetitions.json",
       "terminal_result.json"
     ],
-    "format": "canonical_JSON_UTF8_LF_sorted_keys_no_nan_no_infinity",
+    "format": "contract_copy is byte-identical to committed source; the other four files are canonical_JSON_UTF8_LF_sorted_keys_no_nan_no_infinity",
+    "numeric_encoding": "scientific binary32/binary64 values are lowercase C++ std::hexfloat strings; durations and byte counts are unsigned decimal JSON integers; booleans are JSON booleans",
+    "schema_policy": "each non-contract output is one JSON object whose top-level key set is exactly the listed set; no additional top-level keys; named arrays contain objects with exactly the fields stated in their description",
+    "schemas": {
+      "contract_copy.json": ["byte-for-byte copy of this committed contract; no added keys"],
+      "build_identity.json": ["contract_sha256", "git_commit", "faiss_commit", "faiss_tree_or_submodule_identity", "faiss_license_sha256", "compiler_version", "cmake_version", "compile_argv", "cmake_cache", "blas_library_sha256", "cblas_header_sha256", "binary_sha256"],
+      "numeric_admission.json": ["contract_sha256", "tiny_total", "tiny_passed", "tiny_max_objective_error_hex", "allocation_match", "roundtrip_case_count", "lookup_case_count", "eta_hex", "eta_limit_hex", "sensitivity_same_decision", "near_tie_same_decision", "arm_shapes", "center_collision_counts", "control_nsplit_counts", "passed"],
+      "timing_repetitions.json": ["contract_sha256", "warmup_count", "repetitions array with per-arm scientific_cpu_us, wall_us, support_cpu_us, peak_rss_bytes, shared_scalar_cpu_us, A_specific_cpu_us", "median aggregates", "T_project_cpu_us", "support_ratio_hex", "A_specific_ratio_hex", "all thresholds", "passed"],
+      "terminal_result.json": ["contract_sha256", "status", "first_failed_condition", "all_condition_booleans", "no_natural_data_attestation", "numeric_admission_sha256", "timing_repetitions_sha256", "build_identity_sha256"]
+    },
+    "contract_identity": "contract_copy.json must be byte-identical to the committed machine contract; every other file repeats its SHA-256",
     "raw_labels_centers_or_per_interval_traces": "NOT_EMITTED",
     "scientific_replay_aggregates": "EMITTED"
   }
