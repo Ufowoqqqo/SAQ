@@ -299,8 +299,11 @@
       "timing_repetitions.json",
       "terminal_result.json"
     ],
-    "format": "contract_copy is byte-identical to committed source; the other four files are canonical_JSON_UTF8_LF_sorted_keys_no_nan_no_infinity",
-    "numeric_encoding": "scientific binary32/binary64 values are lowercase C++ std::hexfloat strings; durations and byte counts are unsigned decimal JSON integers; booleans are JSON booleans",
+    "stage_state_policy": "build_identity, numeric_admission, and timing_repetitions each use exactly one of COMPLETE, FAILED, or NOT_RUN; an unexecuted stage contains no fabricated measurements",
+    "condition_state_policy": "evaluate conditions in condition_order; conditions before first_failed_condition are PASS, first_failed_condition is FAIL, and later conditions are NOT_RUN; a passing terminal has every condition PASS",
+    "presence_by_status": "contract_copy and terminal_result are always emitted; build_identity is emitted when dependency/build admission starts; numeric_admission is emitted when numeric admission starts; timing_repetitions is emitted when timing starts; terminal hashes are null exactly for ungenerated stage artifacts",
+    "format": "contract_copy is byte-identical to committed source; every other emitted file is canonical_JSON_UTF8_LF_sorted_keys_no_nan_no_infinity",
+    "numeric_encoding": "scientific binary32/binary64 values are lowercase C++ std::hexfloat strings; durations and byte counts are unsigned decimal JSON integers; condition states are PASS, FAIL, or NOT_RUN; measurement pass fields are JSON booleans",
     "schema_policy": "each non-contract output is one JSON object whose top-level key set is exactly the listed set; no additional top-level keys; named arrays contain objects with exactly the fields stated in their description",
     "schema_path": "docs/saq_a4_or_c_output_schema_2026_07_22.json",
     "schema_id": "https://saq.local/schema/a4-or-c-output-2026-07-22",

@@ -7,6 +7,8 @@
     "git_oid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "hexfloat": {"type": "string", "pattern": "^-?0x[0-9a-f]+(\\.[0-9a-f]+)?p[+-][0-9]+$"},
     "nonnegative_integer": {"type": "integer", "minimum": 0},
+    "stage_state": {"enum": ["COMPLETE", "FAILED", "NOT_RUN"]},
+    "condition_state": {"enum": ["PASS", "FAIL", "NOT_RUN"]},
     "cmake_cache": {
       "type": "object",
       "additionalProperties": false,
@@ -74,62 +76,116 @@
       "type": "object", "additionalProperties": false,
       "required": ["dependency_identity", "build_success", "tiny_exact", "mixed_radix", "lookup_direct", "finite_nonnegative", "AD_center_collision_zero", "allocation_order", "eta", "P_shape", "V_shape", "P_center_collision_zero", "V_center_collision_zero", "P_nsplit_zero", "V_nsplit_zero", "all_arms_complete", "sensitivity", "near_tie", "rss", "support_ratio", "T_project", "A_specific_ratio"],
       "properties": {
-        "dependency_identity": {"type": "boolean"}, "build_success": {"type": "boolean"}, "tiny_exact": {"type": "boolean"},
-        "mixed_radix": {"type": "boolean"}, "lookup_direct": {"type": "boolean"}, "finite_nonnegative": {"type": "boolean"},
-        "AD_center_collision_zero": {"type": "boolean"}, "allocation_order": {"type": "boolean"}, "eta": {"type": "boolean"},
-        "P_shape": {"type": "boolean"}, "V_shape": {"type": "boolean"}, "P_center_collision_zero": {"type": "boolean"},
-        "V_center_collision_zero": {"type": "boolean"}, "P_nsplit_zero": {"type": "boolean"}, "V_nsplit_zero": {"type": "boolean"},
-        "all_arms_complete": {"type": "boolean"}, "sensitivity": {"type": "boolean"}, "near_tie": {"type": "boolean"},
-        "rss": {"type": "boolean"}, "support_ratio": {"type": "boolean"}, "T_project": {"type": "boolean"}, "A_specific_ratio": {"type": "boolean"}
+        "dependency_identity": {"$ref": "#/$defs/condition_state"}, "build_success": {"$ref": "#/$defs/condition_state"}, "tiny_exact": {"$ref": "#/$defs/condition_state"},
+        "mixed_radix": {"$ref": "#/$defs/condition_state"}, "lookup_direct": {"$ref": "#/$defs/condition_state"}, "finite_nonnegative": {"$ref": "#/$defs/condition_state"},
+        "AD_center_collision_zero": {"$ref": "#/$defs/condition_state"}, "allocation_order": {"$ref": "#/$defs/condition_state"}, "eta": {"$ref": "#/$defs/condition_state"},
+        "P_shape": {"$ref": "#/$defs/condition_state"}, "V_shape": {"$ref": "#/$defs/condition_state"}, "P_center_collision_zero": {"$ref": "#/$defs/condition_state"},
+        "V_center_collision_zero": {"$ref": "#/$defs/condition_state"}, "P_nsplit_zero": {"$ref": "#/$defs/condition_state"}, "V_nsplit_zero": {"$ref": "#/$defs/condition_state"},
+        "all_arms_complete": {"$ref": "#/$defs/condition_state"}, "sensitivity": {"$ref": "#/$defs/condition_state"}, "near_tie": {"$ref": "#/$defs/condition_state"},
+        "rss": {"$ref": "#/$defs/condition_state"}, "support_ratio": {"$ref": "#/$defs/condition_state"}, "T_project": {"$ref": "#/$defs/condition_state"}, "A_specific_ratio": {"$ref": "#/$defs/condition_state"}
       }
     }
   },
   "oneOf": [
     {
       "type": "object", "additionalProperties": false,
-      "required": ["artifact_type", "contract_sha256", "git_commit", "faiss_commit", "faiss_tree_or_submodule_identity", "faiss_license_sha256", "compiler_version", "cmake_version", "compile_argv", "cmake_cache", "blas_library_sha256", "cblas_header_sha256", "binary_sha256"],
+      "required": ["artifact_type", "contract_sha256", "state", "first_failed_condition"],
       "properties": {
         "artifact_type": {"const": "build_identity"}, "contract_sha256": {"$ref": "#/$defs/sha256"}, "git_commit": {"$ref": "#/$defs/git_oid"},
         "faiss_commit": {"$ref": "#/$defs/git_oid"}, "faiss_tree_or_submodule_identity": {"$ref": "#/$defs/git_oid"}, "faiss_license_sha256": {"$ref": "#/$defs/sha256"},
         "compiler_version": {"type": "string", "minLength": 1}, "cmake_version": {"type": "string", "minLength": 1},
         "compile_argv": {"type": "array", "minItems": 1, "items": {"type": "string"}}, "cmake_cache": {"$ref": "#/$defs/cmake_cache"},
-        "blas_library_sha256": {"$ref": "#/$defs/sha256"}, "cblas_header_sha256": {"$ref": "#/$defs/sha256"}, "binary_sha256": {"$ref": "#/$defs/sha256"}
-      }
+        "blas_library_sha256": {"$ref": "#/$defs/sha256"}, "cblas_header_sha256": {"$ref": "#/$defs/sha256"}, "binary_sha256": {"$ref": "#/$defs/sha256"},
+        "state": {"$ref": "#/$defs/stage_state"}, "first_failed_condition": {"type": ["string", "null"], "enum": ["dependency_identity", "build_success", null]}
+      },
+      "allOf": [
+        {"if": {"properties": {"state": {"const": "COMPLETE"}}}, "then": {"required": ["git_commit", "faiss_commit", "faiss_tree_or_submodule_identity", "faiss_license_sha256", "compiler_version", "cmake_version", "compile_argv", "cmake_cache", "blas_library_sha256", "cblas_header_sha256", "binary_sha256"], "properties": {"first_failed_condition": {"const": null}}}},
+        {"if": {"properties": {"state": {"const": "FAILED"}}}, "then": {"properties": {"first_failed_condition": {"enum": ["dependency_identity", "build_success"]}}}},
+        {"if": {"properties": {"state": {"const": "NOT_RUN"}}}, "then": {"maxProperties": 4, "properties": {"first_failed_condition": {"const": null}}}}
+      ]
     },
     {
       "type": "object", "additionalProperties": false,
-      "required": ["artifact_type", "contract_sha256", "tiny_total", "tiny_passed", "tiny_max_objective_error_hex", "allocation_match", "roundtrip_case_count", "lookup_case_count", "eta_hex", "eta_limit_hex", "sensitivity_same_decision", "near_tie_same_decision", "arm_shapes", "center_collision_counts", "control_nsplit_counts", "passed"],
+      "required": ["artifact_type", "contract_sha256", "state", "first_failed_condition"],
       "properties": {
         "artifact_type": {"const": "numeric_admission"}, "contract_sha256": {"$ref": "#/$defs/sha256"},
         "tiny_total": {"const": 1044}, "tiny_passed": {"$ref": "#/$defs/nonnegative_integer"}, "tiny_max_objective_error_hex": {"$ref": "#/$defs/hexfloat"},
         "allocation_match": {"type": "boolean"}, "roundtrip_case_count": {"$ref": "#/$defs/nonnegative_integer"}, "lookup_case_count": {"$ref": "#/$defs/nonnegative_integer"},
         "eta_hex": {"$ref": "#/$defs/hexfloat"}, "eta_limit_hex": {"$ref": "#/$defs/hexfloat"}, "sensitivity_same_decision": {"type": "boolean"},
         "near_tie_same_decision": {"type": "boolean"}, "arm_shapes": {"$ref": "#/$defs/arm_shapes"}, "center_collision_counts": {"$ref": "#/$defs/arm_counts"},
-        "control_nsplit_counts": {"$ref": "#/$defs/control_counts"}, "passed": {"type": "boolean"}
-      }
+        "control_nsplit_counts": {"$ref": "#/$defs/control_counts"}, "passed": {"type": "boolean"},
+        "state": {"$ref": "#/$defs/stage_state"},
+        "first_failed_condition": {"type": ["string", "null"], "enum": ["tiny_exact", "mixed_radix", "lookup_direct", "finite_nonnegative", "AD_center_collision_zero", "allocation_order", "eta", "P_shape", "V_shape", "P_center_collision_zero", "V_center_collision_zero", "P_nsplit_zero", "V_nsplit_zero", "all_arms_complete", "sensitivity", "near_tie", null]}
+      },
+      "allOf": [
+        {"if": {"properties": {"state": {"const": "COMPLETE"}}}, "then": {"required": ["tiny_total", "tiny_passed", "tiny_max_objective_error_hex", "allocation_match", "roundtrip_case_count", "lookup_case_count", "eta_hex", "eta_limit_hex", "sensitivity_same_decision", "near_tie_same_decision", "arm_shapes", "center_collision_counts", "control_nsplit_counts", "passed"], "properties": {"first_failed_condition": {"const": null}, "passed": {"const": true}}}},
+        {"if": {"properties": {"state": {"const": "FAILED"}}}, "then": {"not": {"properties": {"first_failed_condition": {"const": null}}}, "properties": {"passed": {"const": false}}}},
+        {"if": {"properties": {"state": {"const": "NOT_RUN"}}}, "then": {"maxProperties": 4, "properties": {"first_failed_condition": {"const": null}}}}
+      ]
     },
     {
       "type": "object", "additionalProperties": false,
-      "required": ["artifact_type", "contract_sha256", "warmup_count", "repetitions", "medians", "T_project_cpu_us", "support_ratio_hex", "A_specific_ratio_hex", "thresholds", "passed"],
+      "required": ["artifact_type", "contract_sha256", "state", "first_failed_condition"],
       "properties": {
         "artifact_type": {"const": "timing_repetitions"}, "contract_sha256": {"$ref": "#/$defs/sha256"}, "warmup_count": {"const": 1},
-        "repetitions": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"$ref": "#/$defs/timing_repetition"}},
+        "repetitions": {"type": "array", "minItems": 3, "maxItems": 3, "prefixItems": [{"allOf": [{"$ref": "#/$defs/timing_repetition"}, {"properties": {"repetition_id": {"const": 1}}}]}, {"allOf": [{"$ref": "#/$defs/timing_repetition"}, {"properties": {"repetition_id": {"const": 2}}}]}, {"allOf": [{"$ref": "#/$defs/timing_repetition"}, {"properties": {"repetition_id": {"const": 3}}}]}], "items": false},
         "medians": {"$ref": "#/$defs/timing_fields"}, "T_project_cpu_us": {"$ref": "#/$defs/nonnegative_integer"},
         "support_ratio_hex": {"$ref": "#/$defs/hexfloat"}, "A_specific_ratio_hex": {"$ref": "#/$defs/hexfloat"},
         "thresholds": {"type": "object", "additionalProperties": false, "required": ["T_project_cpu_us", "peak_rss_bytes", "support_ratio_hex", "A_specific_ratio_hex"], "properties": {"T_project_cpu_us": {"const": 3600000000}, "peak_rss_bytes": {"const": 17179869184}, "support_ratio_hex": {"const": "0x1p-2"}, "A_specific_ratio_hex": {"const": "0x1p-2"}}},
-        "passed": {"type": "boolean"}
-      }
+        "passed": {"type": "boolean"}, "state": {"$ref": "#/$defs/stage_state"},
+        "first_failed_condition": {"type": ["string", "null"], "enum": ["rss", "support_ratio", "T_project", "A_specific_ratio", null]}
+      },
+      "allOf": [
+        {"if": {"properties": {"state": {"const": "COMPLETE"}}}, "then": {"required": ["warmup_count", "repetitions", "medians", "T_project_cpu_us", "support_ratio_hex", "A_specific_ratio_hex", "thresholds", "passed"], "properties": {"first_failed_condition": {"const": null}, "passed": {"const": true}}}},
+        {"if": {"properties": {"state": {"const": "FAILED"}}}, "then": {"not": {"properties": {"first_failed_condition": {"const": null}}}, "properties": {"passed": {"const": false}}}},
+        {"if": {"properties": {"state": {"const": "NOT_RUN"}}}, "then": {"maxProperties": 4, "properties": {"first_failed_condition": {"const": null}}}}
+      ]
     },
     {
       "type": "object", "additionalProperties": false,
-      "required": ["artifact_type", "contract_sha256", "status", "first_failed_condition", "all_condition_booleans", "no_natural_data_attestation", "numeric_admission_sha256", "timing_repetitions_sha256", "build_identity_sha256"],
+      "required": ["artifact_type", "contract_sha256", "status", "first_failed_condition", "all_condition_states", "no_natural_data_attestation", "numeric_admission_sha256", "timing_repetitions_sha256", "build_identity_sha256"],
       "properties": {
         "artifact_type": {"const": "terminal_result"}, "contract_sha256": {"$ref": "#/$defs/sha256"},
         "status": {"enum": ["DEPENDENCY_OR_BUILD_INVALID", "NUMERIC_ADMISSION_FAIL", "CONTROL_INVALID", "APPROXIMATION_SENSITIVE", "NUMERICALLY_UNRESOLVED", "MEMORY_CEILING_FAIL", "SUPPORT_OVERHEAD_FAIL", "NO_GO_REOPENING_COST", "PASS_A4_OR_C_SYNTHETIC_ONLY"]},
         "first_failed_condition": {"type": ["string", "null"], "enum": ["dependency_identity", "build_success", "tiny_exact", "mixed_radix", "lookup_direct", "finite_nonnegative", "AD_center_collision_zero", "allocation_order", "eta", "P_shape", "V_shape", "P_center_collision_zero", "V_center_collision_zero", "P_nsplit_zero", "V_nsplit_zero", "all_arms_complete", "sensitivity", "near_tie", "rss", "support_ratio", "T_project", "A_specific_ratio", null]},
-        "all_condition_booleans": {"$ref": "#/$defs/conditions"}, "no_natural_data_attestation": {"const": true},
-        "numeric_admission_sha256": {"$ref": "#/$defs/sha256"}, "timing_repetitions_sha256": {"$ref": "#/$defs/sha256"}, "build_identity_sha256": {"$ref": "#/$defs/sha256"}
-      }
+        "all_condition_states": {"$ref": "#/$defs/conditions"}, "no_natural_data_attestation": {"const": true},
+        "numeric_admission_sha256": {"anyOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]}, "timing_repetitions_sha256": {"anyOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]}, "build_identity_sha256": {"anyOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]}
+      },
+      "allOf": [
+        {"if": {"properties": {"status": {"const": "DEPENDENCY_OR_BUILD_INVALID"}}}, "then": {"properties": {"first_failed_condition": {"enum": ["dependency_identity", "build_success"]}, "build_identity_sha256": {"$ref": "#/$defs/sha256"}, "numeric_admission_sha256": {"const": null}, "timing_repetitions_sha256": {"const": null}}}},
+        {"if": {"properties": {"status": {"enum": ["NUMERIC_ADMISSION_FAIL", "CONTROL_INVALID", "APPROXIMATION_SENSITIVE", "NUMERICALLY_UNRESOLVED"]}}}, "then": {"properties": {"build_identity_sha256": {"$ref": "#/$defs/sha256"}, "numeric_admission_sha256": {"$ref": "#/$defs/sha256"}, "timing_repetitions_sha256": {"const": null}}}},
+        {"if": {"properties": {"status": {"const": "NUMERIC_ADMISSION_FAIL"}}}, "then": {"properties": {"first_failed_condition": {"enum": ["tiny_exact", "mixed_radix", "lookup_direct", "finite_nonnegative", "AD_center_collision_zero", "allocation_order", "eta"]}}}},
+        {"if": {"properties": {"status": {"const": "CONTROL_INVALID"}}}, "then": {"properties": {"first_failed_condition": {"enum": ["P_shape", "V_shape", "P_center_collision_zero", "V_center_collision_zero", "P_nsplit_zero", "V_nsplit_zero", "all_arms_complete"]}}}},
+        {"if": {"properties": {"status": {"const": "APPROXIMATION_SENSITIVE"}}}, "then": {"properties": {"first_failed_condition": {"const": "sensitivity"}}}},
+        {"if": {"properties": {"status": {"const": "NUMERICALLY_UNRESOLVED"}}}, "then": {"properties": {"first_failed_condition": {"const": "near_tie"}}}},
+        {"if": {"properties": {"status": {"enum": ["MEMORY_CEILING_FAIL", "SUPPORT_OVERHEAD_FAIL", "NO_GO_REOPENING_COST", "PASS_A4_OR_C_SYNTHETIC_ONLY"]}}}, "then": {"properties": {"build_identity_sha256": {"$ref": "#/$defs/sha256"}, "numeric_admission_sha256": {"$ref": "#/$defs/sha256"}, "timing_repetitions_sha256": {"$ref": "#/$defs/sha256"}}}},
+        {"if": {"properties": {"status": {"const": "MEMORY_CEILING_FAIL"}}}, "then": {"properties": {"first_failed_condition": {"const": "rss"}}}},
+        {"if": {"properties": {"status": {"const": "SUPPORT_OVERHEAD_FAIL"}}}, "then": {"properties": {"first_failed_condition": {"const": "support_ratio"}}}},
+        {"if": {"properties": {"status": {"const": "NO_GO_REOPENING_COST"}}}, "then": {"properties": {"first_failed_condition": {"enum": ["T_project", "A_specific_ratio"]}}}},
+        {"if": {"properties": {"status": {"const": "PASS_A4_OR_C_SYNTHETIC_ONLY"}}}, "then": {"properties": {"first_failed_condition": {"const": null}, "all_condition_states": {"properties": {"dependency_identity": {"const": "PASS"}, "build_success": {"const": "PASS"}, "tiny_exact": {"const": "PASS"}, "mixed_radix": {"const": "PASS"}, "lookup_direct": {"const": "PASS"}, "finite_nonnegative": {"const": "PASS"}, "AD_center_collision_zero": {"const": "PASS"}, "allocation_order": {"const": "PASS"}, "eta": {"const": "PASS"}, "P_shape": {"const": "PASS"}, "V_shape": {"const": "PASS"}, "P_center_collision_zero": {"const": "PASS"}, "V_center_collision_zero": {"const": "PASS"}, "P_nsplit_zero": {"const": "PASS"}, "V_nsplit_zero": {"const": "PASS"}, "all_arms_complete": {"const": "PASS"}, "sensitivity": {"const": "PASS"}, "near_tie": {"const": "PASS"}, "rss": {"const": "PASS"}, "support_ratio": {"const": "PASS"}, "T_project": {"const": "PASS"}, "A_specific_ratio": {"const": "PASS"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "dependency_identity"}}}, "then": {"properties": {"all_condition_states": {"properties": {"dependency_identity": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "build_success"}}}, "then": {"properties": {"all_condition_states": {"properties": {"build_success": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "tiny_exact"}}}, "then": {"properties": {"all_condition_states": {"properties": {"tiny_exact": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "mixed_radix"}}}, "then": {"properties": {"all_condition_states": {"properties": {"mixed_radix": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "lookup_direct"}}}, "then": {"properties": {"all_condition_states": {"properties": {"lookup_direct": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "finite_nonnegative"}}}, "then": {"properties": {"all_condition_states": {"properties": {"finite_nonnegative": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "AD_center_collision_zero"}}}, "then": {"properties": {"all_condition_states": {"properties": {"AD_center_collision_zero": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "allocation_order"}}}, "then": {"properties": {"all_condition_states": {"properties": {"allocation_order": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "eta"}}}, "then": {"properties": {"all_condition_states": {"properties": {"eta": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "P_shape"}}}, "then": {"properties": {"all_condition_states": {"properties": {"P_shape": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "V_shape"}}}, "then": {"properties": {"all_condition_states": {"properties": {"V_shape": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "P_center_collision_zero"}}}, "then": {"properties": {"all_condition_states": {"properties": {"P_center_collision_zero": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "V_center_collision_zero"}}}, "then": {"properties": {"all_condition_states": {"properties": {"V_center_collision_zero": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "P_nsplit_zero"}}}, "then": {"properties": {"all_condition_states": {"properties": {"P_nsplit_zero": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "V_nsplit_zero"}}}, "then": {"properties": {"all_condition_states": {"properties": {"V_nsplit_zero": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "all_arms_complete"}}}, "then": {"properties": {"all_condition_states": {"properties": {"all_arms_complete": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "sensitivity"}}}, "then": {"properties": {"all_condition_states": {"properties": {"sensitivity": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "near_tie"}}}, "then": {"properties": {"all_condition_states": {"properties": {"near_tie": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "rss"}}}, "then": {"properties": {"all_condition_states": {"properties": {"rss": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "support_ratio"}}}, "then": {"properties": {"all_condition_states": {"properties": {"support_ratio": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "T_project"}}}, "then": {"properties": {"all_condition_states": {"properties": {"T_project": {"const": "FAIL"}}}}}},
+        {"if": {"properties": {"first_failed_condition": {"const": "A_specific_ratio"}}}, "then": {"properties": {"all_condition_states": {"properties": {"A_specific_ratio": {"const": "FAIL"}}}}}}
+      ]
     }
   ]
 }
