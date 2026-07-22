@@ -1,9 +1,9 @@
 # SAQ Research Direction Registry
 
-Last reconciled: 2026-07-18
+Last reconciled: 2026-07-22
 
 SAQ branch scope: every `origin/*` branch plus `upstream/main`, after
-`git fetch --all --prune`. At this snapshot there are 16 unique SAQ branches
+`git fetch --all --prune`. At this snapshot there are 17 unique SAQ branches
 and no remote-only research branch. Sibling scope is deliberately narrower:
 only `vectordb/main@f51b487` is audited as the external evidence snapshot for
 `R10`; this file is not a complete inventory of all vectordb branches.
@@ -39,15 +39,17 @@ question, evidence/status, decision or claim ceiling, and an authoritative
 source snapshot. A bare mention, baseline use, or future-direction sentence
 does not count.
 
-The 2026-07-13 files are unpresented drafts, not completed-meeting records:
+The superseded Attempt 1--3 file remains an unpresented draft:
 
 ```text
 superseded intermediate draft:
   docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md
   historical source: saq-caq-one-shell-repair@433e8ea
   canonical copy introduced at: saq-meeting-summary@5cdc270
-current successor draft:
+completed 2026-07-22 meeting deck:
   docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md
+  exact deck commit: saq-meeting-summary@b41b1d1
+  meeting date: 2026-07-22
   original summary snapshot: saq-meeting-summary@43835d9
   latest Attempt 4 scientific snapshot:
     saq-arbitrary-cardinality-feasibility-v2@8bec546
@@ -101,9 +103,11 @@ current successor draft:
     docs/saq_a4_v2_project_stop_no_further_artifact_recovery_2026_07_18.md
 ```
 
-The date in these filenames is the draft date. Neither draft has been through
-a meeting, so inclusion in either one does not change `UNREPORTED` to
-`REPORTED`.
+The date in the filename is the original draft date. The user confirmed that
+the final `b41b1d1` deck was presented on 2026-07-22. It substantively reports
+`R07`, `R08`, `R10`, `R11`, and `R12` through the source snapshots named in
+that deck. The later R0 protocol `saq-a4-r0-static-gate@e24f09a` is a
+post-meeting milestone and is not part of that completed deck.
 
 ### Reporting-state vocabulary
 
@@ -144,7 +148,7 @@ INCLUDED_PENDING_REPORT     substantively drafted but not yet reported
 
 ## 2. Research Direction Registry
 
-| ID | Meeting label | Direction | Scientific snapshot | Research state | Exact decision / boundary | Reporting state | 2026-07-09 completed-deck coverage | Current successor coverage |
+| ID | Meeting label | Direction | Scientific snapshot | Research state | Exact decision / boundary | Reporting state | Completed-meeting coverage | Current successor coverage |
 |---|---|---|---|---|---|---|---|---|
 | `R01` | 2026-07-09 Attempt 1 | Default-neighborhood fixed policy and boundary-aware local plan selection | `saq-boundary-audit@e582974` | `CLOSED` | stop as main method; retain as diagnostic baseline | `REPORTED` | `SUBSTANTIVE`, slides 12--15 | `NOT_INCLUDED_SUBSTANTIVELY` |
 | `R02` | 2026-07-09 Attempt 2 | Mixed shared local residual plans | `saq-structural-followup@b71c699` | `CLOSED` | recall signal lost to mixed-plan query/layout overhead | `REPORTED` | `SUBSTANTIVE`, slides 16--19 | `NOT_INCLUDED_SUBSTANTIVELY` |
@@ -152,12 +156,12 @@ INCLUDED_PENDING_REPORT     substantively drafted but not yet reported
 | `R04` | 2026-07-09 Attempt 4 | Measured `fac_error` planner objective | `saq-planner-objective-analysis@5756412` | `CLOSED` | limitation evidence only; increasing nprobe did not recover default recall before the QPS advantage disappeared | `REPORTED` | `SUBSTANTIVE`, slides 24--28 | `NOT_INCLUDED_SUBSTANTIVELY` |
 | `R05` | 2026-07-09 Attempt 5 | Segment ordering, search scheduling, and variance-bound calibration | `saq-planner-objective-analysis@5756412` | `CLOSED` | no safe mechanism removed enough slack | `REPORTED` | `SUBSTANTIVE`, slides 29--33 | `NOT_INCLUDED_SUBSTANTIVELY` |
 | `R06` | 2026-07-09 graph pivot | Graph traversal with progressive SAQ prefixes | `saq-graph-traversal-analysis@a03ee40` | `CLOSED` | stopped before Phase 5; grouped complete estimator still cost about `26.8x` SymphonyQG | `UPDATE_PENDING` | `SUBSTANTIVE`, slides 34--42, through `d94279d` | `NOT_INCLUDED_SUBSTANTIVELY` |
-| `R07` | 2026-07-13 draft Attempt 1A | Full-dimensional PCA/residual-PCA transform replacement | `saq-transform-analysis@3d94840` | `CLOSED` | preregistered CIFAR replication failed | `UNREPORTED` | `ABSENT` | `INCLUDED_PENDING_REPORT`, slides 6--16 |
-| `R08` | 2026-07-13 draft Attempt 1B | Physical `D -> d` lossy projection with tail surrogate | `saq-lossy-projection-analysis@051ec6a` | `CLOSED` | LP-0 Gate A failed before projected SAQ build | `UNREPORTED` | `ABSENT` | `INCLUDED_PENDING_REPORT`, slides 17--25 |
+| `R07` | 2026-07-22 Attempt 1A | Full-dimensional PCA/residual-PCA transform replacement | `saq-transform-analysis@3d94840` | `CLOSED` | preregistered CIFAR replication failed | `REPORTED` | `SUBSTANTIVE`, 2026-07-22 deck | `NOT_INCLUDED_SUBSTANTIVELY` |
+| `R08` | 2026-07-22 Attempt 1B | Physical `D -> d` lossy projection with tail surrogate | `saq-lossy-projection-analysis@051ec6a` | `CLOSED` | LP-0 Gate A failed before projected SAQ build | `REPORTED` | `SUBSTANTIVE`, 2026-07-22 deck | `NOT_INCLUDED_SUBSTANTIVELY` |
 | `R09` | historical | Finite-round CAQ exact-gap limitation and low-cost repair | `saq-caq-one-shell-repair@977e7ff` | `CLOSED` | limitation retained; repair `NO_GO_ON_COMPLEXITY`; SAQ-centric incremental line stopped | `UNREPORTED` | `ABSENT` | `NOT_INCLUDED_SUBSTANTIVELY` |
-| `R10` | 2026-07-13 draft Attempt 2 | Exact-hist shared scalar-codebook DP and outer bit allocation | local evidence `vectordb@f51b487`; prior-art/draft snapshot `saq-caq-one-shell-repair@433e8ea` | `CLOSED` | retain as stronger offline baseline and objective-mismatch evidence, not a method | `UNREPORTED` | `ABSENT` | `INCLUDED_PENDING_REPORT`, slides 26--45 |
-| `R11` | 2026-07-13 draft Attempt 3 | Paper-exact `1/Ratio@k` distance-quality re-evaluation | `saq-ratio-metric-analysis@146dc16` | `CLOSED` | `CLOSE_AS_METRIC_SENSITIVITY_EVIDENCE` | `UNREPORTED` | `ABSENT` | `INCLUDED_PENDING_REPORT`, slides 46--58 |
-| `R12` | 2026-07-13 draft Attempt 4 | Fixed-rate arbitrary-cardinality mixed-radix scalar-product quantization | `saq-arbitrary-cardinality-feasibility-v2@3577edd` | `CLOSED` | preserve terminal A4-1S `NO_GO_EXACT_SOLVER_COST` and reviewed A4-V2-PAR `ARTIFACT_INVALID / NO_SCIENTIFIC_DECISION`; the later unique PREP invocation remains only `CRASH_OR_UNKNOWN / START_ONLY`, and the reviewed crash-record protocol did not form a terminal record; audited portfolio closure `3577edd` is `STOP_NO_FURTHER_ARTIFACT_RECOVERY`; CRASH-I, retry, CACHE-BIND, PAR-R1, SRUN, data, and SAQ/CAQ work remain `NOT_AUTHORIZED / NOT_RUN`; there is no artifact terminal, scientific decision, or performance result | `UNREPORTED` | `ABSENT` | `INCLUDED_PENDING_REPORT`, slides 59--65 |
+| `R10` | 2026-07-22 Attempt 2 | Exact-hist shared scalar-codebook DP and outer bit allocation | local evidence `vectordb@f51b487`; prior-art/draft snapshot `saq-caq-one-shell-repair@433e8ea` | `CLOSED` | retain as stronger offline baseline and objective-mismatch evidence, not a method | `REPORTED` | `SUBSTANTIVE`, 2026-07-22 deck | `NOT_INCLUDED_SUBSTANTIVELY` |
+| `R11` | 2026-07-22 Attempt 3 | Paper-exact `1/Ratio@k` distance-quality re-evaluation | `saq-ratio-metric-analysis@146dc16` | `CLOSED` | `CLOSE_AS_METRIC_SENSITIVITY_EVIDENCE` | `REPORTED` | `SUBSTANTIVE`, 2026-07-22 deck | `NOT_INCLUDED_SUBSTANTIVELY` |
+| `R12` | 2026-07-22 Attempt 4 | Fixed-rate arbitrary-cardinality mixed-radix scalar-product quantization | `saq-a4-r0-static-gate@e24f09a` | `AWAITING_AUTHORIZATION` | preserve A4-1S `NO_GO_EXACT_SOLVER_COST`, V2 `CRASH_OR_UNKNOWN / START_ONLY`, and portfolio closure `STOP_NO_FURTHER_ARTIFACT_RECOVERY`; reviewed R0 protocol `e24f09a` defines a new static unchanged-SAQ compatibility and novelty gate but has not executed it; no code, data, or experiment is authorized | `UPDATE_PENDING` | `SUBSTANTIVE`, 2026-07-22 deck through `3577edd` | `NOT_INCLUDED_SUBSTANTIVELY` |
 
 ### Reported-through ledger
 
@@ -169,13 +173,18 @@ INCLUDED_PENDING_REPORT     substantively drafted but not yet reported
 | `R04` | `saq-planner-objective-analysis@5756412` | `saq-graph-traversal-analysis@322214f:docs/saq_research_progress_meeting_slides_2026_07_09.md` | none registered |
 | `R05` | `saq-planner-objective-analysis@5756412` | `saq-graph-traversal-analysis@322214f:docs/saq_research_progress_meeting_slides_2026_07_09.md` | none registered |
 | `R06` | `saq-graph-traversal-analysis@d94279d` | `saq-graph-traversal-analysis@322214f:docs/saq_research_progress_meeting_slides_2026_07_09.md` | `saq-graph-traversal-analysis@a03ee40`: source-aligned follow-up, complete-work evidence, and terminal closure |
+| `R07` | `saq-transform-analysis@3d94840` | `saq-meeting-summary@b41b1d1:docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` | none registered |
+| `R08` | `saq-lossy-projection-analysis@051ec6a` | `saq-meeting-summary@b41b1d1:docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` | none registered |
+| `R10` | `vectordb@f51b487`; prior-art snapshot `saq-caq-one-shell-repair@433e8ea` | `saq-meeting-summary@b41b1d1:docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` | none registered |
+| `R11` | `saq-ratio-metric-analysis@146dc16` | `saq-meeting-summary@b41b1d1:docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` | none registered |
+| `R12` | `saq-arbitrary-cardinality-feasibility-v2@3577edd` | `saq-meeting-summary@b41b1d1:docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` | `saq-a4-r0-static-gate@e24f09a`: reviewed static compatibility/novelty protocol, not executed |
 
-`R01`--`R05` are fully reported through their current scientific snapshots.
-`R06` has a reported 2026-07-09 snapshot but a material post-meeting update,
-so it is `UPDATE_PENDING`. `R07`--`R12` are baseline-relative `UNREPORTED`.
-The current successor draft queues `R07`, `R08`, `R10`, `R11`, and `R12`;
-`R09` remains outside it. Historical backlog is not automatically added to a
-future deck.
+`R01`--`R05`, `R07`, `R08`, `R10`, and `R11` are fully reported through their
+current scientific snapshots. `R06` has a material update after its 2026-07-09
+meeting snapshot. `R12` was reported through closure `3577edd`, but the later
+reviewed R0 protocol `e24f09a` is not yet reported; both are therefore
+`UPDATE_PENDING`. `R09` remains `UNREPORTED`. Historical backlog is not
+automatically added to a future deck.
 
 ## 3. Evidence And Claim-Ceiling Ledger
 
@@ -195,7 +204,7 @@ this summary branch.
 | `R09` | Registered base-only limitation survived controls, but exact encoding cost `272.9x` and one-shell total cost `4.579x--8.169x` failed the `2.0x` gate; limitation only, no repair method or ANN claim. | `saq-caq-optimality-analysis@9bb7d0c`: `docs/saq_caq_co0a_official_source_parity_2026_07_11.md`; `saq-caq-corrected-oracle-v2@ff360cd`: `docs/saq_caq_co0_v2_b1_registered_evidence_2026_07_12.md`; `saq-caq-one-shell-repair@977e7ff`: `docs/saq_caq_one_shell_synthetic_falsification_2026_07_12.md`, `docs/saq_caq_limitation_repair_closure_and_project_pivot_2026_07_13.md` | method closed; problem-first selection only |
 | `R10` | Exact-hist can reduce offline SSE, but the inner exact 1D DP is prior art and recall effects reverse across regimes; stronger baseline, not a method. | `vectordb@f51b487`: `reports/scalar_training_exact_hist_audit_2026_06_30/README.md`, `docs/saq_limitation_transfer_memo_2026_07_02.md`; `saq-caq-one-shell-repair@433e8ea:docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md` | closed as method; retained baseline |
 | `R11` | One GIST conclusion changes under paper-exact distance quality while DEEP controls remain negative; measurement evidence only. | `saq-ratio-metric-analysis@146dc16`: `docs/saq_attempt3_a3_2_a3_3_decision_2026_07_13.md` | closed |
-| `R12` | A4-1S remains a terminal pipeline-cost stop at `24.170246892361` projected CPU-hours, and the old A4 V2 PAR invocation remains terminal at `ARTIFACT_INVALID` before build/parity. The later unique PREP invocation remains `CRASH_OR_UNKNOWN / START_ONLY`: no canonical TERMINAL or artifact-validity outcome exists. Crash-record protocol target/review `1982865/@8bec546` closed record topology only. Audited project closure `3577edd` records portfolio state `STOP_NO_FURTHER_ARTIFACT_RECOVERY`; this is not a runtime reclassification. Attempt 4 V2 establishes no feasibility, performance, SAQ limitation, novelty, or method claim. | Old cost evidence `saq-arbitrary-cardinality-analysis@9ce1052`, reviewed terminal snapshot `@f1b464b`: `docs/saq_attempt4_a4_1s_artifacts_2026_07_13/synthetic_cost_projection_manifest.json`, `docs/saq_attempt4_a4_1s_artifacts_2026_07_13/synthetic_cost_projection_summary.json`, `docs/saq_attempt4_a4_1s_cost_projection_review_2026_07_13.md`. V2 PAR terminal target/review `saq-arbitrary-cardinality-feasibility-v2@30dfada/@fd5367e`: `docs/saq_a4_v2_par_prebuild_artifact_identity_failure_2026_07_15.md`, `docs/saq_a4_v2_par_prebuild_artifact_identity_failure_independent_review_2026_07_15.md`. START-only protocol target/review `@1982865/@8bec546`: `docs/saq_a4_v2_prep_start_only_crash_record_protocol_2026_07_18.md`, `docs/saq_a4_v2_prep_start_only_crash_record_protocol_independent_review_2026_07_18.md`. Authoritative portfolio closure `@3577edd`: `docs/saq_a4_v2_project_stop_no_further_artifact_recovery_2026_07_18.md`. | closed; no research or execution step is authorized; reopening requires a new explicit user decision, new research question, and fresh cost-justified protocol from a clean branch or named snapshot; CRASH-I, retry, CACHE-BIND, PAR-R1, SRUN, data, and SAQ changes remain `NOT_AUTHORIZED / NOT_RUN` |
+| `R12` | A4-1S remains a terminal pipeline-cost stop at `24.170246892361` projected CPU-hours. V2 PAR remains `ARTIFACT_INVALID`; the later PREP remains `CRASH_OR_UNKNOWN / START_ONLY`; closure `3577edd` remains `STOP_NO_FURTHER_ARTIFACT_RECOVERY`. Reviewed R0 protocol `e24f09a` preserves those outcomes and defines two unexecuted static gates: unchanged-SAQ representation/consumer compatibility and non-compositional novelty. It establishes no feasibility, performance, SAQ limitation, novelty, or method claim. | Predecessor evidence and closure paths remain as previously registered. New protocol `saq-a4-r0-static-gate@e24f09a`: `docs/saq_attempt4_r0_static_compatibility_novelty_protocol_2026_07_22.md`. | awaiting explicit authorization to execute the R0 static mapping/novelty assessment only; no code, build, test, data/result/runtime-state access, SAQ modification, or numerical experiment is authorized |
 
 ## 4. Complete SAQ Branch Crosswalk
 
@@ -222,7 +231,8 @@ scientific milestone; such a row has no direction ID or scientific claim.
 | SAQ | `saq-ratio-metric-analysis` | `146dc16` | `PRIMARY` | `R11` | Attempt 3 closed |
 | SAQ | `saq-arbitrary-cardinality-analysis` | `f1b464b` | `PRIMARY` | `R12` | reviewed terminal snapshot `f1b464b`; cost evidence `9ce1052`; closed at A4-1S exact-pipeline cost gate |
 | SAQ | `saq-arbitrary-cardinality-feasibility-v2` | `3577edd` | `FOLLOWUP` | `R12` | Audited project closure is `STOP_NO_FURTHER_ARTIFACT_RECOVERY`. Runtime remains `CRASH_OR_UNKNOWN / START_ONLY`; no artifact terminal, science, or performance result exists. CRASH-I, retry, CACHE-BIND, PAR-R1, SRUN, and data remain `NOT_AUTHORIZED / NOT_RUN`; no next research or execution step is authorized. |
-| SAQ | `saq-meeting-summary` | `SELF` -- commit containing this registry; parent at reconciliation `fb6d8fb` | `SUMMARY` | all | summary-only; no experiment execution |
+| SAQ | `saq-a4-r0-static-gate` | `e24f09a` | `FOLLOWUP` | `R12` | Reviewed static compatibility/novelty protocol is `PROTOCOL_WRITTEN_NOT_EXECUTED`; R0 assessment requires separate authorization and permits no code or data. |
+| SAQ | `saq-meeting-summary` | `SELF` -- commit containing this registry; parent at reconciliation `b41b1d1` | `SUMMARY` | all | summary-only; no experiment execution |
 
 ### Sibling evidence snapshot
 
