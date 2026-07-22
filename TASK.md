@@ -29,6 +29,9 @@ Current summary inventory:
   `saq-arbitrary-cardinality-feasibility-v2@3577edd`. Later R0 compatibility
   and S0 prefix-novelty decisions are post-meeting updates and must not be
   written back into that historical deck.
+- `docs/saq_next_meeting_a4_literature_review_2026_07_22.md` and its Beamer
+  source are the current unpresented successor draft. They explain the reviewed
+  R12 literature boundary through `saq-a4-prefix-novelty-gate@7f4c001`.
 
 ## Current Attempt 4 Boundary
 
@@ -164,7 +167,7 @@ changes representation state or query behavior, so it returned
 `NO_GO_UNCHANGED_SAQ_COMPATIBILITY`. The separately authorized source-only S0
 gate at `saq-a4-prefix-novelty-gate@7f4c001` returned
 `NO_GO_DIRECT_COMPOSITION`. Riskin fixes the original fine VQ encoder before
-progressive assignment; ABAPQ only allocates bits among independent PQ
+progressive assignment; BAPQ only allocates bits among independent PQ
 subspaces and retains ordinary indices, one full-distortion objective, and
 standard ADC/SDC. Derived Codebooks and Polysemous already supply the
 coarse/fine label and ANN-oriented assignment pieces. No S1 code, data,

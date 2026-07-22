@@ -1,0 +1,175 @@
+\documentclass[aspectratio=169]{beamer}
+\usetheme{Madrid}
+\usecolortheme{dolphin}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+\setbeamersize{text margin left=6mm,text margin right=6mm}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{booktabs,tabularx,array}
+\usepackage{xurl}
+\hypersetup{hidelinks,pdftitle={Why We Stopped the Attempt 4 Prefix-Code Direction}}
+\newcommand{\paper}[1]{\textbf{#1}}
+\newcommand{\yes}{\textcolor{green!45!black}{Yes}}
+\newcommand{\no}{\textcolor{red!70!black}{No}}
+\title{Why We Stopped the Attempt 4 Prefix-Code Direction}
+\subtitle{What the closest papers already cover}
+\author{}
+\date{2026-07-22}
+\begin{document}
+\begin{frame}\titlepage\end{frame}
+\begin{frame}{1. The Decision in One Sentence} We wanted one compact database code to support two jobs:
+\begin{itemize}
+  \item read only the first few bits for a cheap first pass; and
+  \item read the complete code for a more accurate second pass.
+\end{itemize} The literature already supplies the factorized code, progressive bit meaning, learned label assignment, and two-pass search pattern.
+\begin{alertblock}{Decision} Stop at the literature gate: \texttt{NO\_GO\_DIRECT\_COMPOSITION}. No implementation or data was needed.
+\end{alertblock}
+\end{frame}
+\begin{frame}{2. What the Proposed Code Was Supposed to Do}
+\begin{description}
+  \item[Factorized code] Split a vector into small groups and quantize each group separately.
+  \item[Prefix] The first few bits of one stored code.
+  \item[Coarse pass] Use less information to reject unlikely candidates.
+  \item[Fine pass] Use the complete code for a better distance estimate.
+\end{description}
+\begin{center}
+\texttt{one fixed stored word} $\rightarrow$
+\begin{tabular}{c|c} first $p$ bits & all $B$ bits\\ cheap score & accurate lookup
+\end{tabular}
+\end{center} The hoped-for contribution was to design both meanings together.
+\end{frame}
+\begin{frame}{3. The Review Question Was Narrow} We did not ask only whether a new optimizer could lower reconstruction error. We asked whether the two-stage code could be obtained by combining known factorized quantizers with known progressive or learned index assignments.
+\medskip A surviving direction needed at least one of:
+\begin{enumerate}
+  \item a new constraint that prevents the known pieces from composing;
+  \item a new lemma or algorithm needed by that constraint; or
+  \item a measurable state or training advantage unavailable to block vector quantization.
+\end{enumerate} The primary papers did not leave such a gap.
+\end{frame}
+\begin{frame}{4. Papers That Already Cover the Fine Code}
+\paper{Muresan--Effros (2002)}: optimal scalar quantization by histogram segmentation; learned scalar values and an integer number of levels.
+\medskip
+\paper{Brandt (2010)}: principal-component rotation, learned one-dimensional quantizers, integer bit allocation, packed words, lookup tables, and ANN scan.
+\medskip
+\paper{Finite Scalar Quantization (2024)}: a product codebook made from small scalar level sets, including non-power-of-two factor sizes.
+\begin{block}{Already covered} Learn scalar values $+$ choose level counts $+$ form a product code $+$ pack a word.
+\end{block}
+\end{frame}
+\begin{frame}{5. BAPQ: Unequal Bits Are Not Progressive Bits}
+\paper{Adaptive Bit Allocation Product Quantization (2016)} calls its method BAPQ:
+\begin{enumerate}
+  \item rotate with principal component analysis and split into subspaces;
+  \item give the next bit to the subspace that most reduces full reconstruction error;
+  \item fit that subspace codebook with k-means; and
+  \item concatenate ordinary subspace codeword indices.
+\end{enumerate} Five bits and three bits mean codebooks with 32 and 8 entries. The first three bits of the five-bit label are not a trained coarse code.
+\begin{block}{Boundary} BAPQ covers adaptive bit allocation, not a nested prefix or prefix/full joint training.
+\end{block}
+\end{frame}
+\begin{frame}{6. Riskin: Add Progressive Meaning Afterward}
+\paper{Riskin et al. (1994)} begin with an existing full-search vector quantizer. Its finest encoding regions stay fixed.
+\begin{center} fixed fine regions $\rightarrow$ merge regions $\rightarrow$ fit an intermediate centroid
+\end{center} The paper explicitly says it optimizes the decoder for a fixed encoder, not the encoder for the decoder. Intermediate decoding needs no new search: use the centroid of the merged region that contains the selected fine region.
+\begin{block}{Why it matters} Progressive prefixes are a post-processing step that can be placed over an arbitrary fixed fine codebook.
+\end{block}
+\end{frame}
+\begin{frame}{7. Derived Codebooks: The Closest ANN System}
+\paper{Derived Codebooks (2019)} already applies the coarse/fine idea to product quantization for approximate nearest-neighbor search.
+\begin{enumerate}
+  \item train a fine 16-bit product codebook;
+  \item derive an 8-bit grouping of its fine centroids;
+  \item reorder labels so selected bits identify the coarse group;
+  \item scan coarsely, then refine selected candidates accurately.
+\end{enumerate} Its selector bits are not printed first, but a fixed bit permutation can move them to the front. That gives the same physical interface as a prefix.
+\end{frame}
+\begin{frame}{8. Polysemous Codes: One Label, Two Meanings}
+\paper{Polysemous Codes (2016)} first trains an ordinary product quantizer, then learns a one-to-one mapping from centroid indices to binary labels.
+\begin{itemize}
+  \item Cheap meaning: compare bit strings with Hamming distance.
+  \item Accurate meaning: use the original product centroids for distance lookup.
+\end{itemize} Its loss can preserve centroid distance or ranking. It uses all label bits rather than a nested leading prefix, but establishes the main mechanism: one stored label can support both cheap filtering and accurate scoring.
+\begin{block}{Training order}Product codebook first, binary mapping second.\end{block}
+\end{frame}
+\begin{frame}{9. Hierarchical Coding Was Also Checked}
+\paper{Chou--Lookabaugh--Gray (1989)} jointly design and prune tree-structured vector quantizers under distortion and rate objectives.
+\medskip This prevents the broad claim that ``joint hierarchical quantizer design is new.'' However, the paper studies variable-rate source coding, not one fixed random-access database word with a prescribed ANN lookup path.
+\begin{block}{Precise conclusion} No one paper contains our whole candidate. The missing fixed-word ANN construction is nevertheless obtained by composing the other papers, without a new coupling constraint.
+\end{block}
+\end{frame}
+\begin{frame}{10. Coverage Map}
+\scriptsize
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X c c c c}
+\toprule Paper family & Fine product code & Learned/progressive label & Cheap + accurate search & Joint prefix/full\\
+\midrule Muresan, Brandt, FSQ & \yes & \no & Brandt: accurate & \no\\ OPQ, BAPQ, Quicker ADC & \yes & \no & accurate PQ & \no\\ Riskin & fixed fine VQ & \yes & progressive decode & \no\\ Derived Codebooks & \yes & \yes & scan + refine & \no\\ Polysemous Codes & \yes & \yes & filter + score & \no\\ Chou et al. & hierarchical VQ & \yes & not fixed-word ANN & source coding\\
+\bottomrule
+\end{tabularx}
+\medskip No row alone has every property. The decisive question is whether joining the rows requires a genuinely new mechanism. We found none.
+\end{frame}
+\begin{frame}{10A. Additional Boundary Papers}
+\begin{itemize}
+  \item \paper{OPQ (2013)} learns a rotation and product codebooks, but no progressive label meaning.
+  \item \paper{Quicker ADC (2021)} exposes packing and lookup costs for 4-, 5-, and 6-bit subcodes; sizes remain $2^b$.
+  \item \paper{Q-Palette (2025)} covers fractional-rate quantizers and mixed allocation, but not this prefix consumer.
+  \item \paper{FibQuant (2026)} strengthens the block-vector baseline; it supplies no prefix mechanism.
+\end{itemize}
+These close coding and systems side routes. Riskin, Derived Codebooks, and Polysemous are the decisive prefix and two-meaning papers.
+\end{frame}
+\begin{frame}{11. Why the Combination Is Direct}
+\begin{columns}[T]
+\column{0.48\textwidth}
+\begin{block}{Known fine-code step} FSQ, Brandt, or BAPQ trains factorized representatives and chooses level counts.
+\end{block}
+\column{0.48\textwidth}
+\begin{block}{Known two-meaning step} Riskin, Derived, or Polysemous groups or relabels trained fine codewords for a cheap pass.
+\end{block}
+\end{columns}
+\medskip Replacing ordinary product-quantization centroids with arbitrary-level scalar products changes reconstruction quality, model size, and training cost. It does not create a new prefix constraint, theorem, or search algorithm.
+\begin{alertblock}{Meaning of the verdict} The proposal is a direct composition of known mechanisms.
+\end{alertblock}
+\end{frame}
+\begin{frame}{12. What the Decision Does---and Does Not---Say}
+\begin{columns}[T]
+\column{0.48\textwidth}
+\textbf{It does say}
+\begin{itemize}
+  \item this successor lacks mechanism-level novelty;
+  \item arbitrary cardinality is unnecessary for the prefix mechanism;
+  \item S1 implementation and data are not justified.
+\end{itemize}
+\column{0.48\textwidth}
+\textbf{It does not say}
+\begin{itemize}
+  \item all progressive codes are useless;
+  \item factorized codes never beat block codes;
+  \item the proposal failed on ANN benchmarks.
+\end{itemize}
+\end{columns}
+\begin{block}{Claim ceiling}This was an early literature stop, not an experimental failure.\end{block}
+\end{frame}
+\begin{frame}{13. What Would Be Needed to Reopen It} A reopening needs a different scientific claim, not another implementation of the same composition:
+\begin{enumerate}
+  \item name a property unavailable to Riskin, Derived, Polysemous, and hierarchical VQ;
+  \item show the new constraint, lemma, or algorithm required by that property;
+  \item compare with independently optimized product and block vector quantization;
+  \item freeze construction, state, and query-cost gates before data.
+\end{enumerate} Until such a gap is stated, keep these works as baselines and select a different problem.
+\begin{alertblock}{Current authority} S0: \texttt{NO\_GO\_DIRECT\_COMPOSITION}. S1: \texttt{NOT\_AUTHORIZED}.
+\end{alertblock}
+\end{frame}
+\begin{frame}[allowframebreaks]{References and Decision Record}
+\tiny
+\begin{itemize}
+  \item Muresan and Effros. ``Quantization as Histogram Segmentation.'' DCC 2002.
+  \item Brandt. ``Transform Coding for Fast Approximate Nearest Neighbor Search in High Dimensions.'' CVPR 2010.
+  \item Mentzer et al. ``Finite Scalar Quantization.'' ICLR 2024. \url{https://arxiv.org/abs/2309.15505}
+  \item Ge et al. ``Optimized Product Quantization.'' CVPR 2013.
+  \item Guo et al. ``Adaptive Bit Allocation Product Quantization.'' Neurocomputing, 2016. \url{https://doi.org/10.1016/j.neucom.2015.07.062}
+  \item Riskin et al. ``Index Assignment for Progressive Transmission of Full Search Vector Quantization.'' IEEE TIP, 1994. \url{https://doi.org/10.1109/83.287025}
+  \item Andre et al. ``Derived Codebooks for High-Accuracy Nearest Neighbor Search.'' 2019. \url{https://arxiv.org/abs/1905.06900}
+  \item Douze et al. ``Polysemous Codes.'' ECCV 2016. \url{https://arxiv.org/abs/1609.01882}
+  \item Chou, Lookabaugh, and Gray. ``Optimal Pruning with Applications to Tree-Structured Source Coding and Modeling.'' IEEE TIT, 1989. \url{https://doi.org/10.1109/18.32124}
+  \item Reviewed decision: \texttt{saq-a4-prefix-novelty-gate@7f4c001}.
+\end{itemize}
+\end{frame}
+\end{document}
