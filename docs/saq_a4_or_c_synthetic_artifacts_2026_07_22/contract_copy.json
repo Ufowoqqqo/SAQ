@@ -1,0 +1,325 @@
+{
+  "contract_id": "A4-OR-C-2026-07-22",
+  "status": "FROZEN_BEFORE_IMPLEMENTATION_AND_SYNTHETIC_EXECUTION",
+  "authority": {
+    "protocol_commit": "7249dd6ccaa76b65997b5620f196d5bf4c2ff552",
+    "authorization_document": "docs/saq_a4_or_c_authorization_2026_07_22.md",
+    "maximum_outcome": "PASS_A4_OR_C_SYNTHETIC_ONLY",
+    "later_data_authority": false
+  },
+  "forbidden_reads": [
+    "data/",
+    "results/",
+    "bin/",
+    "any GIST or CIFAR artifact",
+    "any centroid or cluster-id artifact",
+    "any benchmark query or ground truth",
+    "any generated index",
+    "any ignored or untracked prior A4 artifact"
+  ],
+  "implementation_boundary": {
+    "new_source_root": "research/a4_or_c",
+    "third_party_root": "third_party/faiss",
+    "old_a4_sources": "READ_ONLY_SEMANTIC_ORACLE_NOT_INCLUDED_LINKED_IMPORTED_OR_EXECUTED",
+    "saq_sources": "UNMODIFIED",
+    "scientific_core_net_line_range": [350, 800],
+    "support_net_line_ceiling": "max(800,2*scientific_core)"
+  },
+  "machine": {
+    "host": "rwcpu8.cse.ust.hk",
+    "architecture": "x86_64",
+    "cpu": "Intel(R) Core(TM) i9-10920X CPU @ 3.50GHz",
+    "physical_cores": 12,
+    "hardware_threads": 24,
+    "numa_nodes": 1,
+    "affinity": "logical_cpu_0",
+    "process_count": 1,
+    "threads": 1,
+    "environment": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "OMP_DYNAMIC": "FALSE"
+    }
+  },
+  "compiler": {
+    "cxx": "g++",
+    "version": "11.5.0",
+    "cmake_version": "4.0.3",
+    "language": "C++20",
+    "build_type": "Release",
+    "flags": [
+      "-O3",
+      "-DNDEBUG",
+      "-fno-fast-math",
+      "-ffp-contract=off",
+      "-frounding-math",
+      "-mfpmath=sse",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic"
+    ]
+  },
+  "dependencies": {
+    "ordinary_pq_and_block_kmeans": {
+      "name": "Faiss",
+      "official_repository": "https://github.com/facebookresearch/faiss.git",
+      "tag": "v1.14.3",
+      "tag_object": "d6980a5b3f4b9bf0b151946b003fc0ad4a439301",
+      "peeled_commit": "0ca9df4792b173d573044ee14ca0704780176e82",
+      "license": "MIT",
+      "build": "CPU_ONLY_NO_PYTHON_NO_GPU",
+      "cmake_cache": {
+        "BUILD_SHARED_LIBS": "OFF",
+        "BUILD_TESTING": "OFF",
+        "CMAKE_BUILD_TYPE": "Release",
+        "FAISS_ENABLE_C_API": "OFF",
+        "FAISS_ENABLE_EXTRAS": "OFF",
+        "FAISS_ENABLE_GPU": "OFF",
+        "FAISS_ENABLE_MKL": "OFF",
+        "FAISS_ENABLE_PYTHON": "OFF",
+        "FAISS_ENABLE_RAFT": "OFF",
+        "FAISS_OPT_LEVEL": "generic",
+        "BLA_VENDOR": "OpenBLAS"
+      },
+      "cpu_dispatch": "generic_no_avx_specialized_target",
+      "blas": {
+        "rpm": "openblas-0.3.29-1.el9.x86_64",
+        "library": "/usr/lib64/libopenblaso-r0.3.29.so",
+        "library_sha256": "3f5a35837d2505b805c296c38d643e99c6889d501fb3b9dd46cb816bfd9febb6",
+        "cblas_header": "/usr/include/cblas.h",
+        "cblas_header_sha256": "9c16a99da66723bc30912442ff22e01629256628c8434a3bc91859d6e9b65b7b",
+        "lapack_and_blas_library_argument": "/usr/lib64/libopenblaso-r0.3.29.so"
+      },
+      "ordinary_control": "unrotated ProductQuantizer with 8-bit subquantizers",
+      "block_control": "Faiss native Clustering, 8 deterministic redos",
+      "blas_threads": 1
+    },
+    "scalar_histogram_dp": {
+      "selection": "NEW_BOUNDED_NATIVE_IMPLEMENTATION",
+      "reason": "no maintained pinned curve-producing native 1D DP implementation satisfying the frozen histogram/tie interface was found locally",
+      "old_gmp_dp_role": "READ_ONLY_TINY_SEMANTIC_ORACLE"
+    }
+  },
+  "synthetic_panel": {
+    "rows": 8192,
+    "dimensions": 128,
+    "word_bits": [4, 8],
+    "grouping": "adjacent_nonoverlapping_pairs",
+    "payload_bytes": {"B4": 32, "B8": 64},
+    "generator": {
+      "integer_arithmetic": "uint64 modulo 2^64 for hash expressions; signed int64 for label/noise/numerator after residues are reduced to their stated small ranges",
+      "hash": "SplitMix64",
+      "seed": "0xA40C202607220001",
+      "row_multiplier": "0x9E3779B97F4A7C15",
+      "coordinate_multiplier": "0xBF58476D1CE4E5B9",
+      "second_stream_xor": "0x94D049BB133111EB",
+      "splitmix64": "z=x+0x9E3779B97F4A7C15; z=(z xor (z>>30))*0xBF58476D1CE4E5B9; z=(z xor (z>>27))*0x94D049BB133111EB; return z xor (z>>31); wrap after every add/multiply",
+      "base": "seed xor ((row_id+1)*row_multiplier) xor ((coordinate_id+1)*coordinate_multiplier), with uint64 wrap",
+      "hash1": "splitmix64(base)",
+      "hash2": "splitmix64(base xor second_stream_xor)",
+      "states": "3+(coordinate_id mod 14)",
+      "label": "hash1 mod states",
+      "noise": "signed_integer(hash2 mod 17)-8",
+      "numerator": "(2*label-(states-1))*64+noise",
+      "value": "binary32(numerator/64)",
+      "row_order": "row_id_then_coordinate_id"
+    }
+  },
+  "histograms": {
+    "primary_H": 1024,
+    "sensitivity_H": 2048,
+    "rules": "exactly protocol section 7 at commit 7249dd6",
+    "curve_K": [1, 256],
+    "production_arithmetic": "IEEE_binary64",
+    "final_center_storage": "IEEE_binary32",
+    "raw_row_replay": true
+  },
+  "tiny_exact_suite": {
+    "a4_zero_error_witness": true,
+    "historical_fixture_source": {
+      "commit": "9e65159",
+      "path": "script/a4_1s_runner.py",
+      "blob": "aebcee89375683af4f4bf7b8a29339e5be0154f1",
+      "role": "READ_ONLY_DEFINITION_REEXPRESSED_NOT_IMPORTED_OR_EXECUTED"
+    },
+    "exhaustive_cases": "case_id increasing; support_size=1..4; lexicographic combinations of (-2,-1,0,1,2); lexicographic Cartesian weights in (1,2,3)^support_size; vector_ids=0..support_size-1; maximum_cardinality=support_size; exactly 780 cases",
+    "bit_pattern_cases_hex": [
+      "80000000,00000000|1,1",
+      "bf800000,80000000,00000000,3f800000|1,2,3,1",
+      "80000001,80000000,00000000,00000001|1,1,1,1",
+      "80800000,807fffff,007fffff,00800000|1,2,3,4",
+      "ff7fffff,bf800000,3f800000,7f7fffff|1,1,1,1",
+      "bf800000,00000000,3f800000|1,1,1",
+      "3f800000,3f800001|1,1",
+      "3f800001,3f800002|1,1"
+    ],
+    "generated_case_count": 256,
+    "generated_case_ids": "788..1043",
+    "generator_seed": "0xA40C202607220002",
+    "generated_case_rule": "for suite_index i=0..255 set size=1+(i mod 12); for j=0..size-1 set base=seed xor ((i+1)*row_multiplier) xor ((j+1)*coordinate_multiplier), value=-32+(splitmix64(base) mod 65), weight=1+(splitmix64(base xor second_stream_xor) mod 8), vector_id=j; draw/order is i then j; maximum_cardinality=min(8,distinct values after aggregation)",
+    "bit_pattern_case_rule": "case_ids 780..787 in listed order; values are the listed raw binary32 words, weights follow the separator, vector_ids are 0..size-1, maximum_cardinality is the count of distinct decoded values after signed-zero canonicalization",
+    "aggregation": "canonicalize signed zero; decode each finite binary32 value exactly; sort by numeric value then vector_id; equal decoded values become one support point with summed integer weight and minimum vector_id; support order is increasing numeric value",
+    "case_order": "780 exhaustive, then 8 bit-pattern cases in listed order, then 256 generated cases",
+    "total_case_count": 1044,
+    "reference": "independent bounded exhaustive contiguous-partition enumeration using boost::multiprecision::cpp_int integer moments for every case, including subnormal and FLT_MAX bit patterns; arbitrary precision is tiny-reference-only and is not linked into the production histogram trainer",
+    "objective_tolerance": "1e-10*max(1,abs(SSE_exact))",
+    "cardinality_and_tie_match": "EXACT"
+  },
+  "arms": {
+    "D": "same histogram curves; K1,K2 powers of two; K1*K2<=2^B",
+    "A": "same histogram curves; positive integer K1,K2; K1*K2<=2^B; u=z1+K1*z2",
+    "P": {
+      "B4": "M=32,dsub=4,ksub=256,nbits=8",
+      "B8": "M=64,dsub=2,ksub=256,nbits=8",
+      "rotation": "none",
+      "redos": 8,
+      "iterations": 300,
+      "seed": {"B4": 2026072204, "B8": 2026072208},
+      "faiss_fields": {
+        "train_type": "Train_default",
+        "niter": 300,
+        "nredo": 8,
+        "min_points_per_centroid": 1,
+        "max_points_per_centroid": 8192,
+        "use_faster_subsampling": false,
+        "spherical": false,
+        "int_centroids": false,
+        "update_index": true,
+        "verbose": false
+      },
+      "training_surface": "for each subspace instantiate Faiss Clustering with the frozen fields and seed, run eight redos, write the winning float32 centers into a Faiss ProductQuantizer, and encode with that ProductQuantizer; do not call a hidden/default second trainer",
+      "empty_cluster": "if any Faiss iteration stat nsplit is nonzero, CONTROL_INVALID"
+    },
+    "V": {
+      "groups": 64,
+      "dimension": 2,
+      "centers": {"B4": 16, "B8": 256},
+      "redos": 8,
+      "iterations": 300,
+      "seed": "20260722 + B*10000 + group_id*8 + redo_id",
+      "start_0": "primary H=1024 candidate A binary32-serialized then binary64-decoded Cartesian centers in mixed-radix order; if used_states<S, repeatedly append the raw row maximizing distance to its nearest current center, ties choose smallest row_id; V is trained once per B and has no H=2048 copy",
+      "starts_1_to_7": "empty initial centroid array; Faiss Clustering initialization with the frozen per-start seed",
+      "faiss_fields": {
+        "niter": 300,
+        "nredo": 1,
+        "min_points_per_centroid": 1,
+        "max_points_per_centroid": 8192,
+        "use_faster_subsampling": false,
+        "spherical": false,
+        "int_centroids": false,
+        "update_index": true,
+        "verbose": false
+      },
+      "empty_cluster": "if any Faiss iteration stat nsplit is nonzero, CONTROL_INVALID",
+      "winner": "lowest final direct-replay fitting SSE; ties choose smaller redo_id",
+      "B8_relation_to_P": "same_model_class_separate_training_surface_not_independent_evidence"
+    }
+  },
+  "numeric_admission": {
+    "production_dp_comparison": {
+      "central_sse": "stable IEEE binary64 weighted-Welford central SSE with integer weights at most 2^53",
+      "rounding_environment": "round-to-nearest-ties-to-even; FTZ and DAZ disabled; no floating-point contraction",
+      "primitive_enclosure": "each binary64 arithmetic primitive is enclosed by one nextafter step outward toward negative and positive infinity; production uses neither epsilon comparisons, long double, nor arbitrary precision",
+      "cell_rule": "enumerate every predecessor independent of visitation order; let min_upper be the minimum candidate upper bound and plausible be every candidate whose lower bound is at most min_upper",
+      "certified_and_tied": "a singleton plausible set is the certified winner; if multiple plausible candidates have bitwise-equal central binary64 objectives, choose the smaller last-boundary rank as an exact binary64 tie",
+      "ambiguous": "if multiple plausible candidates have unequal central objectives, choose the smaller last-boundary rank provisionally and mark the cell unresolved",
+      "tiny_oracle_exception": "tiny fixtures only may clear an unresolved mark and accept the smaller boundary when the independent exact oracle proves the candidates have exactly equal objectives; an exact strict optimum that production marks resolved to another choice or that the oracle cannot recover from the provisional plausible set fails numeric admission",
+      "non_tiny_status": "any unresolved selected non-tiny DP path returns NUMERICALLY_UNRESOLVED",
+      "order_invariance": "forward, reverse, and fixed-shuffle candidate enumeration must produce identical objective bits, boundaries, and unresolved state"
+    },
+    "mixed_radix_roundtrip": "all_valid_and_invalid_addresses_B4_B8",
+    "lookup_vs_direct": "all_addresses_all_groups_both_rates",
+    "nonfinite_or_negative_sse": "FAIL",
+    "serialized_center_collision": "FAIL",
+    "allocation_order_dependence": "FAIL",
+    "eta_limit": "0.0005*min_(H,B)D_D_syn(H,B)",
+    "sensitivity_change": "APPROXIMATION_SENSITIVE",
+    "near_tie_decision_change": "NUMERICALLY_UNRESOLVED"
+  },
+  "timing": {
+    "warmups": 1,
+    "measured_repetitions": 3,
+    "aggregation": "median",
+    "T_DA": "shared_H1024_curves_once+shared_H2048_curves_once+D_and_A_allocation_and_packing_for_both_H_and_B",
+    "T_project": "2*median(T_DA_rep1,T_DA_rep2,T_DA_rep3)",
+    "cpu_ceiling_seconds": 3600,
+    "peak_rss_ceiling_bytes": 17179869184,
+    "support_to_scientific_cpu_ceiling": 0.25,
+    "A_specific_to_shared_scalar_cpu_ceiling": 0.25,
+    "timed_region_excludes": ["JSON", "logging", "hashing", "provenance", "compression", "archive"]
+  },
+  "terminal_status_precedence": [
+    "DEPENDENCY_OR_BUILD_INVALID",
+    "NUMERIC_ADMISSION_FAIL",
+    "CONTROL_INVALID",
+    "APPROXIMATION_SENSITIVE",
+    "NUMERICALLY_UNRESOLVED",
+    "MEMORY_CEILING_FAIL",
+    "SUPPORT_OVERHEAD_FAIL",
+    "NO_GO_REOPENING_COST",
+    "PASS_A4_OR_C_SYNTHETIC_ONLY"
+  ],
+  "failure_mapping": {
+    "DEPENDENCY_OR_BUILD_INVALID": ["Faiss source/ref/license mismatch", "CMake option or BLAS identity mismatch", "compile/link failure", "binary/build identity mismatch"],
+    "NUMERIC_ADMISSION_FAIL": ["tiny objective/cardinality/tie mismatch", "mixed-radix or pack roundtrip mismatch", "lookup/direct mismatch", "nonfinite value", "negative SSE", "A or D serialized-center collision", "allocation order dependence", "eta limit failure"],
+    "CONTROL_INVALID": ["P or V wrong shape", "wrong redo/iteration/seed/init", "Faiss nsplit nonzero", "P or V serialized-center collision", "any arm incomplete"],
+    "APPROXIMATION_SENSITIVE": ["H1024 versus H2048 changes any registered contrast sign or admission decision"],
+    "NUMERICALLY_UNRESOLVED": ["any within-envelope allocation changes the decision"],
+    "MEMORY_CEILING_FAIL": ["any arm peak RSS exceeds ceiling"],
+    "SUPPORT_OVERHEAD_FAIL": ["median support/scientific CPU ratio exceeds ceiling"],
+    "NO_GO_REOPENING_COST": ["T_project exceeds ceiling", "median A-specific/shared-scalar CPU ratio exceeds ceiling"],
+    "PASS_A4_OR_C_SYNTHETIC_ONLY": ["all earlier conditions pass"]
+  },
+  "condition_order": [
+    "dependency_identity",
+    "build_success",
+    "tiny_exact",
+    "mixed_radix",
+    "lookup_direct",
+    "finite_nonnegative",
+    "AD_center_collision_zero",
+    "allocation_order",
+    "eta",
+    "P_shape",
+    "V_shape",
+    "P_center_collision_zero",
+    "V_center_collision_zero",
+    "P_nsplit_zero",
+    "V_nsplit_zero",
+    "all_arms_complete",
+    "sensitivity",
+    "near_tie",
+    "rss",
+    "support_ratio",
+    "T_project",
+    "A_specific_ratio"
+  ],
+  "condition_to_status": {
+    "dependency_identity": "DEPENDENCY_OR_BUILD_INVALID", "build_success": "DEPENDENCY_OR_BUILD_INVALID",
+    "tiny_exact": "NUMERIC_ADMISSION_FAIL", "mixed_radix": "NUMERIC_ADMISSION_FAIL", "lookup_direct": "NUMERIC_ADMISSION_FAIL", "finite_nonnegative": "NUMERIC_ADMISSION_FAIL", "AD_center_collision_zero": "NUMERIC_ADMISSION_FAIL", "allocation_order": "NUMERIC_ADMISSION_FAIL", "eta": "NUMERIC_ADMISSION_FAIL",
+    "P_shape": "CONTROL_INVALID", "V_shape": "CONTROL_INVALID", "P_center_collision_zero": "CONTROL_INVALID", "V_center_collision_zero": "CONTROL_INVALID", "P_nsplit_zero": "CONTROL_INVALID", "V_nsplit_zero": "CONTROL_INVALID", "all_arms_complete": "CONTROL_INVALID",
+    "sensitivity": "APPROXIMATION_SENSITIVE", "near_tie": "NUMERICALLY_UNRESOLVED", "rss": "MEMORY_CEILING_FAIL", "support_ratio": "SUPPORT_OVERHEAD_FAIL", "T_project": "NO_GO_REOPENING_COST", "A_specific_ratio": "NO_GO_REOPENING_COST"
+  },
+  "output": {
+    "directory": "docs/saq_a4_or_c_synthetic_artifacts_2026_07_22",
+    "files": [
+      "contract_copy.json",
+      "build_identity.json",
+      "numeric_admission.json",
+      "timing_repetitions.json",
+      "terminal_result.json"
+    ],
+    "stage_state_policy": "build_identity, numeric_admission, and timing_repetitions each use exactly one of COMPLETE, FAILED, or NOT_RUN; an unexecuted stage contains no fabricated measurements",
+    "condition_state_policy": "evaluate conditions in condition_order; conditions before first_failed_condition are PASS, first_failed_condition is FAIL, and later conditions are NOT_RUN; a passing terminal has every condition PASS",
+    "presence_by_status": "contract_copy and terminal_result are always emitted; build_identity is emitted when dependency/build admission starts; numeric_admission is emitted when numeric admission starts; timing_repetitions is emitted when timing starts; terminal hashes are null exactly for ungenerated stage artifacts",
+    "format": "contract_copy is byte-identical to committed source; every other emitted file is canonical_JSON_UTF8_LF_sorted_keys_no_nan_no_infinity",
+    "numeric_encoding": "scientific binary32/binary64 values are lowercase C++ std::hexfloat strings; durations and byte counts are unsigned decimal JSON integers; condition states are PASS, FAIL, or NOT_RUN; measurement pass fields are JSON booleans",
+    "schema_policy": "each non-contract output is one JSON object whose top-level key set is exactly the listed set; no additional top-level keys; named arrays contain objects with exactly the fields stated in their description",
+    "schema_path": "docs/saq_a4_or_c_output_schema_2026_07_22.json",
+    "schema_id": "https://saq.local/schema/a4-or-c-output-2026-07-22",
+    "contract_identity": "contract_copy.json must be byte-identical to the committed machine contract; every other file repeats its SHA-256",
+    "raw_labels_centers_or_per_interval_traces": "NOT_EMITTED",
+    "scientific_replay_aggregates": "EMITTED"
+  }
+}
