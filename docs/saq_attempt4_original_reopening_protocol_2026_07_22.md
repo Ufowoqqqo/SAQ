@@ -185,19 +185,35 @@ implementation arms because `P` is the conventional deployment baseline and
 not two independent scientific model classes and may not be double-counted as
 two pieces of statistical support. If the pinned `P` configuration is
 unrotated and otherwise identical, disagreement is first a training or
-implementation gap; the stronger held-out arm is used in passage and the gap
-must be explained. If `P` uses an OPQ rotation, record the changed model class
-and do not demand parity.
+implementation gap and must be explained. Passage still uses `V` for the
+block-opportunity contrasts and `P` for the ordinary-PQ margin; neither result
+may replace the other. If `P` uses an OPQ rotation, record the changed model
+class and do not demand parity.
 
 ## 7. Replacing the old exact pipeline
 
 The production candidate and `D` share one explicitly approximate scalar-curve
-construction. For each coordinate, construct a deterministic weighted-quantile
-histogram with `H=1024` bins from fitting rows, then run a native binary64
-contiguous-partition dynamic program for every `K=1,...,256`. Product
-allocation remains exact over the resulting shared curves. Selected models
-are replayed on the original, unbinned fitting and held-out rows; histogram
-distortion is never reported as the outcome.
+construction. For each coordinate, construct a deterministic equal-count rank
+histogram with `H=1024` bins from the 8,192 fitting rows, then run a native
+binary64 contiguous-partition dynamic program for every `K=1,...,256`.
+
+The histogram algorithm is frozen as follows. Canonicalize signed zero to
+`+0.0`; reject every nonfinite input; sort by binary32 numeric value and then
+vector id; and assign sorted ranks `[h*N/H,(h+1)*N/H)` to bin `h`. Here
+`N=8192`, so every `H=1024` bin has eight rows and every `H=2048` bin has four;
+there are no empty bins. Equal values may cross a rank boundary and remain in
+both adjacent bins. A bin's weight is its row count. Its representative is the
+IEEE binary64 mean computed by Neumaier compensated addition in sorted-rank
+order followed by one binary64 division by the weight. Ties in the dynamic
+program prefer the smaller last-boundary rank; allocation ties prefer the
+larger used-state product and then lexicographically smaller `(K_1,K_2)`.
+
+The A4-OR-C machine contract must encode these rules and their fixtures before
+any natural-data read; it may add byte layouts and error codes but may not
+change a boundary, tie, representative, or weight rule. Product allocation is
+exact over the resulting shared curves. Selected models are replayed on the
+original, unbinned fitting and held-out rows; histogram distortion is never
+reported as the outcome.
 
 The frozen sensitivity repeats the scalar construction with `H=2048`. If the
 sign of any registered contrast or any pass/fail decision changes, return
@@ -220,7 +236,7 @@ Numerical correctness is separated from production cost:
 3. Compare the native histogram/DP trainer with the exact reference on every
    reachable `K` and both allocation arms.
 4. Independently replay every selected serialized binary32 center and label in
-   binary64 using both compensated prefix statistics and direct raw-row
+   binary64 using both compensated sufficient statistics and direct raw-row
    accumulation; no histogram or training accumulator is accepted as
    evaluation evidence.
 
@@ -231,12 +247,29 @@ A4-OR-C passes numerical admission only if:
 - every selected dyadic and arbitrary cardinality tuple matches the exact
   reference after the frozen tie rules;
 - mixed-radix pack/unpack and lookup distance agree with direct reconstruction
-  on every address, including invalid-address handling; and
+  on every address, including invalid-address handling;
 - no nonfinite value, negative reconstructed squared error, serialized-center
   collision, or order-dependent allocation decision occurs; and
-- the per-vector replay discrepancy
-  `eta=max(|SSE_prefix-SSE_direct|)/N` is at most
-  `0.0005 * D_D` in every cell.
+- the replay discrepancy defined below is within its frozen limit.
+
+For each word width `B`, A4-OR-C has one synthetic cell containing the 8,192
+raw rows for that width. Let `D_D_syn(B)` be `D`'s direct raw-row squared error
+divided by 8,192 and 128 coordinates. For each
+`X in {D,A,P,V}`, each `H in {1024,2048}` that applies to that arm, and each
+`B in {4,8}`, independently compute total squared error by (a) compensated
+weighted sufficient statistics and (b) a direct row/group/coordinate loop.
+Define
+
+```text
+eta = max_(X,H,B) |SSE_compensated_stats(X,H,B)-SSE_direct(X,H,B)|
+      / (8192 * 128).
+```
+
+The synthetic admission requires
+`eta <= 0.0005 * min_B D_D_syn(B)`. Before accepting A4-OR-B results, repeat
+the same definition over all dataset-by-rate cells, using each cell's own
+`D_D`, and require the per-cell discrepancy to be at most `0.0005 * D_D`.
+An arm without histogram resolution has one replay and no invented `H` copy.
 
 The replay limit is one percent of the registered five-percent materiality
 threshold. Every allocation whose fitting objective lies within the measured
@@ -257,10 +290,28 @@ Use one process, one frozen thread count, fixed affinity, three repetitions
 after one warmup, and report every absolute CPU/wall time, peak resident
 memory, and dispersion.
 
+For each post-warmup repetition, define `T_DA` as the total process CPU time of
+the shared `H=1024` curves, shared `H=2048` curves, and both `D` and `A`
+allocation/packing at both resolutions and both word widths. Shared curves are
+counted once, not once per arm. Let
+
+```text
+T_project = 2 * median(T_DA repetition 1,
+                       T_DA repetition 2,
+                       T_DA repetition 3).
+```
+
+The factor two represents the two frozen datasets; the synthetic panel already
+contains both rates. CPU time sums all threads. The warmup is excluded. The
+same median-of-three rule applies to reported arm time and support/scientific
+ratios; all individual repetitions remain visible. The support/scientific
+ratio divides median total support CPU by median total scientific training CPU
+summed across `D/A/P/V`. The allocation ratio divides median `A`-specific
+allocation/packing CPU by median shared scalar-fitting CPU.
+
 Admission requires all of the following:
 
-- projected two-dataset `D+A` scalar-curve and allocation CPU time, including
-  both `H=1024` and the mandatory `H=2048` sensitivity, is at most 1 CPU-hour;
+- `T_project` is at most 1 CPU-hour;
 - peak resident memory of any arm is at most 16 GiB;
 - support/evidence CPU time is at most 25% of scientific training CPU time;
 - `A` allocation and packing overhead beyond the shared scalar curves is at
@@ -283,10 +334,10 @@ Define
 
 ```text
 Delta_A = D_D - D_A
-Delta_R = D_D - min(D_P,D_V)
+Delta_V = D_D - D_V
 
 G = Delta_A / D_D
-C = Delta_A / Delta_R        when Delta_R > 0
+C = Delta_A / Delta_V        when Delta_V > 0
 ```
 
 For the disjoint base-residual-pair proxy, build each arm's declared binary32
@@ -312,30 +363,64 @@ PQ reconstruction. The 1% band is not called equivalence; it is only the
 largest quality deficit allowed for an efficiency-based systems hypothesis.
 
 Use the inherited two-stage IVF-cell bootstrap with 10,000 deterministic
-replicates. The confirmatory family contains `G>0.05`, `C>0.50`, `Q>0.05`, and
-`P_margin>0` for each of four dataset-by-rate cells. Apply Holm correction at
-familywise `alpha=0.05`. Report unadjusted intervals and every point estimate,
-but no descriptive subgroup may replace a failed registered cell.
+replicates, including its PCG64 seed, draw order, arm-shared resamples,
+vector/pair weighting, and binary64 accumulation order. For each dataset `d`
+in `{GIST,CIFAR}` and rate `b` in `{4,8}`, define exactly five zero-null
+contrasts:
+
+```text
+L_G[d,b]  = (D_D-D_A) - 0.05 D_D
+L_V[d,b]  = D_D-D_V
+L_C[d,b]  = (D_D-D_A) - 0.50 (D_D-D_V)
+L_Q5[d,b] = (E_D-E_A) - 0.05 E_D
+L_P[d,b]  = 1.01 D_P-D_A
+```
+
+The exact identifier format is `<contrast>_<dataset>_B<rate>`, for example
+`L_Q5_GIST_B4`. These 20 identifiers, ordered lexicographically as ASCII, are
+the complete confirmatory family. For point
+contrast `T_hat`, bootstrap replicate `T_r`, and `delta_r=T_r-T_hat`, report
+
+```text
+two-sided basic 95% CI =
+  [T_hat-quantile_0.975(delta), T_hat-quantile_0.025(delta)]
+one-sided 95% lower bound = T_hat-quantile_0.95(delta)
+null-centered one-sided p =
+  (1 + count(delta_r >= T_hat)) / 10001
+```
+
+Quantiles use NumPy `method="linear"`; comparisons include ties. Apply Holm
+step-down at familywise `alpha=0.05` across exactly 20 hypotheses. Sort by
+`(raw_p,hypothesis_id)`; at one-based position `i`, the adjusted p-value is the
+running maximum of `(20-i+1)*raw_p`, capped at one. Basic intervals and lower
+bounds are unadjusted descriptive outputs. Passage uses the Holm-adjusted
+one-sided p-values only and requires each named adjusted p-value to be below
+`0.05`. No ratio, prevalence, leave-one-group-out, cost, or
+sensitivity statistic enters or replaces this family.
 
 ## 10. Base-only go/no-go rule
 
 A4-OR-B passes only if all of the following hold in both datasets and both word
 widths:
 
-1. the Holm-adjusted lower bound establishes more than 5% dyadic-error
-   removal;
-2. the stronger of ordinary PQ and trained block VQ improves on `D`, and the
-   adjusted lower bound establishes that `A` closes more than half of that
-   opportunity; the B=8 overlap is counted once;
-3. the adjusted lower bound establishes more than 5% base-pair absolute-error
-   reduction;
-4. the adjusted lower bound establishes that `A` is within the one-percent PQ
-   reconstruction band; and
+1. Holm-adjusted `L_G` rejects its zero null, establishing more than 5%
+   dyadic-error removal;
+2. Holm-adjusted `L_V` rejects its zero null and Holm-adjusted `L_C` rejects its
+   zero null, establishing a positive block-VQ opportunity and that `A` closes
+   more than half of it;
+3. Holm-adjusted `L_Q5` rejects its zero null, establishing more than 5%
+   base-pair absolute-error reduction;
+4. Holm-adjusted `L_P` rejects its zero null, establishing that `A` is within
+   the one-percent ordinary-PQ reconstruction band; and
 5. at least 48 of 64 fixed groups have positive reconstruction point gain, and
    the minimum leave-one-group-out pooled gain remains at least 5%; and
 6. relative to `P`, `A` provides at least one predeclared twofold advantage in
    fitting CPU time or persistent model bytes, while neither of those two
    metrics is more than twofold worse.
+
+At `B=8`, `P` and `V` may be the same model class, but `L_V/L_C` test the
+word-local block opportunity while `L_P` tests the separate PQ noninferiority
+condition; neither is described as independent replication.
 
 The reconstruction and 50% thresholds are retained from the pre-outcome A4-1
 contract. Applying 5% also to the estimator proxy prevents reconstruction-only
