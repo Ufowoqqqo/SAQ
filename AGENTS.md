@@ -1,5 +1,27 @@
 # AGENTS.md
 
+## A4-OR-C Additive Authorization (2026-07-22)
+
+The user has explicitly authorized only `A4-OR-C` on branch
+`saq-a4-original-reopening-protocol`. This additive authority supersedes the
+historical stopped-boundary build prohibition only for the new isolated
+`research/a4_or_c/` source, its pinned `third_party/faiss` dependency, a
+dedicated out-of-tree build directory, and the committed synthetic artifacts
+named by `docs/saq_a4_or_c_machine_contract_2026_07_22.json`.
+
+Do not include, link, import, or execute historical A4-1S/V2 runners, CLIs,
+verifiers, archive/evidence frameworks, exact GMP trainer, or custom block-VQ
+trainer. They remain read-only semantic oracles. Do not modify SAQ/CAQ. Do not
+open `data/`, `results/`, `bin/`, any natural dataset, query, ground truth,
+index, or ignored prior artifact. A4-OR-C stops after its tiny and deterministic
+same-shape synthetic admission; A4-OR-B remains separately unauthorized.
+
+Before implementation, commit and independently review the authorization and
+machine contract. Use at most one implementation owner and one independent
+reviewer. The expected scientific core is 350--800 net lines; support code is
+capped at `max(800,2*scientific_core)`. Stop at a user checkpoint if either
+ceiling is exceeded.
+
 Durable guidance for Codex sessions on the
 `saq-arbitrary-cardinality-feasibility-v2` branch.
 

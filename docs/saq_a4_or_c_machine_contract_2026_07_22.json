@@ -1,0 +1,190 @@
+{
+  "contract_id": "A4-OR-C-2026-07-22",
+  "status": "FROZEN_BEFORE_IMPLEMENTATION_AND_SYNTHETIC_EXECUTION",
+  "authority": {
+    "protocol_commit": "7249dd6ccaa76b65997b5620f196d5bf4c2ff552",
+    "authorization_document": "docs/saq_a4_or_c_authorization_2026_07_22.md",
+    "maximum_outcome": "PASS_A4_OR_C_SYNTHETIC_ONLY",
+    "later_data_authority": false
+  },
+  "forbidden_reads": [
+    "data/",
+    "results/",
+    "bin/",
+    "any GIST or CIFAR artifact",
+    "any centroid or cluster-id artifact",
+    "any benchmark query or ground truth",
+    "any generated index",
+    "any ignored or untracked prior A4 artifact"
+  ],
+  "implementation_boundary": {
+    "new_source_root": "research/a4_or_c",
+    "third_party_root": "third_party/faiss",
+    "old_a4_sources": "READ_ONLY_SEMANTIC_ORACLE_NOT_INCLUDED_LINKED_IMPORTED_OR_EXECUTED",
+    "saq_sources": "UNMODIFIED",
+    "scientific_core_net_line_range": [350, 800],
+    "support_net_line_ceiling": "max(800,2*scientific_core)"
+  },
+  "machine": {
+    "host": "rwcpu8.cse.ust.hk",
+    "architecture": "x86_64",
+    "cpu": "Intel(R) Core(TM) i9-10920X CPU @ 3.50GHz",
+    "physical_cores": 12,
+    "hardware_threads": 24,
+    "numa_nodes": 1,
+    "affinity": "logical_cpu_0",
+    "process_count": 1,
+    "threads": 1,
+    "environment": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "OMP_DYNAMIC": "FALSE"
+    }
+  },
+  "compiler": {
+    "cxx": "g++",
+    "version": "11.5.0",
+    "cmake_version": "4.0.3",
+    "language": "C++20",
+    "build_type": "Release",
+    "flags": [
+      "-O3",
+      "-DNDEBUG",
+      "-fno-fast-math",
+      "-ffp-contract=off",
+      "-frounding-math",
+      "-mfpmath=sse",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic"
+    ]
+  },
+  "dependencies": {
+    "ordinary_pq_and_block_kmeans": {
+      "name": "Faiss",
+      "official_repository": "https://github.com/facebookresearch/faiss.git",
+      "tag": "v1.14.3",
+      "tag_object": "d6980a5b3f4b9bf0b151946b003fc0ad4a439301",
+      "peeled_commit": "0ca9df4792b173d573044ee14ca0704780176e82",
+      "license": "MIT",
+      "build": "CPU_ONLY_NO_PYTHON_NO_GPU",
+      "ordinary_control": "unrotated ProductQuantizer with 8-bit subquantizers",
+      "block_control": "Faiss native Clustering, 8 deterministic redos",
+      "blas_threads": 1
+    },
+    "scalar_histogram_dp": {
+      "selection": "NEW_BOUNDED_NATIVE_IMPLEMENTATION",
+      "reason": "no maintained pinned curve-producing native 1D DP implementation satisfying the frozen histogram/tie interface was found locally",
+      "old_gmp_dp_role": "READ_ONLY_TINY_SEMANTIC_ORACLE"
+    }
+  },
+  "synthetic_panel": {
+    "rows": 8192,
+    "dimensions": 128,
+    "word_bits": [4, 8],
+    "grouping": "adjacent_nonoverlapping_pairs",
+    "payload_bytes": {"B4": 32, "B8": 64},
+    "generator": {
+      "integer_arithmetic": "uint64_mod_2^64_twos_complement_for_signed_numerators",
+      "hash": "SplitMix64",
+      "seed": "0xA40C202607220001",
+      "row_multiplier": "0x9E3779B97F4A7C15",
+      "coordinate_multiplier": "0xBF58476D1CE4E5B9",
+      "second_stream_xor": "0x94D049BB133111EB",
+      "states": "3+(coordinate_id mod 14)",
+      "label": "hash1 mod states",
+      "noise": "signed_integer(hash2 mod 17)-8",
+      "numerator": "(2*label-(states-1))*64+noise",
+      "value": "binary32(numerator/64)",
+      "row_order": "row_id_then_coordinate_id"
+    }
+  },
+  "histograms": {
+    "primary_H": 1024,
+    "sensitivity_H": 2048,
+    "rules": "exactly protocol section 7 at commit 7249dd6",
+    "curve_K": [1, 256],
+    "production_arithmetic": "IEEE_binary64",
+    "final_center_storage": "IEEE_binary32",
+    "raw_row_replay": true
+  },
+  "tiny_exact_suite": {
+    "a4_zero_error_witness": true,
+    "generated_case_count": 256,
+    "generator": "SplitMix64 seed 0xA40C202607220002",
+    "support_size_range": [1, 12],
+    "support_value_range": [-32, 32],
+    "weight_range": [1, 8],
+    "reference": "independent bounded exhaustive contiguous-partition enumeration using signed __int128 integer moments",
+    "objective_tolerance": "1e-10*max(1,abs(SSE_exact))",
+    "cardinality_and_tie_match": "EXACT"
+  },
+  "arms": {
+    "D": "same histogram curves; K1,K2 powers of two; K1*K2<=2^B",
+    "A": "same histogram curves; positive integer K1,K2; K1*K2<=2^B; u=z1+K1*z2",
+    "P": {
+      "B4": "M=32,dsub=4,ksub=256,nbits=8",
+      "B8": "M=64,dsub=2,ksub=256,nbits=8",
+      "rotation": "none",
+      "redos": 8,
+      "iterations": 300,
+      "seed_base": 20260722
+    },
+    "V": {
+      "groups": 64,
+      "dimension": 2,
+      "centers": {"B4": 16, "B8": 256},
+      "redos": 8,
+      "iterations": 300,
+      "seed_base": 20260722,
+      "B8_relation_to_P": "same_model_class_separate_training_surface_not_independent_evidence"
+    }
+  },
+  "numeric_admission": {
+    "mixed_radix_roundtrip": "all_valid_and_invalid_addresses_B4_B8",
+    "lookup_vs_direct": "all_addresses_all_groups_both_rates",
+    "nonfinite_or_negative_sse": "FAIL",
+    "serialized_center_collision": "FAIL",
+    "allocation_order_dependence": "FAIL",
+    "eta_limit": "0.0005*min_(H,B)D_D_syn(H,B)",
+    "sensitivity_change": "APPROXIMATION_SENSITIVE",
+    "near_tie_decision_change": "NUMERICALLY_UNRESOLVED"
+  },
+  "timing": {
+    "warmups": 1,
+    "measured_repetitions": 3,
+    "aggregation": "median",
+    "T_DA": "shared_H1024_curves_once+shared_H2048_curves_once+D_and_A_allocation_and_packing_for_both_H_and_B",
+    "T_project": "2*median(T_DA_rep1,T_DA_rep2,T_DA_rep3)",
+    "cpu_ceiling_seconds": 3600,
+    "peak_rss_ceiling_bytes": 17179869184,
+    "support_to_scientific_cpu_ceiling": 0.25,
+    "A_specific_to_shared_scalar_cpu_ceiling": 0.25,
+    "timed_region_excludes": ["JSON", "logging", "hashing", "provenance", "compression", "archive"]
+  },
+  "terminal_status_precedence": [
+    "DEPENDENCY_OR_BUILD_INVALID",
+    "NUMERIC_ADMISSION_FAIL",
+    "CONTROL_INVALID",
+    "APPROXIMATION_SENSITIVE",
+    "NUMERICALLY_UNRESOLVED",
+    "MEMORY_CEILING_FAIL",
+    "SUPPORT_OVERHEAD_FAIL",
+    "NO_GO_REOPENING_COST",
+    "PASS_A4_OR_C_SYNTHETIC_ONLY"
+  ],
+  "output": {
+    "directory": "docs/saq_a4_or_c_synthetic_artifacts_2026_07_22",
+    "files": [
+      "contract_copy.json",
+      "build_identity.json",
+      "numeric_admission.json",
+      "timing_repetitions.json",
+      "terminal_result.json"
+    ],
+    "format": "canonical_JSON_UTF8_LF_sorted_keys_no_nan_no_infinity",
+    "raw_labels_centers_or_per_interval_traces": "NOT_EMITTED",
+    "scientific_replay_aggregates": "EMITTED"
+  }
+}

@@ -14,6 +14,14 @@ access, query evaluation, or revival of the prefix-code successor. The maximum
 outcome is `A4-OR-PROTOCOL_REVIEW_PASS`. Any later A4-OR-C numerical/cost
 admission requires separate explicit authorization.
 
+The user explicitly authorized `A4-OR-C` on 2026-07-22. The authorization
+receipt and frozen machine contract are
+`docs/saq_a4_or_c_authorization_2026_07_22.md` and
+`docs/saq_a4_or_c_machine_contract_2026_07_22.json`. Before implementation,
+they must be committed and independently reviewed. A4-OR-C permits only the
+new isolated synthetic numerical/cost admission; it permits no base or query
+read and cannot proceed to A4-OR-B automatically.
+
 ## Current Research Milestone
 
 The bounded primary-source review, V2 protocol design, additive timing-closure
