@@ -287,12 +287,13 @@ prefix/index-assignment optimization.  It would exhaustively compare:
 
 1. word-local dyadic scalar products;
 2. standard arbitrary-cardinality mixed radix;
-3. ordinary PQ or the same-capacity two-dimensional block codebook;
-4. Riskin-style progressive index assignment;
-5. a derived-coarse-codebook two-pass construction;
-6. Polysemous under its native filtering objective, unless reviewed as
+3. ordinary PQ;
+4. the same-capacity two-dimensional block codebook;
+5. Riskin-style progressive index assignment;
+6. a derived-coarse-codebook two-pass construction;
+7. Polysemous under its native filtering objective, unless reviewed as
    inapplicable before execution; and
-7. the prefix-co-designed factorized candidate.
+8. the prefix-co-designed factorized candidate.
 
 The candidate would stop if it cannot improve prefix-stage absolute distance
 or pair ordering at identical prefix reads and lookup count, if full-word
