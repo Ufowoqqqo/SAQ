@@ -140,7 +140,7 @@
     "historical_fixture_source": {
       "commit": "9e65159",
       "path": "script/a4_1s_runner.py",
-      "blob": "ad34004b15da79a2481650e64f1cc7cfaf93c20f",
+      "blob": "aebcee89375683af4f4bf7b8a29339e5be0154f1",
       "role": "READ_ONLY_DEFINITION_REEXPRESSED_NOT_IMPORTED_OR_EXECUTED"
     },
     "exhaustive_cases": "case_id increasing; support_size=1..4; lexicographic combinations of (-2,-1,0,1,2); lexicographic Cartesian weights in (1,2,3)^support_size; vector_ids=0..support_size-1; maximum_cardinality=support_size; exactly 780 cases",
@@ -159,9 +159,10 @@
     "generator_seed": "0xA40C202607220002",
     "generated_case_rule": "for suite_index i=0..255 set size=1+(i mod 12); for j=0..size-1 set base=seed xor ((i+1)*row_multiplier) xor ((j+1)*coordinate_multiplier), value=-32+(splitmix64(base) mod 65), weight=1+(splitmix64(base xor second_stream_xor) mod 8), vector_id=j; draw/order is i then j; maximum_cardinality=min(8,distinct values after aggregation)",
     "bit_pattern_case_rule": "case_ids 780..787 in listed order; values are the listed raw binary32 words, weights follow the separator, vector_ids are 0..size-1, maximum_cardinality is the count of distinct decoded values after signed-zero canonicalization",
+    "aggregation": "canonicalize signed zero; decode each finite binary32 value exactly; sort by numeric value then vector_id; equal decoded values become one support point with summed integer weight and minimum vector_id; support order is increasing numeric value",
     "case_order": "780 exhaustive, then 8 bit-pattern cases in listed order, then 256 generated cases",
     "total_case_count": 1044,
-    "reference": "independent bounded exhaustive contiguous-partition enumeration using signed __int128 integer moments",
+    "reference": "independent bounded exhaustive contiguous-partition enumeration using boost::multiprecision::cpp_int integer moments for every case, including subnormal and FLT_MAX bit patterns; arbitrary precision is tiny-reference-only and is not linked into the production histogram trainer",
     "objective_tolerance": "1e-10*max(1,abs(SSE_exact))",
     "cardinality_and_tie_match": "EXACT"
   },
@@ -197,7 +198,7 @@
       "redos": 8,
       "iterations": 300,
       "seed": "20260722 + B*10000 + group_id*8 + redo_id",
-      "start_0": "candidate A binary32-serialized then binary64-decoded Cartesian centers in mixed-radix order; if used_states<S, repeatedly append the raw row maximizing distance to its nearest current center, ties choose smallest row_id",
+      "start_0": "primary H=1024 candidate A binary32-serialized then binary64-decoded Cartesian centers in mixed-radix order; if used_states<S, repeatedly append the raw row maximizing distance to its nearest current center, ties choose smallest row_id; V is trained once per B and has no H=2048 copy",
       "starts_1_to_7": "empty initial centroid array; Faiss Clustering initialization with the frozen per-start seed",
       "faiss_fields": {
         "niter": 300,
@@ -259,6 +260,36 @@
     "NO_GO_REOPENING_COST": ["T_project exceeds ceiling", "median A-specific/shared-scalar CPU ratio exceeds ceiling"],
     "PASS_A4_OR_C_SYNTHETIC_ONLY": ["all earlier conditions pass"]
   },
+  "condition_order": [
+    "dependency_identity",
+    "build_success",
+    "tiny_exact",
+    "mixed_radix",
+    "lookup_direct",
+    "finite_nonnegative",
+    "AD_center_collision_zero",
+    "allocation_order",
+    "eta",
+    "P_shape",
+    "V_shape",
+    "P_center_collision_zero",
+    "V_center_collision_zero",
+    "P_nsplit_zero",
+    "V_nsplit_zero",
+    "all_arms_complete",
+    "sensitivity",
+    "near_tie",
+    "rss",
+    "support_ratio",
+    "T_project",
+    "A_specific_ratio"
+  ],
+  "condition_to_status": {
+    "dependency_identity": "DEPENDENCY_OR_BUILD_INVALID", "build_success": "DEPENDENCY_OR_BUILD_INVALID",
+    "tiny_exact": "NUMERIC_ADMISSION_FAIL", "mixed_radix": "NUMERIC_ADMISSION_FAIL", "lookup_direct": "NUMERIC_ADMISSION_FAIL", "finite_nonnegative": "NUMERIC_ADMISSION_FAIL", "AD_center_collision_zero": "NUMERIC_ADMISSION_FAIL", "allocation_order": "NUMERIC_ADMISSION_FAIL", "eta": "NUMERIC_ADMISSION_FAIL",
+    "P_shape": "CONTROL_INVALID", "V_shape": "CONTROL_INVALID", "P_center_collision_zero": "CONTROL_INVALID", "V_center_collision_zero": "CONTROL_INVALID", "P_nsplit_zero": "CONTROL_INVALID", "V_nsplit_zero": "CONTROL_INVALID", "all_arms_complete": "CONTROL_INVALID",
+    "sensitivity": "APPROXIMATION_SENSITIVE", "near_tie": "NUMERICALLY_UNRESOLVED", "rss": "MEMORY_CEILING_FAIL", "support_ratio": "SUPPORT_OVERHEAD_FAIL", "T_project": "NO_GO_REOPENING_COST", "A_specific_ratio": "NO_GO_REOPENING_COST"
+  },
   "output": {
     "directory": "docs/saq_a4_or_c_synthetic_artifacts_2026_07_22",
     "files": [
@@ -271,13 +302,8 @@
     "format": "contract_copy is byte-identical to committed source; the other four files are canonical_JSON_UTF8_LF_sorted_keys_no_nan_no_infinity",
     "numeric_encoding": "scientific binary32/binary64 values are lowercase C++ std::hexfloat strings; durations and byte counts are unsigned decimal JSON integers; booleans are JSON booleans",
     "schema_policy": "each non-contract output is one JSON object whose top-level key set is exactly the listed set; no additional top-level keys; named arrays contain objects with exactly the fields stated in their description",
-    "schemas": {
-      "contract_copy.json": ["byte-for-byte copy of this committed contract; no added keys"],
-      "build_identity.json": ["contract_sha256", "git_commit", "faiss_commit", "faiss_tree_or_submodule_identity", "faiss_license_sha256", "compiler_version", "cmake_version", "compile_argv", "cmake_cache", "blas_library_sha256", "cblas_header_sha256", "binary_sha256"],
-      "numeric_admission.json": ["contract_sha256", "tiny_total", "tiny_passed", "tiny_max_objective_error_hex", "allocation_match", "roundtrip_case_count", "lookup_case_count", "eta_hex", "eta_limit_hex", "sensitivity_same_decision", "near_tie_same_decision", "arm_shapes", "center_collision_counts", "control_nsplit_counts", "passed"],
-      "timing_repetitions.json": ["contract_sha256", "warmup_count", "repetitions array with per-arm scientific_cpu_us, wall_us, support_cpu_us, peak_rss_bytes, shared_scalar_cpu_us, A_specific_cpu_us", "median aggregates", "T_project_cpu_us", "support_ratio_hex", "A_specific_ratio_hex", "all thresholds", "passed"],
-      "terminal_result.json": ["contract_sha256", "status", "first_failed_condition", "all_condition_booleans", "no_natural_data_attestation", "numeric_admission_sha256", "timing_repetitions_sha256", "build_identity_sha256"]
-    },
+    "schema_path": "docs/saq_a4_or_c_output_schema_2026_07_22.json",
+    "schema_id": "https://saq.local/schema/a4-or-c-output-2026-07-22",
     "contract_identity": "contract_copy.json must be byte-identical to the committed machine contract; every other file repeats its SHA-256",
     "raw_labels_centers_or_per_interval_traces": "NOT_EMITTED",
     "scientific_replay_aggregates": "EMITTED"
