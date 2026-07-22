@@ -253,8 +253,9 @@ A4-OR-C passes numerical admission only if:
 - the replay discrepancy defined below is within its frozen limit.
 
 For each word width `B`, A4-OR-C has one synthetic cell containing the 8,192
-raw rows for that width. Let `D_D_syn(B)` be `D`'s direct raw-row squared error
-divided by 8,192 and 128 coordinates. For each
+raw rows for that width. Let `D_D_syn(H,B)` be `D`'s direct raw-row squared
+error for histogram resolution `H`, divided by 8,192; like the later `D_D`, it
+is total 128-coordinate distortion per vector. For each
 `X in {D,A,P,V}`, each `H in {1024,2048}` that applies to that arm, and each
 `B in {4,8}`, independently compute total squared error by (a) compensated
 weighted sufficient statistics and (b) a direct row/group/coordinate loop.
@@ -262,14 +263,16 @@ Define
 
 ```text
 eta = max_(X,H,B) |SSE_compensated_stats(X,H,B)-SSE_direct(X,H,B)|
-      / (8192 * 128).
+      / 8192.
 ```
 
 The synthetic admission requires
-`eta <= 0.0005 * min_B D_D_syn(B)`. Before accepting A4-OR-B results, repeat
-the same definition over all dataset-by-rate cells, using each cell's own
-`D_D`, and require the per-cell discrepancy to be at most `0.0005 * D_D`.
-An arm without histogram resolution has one replay and no invented `H` copy.
+`eta <= 0.0005 * min_(H,B) D_D_syn(H,B)`. Before accepting A4-OR-B results,
+repeat the same per-vector definition over all dataset-by-rate cells. In each
+cell, maximize over arms and applicable histogram resolutions, divide total
+SSE discrepancy by that cell's held-out vector count, and require it to be at
+most `0.0005 * min_H D_D(H)` for that cell. An arm without histogram
+resolution has one replay and no invented `H` copy.
 
 The replay limit is one percent of the registered five-percent materiality
 threshold. Every allocation whose fitting objective lies within the measured
