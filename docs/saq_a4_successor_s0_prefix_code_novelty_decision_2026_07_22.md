@@ -8,7 +8,7 @@ Protocol snapshot: `c0467d1`
 
 Authorization: user-authorized source-only successor gate
 
-Decision: **`INCONCLUSIVE_MECHANISM_EVIDENCE`**
+Decision: **`NO_GO_DIRECT_COMPOSITION`**
 
 S1 status: **`NOT_AUTHORIZED`**
 
@@ -51,9 +51,11 @@ Outcome precedence is:
 6. unquantified cost-only residual; or
 7. one surviving non-compositional mechanism.
 
-All required sources were identified and at least primary text was inspected,
-so `INCONCLUSIVE_SOURCE_GAP` does not apply.  Some cells that determine steps
-3--5 remain unresolved, so the protocol stops at step 2.
+All required sources were identified and their decision-critical primary text
+was inspected, so neither inconclusive outcome applies.  No single source has
+the entire candidate, but it decomposes into an existing factorized code and
+post-hoc label/prefix optimization without a new constraint, lemma, algorithm,
+or quantified trade-off.  The protocol therefore stops at step 4.
 
 ## 3. Matrix legend
 
@@ -82,7 +84,7 @@ so `INCONCLUSIVE_SOURCE_GAP` does not apply.  Some cells that determine steps
 | Q-Palette 2025 | YES | NO | U | NO | NO | NO | NO | NO | YES | YES | `FW,SC,QC`: §3 and Table 1, pp.3--4, App. C.3.1 p.18; all `NO`: quantizer/kernel definitions, §§3.1--3.3, pp.3--6 |
 | FibQuant 2026 | YES | NO | NO | NO | NO | NO | NO | NO | YES | YES | `FW,SC,QC`: §3.1, pp.3--4 and §5; all `NO`: block-code definition and scalar comparison, §§3--4, pp.3--7 |
 | Optimized Product Quantization 2013 | YES | YES | NO | NO | NO | NO | YES | NO | YES | YES | `FW,FR,FL,SC,QC`: §2 pp.2946--2948 and §4 pp.2950--2951; all `NO`: full objective/codec, §§2--3 |
-| Adaptive Bit Allocation PQ 2016 | YES | YES | NO | U | U | U | YES | U | YES | YES | all non-`U`: publisher primary abstract, introduction, §3 opening, and conclusion: PCA/subspace PQ, `log_2 k`-bit indices, unequal-bit objective, greedy allocation, and summed subspace-distance search |
+| Adaptive Bit Allocation PQ 2016 | YES | YES | NO | NO | NO | NO | YES | NO | YES | YES | all cells: complete primary text, §§2.2 and 3--3.3, pp.867--869, Eqs.(10)--(13), Algorithm 1, and Table 1; ordinary concatenated PQ indices, full-distortion-only bit allocation, k-means codebooks, and ADC/SDC lookup |
 | Quicker ADC 2021 | YES | YES | NO | NO | NO | NO | YES | NO | YES | YES | all cells: §§3.1--3.4, pp.4--7; `AC=NO` follows explicit `2^b` 4/5/6-bit subquantizers in §3.1 |
 | Derived Codebooks 2019 | YES | YES | NO | YES | YES | YES | YES | NO | YES | YES | `FW,FR,LA,NP,CO,FL,SC,QC`: §§3.1--3.3, pp.3--5, Algorithms 2--3 and property P1; `AC,JT`: same complete construction |
 | Polysemous Codes 2016 | YES | YES | NO | YES | NO | YES | YES | NO | YES | YES | `FW,FR,LA,CO,FL,SC,QC`: §§3.1--3.3, Eqs.(1)--(7); `AC,NP,JT`: complete sequential PQ-then-bijection method, §§3--3.3 |
@@ -120,13 +122,14 @@ Ge et al.'s CVPR 2013 Optimized Product Quantization jointly learns a transform
 and Cartesian subcodebooks and uses ordinary ADC tables.  It does not assign a
 progressive binary meaning to the stored fine index.
 
-Guo et al.'s Adaptive Bit Allocation PQ supplies unequal integer bit counts
-and subcodebook sizes.  The publisher text fixes the high-level order as PCA,
-principal-component grouping, and greedy bit allocation to minimize ordinary
-quantization distortion.  However, the accessible primary text omits most of
-§3; the official PDF is access-restricted.  It therefore cannot establish the
-absence of label assignment, nested prefixes, a separate coarse objective, or
-joint training.  Those four cells remain `U`, rather than inferred `NO`.
+Guo et al.'s Adaptive Bit Allocation PQ supplies unequal integer bit counts and power-of-two subcodebooks; the supplied complete PDF has SHA-256
+`c181ee3468c01edf2e02cf193c9aaa88eb92a3a836b3cdc24f4e90150bde11d2`.
+Sections 2.2 and 3--3.3 define PCA rotation, grouping, greedy allocation of each
+payload bit, k-means fitting, and concatenated ordinary codeword indices.
+Eqs.(10)--(13) and Algorithm 1 optimize only full-reconstruction distortion;
+querying is ordinary PQ ADC/SDC lookup and summation.  Thus `LA=NP=CO=JT=NO`.
+Unequal subspace bit counts select independent sizes `2^{l_j}`; they are not
+successive coarse-to-fine bits of one codeword.
 
 [Quicker ADC](https://arxiv.org/abs/1812.09162) Sections 3.1--3.4 cover
 irregular 4/5/6-bit PQ granularities, packed layouts, split lookup tables, and
@@ -191,12 +194,13 @@ return `NO_GO_ALREADY_SOLVED` from the current evidence.
 Combining FSQ-style factorization with Riskin-style progressive assignment or
 Derived-style coarse indexing is structurally straightforward.  Polysemous
 also supplies an ANN-specific distance/ranking objective for learned labels.
-This is strong evidence pressure toward `NO_GO_DIRECT_COMPOSITION`.
-
-However, the current evidence does not decide whether joint fine/prefix
-training introduces a substantive coupled constraint or is merely alternating
-optimization of known losses.  That cell is decision-critical, so the protocol
-does not permit converting this pressure into a direct-composition verdict.
+Riskin explicitly accepts a fixed fine encoder and optimizes the progressive
+assignment afterward; Derived already applies this to factorized PQ centroids.
+Substituting FSQ-, BAPQ-, or candidate-style centroids changes reconstruction
+and training cost, but introduces no prefix constraint or algorithm.  No
+specified property prevents sequential composition, and no new lemma or
+quantified advantage is supplied.  The first matching outcome is therefore
+`NO_GO_DIRECT_COMPOSITION`.
 
 Derived Codebooks obtains its prefix/two-pass behavior with ordinary
 power-of-two PQ.  Thus arbitrary cardinality appears unnecessary to the
@@ -234,19 +238,15 @@ codebooks, and Polysemous under its native filtering objective.
 The exact terminal outcome is:
 
 ```text
-INCONCLUSIVE_MECHANISM_EVIDENCE
+NO_GO_DIRECT_COMPOSITION
 ```
 
-Riskin's previously unresolved training-order and decoding-path cells are now
-resolved.  Decision-critical uncertainty is confined to ABAPQ's `LA`, `NP`,
-`CO`, and `JT` cells because its complete §3 method text was not inspectable.
-Resolving them could change which of
-`NO_GO_ALREADY_SOLVED`, `NO_GO_DIRECT_COMPOSITION`, or
-`NO_GO_NOT_AN_A4_SUCCESSOR` applies first.
+ABAPQ's complete method resolves its former `LA`, `NP`, `CO`, and `JT`
+uncertainties as `NO`.  No source contains the entire candidate, while direct
+composition precedes the also-supported arbitrary-cardinality no-go.
 
-This outcome is not a novelty pass.  It is also not evidence that the method is
-non-novel.  S1 requires `PASS_S0_STATIC_ONLY`, which did not occur, so S1 code,
-synthetic execution, data access, and performance work remain unauthorized.
+This closes the proposed prefix-code successor at S0, not experimentally or on
+performance.  Without `PASS_S0_STATIC_ONLY`, all S1 work remains unauthorized.
 
 ## 10. Evidence classification and checkpoint
 
@@ -257,21 +257,22 @@ Verified evidence:
 - Polysemous learns ANN-oriented binary label assignments while retaining ADC;
 - Riskin builds progressive prefix reconstructions after fixing the original
   fine VQ encoder, and intermediate decoding performs no new search; and
+- ABAPQ changes the numbers of bits assigned to independent PQ subspaces but
+  keeps ordinary indices and a single full-reconstruction objective; and
 - FSQ supplies arbitrary factor products, while FibQuant reinforces the
   unrestricted block-code control.
 
 Inference:
 
 - bit relocation makes Derived's selector equivalent to a physical prefix;
-- the proposed combination is likely direct and arbitrary cardinality likely
-  unnecessary to the prefix mechanism.
+- the absence of a new coupling constraint or algorithm makes the proposed
+  combination direct, and arbitrary cardinality is unnecessary to the prefix
+  mechanism.
 
 Unresolved uncertainty:
 
-- whether ABAPQ's unavailable complete method contains any label/prefix/coarse
-  mechanism or coupling beyond its visible PCA, grouping, and bit allocation;
-  and
-- whether a state/training-cost property makes the coupling non-compositional.
+- exact factorized-versus-block-VQ state/training deltas remain unmeasured, but
+  occur after the direct-composition stop and cannot reopen S1 here.
 
 Scientific code changed: 0 lines.  This decision report is the only evidence
 output.  Nothing was compiled or executed, and no experimental result was
