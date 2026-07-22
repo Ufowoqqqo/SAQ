@@ -1,1066 +1,170 @@
-# AGENTS.md
-
-## A4-OR-C Additive Authorization (2026-07-22)
-
-The user has explicitly authorized only `A4-OR-C` on branch
-`saq-a4-original-reopening-protocol`. This additive authority supersedes the
-historical stopped-boundary build prohibition only for the new isolated
-`research/a4_or_c/` source, its pinned `third_party/faiss` dependency, a
-dedicated out-of-tree build directory, and the committed synthetic artifacts
-named by `docs/saq_a4_or_c_machine_contract_2026_07_22.json`.
-
-Do not include, link, import, or execute historical A4-1S/V2 runners, CLIs,
-verifiers, archive/evidence frameworks, exact GMP trainer, or custom block-VQ
-trainer. They remain read-only semantic oracles. Do not modify SAQ/CAQ. Do not
-open `data/`, `results/`, `bin/`, any natural dataset, query, ground truth,
-index, or ignored prior artifact. A4-OR-C stops after its tiny and deterministic
-same-shape synthetic admission; A4-OR-B remains separately unauthorized.
-
-Before implementation, commit and independently review the authorization and
-machine contract. Use at most one implementation owner and one independent
-reviewer. The expected scientific core is 350--800 net lines; support code is
-capped at `max(800,2*scientific_core)`. Stop at a user checkpoint if either
-ceiling is exceeded.
-
-Durable guidance for Codex sessions on the
-`saq-arbitrary-cardinality-feasibility-v2` branch.
-
-## Research Frame
-
-Work as a doctoral researcher seeking a SIGMOD/VLDB/ICDE-level database-
-systems contribution. Code and artifact machinery are supporting instruments,
-not contributions by themselves. For every proposed step, state the SAQ-
-specific limitation, closest primary work, falsifiable claim, construction,
-storage, verification, and query costs, and the likely objection from a strict
-reviewer.
-
-Before proposing an implementation, review the closest primary work and state
-what it already solves, what remains open, and why the proposal is not a
-direct composition, parameter variant, or artifact-engineering result.
-
-## Branch Boundary And Authorization
-
-This branch starts from `saq-correctness-base@bc7829b` and retains only the
-positive one-bit packing and finite padded-lane block-min correctness fixes.
-Treat every other SAQ branch as historical evidence, not an implementation
-dependency. Do not merge or cherry-pick their runners, generated artifacts,
-or method variants.
-
-On 2026-07-14 the user first authorized only:
-
-1. a bounded primary-source review of the cost-model and evidence-generation
-   boundary exposed by A4-1S; and
-2. if that review supports reopening, a new preregistration describing a
-   scientifically defensible cost ledger and sufficient evidence contract.
-
-That documentation-only stage ended at the reviewed protocol commit
-`f86a51d`. The user then explicitly authorized `A4-V2-I`. Static source
-inspection exposed a terminal `P_parity` receipt/publication self-reference,
-so implementation stopped before a commit or review pass. On 2026-07-14 the
-user explicitly authorized the documentation-only `A4-V2-P-ERRATUM` stage.
-The corrected authority at `f13a383` passed three-track exact-commit review;
-the verdict is recorded in
-`docs/saq_a4_v2_par_report_timing_closure_erratum_independent_review_2026_07_14.md`.
-
-After the erratum Meeting Summary Handoff, the prior `A4-V2-I` source
-authorization was resumed. Initial source commit `3a4f7c5` failed static
-review and remains failed/non-evidence. Corrected exact commit
-`482c401521460d1742ffe86c39db7130ed038a06` passed three-track independent
-static review; its verdict is recorded in
-`docs/saq_a4_v2_implementation_independent_review_2026_07_15.md`.
-`A4-V2-I` is complete at `SOURCE_IMPLEMENTED_STATIC_REVIEW_PASS`. No compiler,
-build, Python import, syntax/test command, native execution, parity fixture,
-RNG, synthetic event, generated artifact, benchmark/data read, or SAQ
-modification occurred during that stage.
-
-On 2026-07-15 the user explicitly authorized `A4-V2-PAR` build/parity only.
-The additive receipt is
-`docs/saq_a4_v2_par_authorization_2026_07_15.md`. Before any import, build, or
-fixture execution, commit, push, and independently review that focused
-authorization/status change while proving the 35 reviewed source blobs and
-source-tree identity unchanged. Then run only the exact frozen PAR conductor
-from that clean reviewed commit. The fixed PAR inventory includes its
-registered `PCG64(20260713)` scalar and block fixtures; it does not authorize
-the SRUN panel. `A4-V2-SRUN`, benchmark/data access, and SAQ modification
-remain separately unauthorized.
-
-That single authorized invocation ran from reviewed and pushed execution base
-`2e983a0` on 2026-07-15. It stopped before prelaunch observation or any B/P
-worker because `sys.executable` was the `/bin/python` symlink and the frozen
-leader-identity reader required a no-follow regular file. The exact frozen
-status is `ARTIFACT_INVALID`; there is no valid PAR authority and no scientific
-decision. The terminal facts are recorded in
-`docs/saq_a4_v2_par_prebuild_artifact_identity_failure_2026_07_15.md`. No
-build, parity fixture, RNG, B/P receipt, artifact index, or seal was produced.
-The empty staging directory and ignored Python caches are quarantined WIP,
-not evidence. Do not rerun, substitute another Python path, clean for retry,
-or repair source under this authorization. Exact terminal target `30dfada`
-passed three-track independent review with no finding at LOW or above; its
-review is
-`docs/saq_a4_v2_par_prebuild_artifact_identity_failure_independent_review_2026_07_15.md`.
-
-After the terminal handoff described the next admissible source-correction
-step, the user instructed `继续`. That instruction is narrowly bound as
-`A4-V2-I-R1`, a static-only repair of CPython leader executable identity. Its
-additive authority is
-`docs/saq_a4_v2_executable_identity_source_repair_authorization_2026_07_15.md`.
-Before implementation source changes, that authority/status commit must be
-pushed and independently exact-reviewed while the prior 35 source blobs,
-manifest, and source-tree identity remain unchanged. The maximum later result
-is `SOURCE_REPAIR_STATIC_REVIEW_PASS`. Corrected build/parity is reserved as
-`A4-V2-PAR-R1` and remains separately unauthorized; source repair authorizes
-neither cleanup nor execution.
-
-Exact source-repair commit
-`e48df4523f99c085cfcb83623664054b5f9ae6f7` passed three-track independent
-static review with no finding at LOW or above. Its canonical 35-source tree is
-`8d8b5d3f8990e5d360e0a617d157a8b934c14d0f37b69f399bcc62c71f98360a`;
-the verdict is recorded in
-`docs/saq_a4_v2_executable_identity_source_repair_independent_review_2026_07_15.md`.
-`A4-V2-I-R1` is complete at `SOURCE_REPAIR_STATIC_REVIEW_PASS`.
-
-After being told that the next admissible step was a separately authorized
-documentation-only bytecode-cache determinism and bounded residual-handling
-protocol, with corrected PAR still requiring another authorization, the user
-instructed `授权`. This is narrowly bound as `A4-V2-CACHE-P`. Its receipt is
-`docs/saq_a4_v2_cache_staging_policy_authorization_2026_07_15.md`. It permits
-only bounded official-source/local-static review, protocol and contract
-documents, exact-commit review, push, and Meeting Summary Handoff. It permits
-no bytecode-payload read, cleanup, source/environment change, import, build,
-test, PAR-R1, SRUN, data access, or SAQ modification. The maximum outcome is
-`CACHE_STAGING_POLICY_REVIEW_PASS`; any later implementation/preparation and
-`A4-V2-PAR-R1` remain separately unauthorized.
-
-The bounded CACHE-P review returned
-`GO_SANITIZED_REMOTE_ISOLATION_PROTOCOL_REQUIRED / NO_GO_DIRECT_PAR_R1`.
-Its four protocol objects are:
-
-- `docs/saq_a4_v2_cache_staging_primary_sources_2026_07_15.json`;
-- `docs/saq_a4_v2_cache_staging_primary_source_review_2026_07_15.md`;
-- `docs/saq_a4_v2_cache_staging_disposition_protocol_2026_07_15.md`; and
-- `docs/saq_a4_v2_cache_staging_disposition_contract_2026_07_15.json`.
-
-Exact target commit `56210f8f81557ed7a2521bf7f13c9f937396da29`
-changes only those four paths plus `AGENTS.md` and `TASK.md`, preserves
-implementation-manifest Git blob
-`2aa64e50dad19626711e0dd90c038704ac73e328`, all 35 source blobs, and source-
-tree SHA-256
-`8d8b5d3f8990e5d360e0a617d157a8b934c14d0f37b69f399bcc62c71f98360a`.
-It passed three-track exact-commit independent review with no finding at LOW
-or above. The durable verdict is
-`docs/saq_a4_v2_cache_staging_disposition_protocol_independent_review_2026_07_15.md`.
-The exact target was independently reviewed. At formation of its direct-child
-review record, commit/push and the later live review-head closure still
-remained. Until both occurred, the durable stage status was
-`EXACT_TARGET_REVIEW_PASS_PENDING_LIVE_CLOSURE`; the conditional maximum
-remained `CACHE_STAGING_POLICY_REVIEW_PASS`.
-
-The direct-child CACHE-P review record was subsequently committed and pushed
-at `249d5b8c1939acefbf12711790b3e791b019d560`; its registered live review-head
-closure succeeded and the Meeting Summary Handoff was pushed at
-`saq-meeting-summary@d1e80147ae106afcb88c721a413fa65dff3e7750`. The live
-closure remains an operational, non-evidentiary predicate and is not Meeting
-Summary evidence.
-
-On 2026-07-15 the user explicitly authorized `A4-V2-CACHE-I`. Its additive
-receipt is
-`docs/saq_a4_v2_cache_implementation_authorization_2026_07_15.md`. This stage
-permits only the generic 37-file-source/38-executable-unit cache-policy source,
-schemas, manifests, static closure, exact commits, no-clone equality probes,
-independent static review, push, and mandatory Meeting Summary Handoff frozen
-by CACHE-P. It permits no Python/import/build/test, clone, PREP, PAR-R1, SRUN,
-data access, quarantine access, cleanup, environment mutation, or SAQ change.
-The maximum outcome is
-`GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS`. PREP authorization remains a
-separate future user instruction.
-
-Exact authorization target
-`4f38ca9e056e2a8e40f5f966407a6bc6ddb51b5d` is the direct child of
-`249d5b8c1939acefbf12711790b3e791b019d560`, changes exactly the additive
-authorization plus `AGENTS.md` and `TASK.md`, and preserves manifest blob
-`2aa64e50dad19626711e0dd90c038704ac73e328` and the 35-source tree. Three-track
-exact-target review found no issue at LOW or above; its durable verdict is
-`docs/saq_a4_v2_cache_implementation_authorization_independent_review_2026_07_15.md`.
-The authorization target reaches `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`.
-Before any implementation edit, its direct-child review must be committed and
-pushed, the live review-head closure must succeed, and the distinct
-implementation-parent admission probe must be recorded in the later additive
-cache-authority manifest.
-
-That review record was subsequently committed and pushed at
-`187e363ee08d1f63888137c21fd5a533555bb248`; its live review-head closure and
-the distinct implementation-parent admission predicate succeeded.  The
-CACHE-I implementation worktree is now statically sealed to exactly 37
-filesystem sources, 38 executable units, and source-tree SHA-256
-`9568007588c78ddda9fb4c4e20e8773ee2fa1da10a7656f181fef06883de38a2`.
-Its exact changed-path closure is the 22 paths frozen in the machine contract.
-At formation of that seal, before its exact target commit and direct-child
-independent review, the files were WIP/nonevidence and the stage status was
-only
-`STATIC_SEAL_COMPLETE_PENDING_EXACT_TARGET_COMMIT_AND_INDEPENDENT_REVIEW`.
-
-After the source bytes were locked, the user separately authorized the narrow
-`A4-V2-CACHE-I-SYNTAX` edge.  `/usr/bin/python3.9` `compile()`-only
-syntax checks passed for the exact six changed/new outer Python sources and
-the exact inline PREP bootstrap.  No code object was executed and no module
-was imported.  This narrow check establishes syntax acceptance only; it does
-not establish importability, executability, correctness, schema validity,
-runtime behavior, or scientific evidence.  It does not authorize build,
-fixture, RNG, PREP, cache-verifier, PAR-R1, SRUN, data, quarantine, or SAQ/CAQ
-work.  Preserve the original CACHE-I machine-attestation literals and record
-this later exception separately.
-
-The exact CACHE-I implementation target was subsequently committed and pushed
-at `c33a2bff7e0ec9c98596498fd43a7e629ccf47fe`, with direct parent
-`187e363ee08d1f63888137c21fd5a533555bb248` and tree
-`66eaf2f5df8792c3470b247e59857fc2e7a25461`.  Its direct-child independent
-review is
-`docs/saq_a4_v2_cache_implementation_independent_review_2026_07_15.md`.
-That review found zero issues at LOW or above, recorded the successful exact
-target-head remote-equality closure, disclosed and excluded an earlier
-sandbox-only DNS failure that returned no remote observation, and assigned
-the maximum outcome
-`GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS`.  This is artifact-governance
-source/static-review evidence only.  The review record was subsequently
-committed and pushed at `5db302537793bc05f541aede119255213ea49e14`,
-tree `f3c8e0ca52cb719018f5ad82952c06724ab9105a`.  CACHE-I is complete
-at `GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS`.  No PREP, CACHE-BIND,
-PAR-R1, SRUN, data, quarantine, or SAQ/CAQ authority follows from this result.
-
-On 2026-07-16 the user instructed exactly
-`授权 PREP authorization/review`.  This is narrowly bound to formation,
-push, and independent review of
-`docs/saq_a4_v2_isolated_clone_prep_authorization_2026_07_15.md`; actual
-PREP remains unauthorized.
-
-The exact authorization target was subsequently committed and pushed at
-`e7f940e924a338022bfe8fffcbb3496f12a5a75c`, with direct parent
-`5db302537793bc05f541aede119255213ea49e14` and tree
-`0386af8066a93d84ca772604990a08737a34aa33`.  It changes only the
-authorization document, `AGENTS.md`, and `TASK.md`.  The distinct PREP
-parent-admission probe and the later target-head closure each returned their
-exact registered remote OID with no sandbox preflight.  The sole independent
-review is
-`docs/saq_a4_v2_isolated_clone_prep_authorization_independent_review_2026_07_15.md`;
-it found zero issues at LOW or above and assigned the documentation verdict
-`PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`.
-
-That verdict is not the future whole-stage ceiling
-`ISOLATED_CLONE_PREPARED_REVIEW_PASS` and did not authorize actual PREP.  At
-that historical checkpoint, the unique PREP authorization-review-head probe
-had not run and was unspent; under the then-current contract it would have
-served both review-head closure and immediate execution-base admission.  The
-later host mismatch retired that path before use, as recorded below.  The old
-probe was never run and must never run or be reused.  The review record was
-committed and pushed at
-`16a8201ac36e6c8c514848d55ad5ef607eb053b9`.  No clone, token, PREP,
-receipt, CACHE-BIND, PAR-R1, data, quarantine, or SAQ/CAQ action followed.
-
-Before the subsequently authorized actual PREP invocation, static prelaunch
-checking found that `/usr/bin/python3.9` had been replaced by the root-level
-RPM update from `python3-3.9.25-7.el9_8` to
-`python3-3.9.25-7.el9_8.2`.  The executable remained a 15,448-byte regular
-file but its SHA-256 changed from `c87babf...05e0` to `c7b3d12b...f42b`.
-Because the bootstrap writes and fsyncs durable START before checking that
-leader, PREP and the reserved probe were deliberately not run.
-
-On 2026-07-16 the user instructed exactly
-`为当前 .el9_8.2 做一个 bounded host-identity rebind/erratum`.  This opened
-only the documentation stage `A4-V2-PREP-HOST-P`: the two additive protocol
-objects, exact-commit independent review, push, and mandatory Meeting Summary
-Handoff.  Its maximum verdict is
-`HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS`, never
-`HOST_IDENTITY_REBOUND`.  It permits no existing source, manifest, schema,
-witness, runtime-authority, or historical-protocol edit and no Python, PREP,
-probe, clone, token, build, data, quarantine, or SAQ/CAQ action.
-
-The exact four-path protocol target was committed and pushed at
-`5a47fed05321af39a236d2dfb56d2c0f43708db3`.  A fresh direct-child static
-review found no issue at LOW severity or above.  The completed protocol,
-contract, and review paths are:
-
-- `docs/saq_a4_v2_prep_host_identity_rebind_erratum_protocol_2026_07_16.md`;
-- `docs/saq_a4_v2_prep_host_identity_rebind_erratum_contract_2026_07_16.json`;
-- `docs/saq_a4_v2_prep_host_identity_rebind_erratum_independent_review_2026_07_16.md`.
-
-The resulting ceiling is `HOST_IDENTITY_REBIND_PROTOCOL_REVIEW_PASS`; it is
-not `HOST_IDENTITY_REBOUND`, PREP readiness, parity, feasibility, performance,
-or scientific evidence.  The review ran no Python, DNF, remote probe, PREP,
-clone, token, build, test, data, or SAQ/CAQ action.  One earlier procedurally
-invalid reviewer attempt is explicitly excluded in the review memo and
-supports no conclusion.
-
-The old PREP review remains historical but is stale for activation.  Its
-invocation authority is unspent but nontransferable, and its unique probe is
-unspent but superseded and must never run or be reused.  Future source rebind,
-fresh PREP authorization/review, a new actual invocation grant, and a newly
-registered immediate probe are separate unauthorized nodes.
-
-On 2026-07-16 the user instructed exactly
-`授权 A4-V2-PREP-HOST-I-AUTH`.  This opened only formation, commit, push, and
-exact-commit independent review of
-`docs/saq_a4_v2_prep_host_identity_rebind_implementation_authorization_2026_07_16.md`
-plus focused `AGENTS.md`/`TASK.md` status.  The exact three-path target is a
-direct child of `b89dabedd0273a330dded7f61551e6ad1ceac19c` and was committed
-and pushed at `212a67b887aa710fed35f66766982db683b3fa63`.  Its ordinary
-sanitized target-head equality check returned that exact remote head; this was
-documentation publication equality only, not a PREP or implementation probe.
-
-A fresh independent exact-commit review found zero LOW-or-higher findings and
-is recorded in
-`docs/saq_a4_v2_prep_host_identity_rebind_implementation_authorization_independent_review_2026_07_16.md`.
-The resulting ceiling is `AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`.  It does
-not authorize `A4-V2-PREP-HOST-I`, source or derived-authority edits, Python,
-DNF, syntax, build, PREP, any execution-base probe, clone/token, data,
-quarantine, or SAQ/CAQ action.  No pre-target parent-admission probe was
-registered or run.  After the mandatory Meeting Summary Handoff, stop; a
-separate explicit user instruction naming `A4-V2-PREP-HOST-I` is still
-required.
-
-The user then instructed exactly `授权 A4-V2-PREP-HOST-I`.  Before any
-authorized source or derived-authority edit, complete static closure inspection
-found that the reviewed AUTH was internally unsatisfiable: it required the
-cache authority to preserve seven historical protocol components and add an
-eighth HOST-P contract, while the cache verifier accepted exactly the old
-seven-key/path set and the AUTH permitted no source semantic change beyond
-seven leader-digest substitutions.  Adding the eighth authority entry would
-be rejected; admitting it in the verifier would add a source/path and
-verification-ledger delta forbidden by the AUTH.  The attempt therefore
-stopped before a target, WIP, Python, probe, PREP, build, data, quarantine, or
-SAQ/CAQ action.  This is a protocol-closure finding, not research evidence.
-
-On 2026-07-16 the user instructed exactly
-`授权 A4-V2-PREP-HOST-I-ERRATUM`.  This opens only the documentation target
-and exact-commit independent review defined by
-`docs/saq_a4_v2_prep_host_identity_rebind_implementation_erratum_protocol_2026_07_16.md`
-and its machine contract.  The target changes exactly those two new objects
-plus `AGENTS.md` and `TASK.md`; its direct-child review may change only the two
-root status files and the registered new review memo.  The erratum narrowly
-admits the existing verifier's eighth component key/path and its one additional
-existing-loop identity check, and moves the future HOST-I parent to the
-publication-closed erratum review head.  It does not edit or authorize the
-fourteen-path HOST-I source target.  Its conditional maximum is
-`HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS`; HOST-I must be explicitly
-reauthorized after review, push, and Meeting Summary Handoff.
-
-A separate downstream static finding remains outside this erratum.  The cache
-verifier compares the future current-authority source blobs against old
-CACHE-I/PREP history commits, so a five-source rebind would later produce
-`SOURCE_HISTORY_MISMATCH` if that verifier/PAR path were executed.  HOST-I is
-source-static only and PREP does not invoke this verifier; nevertheless no
-cache-verifier or PAR readiness may be claimed, and repair requires another
-explicit protocol/source authorization.
-
-The exact four-path erratum target was committed and pushed at
-`6fe8544ae677fa8aaf7bba1306ae9aa8d4599f20`, tree
-`51f9abc20ac6e7afcb0c584ce6bd4cfc79e3b5f9`, with direct parent
-`71e6bec01dbabaf29333ac75dcd9ef7a238a079d`.  Three fresh independent static
-review tracks found zero issues at LOW severity or above.  Their durable memo
-is
-`docs/saq_a4_v2_prep_host_identity_rebind_implementation_erratum_independent_review_2026_07_16.md`.
-The resulting ceiling is
-`HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS`, conditional only on this exact
-three-path direct-child review being committed and pushed.  The target push
-succeeded; one optional SSH `ls-remote` failed locally before any remote
-observation, was not retried, and is excluded from evidence.  After review
-publication and Meeting Summary Handoff, stop before fresh HOST-I
-authorization.
-
-The completed `A4-V2-P-ERRATUM` permitted only additive protocol-authority
-documents, branch status documents, focused commits, static independent
-review, push, and the required Meeting Summary Handoff. Do not edit or commit
-implementation WIP under that authorization.
-
-The user has now explicitly authorized `A4-V2-PREP-HOST-I source-static
-target + direct-child review`.  The exact source target is the direct child of
-the clean, pushed, publication-closed erratum review head
-`9fa9528f4181d51fe6e060c1de14ea568eb31c4a`; it changes all and only the
-fourteen mode-`100644` paths frozen by the reviewed erratum.  The semantic
-source delta is exactly seven old-to-new CPython leader-digest substitutions
-across the frozen five sources, plus the exact 197-byte eighth-component
-key/path admission in the cache verifier.  The source inventory remains 37
-filesystem sources and 38 executable units, and `build_status` remains
-`NOT_AUTHORIZED_NOT_RUN`.
-
-The target's formation-time ceiling was
-`HOST_I_SOURCE_STATIC_TARGET_FORMED_REVIEW_PENDING`.  Only its exact
-three-path direct-child review may establish the bounded registered-object
-`HOST_IDENTITY_REBOUND` source-static result.  The old CACHE-I-SYNTAX
-identities remain historical and do not apply to these bytes.  The known
-`SOURCE_HISTORY_MISMATCH` remains unresolved and forbids cache-verifier/PAR
-readiness, but it does not block this source-static review or PREP itself.
-This authority permits no Python, syntax, import, build, test, cache-verifier,
-PREP, clone, data, quarantine, or SAQ/CAQ operation.  After commit, push,
-zero-LOW-or-higher independent review, and mandatory Meeting Summary Handoff,
-stop; any later PREP authorization remains separate.
-
-The exact source-static target was committed and pushed at
-`46025854ce1657e09fa64ac9277e53a87c8e15b2`, tree
-`c5080470082912475bc7df11accbfc214de1ebe6`, with direct parent
-`9fa9528f4181d51fe6e060c1de14ea568eb31c4a`.  Its sole independent static
-review found one HIGH authority-DAG identity mismatch and therefore failed.
-The implementation binding and source-provenance crosswalk record
-`c670d368647fbd13bfe4133241e2c37e29101e91538687a64349a606bd059f2a`
-for the 11,426-byte HOST-I source-authority-erratum review, but the immutable
-committed object is actually
-`c670d3685256d94812ee03d4932df304e0bd2ed6a61eeb670a618a9ac6eab331`.
-The negative review is
-`docs/saq_a4_v2_prep_host_identity_rebind_implementation_independent_review_2026_07_16.md`.
-
-The terminal exact-target status is
-`SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH`.
-`HOST_IDENTITY_REBOUND` is not established.  The exact three-path review
-projection cannot repair either target document or the dependent manifest
-identities; no correction is authorized under this review node.  No Python,
-syntax/import, compiler/build/test, cache verifier, PREP, clone, data,
-quarantine, or SAQ/CAQ action occurred.  PREP, cache-verifier/PAR readiness,
-performance, and scientific conclusions remain unestablished.
-
-On 2026-07-17 the user instructed exactly
-`授权 A4-V2-PREP-HOST-I-R1-P correction-only repair protocol + direct-child review`.
-This opens only the four-path documentation target defined by
-`docs/saq_a4_v2_prep_host_identity_rebind_r1_correction_only_repair_protocol_2026_07_17.md`
-and its machine contract, followed by one exact three-path direct-child
-independent review, focused commits/push, and mandatory Meeting Summary
-Handoff.
-
-The exact protocol target was committed and pushed at
-`ddfef99104eec67e9f5d6236e12ec9805f560a86`, tree
-`134aa95ee85259553d55275713e8af0c513f0900`, with direct parent
-`e8e9c799fae39284688ff87d5c138be9ade80e51`.  Its sole independent
-Git/hash/text review found zero issues at LOW severity or above.  The durable
-memo is
-`docs/saq_a4_v2_prep_host_identity_rebind_r1_correction_only_repair_protocol_independent_review_2026_07_17.md`.
-The resulting protocol-only ceiling is
-`HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS`, conditional on this
-exact three-path review being committed and pushed.
-
-R1-P freezes a separately authorized future five-path correction: root status,
-one false-to-true review-digest substitution in each of the implementation
-binding and source-provenance crosswalk, and only their two dependent SHA-256
-fields in the implementation manifest.  It permits no repair now, no source or
-runtime-authority edit, and no execution.  A future target requires a new user
-instruction naming `A4-V2-PREP-HOST-I-R1`.  Even a later repair PASS would
-leave `SOURCE_HISTORY_MISMATCH` unresolved and would not authorize PREP,
-cache-verifier, PAR, data, or SAQ/CAQ work.
-
-On 2026-07-17 the user instructed exactly
-`授权 A4-V2-PREP-HOST-I-R1`.  This authorizes only the correction-only target
-and direct-child review frozen by R1-P.  The target is the direct child of the
-clean, pushed protocol-review head
-`b1a7429cda3e4817d7df494f304bbce24bec2b92` and changes all and only
-`AGENTS.md`, `TASK.md`, the implementation binding, the implementation
-manifest, and the source-provenance crosswalk.  Its semantic delta is exactly
-one false-to-true immutable-review SHA-256 substitution in each prose object
-and their two dependent SHA-256 scalar substitutions in the manifest.  No
-filesystem source or other authority object may change.
-
-Before direct-child review, the maximum status is
-`HOST_I_R1_CORRECTION_ONLY_REPAIR_TARGET_FORMED_REVIEW_PENDING`.  The exact
-three-path review must independently reproduce every frozen identity with zero
-LOW-or-higher findings before it may assign the bounded registered-object
-rebind result.  This stage permits no Python, DNF, syntax/import,
-compiler/build/test, cache verifier, PREP, probe, clone, data, quarantine, or
-SAQ/CAQ action.  `SOURCE_HISTORY_MISMATCH` remains outside this repair and
-continues to forbid cache-verifier/PAR-readiness claims.
-
-The exact correction-only target was committed and pushed at
-`e17f8870e090be693adcd3bce4b8aea07432f064`, tree
-`533c27fbc3b9545829153d6ec5c95e81a7fe832a`, with direct parent
-`b1a7429cda3e4817d7df494f304bbce24bec2b92`.  Its sole independent static
-review found zero issues at LOW severity or above.  The durable memo is
-`docs/saq_a4_v2_prep_host_identity_rebind_r1_correction_only_repair_independent_review_2026_07_17.md`.
-The exact review outcome is
-`HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS`, conditional on this exact
-three-path review being committed and pushed.  It establishes
-`HOST_IDENTITY_REBOUND = ESTABLISHED_FOR_REGISTERED_13_OBJECT_BUNDLE_ONLY`;
-whole-host identity remains unestablished.  No execution or scientific
-evidence follows, `SOURCE_HISTORY_MISMATCH` remains open, and PREP plus every
-downstream stage still require separate authorization.
-
-On 2026-07-17 the user instructed exactly
-`授权 bounded SOURCE_HISTORY_MISMATCH correction protocol + direct-child review`.
-This opens only documentation stage `A4-V2-SOURCE-HISTORY-P`: formation,
-commit, push, and one exact direct-child independent review of
-`docs/saq_a4_v2_source_history_epoch_correction_protocol_2026_07_17.md` and
-its machine contract, followed by mandatory Meeting Summary Handoff.
-
-The protocol target is the direct child of clean, pushed R1 review head
-`e10bde78eff21802301549e4c796cc3f49c9d32b` and changes all and only those
-two new protocol objects plus `AGENTS.md` and `TASK.md`.  Its direct-child
-review may change only the two root status files and
-`docs/saq_a4_v2_source_history_epoch_correction_protocol_independent_review_2026_07_17.md`.
-Before review, the maximum status is
-`PROTOCOL_TARGET_FORMED_REVIEW_PENDING`.
-
-The protocol freezes a possible later exact two-epoch source-history rule:
-the four immutable CACHE-I/original-PREP-authorization commit roles retain
-the exact pre-host-rebind five-blob overrides, while six future receipt,
-CACHE-BIND, and PAR roles use only the active 37-source authority.  Every
-non-null role has exactly one preassigned epoch; an either-epoch or adaptive
-match is forbidden.  A future correction may change only the cache-policy
-verifier plus the seven derived authority documents and root status, and must
-bind this contract as one ninth protocol component.  That future source
-target requires a new explicit instruction naming `A4-V2-SOURCE-HISTORY-I`.
-
-This protocol stage permits no implementation or derived-authority edit and
-no Python, syntax/import, compiler/build/test, cache verifier, PREP, probe,
-clone, data, quarantine, or SAQ/CAQ action.  Its conditional ceiling is only
-`SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS`; it establishes no
-cache-verifier/PAR readiness or scientific evidence.
-
-The exact protocol target was committed and pushed at
-`dcaed57aaae6fe0f120377281921b6ea5336eb7f`, tree
-`d0069768c8848327f04a23b444fae0b635eb2d78`, with direct parent
-`e10bde78eff21802301549e4c796cc3f49c9d32b`.  Its sole independent static
-review found zero issues at LOW severity or above.  The durable memo is
-`docs/saq_a4_v2_source_history_epoch_correction_protocol_independent_review_2026_07_17.md`.
-The exact conditional protocol-only outcome is
-`SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS`, once this exact
-three-path review is committed and pushed.  No source correction,
-derived-authority edit, execution, cache-verifier/PAR readiness, or scientific
-evidence follows.  A future source-static target remains unauthorized and
-requires a new explicit instruction naming `A4-V2-SOURCE-HISTORY-I`.
-
-The user then instructed exactly `授权 A4-V2-SOURCE-HISTORY-I`.  Static
-pre-target closure inspection found that the reviewed ten-path projection was
-unsatisfiable: the epoch correction changes neither the generic runtime schema
-nor its already maximal syntactic witness, while the protocol required both
-paths to change and simultaneously forbade any new output, status, parser,
-observation, or ledger field.  A provisional verifier edit was fully reverted;
-no target, review, execution, or evidence was formed.
-
-On 2026-07-18 the user instructed exactly
-`A4-V2-SOURCE-HISTORY-I-R1-P correction-only path-closure erratum + direct-child review`.
-This opens only the additive four-path documentation target defined by
-`docs/saq_a4_v2_source_history_i_r1_path_closure_erratum_protocol_2026_07_18.md`
-and its machine contract, followed by one exact three-path direct-child static
-review, focused commit/push, and mandatory Meeting Summary Handoff.
-
-The erratum may supersede only the impossible future path projection: the
-separately authorized future R1 target has exactly eight paths and five changed
-derived objects, while the runtime schema and maximal witness retain their
-exact current blobs.  All epoch, five-override, ninth-component, line-budget,
-runtime, overhead, prohibition, and future review clauses remain unchanged.
-The erratum is not a tenth component and permits no implementation or
-execution.  Before direct-child review, the maximum status is
-`PATH_CLOSURE_ERRATUM_TARGET_FORMED_REVIEW_PENDING`; future implementation
-requires a separate explicit `A4-V2-SOURCE-HISTORY-I-R1` instruction.
-
-The exact erratum target was committed and pushed at
-`150e5b38aa5b3e30dafe4e15632db5fb5add4a68`, tree
-`29fa489d25a348997bb1eadeb5208dabd1717e0d`, with direct parent
-`e98a3e401639cae4f11ea97d21883120e9b797fb`.  Its sole independent static
-review found zero issues at LOW severity or above.  The durable memo is
-`docs/saq_a4_v2_source_history_i_r1_path_closure_erratum_independent_review_2026_07_18.md`.
-The exact conditional documentation-only result is
-`SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS`, once this exact
-three-path review is committed and pushed.  It establishes only the corrected
-future eight-path/five-derived-object projection.  It authorizes no source or
-derived-authority edit, execution, readiness, or scientific claim; future
-implementation still requires explicit `A4-V2-SOURCE-HISTORY-I-R1` authority.
-
-The user then instructed exactly `授权 A4-V2-SOURCE-HISTORY-I-R1`.  This
-authorizes only the corrected source-static target and its exact direct-child
-review frozen by the reviewed path-closure erratum.  The target is the direct
-child of clean, pushed erratum-review head
-`774949179582c8a9acbf79d5bc1f2d9fc851957a` and changes all and only:
-
-```text
-AGENTS.md
-TASK.md
-docs/saq_a4_v2_cache_protocol_authority_manifest_2026_07_15.json
-docs/saq_a4_v2_cache_static_closure_2026_07_15.json
-docs/saq_a4_v2_implementation_binding_2026_07_14.md
-docs/saq_a4_v2_implementation_manifest_2026_07_14.json
-docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md
-script/a4_v2_cache_policy_verifier.py
+# Repository Guidance
+
+## Mission and research standard
+
+Work as a doctoral-level database-systems research assistant. Aim for a
+defensible SIGMOD/VLDB/ICDE contribution, not merely a working patch or a
+nonzero metric change. Understand and challenge ideas, identify the closest
+primary work, formulate falsifiable claims, build the smallest meaningful
+prototype, run permitted tests and experiments, and interpret both positive
+and negative results.
+
+Code, benchmarks, and reproducibility tooling support scientific claims; they
+are not contributions by themselves. Distinguish a new mechanism or systems
+trade-off from parameter tuning, direct composition, bug fixing, and artifact
+engineering.
+
+## Instruction and document routing
+
+Apply instructions in this order:
+
+1. the current user prompt;
+2. root `AGENTS.md` for stable repository-wide behavior;
+3. root `TASK.md` for the active branch, scope, permissions, budget, blocker,
+   and done criteria;
+4. the nearest directory-local `AGENTS.md` for files being changed; and
+5. documents explicitly referenced by `TASK.md` for technical definitions.
+
+Historical documents are evidence, not active instructions. Files under
+`docs/history/` are non-active and are not required reading unless the task
+explicitly concerns that history. Do not infer current authorization from
+historical narratives, old status labels, commit ledgers, or stopped branches.
+
+Read `docs/research/RESEARCH_CHARTER.md` for idea evaluation, experiment
+design, literature/novelty review, or scientific conclusions. It is reference
+guidance, not an authorization system.
+
+The current user prompt and `TASK.md` define the active task. If they conflict,
+follow the current user prompt while preserving explicit safety and data
+boundaries.
+
+## Task modes
+
+Infer the mode from intent; do not require the user to name it:
+
+- `IDEATE`: understand and challenge an idea, check prior work, state claims,
+  and design discriminating experiments.
+- `IMPLEMENT`: inspect the repository, change code, build, test, and debug.
+- `EXPERIMENT`: run only experiments permitted by `TASK.md`, with recorded
+  commands, seeds, environment, outputs, and limitations.
+- `REVIEW`: critically inspect novelty, methodology, code, experiments, and
+  claims.
+
+Use a brief plan for complex work, then perform the work. Do not stop after
+writing a plan when implementation or experimentation was requested.
+
+## Default research workflow
+
+1. Identify the concrete research question and why it matters to SAQ or the
+   relevant database-system boundary.
+2. Inspect the closest code, results, and primary literature allowed by the
+   task.
+3. State a falsifiable hypothesis and the cheapest experiment that separates
+   it from plausible alternatives.
+4. Choose fair baselines, controls, metrics, and ablations before interpreting
+   outcomes.
+5. Implement and run the smallest scientifically meaningful check.
+6. Diagnose surprising or negative results; repair genuine defects without
+   changing the scientific question after seeing the outcome.
+7. State what the evidence supports, what it does not support, and the next
+   uncertainty worth resolving.
+
+Prefer actual investigation, code changes, tests, and experiments over process
+documents. Do not create protocols, contracts, manifests, status taxonomies,
+or authorization records unless the user explicitly asks for them.
+
+Do not emit JSON unless the user requests JSON or an existing machine-readable
+schema referenced by the active task requires it.
+
+## Implementation and experiment workflow
+
+For implementation and experiment tasks, use this default loop:
+
+1. inspect relevant files;
+2. state a brief working hypothesis;
+3. implement the smallest scientifically meaningful version;
+4. compile and test;
+5. run the permitted smallest discriminating experiment;
+6. inspect unexpected results and fix genuine defects; and
+7. summarize changed files, commands, results, interpretation, and remaining
+   uncertainty.
+
+Prefer existing build systems, tests, benchmark drivers, and profilers. Keep
+logging, provenance capture, and serialization outside timed hot paths unless
+their cost is itself under study. Establish correctness before performance
+claims, then compare under matched quality, bit budget, hardware, threads, and
+tuning opportunity.
+
+Preserve user changes and unrelated dirty files. Use focused edits and
+non-destructive Git commands. Do not commit or push unless requested.
+
+## Default permissions and genuine stop conditions
+
+Within `TASK.md` boundaries, one user instruction authorizes all
+non-destructive implementation, build, test, debugging, and permitted
+experiment steps needed to reach the stated done criteria. Do not invent
+per-step authorization, review, commit, or protocol gates.
+
+Ask or stop only when:
+
+- the next step would violate an explicit read/write or data boundary;
+- a destructive or irreversible action is required;
+- an experiment would exceed the budget in `TASK.md`;
+- the next step changes the scientific question, baseline, metric, or claim;
+- material ambiguity cannot be resolved from the repository; or
+- results invalidate the hypothesis and several scientifically distinct
+  directions are possible.
+
+Compilation errors, test failures, ordinary debugging, and negative results
+are not reasons to stop. Diagnose them and continue within scope and budget.
+
+## Repository layout
+
+- `saqlib/`: C++ SAQ/CAQ quantization, storage, estimators, and search logic.
+- `src/`: executable entry points.
+- `script/`: focused research and analysis helpers.
+- `unit_test/`: regression and correctness tests.
+- `research/`: isolated research prototypes; obey local `AGENTS.md` files.
+- `docs/research/`: reusable scientific standards and research notes.
+- `docs/history/`: archived, non-active governance and project history.
+- `third_party/`: pinned source dependencies or submodules.
+- `data/`, `results/`, `bin/`, `build/`: local/generated areas whose access is
+  controlled by `TASK.md`; do not commit generated datasets or binaries.
+
+## Build, test, and verification
+
+Use the task-specific commands in `TASK.md` or the nearest local
+`AGENTS.md`. For the main project, the default is:
+
+```bash
+cmake -S . -B build -DBUILD_UNIT_TESTS=OFF
+cmake --build build -j
 ```
 
-The sole source delta preassigns four immutable CACHE-I/original-PREP roles
-to the exact five-override legacy map and six future receipt/CACHE-BIND/PAR
-roles to the active 37-source map, then admits the immutable original
-source-history contract as the sole ninth cache-authority component.  The
-runtime schema and maximal witness remain byte-identical.  The verifier has
-38 net new lines, below the 80-line hard stop and within the approximate
-25--45-line semantic-core expectation.
-
-The target's formation-time ceiling is
-`SOURCE_HISTORY_EPOCH_CORRECTION_R1_TARGET_FORMED_REVIEW_PENDING`.  Its exact
-direct-child review may change only `AGENTS.md`, `TASK.md`, and
-`docs/saq_a4_v2_source_history_epoch_correction_implementation_independent_review_2026_07_17.md`.
-It must independently reproduce every frozen source, tree, derived-object,
-protocol, review, epoch, overhead, and preserved-runtime identity with zero
-LOW-or-higher findings before assigning the maximum static result
-`SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS`.
-
-This stage permits no Python, DNF, syntax/import, compiler/build/test,
-cache-verifier execution, PREP, probe, clone, CACHE-BIND, PAR, data,
-quarantine, host mutation, or SAQ/CAQ action.  It establishes no readiness,
-performance, scientific, novelty, or method claim.  After exact target commit,
-push, direct-child review, and mandatory Meeting Summary Handoff, stop for a
-user checkpoint; every downstream stage remains separately unauthorized.
-
-The exact corrected source-static target was committed and pushed at
-`e9b5c83823040c0ffe67b69e349a2ef6169292ae`, tree
-`861a1d0de04e3018d7447e9aff222b475af96bbb`, with direct parent
-`774949179582c8a9acbf79d5bc1f2d9fc851957a`.  Its sole independent static
-review found zero issues at LOW severity or above.  The durable memo is
-`docs/saq_a4_v2_source_history_epoch_correction_implementation_independent_review_2026_07_17.md`.
-The exact conditional result is
-`SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS`, once this exact
-three-path review is committed and pushed.  This establishes only the frozen
-static source-history correction; no syntax, execution, cache-verifier/PAR
-readiness, performance, or scientific evidence follows, and every downstream
-stage remains separately unauthorized.
-
-On 2026-07-18 the user instructed exactly
-`授权 A4-V2-CACHE-PREP-R1-AUTH`.  This opens only the fresh dormant PREP
-authorization target and one exact direct-child independent review frozen by
-the reviewed HOST-P future-authority DAG.  It does not authorize an actual
-PREP invocation or its immediate execution-base probe.
-
-The exact target is the direct child of clean, pushed source-history review
-head `a1198c4c1e38743377db10dca96d3ab28d6b6dba`, tree
-`ebd28613ba6ec7063851be3a60edd6e194b1248f`, and changes all and only:
-
-```text
-AGENTS.md
-TASK.md
-docs/saq_a4_v2_isolated_clone_prep_authorization_2026_07_15.md
-```
-
-The exact direct-child review may change all and only `AGENTS.md`, `TASK.md`,
-and
-`docs/saq_a4_v2_isolated_clone_prep_authorization_independent_review_2026_07_15.md`.
-The two existing document paths are intentionally reused because the reviewed
-PREP source and inline bootstrap embed them; Git preserves their historical
-blobs.  The original target/review `e7f940e/@16a8201`, original actual-PREP
-authority, and original unique probe remain historical, nontransferable, and
-permanently forbidden for reuse.
-
-The fresh authorization record must bind the active 37-source tree
-`2007875777e7af28a67e89d574b33ec35e71436d8bfaa203574c4343ef4cf973`,
-38 executable units, current PREP tool and inline bootstrap/prologue, the
-reviewed registered 13-object `.el9_8.2` host bundle, the host/source-history
-governing chain, and all unchanged schemas, status precedence, resource caps,
-paths, and claim ceilings.  It may introduce no source, schema, parser,
-status, mechanism, threshold, retry, or evidence-boundary change.  The old
-CACHE-I-SYNTAX pass remains exact-snapshot evidence for the unchanged parity
-source only; it does not transfer to the five corrected Python sources or the
-current full inline bootstrap.
-
-Before direct-child review, the maximum status is
-`PREP_R1_AUTHORIZATION_TARGET_FORMED_REVIEW_PENDING`.  The review must find
-zero issues at LOW severity or above before assigning the documentation-only
-verdict `PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`.  The review may record
-one ordinary target-head publication-equality observation, but neither this
-target nor its review may run the newly reserved immediate review-head HTTPS
-probe.  That single probe remains inseparable from a later, separately
-authorized actual PREP invocation.
-
-This stage permits no Python, DNF, syntax/import, compiler/build/test,
-cache-verifier, PREP, probe-to-launch admission, clone, token, capture,
-journal, receipt, CACHE-BIND, PAR, data, quarantine, host mutation, or SAQ/CAQ
-action.  It establishes no PREP readiness, performance, scientific, novelty,
-or method claim.  After target commit/push, exact direct-child review,
-review commit/push, and mandatory Meeting Summary Handoff, stop for a user
-checkpoint; every downstream stage remains separately unauthorized.
-
-The exact fresh authorization target was committed and pushed at
-`cd1757e880d4a9480ada141d3883feb5142f925f`, tree
-`4e3c0fe0e99106a8d7b4e1b8922f25af07ac73c9`, with direct parent
-`a1198c4c1e38743377db10dca96d3ab28d6b6dba`.  Its sole direct-child
-independent static review found zero issues at LOW severity or above.  The
-durable memo is
-`docs/saq_a4_v2_isolated_clone_prep_authorization_independent_review_2026_07_15.md`.
-The exact conditional documentation result is
-`PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS`, once this exact three-path
-review is committed and pushed.  The one ordinary target-head publication
-observation returned `cd1757e`; the future immediate authorization-review-
-head PREP probe was not run.  Actual `A4-V2-CACHE-PREP-ISO-R1`, PREP
-readiness, execution, performance, and scientific evidence remain
-unestablished and separately unauthorized.
-
-The user then explicitly authorized exactly one
-`A4-V2-CACHE-PREP-ISO-R1` invocation.  Its immediate review-head HTTPS probe
-returned exact execution base `eb1b89318d58ef06bff878219346e7b277ab9aea`,
-and the one invocation is permanently consumed.  The bootstrap durably wrote
-the canonical 1,295-byte START token and created both empty capture sidecars,
-then exited before entering PREP `run_from_bootstrap`; no TERMINAL, isolation
-root, clone, journal, receipt, build, verifier, PAR artifact, or scientific
-result exists.  Under the frozen precedence the only status is
-`CRASH_OR_UNKNOWN / NO_PAR_AUTHORITY / NO_SCIENTIFIC_DECISION`.  No retry,
-resume, cleanup, token/capture mutation, source repair, or downstream action
-is authorized.
-
-The user has now instructed exactly
-`授权 A4-V2-CACHE-PREP-ISO-R1-CRASH-P`.  This opens only the additive
-documentation protocol and machine contract at
-`docs/saq_a4_v2_prep_start_only_crash_record_{protocol,contract}_2026_07_18.*`,
-focused root status, one immutable target, one exact direct-child independent
-review, push/publication closure, and mandatory Meeting Summary Handoff.  It
-freezes a future terminal-record path while preserving the primary
-`CRASH_OR_UNKNOWN` status and the distinction between machine state,
-unregistered executor output, and a static source-consistency candidate.
-
-Before review its maximum status is
-`START_ONLY_CRASH_RECORD_PROTOCOL_TARGET_FORMED_REVIEW_PENDING`.  Zero
-LOW-or-higher findings are required for the documentation-only ceiling
-`START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS`.  This stage does not form the
-actual crash record.  That later target requires a separate explicit
-`A4-V2-CACHE-PREP-ISO-R1-CRASH-I` instruction and may not repair source or
-retry PREP.
-
-Exact protocol target `1982865e8577eca9edd92de5073d030de89f81aa`, tree
-`75e37422900097860a862efa90ea303101be949e`, is the direct child of
-`eb1b89318d58ef06bff878219346e7b277ab9aea` and changes exactly the frozen
-four mode-`100644` paths.  Its sole independent Git/hash/text/runtime-state
-review found zero issues at LOW severity or above.  The durable review is
-`docs/saq_a4_v2_prep_start_only_crash_record_protocol_independent_review_2026_07_18.md`.
-The ordinary target-head publication observation returned exact target
-`1982865e8577eca9edd92de5073d030de89f81aa`; it was not PREP admission.
-
-The exact conditional outcome is
-`START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS`, once this exact three-path
-direct-child review is committed and pushed and its later live review-head
-publication closure succeeds.  No runtime artifact was mutated and no
-execution was performed.  The actual crash record remains unauthorized; no
-retry, repair, PREP, CACHE-BIND, PAR, performance, or scientific claim
-follows.
-
-The project has separately closed Attempt 4 V2 with portfolio status
-`STOP_NO_FURTHER_ARTIFACT_RECOVERY`. The authoritative decision memo is
-`docs/saq_a4_v2_project_stop_no_further_artifact_recovery_2026_07_18.md`.
-This does not resolve or reclassify machine state: the consumed PREP attempt
-remains `CRASH_OR_UNKNOWN / START_ONLY`, while
-`A4-V2-CACHE-PREP-ISO-R1-CRASH-I` remains `NOT_AUTHORIZED / NOT_RUN`.
-
-Do not form a crash terminal record, inspect or mutate machine-state paths,
-clean or retry PREP, repair toward another invocation, bind artifacts, run
-PAR-R1 or SRUN, or read data under this closure. Preserve all committed
-evidence and leave ignored or untracked machine outputs untouched. There is no
-artifact-validity terminal result, scientific conclusion, performance result,
-or independent runtime reproduction.
-
-This stop applies the project efficiency gate: the governance/recovery chain
-produced no scientific execution evidence, and its support cost exceeds the
-zero executed scientific core of Attempt 4 V2. Reopening requires a new
-explicit user decision with a new research question and fresh cost-justified
-protocol from a clean branch or named snapshot. It may not reuse the consumed
-PREP authority or infer terminal state from START.
-
-## Review And Protocol Outcome
-
-The bounded review returned `GO_PROTOCOL_DESIGN`. The original reviewed
-protocol remains byte-preserved at `f86a51d`. The erratum adds a reviewed
-composite authority without rewriting those parent blobs. Its outcome is
-`PROTOCOL_ERRATUM_INDEPENDENT_REVIEW_PASS`; it is not a gate result. The
-parent authoritative documents are:
-
-- `docs/saq_a4_v2_primary_source_metadata_2026_07_14.json`;
-- `docs/saq_a4_v2_cost_evidence_primary_source_review_2026_07_14.md`;
-- `docs/saq_a4_v2_cost_evidence_go_no_go_memo_2026_07_14.md`;
-- `docs/saq_a4_v2_synthetic_construction_preregistration_2026_07_14.md`;
-- `docs/saq_a4_v2_synthetic_construction_contract_2026_07_14.json`; and
-- `docs/saq_a4_v2_artifact_schema_2026_07_14.json`.
-
-The additive erratum protocol and composite-authority records are:
-
-- `docs/saq_a4_v2_par_report_erratum_authorization_2026_07_14.md`;
-- `docs/saq_a4_v2_par_report_timing_closure_erratum_2026_07_14.md`;
-- `docs/saq_a4_v2_par_report_timing_closure_erratum_2026_07_14.json`;
-- `docs/saq_a4_v2_par_report_seal_schema_2026_07_14.json`;
-- `docs/saq_a4_v2_par_report_seal_maximal_instance_2026_07_14.json`;
-- `docs/saq_a4_v2_protocol_authority_manifest_2026_07_14.json`.
-
-Their independent verdict is:
-
-- `docs/saq_a4_v2_par_report_timing_closure_erratum_independent_review_2026_07_14.md`.
-
-The positive object is an **A4-reference-equivalent four-arm diagnostic
-bundle** whose scientific interface was frozen before the old cost outcome at
-`saq-arbitrary-cardinality-analysis@3aa2f6e`. It is not byte-equivalent or
-estimator-equivalent to current SAQ, not a full-vector ANN index, and not a
-deployable representation.
-
-The new primary FOM is complete comparative-instrument construction CPU:
-
-```text
-T_instrument = C_setup + C_core + C_bundle_io
-PASS iff T_instrument <= 34,560,000,000 CPU microseconds
-```
-
-That number is an internal one-panel admission cap only. The predecessor's
-`5/2` real-dataset projection does not transfer to the new FOM. Build, parity,
-independent full replay, evidence emission, archive work, memory, and bytes
-remain mandatory separately reported terms. A finite three-file reporting
-trailer and the additive one-file `PAR_report` are the only disclosed timing-
-closure exclusions. `PAR_report` changes no metered formula or scientific
-boundary.
-
-Current stages remain separate:
-
-```text
-A4-V2-P-ERRATUM documentation-only closure correction  COMPLETED_REVIEW_PASS
-A4-V2-I     source implementation/static review         COMPLETED_REVIEW_PASS
-A4-V2-PAR   pre-build executable identity admission     ARTIFACT_INVALID / REVIEWED_TERMINAL
-A4-V2-I-R1  executable-identity source repair           COMPLETED_REVIEW_PASS
-A4-V2-CACHE-P cache/staging documentation protocol      COMPLETED_OPERATIONAL_PROTOCOL_CLOSURE
-A4-V2-CACHE-I generic source/schema/static review       GENERIC_CACHE_POLICY_SOURCE_STATIC_REVIEW_PASS
-A4-V2-CACHE-PREP-AUTH authorization record/review       PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
-A4-V2-CACHE-PREP-ISO original one-shot authority        UNSPENT_BUT_NONTRANSFERABLE
-A4-V2-PREP-HOST-P host-rebind erratum protocol/review   COMPLETED_REVIEW_PASS
-A4-V2-PREP-HOST-I-AUTH source-rebind authorization      AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
-A4-V2-PREP-HOST-I-ERRATUM source-authority correction   HOST_I_SOURCE_AUTHORITY_ERRATUM_REVIEW_PASS
-A4-V2-PREP-HOST-I coherent source/authority rebind      SOURCE_STATIC_TARGET_REVIEW_FAIL_AUTHORITY_IDENTITY_MISMATCH
-A4-V2-PREP-HOST-I-R1-P correction-only repair protocol HOST_I_R1_CORRECTION_ONLY_REPAIR_PROTOCOL_REVIEW_PASS
-A4-V2-PREP-HOST-I-R1 correction-only artifact repair    HOST_I_R1_CORRECTION_ONLY_REPAIR_REVIEW_PASS
-A4-V2-SOURCE-HISTORY-P epoch-correction protocol         SOURCE_HISTORY_EPOCH_CORRECTION_PROTOCOL_REVIEW_PASS
-A4-V2-SOURCE-HISTORY-I original source correction        STOPPED_PRE_TARGET_PATH_CLOSURE_UNSATISFIABLE
-A4-V2-SOURCE-HISTORY-I-R1-P path-closure erratum         SOURCE_HISTORY_I_R1_PATH_CLOSURE_ERRATUM_REVIEW_PASS
-A4-V2-SOURCE-HISTORY-I-R1 corrected source target        SOURCE_HISTORY_EPOCH_CORRECTION_SOURCE_STATIC_REVIEW_PASS
-A4-V2-CACHE-PREP-R1-AUTH fresh PREP authorization       PREP_AUTHORIZATION_EXACT_TARGET_REVIEW_PASS
-A4-V2-CACHE-PREP-ISO-R1 consumed PREP attempt           CRASH_OR_UNKNOWN / START_ONLY
-A4-V2-CACHE-PREP-ISO-R1-CRASH-P record protocol         START_ONLY_CRASH_RECORD_PROTOCOL_REVIEW_PASS
-A4-V2-CACHE-PREP-ISO-R1-CRASH-I terminal record         NOT_AUTHORIZED
-A4-V2-PAR-R1 corrected build/parity event                NOT_AUTHORIZED
-A4-V2-SRUN  one logical synthetic admission event only  NOT_AUTHORIZED
-A4-V2 portfolio decision                                STOP_NO_FURTHER_ARTIFACT_RECOVERY
-```
-
-Authorization for one stage never implies the next. No stage above permits
-benchmark/base/query/index reads or SAQ modification.
-
-The authoritative implementation-stage documents are:
-
-- `docs/saq_a4_v2_implementation_authorization_2026_07_14.md`;
-- `docs/saq_a4_v2_implementation_binding_2026_07_14.md`;
-- `docs/saq_a4_v2_implementation_manifest_2026_07_14.json`;
-- `docs/saq_a4_v2_source_provenance_crosswalk_2026_07_14.md`; and
-- `docs/saq_a4_v2_implementation_independent_review_2026_07_15.md`.
-
-The PAR authorization and reviewed terminal pre-build failure records are:
-
-- `docs/saq_a4_v2_par_authorization_2026_07_15.md`;
-- `docs/saq_a4_v2_par_prebuild_artifact_identity_failure_2026_07_15.md`; and
-- `docs/saq_a4_v2_par_prebuild_artifact_identity_failure_independent_review_2026_07_15.md`.
-
-The executable-identity correction records are:
-
-- `docs/saq_a4_v2_executable_identity_source_repair_authorization_2026_07_15.md`;
-- `docs/saq_a4_v2_executable_identity_source_repair_independent_review_2026_07_15.md`.
-
-The CACHE-P records are the four objects named above plus their independent
-review:
-
-- `docs/saq_a4_v2_cache_staging_disposition_protocol_independent_review_2026_07_15.md`.
-
-The source pass remains a historical static-review result only. The attempted
-PAR launch falsified executable artifact readiness before build; it is not a
-parity result, synthetic gate, SAQ limitation result, method contribution, or
-systems-performance claim. `A4-V2-I-R1` is now a reviewed source correction,
-not execution evidence or artifact readiness. The CACHE-P review/push/closure/
-handoff sequence is complete. CACHE-I is now authorized only at the generic
-source/schema/static-review boundary described above. There is no quarantine
-access, cleanup, clone, PREP, PAR, SRUN, data, or SAQ execution authorization.
-
-## Prior A4-1S Result
-
-The prior formulation remains terminal on
-`saq-arbitrary-cardinality-analysis@f1b464b`. Its committed cost evidence is
-at `9ce1052`, and its authoritative review is
-`docs/saq_attempt4_a4_1s_cost_projection_review_2026_07_13.md` on that branch.
-
-The registered early stop occurred after 61 complete scalar-coordinate
-shards. The timed region used `34,805,155,525 us`; the frozen `5/2` projection
-was `87,012,888,812.5 us`, or `24.170246892361` CPU-hours, above the 24-hour
-ceiling. That result measures the frozen construction/evidence pipeline,
-including canonical full-detail serialization. It is not a scalar-solver-only
-lower bound, a production encoding measurement, or evidence that arbitrary
-cardinalities are ineffective.
-
-Do not revise, rerun, reinterpret, or rescue that gate. Any viable follow-up
-must be a new protocol with a new question and ledger, while preserving the
-old result unchanged as negative evidence.
-
-## Review Questions
-
-The bounded review must answer all of the following before a protocol is
-accepted:
-
-- Which operations are part of the scientific construction being evaluated,
-  and which are verification or archival evidence costs?
-- What evidence is minimally sufficient for deterministic independent replay
-  of exact scalar optima, allocation decisions, representation semantics, and
-  gate accounting?
-- Would hashing, certificates, streaming, or sampled independent replay
-  preserve the relevant correctness claim, or merely move hidden work outside
-  the measured ledger?
-- Does a revised ledger answer an ANN/quantization feasibility question, or
-  only make an experimental artifact cheaper?
-- Are construction, verification, serialization, transient memory, permanent
-  bytes, and later query work all visible as separate non-overlapping terms?
-- Does the proposed rule remain falsifiable without an outcome-dependent
-  threshold, machine change, reduced shape, or post-hoc variant sweep?
-
-Use primary papers, author artifacts, official standards, or official source
-repositories. Record stable identifiers, URLs, versions, access dates, and the
-specific claim each source supports. Secondary summaries may help discovery
-but are not evidence.
-
-## Protocol Requirements
-
-A new protocol may be written only if the review concludes that a revised
-ledger preserves exactness and auditability while measuring a distinct,
-scientifically relevant construction question. It must:
-
-- name the old A4-1S result as a failed predecessor, not a pilot to discard;
-- distinguish construction, verification, archival serialization, and
-  end-to-end evidence costs before any execution;
-- specify exact inclusions, exclusions, timers, hashes or certificates,
-  independent checks, failure precedence, resource ceilings, and atomic
-  stopping behavior;
-- count every excluded operation in a separately reported ledger rather than
-  making it disappear;
-- freeze the machine, compiler, libraries, precision, shape, seeds, and output
-  schema needed by its claim;
-- forbid real data until a separately authorized synthetic validation and
-  cost gate passes; and
-- state that protocol publication does not authorize implementation or run.
-
-If the review cannot justify these conditions, record `NO_GO_REOPENING` and do
-not write an executable protocol merely because the user requested another
-attempt.
-
-## Meeting Summary Handoff
-
-The canonical direction registry and current meeting deck live on branch
-`saq-meeting-summary`. Locate its worktree with `git worktree list`; never
-assume a fixed path.
-
-After each committed and independently reviewed protocol, gate result, or
-terminal decision, this session owns a handoff. Before editing the summary
-worktree, re-read its `AGENTS.md` and registry, fetch, require it to be clean
-and equal to its remote, record that commit, and atomically acquire the
-mandatory `saq-meeting-summary-edit.lock` under the Git common directory.
-Update the registry first, update the deck only if this direction is selected,
-stage only focused summary files, fetch again before push, never force-push,
-and release the lock after a successful push or clean abort.
-
-Only committed and independently reviewed evidence may be synchronized.
-Untracked files, search notes, provisional drafts, running work, and generated
-artifacts are never evidence. A summary handoff grants no experimental
-authorization.
-
-## Repository Layout
-
-- `docs/`: primary-source review, frozen protocol, implementation binding, and
-  independent source-review documents.
-- `research/a4_v2/`, `research/a4_v2_verifier/`: V2-only native source; never
-  include, link, or load a historical worktree at runtime.
-- `script/a4_v2_*.py` and `script/run_arbitrary_cardinality_a4_v2.py`: V2-only
-  source. Producer and verifier scientific implementations must remain
-  physically independent as frozen by the protocol.
-- `saqlib/`, `src/`, existing non-V2 `script/`, and `unit_test/`: out of scope;
-  do not modify them for A4 V2.
-- `data/`, `results/`, `bin/`, and `build/`: do not open or generate under the
-  current stopped boundary. The failed conductor created neither registered
-  build directory. Their former one-event exception is consumed and grants no
-  repair or retry authority.
-
-## Verification
-
-For `A4-V2-P-ERRATUM`, verification is limited to diff/whitespace checks,
-structured-document parsing, exact blob identities, schema/contract static
-inspection, and independent review. Do not touch implementation WIP.
-
-Before committing A4-V2-I source and documentation:
+Before handing off code or documentation, run the relevant tests plus:
 
 ```bash
 git diff --check
 git status --short --branch
 ```
 
-Do not build, import, syntax-check, execute, or test the implementation during
-`A4-V2-I`. Verification is limited to diff/whitespace checks, source-to-
-contract inspection, and independent static review. Structured frozen
-metadata may be inspected but must not be rewritten.
+Record exact experiment commands, seeds, compiler/build mode, thread and
+affinity settings, important dependency revisions, and output locations.
+Rerun only what is necessary to establish deterministic behavior or diagnose a
+failure.
 
-The same static-only verification boundary applies to `A4-V2-I-R1`. It may
-recompute source/document SHA-256 values, byte sizes, and the canonical source-
-tree preimage without importing repository Python. It must not delete or read
-the contents of the quarantined bytecode files or remove the empty staging
-directory.
+## Completion and reporting
 
-`A4-V2-CACHE-P` is documentation-only. Verification is limited to official
-primary-source review, committed local static inspection, structured-document
-parsing without repository Python, exact Git/blob/tree identities, hashes,
-byte sizes, diff/whitespace checks, and independent review. It may not read a
-quarantined bytecode payload, remove or alter a residual, edit implementation
-source, mutate the future execution environment, import, build, test, or run
-PAR.
+A task is complete when the requested implementation, analysis, experiment,
+or review meets `TASK.md` done criteria and relevant verification passes.
+Report concisely:
 
-`A4-V2-CACHE-I` is also static-only. Verification is limited to committed
-source/document inspection, non-repository structured-data parsing, Git/blob
-identities, SHA-256 values, byte sizes, canonical source-tree recomputation,
-exact raw-slice crosswalk inspection, diff/whitespace checks, no-clone remote-
-equality probes, and independent review. Do not invoke Python for syntax or
-schema checks and do not create the isolated clone or PREP state.
+- files changed and why;
+- build, test, and experiment commands with outcomes;
+- scientific evidence gained, including negative evidence;
+- baseline or correctness comparison and resource cost when measured;
+- limitations, unresolved uncertainty, and the smallest useful next step; and
+- whether changes were committed or pushed.
 
-The sole exception is the separately authorized, already completed
-`A4-V2-CACHE-I-SYNTAX` check recorded above.  It permits no further Python
-invocation and must not be generalized into import, schema, build, test, or
-runtime authority.
-
-The one authorized `A4-V2-PAR` invocation used the following exact command
-from clean reviewed execution base `2e983a0`:
-
-```bash
-MKL_NUM_THREADS=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
-python script/run_arbitrary_cardinality_a4_v2.py \
-  par docs/saq_a4_v2_par_artifacts_2026_07_14
-```
-
-It returned `ARTIFACT_INVALID` before build and published no PAR tree. The
-command is retained here as history; do not invoke it again. Under that
-consumed A4-V2-PAR authority, only the terminal failure memo and branch status
-were committed and independently reviewed. No failure result authorizes SRUN.
-
-## Do-Not Rules
-
-- Do not run or modify the old A4-1S command.
-- Do not manually build V2, alter the frozen PAR command, or run only a parity
-  subset; `B_build` and the complete inventory belong inside the one conductor.
-- Do not rerun PAR, replace `python` with a resolved interpreter, alter PATH,
-  delete the quarantined staging directory to make the root absent, or clean
-  ignored caches as a route to retry.
-- Do not repair the executable-identity path under the consumed PAR authority.
-  Only the additive `A4-V2-I-R1` source/static-review authority permits the
-  bounded correction; it grants no cleanup, build, parity, or retry.
-- Do not infer cleanup, environment mutation, clone/PREP, or PAR-R1 authority
-  from CACHE-P or the now-authorized static-only CACHE-I stage. CACHE-I permits
-  only its frozen generic source/schema closure and review.
-- Do not continue from PAR to `A4-V2-SRUN` without a later explicit user
-  authorization, even if every parity fixture passes.
-- Do not copy, cherry-pick, import, include, link, or execute the old A4-1S
-  runner. Historical kernels may be used only as read-only semantic oracles;
-  V2 source must be self-contained and its provenance/crosswalk explicit.
-- Do not build, import, execute, or parity-test V2 source in `A4-V2-I`.
-- Do not edit, stage, commit, or describe untracked A4-V2-I source as evidence
-  during `A4-V2-P-ERRATUM`.
-- Do not rewrite the three parent protocol objects frozen at `f86a51d`; the
-  erratum is additive and supersedes only its explicitly named closure clauses.
-- Do not treat the narrow `24.170246892361 > 24` result as a general complexity
-  lower bound or as noise that may be ignored.
-- Do not remove serialization from a primary timer without recording its full
-  cost and explaining why it is outside the scientific construction claim.
-- Do not replace exhaustive evidence with hashes or sampling unless the
-  protocol states exactly what remains independently checkable.
-- Do not use a faster implementation, different machine, approximate
-  objective, reduced shape, or changed threshold as a post-hoc rescue.
-- Do not read base, centroid, cluster-id, query, ground-truth, index, or prior
-  untracked result files.
-- Do not modify SAQ/CAQ, index, packing, estimator, or search code.
-- Do not present evidence tooling, hashing, serialization, or benchmark
-  bookkeeping as the database-systems contribution.
+Never present an unverified artifact, bug fix, protocol, or tooling improvement
+as a scientific contribution.
