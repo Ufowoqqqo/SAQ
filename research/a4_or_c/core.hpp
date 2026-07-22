@@ -9,7 +9,7 @@
 namespace a4or {
 
 struct Point {
-    float value;
+    double value;
     std::uint64_t weight;
     std::uint32_t vector_id;
 };
@@ -21,11 +21,14 @@ struct CurveEntry {
     bool ambiguity;
 };
 
+enum class CandidateOrder { Forward, Reverse, Shuffle };
+
 struct Allocation {
     std::size_t k1;
     std::size_t k2;
     std::size_t used_states;
     double sse;
+    bool ambiguity;
 };
 
 struct ControlShape {
@@ -44,6 +47,9 @@ std::vector<Point> rank_histogram(const float* values, std::size_t n,
                                   std::size_t h);
 std::vector<CurveEntry> scalar_curve(const std::vector<Point>& points,
                                      std::size_t max_k);
+std::vector<CurveEntry> scalar_curve_ordered(const std::vector<Point>& points,
+                                             std::size_t max_k,
+                                             CandidateOrder order);
 Allocation allocate_pair(const std::vector<CurveEntry>& first,
                          const std::vector<CurveEntry>& second, int word_bits,
                          bool dyadic);

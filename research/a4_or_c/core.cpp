@@ -5,24 +5,18 @@
 
 #include <algorithm>
 #include <bit>
-#include <boost/multiprecision/cpp_int.hpp>
-#include <boost/rational.hpp>
 #include <cmath>
 #include <cfenv>
 #include <cstdint>
-#include <cstring>
-#include <functional>
 #include <immintrin.h>
 #include <limits>
 #include <numeric>
-#include <sstream>
 #include <stdexcept>
 
 namespace a4or {
 namespace {
 
 constexpr std::uint64_t kSeed = 0xA40C202607220001ULL;
-constexpr std::uint64_t kTinySeed = 0xA40C202607220002ULL;
 constexpr std::uint64_t kRowMul = 0x9E3779B97F4A7C15ULL;
 constexpr std::uint64_t kCoordMul = 0xBF58476D1CE4E5B9ULL;
 constexpr std::uint64_t kStreamXor = 0x94D049BB133111EBULL;
@@ -91,10 +85,10 @@ Costs stable_costs(const std::vector<Point>& p) {
                 throw std::invalid_argument("weight exceeds exact binary64 range");
             const double weight = static_cast<double>(p[hi].weight);
             const double next_weight = total_weight + weight;
-            const double delta = static_cast<double>(p[hi].value) - mean;
+            const double delta = p[hi].value - mean;
             const double next_mean = mean + delta * (weight / next_weight);
             m2 += weight * delta *
-                  (static_cast<double>(p[hi].value) - next_mean);
+                  (p[hi].value - next_mean);
 
             const Enclosure ix{p[hi].value, p[hi].value};
             const Enclosure iweight{weight, weight};
@@ -114,12 +108,6 @@ Costs stable_costs(const std::vector<Point>& p) {
     return result;
 }
 
-enum class CandidateOrder { Forward, Reverse, Shuffle };
-
-std::vector<CurveEntry> scalar_curve_ordered(const std::vector<Point>& points,
-                                             std::size_t max_k,
-                                             CandidateOrder order);
-
 struct Cell {
     double central = std::numeric_limits<double>::infinity();
     Enclosure enclosure{std::numeric_limits<double>::infinity(),
@@ -127,150 +115,6 @@ struct Cell {
     std::size_t boundary = 0;
     bool ambiguity = false;
 };
-
-std::vector<Point> aggregate(std::vector<Point> p) {
-    for (auto& v : p) v.value = canonical(v.value);
-    std::sort(p.begin(), p.end(), [](const Point& a, const Point& b) {
-        return a.value < b.value ||
-               (a.value == b.value && a.vector_id < b.vector_id);
-    });
-    std::vector<Point> out;
-    for (const Point& x : p) {
-        if (!out.empty() && out.back().value == x.value) {
-            out.back().weight += x.weight;
-            out.back().vector_id = std::min(out.back().vector_id, x.vector_id);
-        } else {
-            out.push_back(x);
-        }
-    }
-    return out;
-}
-
-using boost::multiprecision::cpp_int;
-
-cpp_int float_scaled(float value) {
-    const std::uint32_t u = std::bit_cast<std::uint32_t>(canonical(value));
-    const bool negative = (u >> 31) != 0;
-    const std::uint32_t exponent = (u >> 23) & 0xffU;
-    const std::uint32_t fraction = u & 0x7fffffU;
-    cpp_int magnitude;
-    unsigned shift;
-    if (exponent == 0) {
-        magnitude = fraction;
-        shift = 0;
-    } else {
-        magnitude = (1U << 23) | fraction;
-        shift = exponent - 1;
-    }
-    magnitude <<= shift;
-    return negative ? -magnitude : magnitude;
-}
-
-using Exact = boost::rational<cpp_int>;
-
-Exact exact_interval(const std::vector<Point>& p, std::size_t lo,
-                     std::size_t hi) {
-    cpp_int w = 0, wx = 0, wx2 = 0;
-    for (std::size_t i = lo; i < hi; ++i) {
-        const cpp_int x = float_scaled(p[i].value);
-        w += p[i].weight;
-        wx += cpp_int(p[i].weight) * x;
-        wx2 += cpp_int(p[i].weight) * x * x;
-    }
-    return {wx2 * w - wx * wx, w};
-}
-
-struct ExactResult {
-    Exact objective;
-    std::vector<std::size_t> boundaries;
-    std::size_t ties;
-};
-
-ExactResult exhaustive(const std::vector<Point>& p, std::size_t k) {
-    Exact best;
-    bool have_best = false;
-    std::vector<std::size_t> best_boundaries;
-    std::size_t ties = 0;
-    std::vector<std::size_t> boundaries;
-    std::function<void(std::size_t, std::size_t)> visit =
-            [&](std::size_t start, std::size_t remaining) {
-                if (remaining == 1) {
-                    Exact objective;
-                    std::size_t lo = 0;
-                    for (std::size_t hi : boundaries) {
-                        objective += exact_interval(p, lo, hi);
-                        lo = hi;
-                    }
-                    objective += exact_interval(p, lo, p.size());
-                    if (!have_best || objective < best) {
-                        best = objective;
-                        best_boundaries = boundaries;
-                        ties = 1;
-                        have_best = true;
-                    } else if (objective == best) {
-                        ++ties;
-                        best_boundaries = std::min(best_boundaries, boundaries);
-                    }
-                    return;
-                }
-                const std::size_t max_boundary = p.size() - remaining + 1;
-                for (std::size_t b = start; b <= max_boundary; ++b) {
-                    boundaries.push_back(b);
-                    visit(b + 1, remaining - 1);
-                    boundaries.pop_back();
-                }
-            };
-    visit(1, k);
-    return {best, best_boundaries, ties};
-}
-
-bool check_case(const std::vector<Point>& raw, std::size_t max_k,
-                double& max_error, std::size_t& oracle_cleared,
-                std::string& failure) {
-    const auto p = aggregate(raw);
-    const std::size_t curve_size = std::min(max_k, p.size());
-    const auto curve = scalar_curve_ordered(p, curve_size, CandidateOrder::Forward);
-    const auto reverse = scalar_curve_ordered(p, curve_size, CandidateOrder::Reverse);
-    const auto shuffle = scalar_curve_ordered(p, curve_size, CandidateOrder::Shuffle);
-    for (std::size_t k = 1; k <= curve.size(); ++k) {
-        const auto reference = exhaustive(p, k);
-        const long double exact_ld = std::ldexp(
-                reference.objective.numerator().convert_to<long double>() /
-                        reference.objective.denominator().convert_to<long double>(),
-                -298);
-        const double exact = static_cast<double>(exact_ld);
-        const double error = std::fabs(curve[k - 1].sse - exact);
-        max_error = std::max(max_error, error);
-        const bool order_invariant =
-                std::bit_cast<std::uint64_t>(curve[k - 1].sse) ==
-                        std::bit_cast<std::uint64_t>(reverse[k - 1].sse) &&
-                std::bit_cast<std::uint64_t>(curve[k - 1].sse) ==
-                        std::bit_cast<std::uint64_t>(shuffle[k - 1].sse) &&
-                curve[k - 1].boundaries == reverse[k - 1].boundaries &&
-                curve[k - 1].boundaries == shuffle[k - 1].boundaries &&
-                curve[k - 1].ambiguity == reverse[k - 1].ambiguity &&
-                curve[k - 1].ambiguity == shuffle[k - 1].ambiguity;
-        if (error > 1e-10 * std::max(1.0, std::fabs(exact)) ||
-            curve[k - 1].boundaries != reference.boundaries ||
-            (curve[k - 1].ambiguity && reference.ties == 1) ||
-            !order_invariant) {
-            std::ostringstream message;
-            message << "tiny objective or tie mismatch k=" << k
-                    << " production=" << curve[k - 1].sse
-                    << " exact=" << exact << " production_boundaries=";
-            for (auto b : curve[k - 1].boundaries) message << b << ',';
-            message << " exact_boundaries=";
-            for (auto b : reference.boundaries) message << b << ',';
-            message << " ambiguity=" << curve[k - 1].ambiguity
-                    << " exact_ties=" << reference.ties
-                    << " order_invariant=" << order_invariant;
-            failure = message.str();
-            return false;
-        }
-        if (curve[k - 1].ambiguity && reference.ties > 1) ++oracle_cleared;
-    }
-    return true;
-}
 
 }  // namespace
 
@@ -324,13 +168,11 @@ std::vector<Point> rank_histogram(const float* values, std::size_t n,
                 correction += (sorted[i].value - t) + sum;
             sum = t;
         }
-        bins.push_back({static_cast<float>((sum + correction) / width), width,
+        bins.push_back({(sum + correction) / width, width,
                         static_cast<std::uint32_t>(bin)});
     }
     return bins;
 }
-
-namespace {
 
 std::vector<CurveEntry> scalar_curve_ordered(const std::vector<Point>& points,
                                              std::size_t max_k,
@@ -414,7 +256,7 @@ std::vector<CurveEntry> scalar_curve_ordered(const std::vector<Point>& points,
             const std::size_t hi = g + 1 == k ? n : boundaries[g];
             double sum = 0, correction = 0, weight = 0;
             for (std::size_t i = lo; i < hi; ++i) {
-                const double term = static_cast<double>(points[i].value) * points[i].weight;
+                const double term = points[i].value * points[i].weight;
                 const double t = sum + term;
                 if (std::fabs(sum) >= std::fabs(term)) correction += (sum - t) + term;
                 else correction += (term - t) + sum;
@@ -431,8 +273,6 @@ std::vector<CurveEntry> scalar_curve_ordered(const std::vector<Point>& points,
     return curve;
 }
 
-}  // namespace
-
 std::vector<CurveEntry> scalar_curve(const std::vector<Point>& points,
                                      std::size_t max_k) {
     return scalar_curve_ordered(points, max_k, CandidateOrder::Forward);
@@ -442,7 +282,7 @@ Allocation allocate_pair(const std::vector<CurveEntry>& first,
                          const std::vector<CurveEntry>& second, int word_bits,
                          bool dyadic) {
     const std::size_t capacity = std::size_t{1} << word_bits;
-    Allocation best{0, 0, 0, std::numeric_limits<double>::infinity()};
+    Allocation best{0, 0, 0, std::numeric_limits<double>::infinity(), false};
     for (std::size_t k1 = 1; k1 <= first.size(); ++k1) {
         if (dyadic && (k1 & (k1 - 1))) continue;
         for (std::size_t k2 = 1; k2 <= second.size() && k1 * k2 <= capacity; ++k2) {
@@ -454,7 +294,8 @@ Allocation allocate_pair(const std::vector<CurveEntry>& first,
                  (used > best.used_states ||
                   (used == best.used_states && std::pair{k1, k2} <
                                                        std::pair{best.k1, best.k2}))))
-                best = {k1, k2, used, objective};
+                best = {k1, k2, used, objective,
+                        first[k1 - 1].ambiguity || second[k2 - 1].ambiguity};
         }
     }
     return best;
@@ -504,111 +345,6 @@ bool faiss_contract_smoke() {
         v.verbose = false;
         if (pq.M != s.pq_m || pq.dsub != s.pq_dsub || pq.ksub != s.pq_ksub ||
             v.d != 2 || v.k != s.v_centers) return false;
-    }
-    return true;
-}
-
-bool run_tiny_exact(std::string& failure, double& max_error,
-                    std::size_t& passed, std::size_t& oracle_cleared) {
-    const float values[] = {-2, -1, 0, 1, 2};
-    passed = 0; max_error = 0; oracle_cleared = 0;
-    for (std::size_t size = 1; size <= 4; ++size) {
-        std::vector<std::size_t> chosen;
-        std::function<bool(std::size_t)> combinations = [&](std::size_t begin) {
-            if (chosen.size() == size) {
-                std::uint64_t assignments = 1;
-                for (std::size_t i = 0; i < size; ++i) assignments *= 3;
-                for (std::uint64_t mask = 0; mask < assignments; ++mask) {
-                    std::uint64_t q = mask; std::vector<Point> p;
-                    for (std::size_t i = 0; i < size; ++i) {
-                        p.push_back({values[chosen[i]], 1 + q % 3,
-                                     static_cast<std::uint32_t>(i)}); q /= 3;
-                    }
-                    if (!check_case(p, size, max_error, oracle_cleared, failure)) return false;
-                    ++passed;
-                }
-                return true;
-            }
-            for (std::size_t i = begin; i <= 5 - (size - chosen.size()); ++i) {
-                chosen.push_back(i);
-                if (!combinations(i + 1)) return false;
-                chosen.pop_back();
-            }
-            return true;
-        };
-        if (!combinations(0)) return false;
-    }
-    const std::uint32_t patterns[][4] = {
-        {0x80000000,0,0,0}, {0xbf800000,0x80000000,0,0x3f800000},
-        {0x80000001,0x80000000,0,1}, {0x80800000,0x807fffff,0x007fffff,0x00800000},
-        {0xff7fffff,0xbf800000,0x3f800000,0x7f7fffff},
-        {0xbf800000,0,0x3f800000,0}, {0x3f800000,0x3f800001,0,0},
-        {0x3f800001,0x3f800002,0,0}};
-    const std::uint64_t weights[][4] = {{1,1,0,0},{1,2,3,1},{1,1,1,1},{1,2,3,4},
-        {1,1,1,1},{1,1,1,0},{1,1,0,0},{1,1,0,0}};
-    const std::size_t sizes[] = {2,4,4,4,4,3,2,2};
-    for (std::size_t c = 0; c < 8; ++c) {
-        std::vector<Point> p;
-        for (std::size_t j = 0; j < sizes[c]; ++j)
-            p.push_back({std::bit_cast<float>(patterns[c][j]), weights[c][j],
-                         static_cast<std::uint32_t>(j)});
-        if (!check_case(p, aggregate(p).size(), max_error, oracle_cleared, failure)) return false;
-        ++passed;
-    }
-    for (std::uint64_t i = 0; i < 256; ++i) {
-        const std::size_t size = 1 + i % 12; std::vector<Point> p;
-        for (std::uint64_t j = 0; j < size; ++j) {
-            const std::uint64_t base = kTinySeed ^ ((i + 1) * kRowMul) ^
-                                       ((j + 1) * kCoordMul);
-            p.push_back({static_cast<float>(-32 + static_cast<std::int64_t>(splitmix64(base) % 65)),
-                         1 + splitmix64(base ^ kStreamXor) % 8,
-                         static_cast<std::uint32_t>(j)});
-        }
-        const std::size_t max_k = std::min<std::size_t>(8, aggregate(p).size());
-        if (!check_case(p, max_k, max_error, oracle_cleared, failure)) return false;
-        ++passed;
-    }
-    if (oracle_cleared == 0) {
-        failure = "no overlapping enclosure exact tie exercised";
-        return false;
-    }
-    return passed == 1044;
-}
-
-bool run_representation_checks(std::string& failure,
-                               std::size_t& roundtrips,
-                               std::size_t& lookups) {
-    roundtrips = 0; lookups = 0;
-    for (int bits : {4, 8}) {
-        const std::size_t capacity = std::size_t{1} << bits;
-        for (std::size_t group = 0; group < 64; ++group) {
-            const std::size_t k1 = bits == 4 ? 3 : 15;
-            const std::size_t k2 = bits == 4 ? 5 : 17;
-            std::vector<float> c1(k1), c2(k2);
-            for (std::size_t i = 0; i < k1; ++i) c1[i] = float(int(i) - int(k1 / 2));
-            for (std::size_t i = 0; i < k2; ++i) c2[i] = float(int(i) - int(k2 / 2)) / 2;
-            std::vector<double> lut(capacity, std::numeric_limits<double>::infinity());
-            for (std::size_t address = 0; address < capacity; ++address) {
-                if (address < k1 * k2) {
-                    const auto labels = unpack(address, k1, k2);
-                    if (pack(labels.first, labels.second, k1) != address) {
-                        failure = "mixed-radix roundtrip"; return false;
-                    }
-                    ++roundtrips;
-                    lut[address] = lookup_distance(address, k1, k2, c1, c2, 0.25F, -0.5F);
-                    const double x = 0.25 - c1[labels.first];
-                    const double y = -0.5 - c2[labels.second];
-                    if (lut[address] != x * x + y * y) {
-                        failure = "lookup/direct mismatch"; return false;
-                    }
-                    ++lookups;
-                } else {
-                    try { (void)unpack(address, k1, k2); }
-                    catch (const std::out_of_range&) { ++roundtrips; continue; }
-                    failure = "invalid address accepted"; return false;
-                }
-            }
-        }
     }
     return true;
 }
