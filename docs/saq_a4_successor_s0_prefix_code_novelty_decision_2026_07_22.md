@@ -82,11 +82,11 @@ so `INCONCLUSIVE_SOURCE_GAP` does not apply.  Some cells that determine steps
 | Q-Palette 2025 | YES | NO | U | NO | NO | NO | NO | NO | YES | YES | `FW,SC,QC`: §3 and Table 1, pp.3--4, App. C.3.1 p.18; all `NO`: quantizer/kernel definitions, §§3.1--3.3, pp.3--6 |
 | FibQuant 2026 | YES | NO | NO | NO | NO | NO | NO | NO | YES | YES | `FW,SC,QC`: §3.1, pp.3--4 and §5; all `NO`: block-code definition and scalar comparison, §§3--4, pp.3--7 |
 | Optimized Product Quantization 2013 | YES | YES | NO | NO | NO | NO | YES | NO | YES | YES | `FW,FR,FL,SC,QC`: §2 pp.2946--2948 and §4 pp.2950--2951; all `NO`: full objective/codec, §§2--3 |
-| Adaptive Bit Allocation PQ 2016 | YES | YES | NO | U | U | U | YES | U | YES | YES | all non-`U`: publisher primary text, §§2--4, especially unequal-bit objective and summed subspace-distance search |
+| Adaptive Bit Allocation PQ 2016 | YES | YES | NO | U | U | U | YES | U | YES | YES | all non-`U`: publisher primary abstract, introduction, §3 opening, and conclusion: PCA/subspace PQ, `log_2 k`-bit indices, unequal-bit objective, greedy allocation, and summed subspace-distance search |
 | Quicker ADC 2021 | YES | YES | NO | NO | NO | NO | YES | NO | YES | YES | all cells: §§3.1--3.4, pp.4--7; `AC=NO` follows explicit `2^b` 4/5/6-bit subquantizers in §3.1 |
 | Derived Codebooks 2019 | YES | YES | NO | YES | YES | YES | YES | NO | YES | YES | `FW,FR,LA,NP,CO,FL,SC,QC`: §§3.1--3.3, pp.3--5, Algorithms 2--3 and property P1; `AC,JT`: same complete construction |
 | Polysemous Codes 2016 | YES | YES | NO | YES | NO | YES | YES | NO | YES | YES | `FW,FR,LA,CO,FL,SC,QC`: §§3.1--3.3, Eqs.(1)--(7); `AC,NP,JT`: complete sequential PQ-then-bijection method, §§3--3.3 |
-| Riskin et al. 1994 | YES | U | U | YES | YES | YES | U | U | YES | U | all non-`U`: abstract and §I, pp.307--308: fixed-rate label, three assignments, progressive tree, intermediate reconstructions |
+| Riskin et al. 1994 | YES | U | U | YES | YES | YES | U | NO | YES | YES | `FW,LA,NP,CO,SC`: abstract and §§I--III, pp.307--311; `JT=NO,QC=YES`: §II around Eq.(1) and §III.3, pp.309--311: fixed original Voronoi regions, decoder-only centroid fitting, and no intermediate-codeword search |
 | Chou--Lookabaugh--Gray 1989 | NO | U | U | U | YES | YES | U | YES | YES | `FW=NO`, `NP,CO,JT,SC=YES`: abstract and §II, pp.299--305, variable-rate tree pruning and successive approximation |
 
 ## 5. Exact source support
@@ -121,9 +121,12 @@ and Cartesian subcodebooks and uses ordinary ADC tables.  It does not assign a
 progressive binary meaning to the stored fine index.
 
 Guo et al.'s Adaptive Bit Allocation PQ supplies unequal integer bit counts
-and subcodebook sizes.  The accessible primary publisher text did not expose
-enough method detail to turn its label-assignment, prefix, coarse-objective,
-and joint-training cells into decisive negative findings.
+and subcodebook sizes.  The publisher text fixes the high-level order as PCA,
+principal-component grouping, and greedy bit allocation to minimize ordinary
+quantization distortion.  However, the accessible primary text omits most of
+§3; the official PDF is access-restricted.  It therefore cannot establish the
+absence of label assignment, nested prefixes, a separate coarse objective, or
+joint training.  Those four cells remain `U`, rather than inferred `NO`.
 
 [Quicker ADC](https://arxiv.org/abs/1812.09162) Sections 3.1--3.4 cover
 irregular 4/5/6-bit PQ granularities, packed layouts, split lookup tables, and
@@ -145,10 +148,16 @@ explicit leading nested partition, and its training is sequential.
 
 [Riskin et al. 1994](https://doi.org/10.1109/83.287025) assigns binary labels
 to a fixed-rate full-search VQ and organizes them as a progressive tree with
-intermediate prefix reconstructions.  The accessible primary text confirms
-the progressive labels and coarse reconstruction objective, but did not make
-it possible to decide whether its generalized-Lloyd stage jointly updates the
-fine codebook and prefix objective or only the tree/intermediate codewords.
+intermediate prefix reconstructions.  Its [author-uploaded primary
+text](https://www.researchgate.net/publication/3326149_Index_Assignment_for_Progressive_Transmission_of_Full_Search_Vector_Quantization)
+is decisive about training order: the original full-rate Voronoi regions stay
+fixed; Eq.(1) scores merging them; and each intermediate reconstruction is the
+centroid of a union of those regions.  The authors explicitly distinguish this
+from generalized Lloyd training: they optimize the decoder for the fixed
+encoder, not the encoder for the decoder.  They also state that intermediate
+decoding requires no search, only the centroid of the merged region containing
+the already selected original region.  Thus `JT=NO` and `QC=YES`: Riskin is a
+post-hoc progressive assignment, not joint fine/prefix training.
 
 [Chou, Lookabaugh, and Gray 1989](https://doi.org/10.1109/18.32124) optimize
 and prune tree-structured vector quantizers under distortion-rate objectives.
@@ -228,8 +237,10 @@ The exact terminal outcome is:
 INCONCLUSIVE_MECHANISM_EVIDENCE
 ```
 
-Decision-critical unresolved cells include `Riskin.JT`, `Riskin.QC`, and the
-ABAPQ label/prefix/joint-training cells.  Resolving them could change which of
+Riskin's previously unresolved training-order and decoding-path cells are now
+resolved.  Decision-critical uncertainty is confined to ABAPQ's `LA`, `NP`,
+`CO`, and `JT` cells because its complete §3 method text was not inspectable.
+Resolving them could change which of
 `NO_GO_ALREADY_SOLVED`, `NO_GO_DIRECT_COMPOSITION`, or
 `NO_GO_NOT_AN_A4_SUCCESSOR` applies first.
 
@@ -244,8 +255,8 @@ Verified evidence:
 - Derived Codebooks already embeds a coarse view in a fine PQ label and uses a
   coarse-scan/accurate-refinement pipeline;
 - Polysemous learns ANN-oriented binary label assignments while retaining ADC;
-- Riskin supplies progressive prefix reconstructions for a fixed fine VQ
-  label; and
+- Riskin builds progressive prefix reconstructions after fixing the original
+  fine VQ encoder, and intermediate decoding performs no new search; and
 - FSQ supplies arbitrary factor products, while FibQuant reinforces the
   unrestricted block-code control.
 
@@ -257,8 +268,9 @@ Inference:
 
 Unresolved uncertainty:
 
-- whether prior work jointly optimizes the final factorized reconstruction and
-  prefix ANN objective rather than training them sequentially; and
+- whether ABAPQ's unavailable complete method contains any label/prefix/coarse
+  mechanism or coupling beyond its visible PCA, grouping, and bit allocation;
+  and
 - whether a state/training-cost property makes the coupling non-compositional.
 
 Scientific code changed: 0 lines.  This decision report is the only evidence
