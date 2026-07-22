@@ -127,11 +127,15 @@ for at least the following families.
 
 - Douze, Jegou, and Perronnin, *Polysemous Codes*, ECCV 2016: product-code
   label assignment with both Hamming filtering and asymmetric distance use.
-- the primary work on index assignment for progressive transmission of
-  full-search vector quantization: nested/prefix reconstruction induced by a
-  binary index assignment;
-- primary tree-structured or multistage vector-quantization work used by that
-  paper as its closest comparison; and
+- Riskin, Ladner, Wang, and Atlas, *Index Assignment for Progressive
+  Transmission of Full-Search Vector Quantization*, IEEE Transactions on
+  Image Processing 3(3), 1994, DOI `10.1109/83.287025`: binary index
+  assignment, a full-search progressive-transmission tree, and intermediate
+  reconstructions for the prefixes of a final full-search VQ label;
+- Chou, Lookabaugh, and Gray, *Optimal Pruning with Applications to
+  Tree-Structured Source Coding and Modeling*, IEEE Transactions on
+  Information Theory 35(2), 1989, DOI `10.1109/18.32124`: the frozen
+  tree-structured/pruning comparator for hierarchical quantizer design; and
 - any primary ANN work found by backward and forward citation inspection that
   learns a coarse view of a fine codebook or reuses one stored label in a
   two-stage scan.
@@ -204,6 +208,7 @@ Apply the first matching outcome:
 | Condition | Outcome |
 | --- | --- |
 | A required primary source cannot be identified or inspected | `INCONCLUSIVE_SOURCE_GAP` |
+| Any decision-critical matrix cell remains unresolved after inspection | `INCONCLUSIVE_MECHANISM_EVIDENCE` |
 | One source already contains the candidate mechanism | `NO_GO_ALREADY_SOLVED` |
 | Candidate is a direct composition with no new coupling | `NO_GO_DIRECT_COMPOSITION` |
 | Arbitrary cardinality is unnecessary to the residual mechanism | `NO_GO_NOT_AN_A4_SUCCESSOR` |
@@ -235,6 +240,16 @@ Permanent model state:
 - nested-partition/coarse representatives;
 - dispatch, offset, or group-plan metadata.
 
+Construction and training:
+
+- algorithm and objective-evaluation counts for cardinality search, scalar
+  fitting, label permutation, nested partitioning, and coarse reconstruction;
+- CPU time, wall time, thread count, peak resident memory, and separately
+  bounded transient/owned memory;
+- initialization, restart, iteration, convergence, and early-stop rules; and
+- emitted model bytes and serialization work, reported separately from the
+  scientific optimizer.
+
 Per-query state and work:
 
 - `2^p` coarse entries plus `S` full entries per group;
@@ -243,10 +258,22 @@ Per-query state and work:
   and candidate reranking;
 - bytes read in both stages and the fraction reaching the accurate stage.
 
-The mandatory comparison is a same-capacity block codebook given the same
-prefix/full-label budget and the same two-pass schedule.  Dyadic scalar coding,
-standard mixed radix, ordinary PQ, Polysemous-style label assignment, and a
-derived-codebook two-pass baseline are also required when applicable.
+Every structural baseline must receive the same prefix/index-assignment
+optimization opportunity as the candidate.  The mandatory comparisons are:
+
+- a same-capacity block codebook with the same prefix/full-label budget and
+  two-pass schedule;
+- dyadic scalar products and ordinary PQ with matched learned label/prefix
+  assignment rather than their natural binary numbering;
+- Riskin-style progressive index assignment over the matched fine codebook;
+- a derived-coarse-codebook two-pass construction with the same coarse-table
+  and reranking budget; and
+- Polysemous Codes under its native Hamming-filtering objective.
+
+Polysemous may be omitted from a later numeric gate only after a
+source-supported, independently reviewed non-applicability finding.  Any other
+omitted structural control likewise requires an explicit reviewed
+justification before outcomes are observed.
 
 ## 9. Conditional S1 boundary
 
@@ -255,13 +282,17 @@ passes independent review.
 
 The cheapest possible S1 would freeze only `r=2`, `B=4`, and one prefix width
 `p=2`, using a finite synthetic source whose atoms and query-like directions
-are declared before execution.  It would exhaustively compare:
+are declared before execution.  Every arm would receive matched
+prefix/index-assignment optimization.  It would exhaustively compare:
 
 1. word-local dyadic scalar products;
 2. standard arbitrary-cardinality mixed radix;
-3. the prefix-co-designed factorized candidate; and
-4. a same-capacity two-dimensional block codebook with the same two-stage
-   labeling opportunity.
+3. ordinary PQ or the same-capacity two-dimensional block codebook;
+4. Riskin-style progressive index assignment;
+5. a derived-coarse-codebook two-pass construction;
+6. Polysemous under its native filtering objective, unless reviewed as
+   inapplicable before execution; and
+7. the prefix-co-designed factorized candidate.
 
 The candidate would stop if it cannot improve prefix-stage absolute distance
 or pair ordering at identical prefix reads and lookup count, if full-word
