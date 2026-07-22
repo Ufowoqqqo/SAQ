@@ -13,21 +13,22 @@ Current summary inventory:
   normalized direction, scientific state, claim ceiling, and reporting state.
   Its user-confirmed completed-meeting boundary is the 2026-07-09 deck at
   `saq-graph-traversal-analysis@322214f`, with scientific content through
-  `d94279d`. `R01`--`R05` are `REPORTED`; `R06` is `UPDATE_PENDING` because of
-  its later evidence and closure; `R07`--`R12` are `UNREPORTED`.
+  `d94279d`. The later completed 2026-07-22 deck is
+  `saq-meeting-summary@b41b1d1`. `R01`--`R05`, `R07`, `R08`, `R10`, and
+  `R11` are fully `REPORTED`; `R06` and `R12` are `UPDATE_PENDING` because
+  they have later reviewed terminal evidence. `R09` remains `UNREPORTED`.
 
 - `docs/saq_research_progress_meeting_slides_2026_07_09.md` is the immutable
   completed-meeting deck, copied exactly from the registered source commit.
 - `docs/saq_next_meeting_attempts_1_3_slides_2026_07_13.md` is the superseded,
   unpresented intermediate draft originally hosted at
   `saq-caq-one-shell-repair@433e8ea`.
-- `docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` is the current,
-  unpresented successor draft. It queues `R07`, `R08`, `R10`, `R11`, and
-  `R12`; its Attempt 4 scientific snapshot is
-  `saq-arbitrary-cardinality-feasibility-v2@3577edd`. The consumed PREP
-  attempt remains `CRASH_OR_UNKNOWN / START_ONLY`, but the independently
-  reviewed project decision closes the portfolio at
-  `STOP_NO_FURTHER_ARTIFACT_RECOVERY` without forming an artifact terminal.
+- `docs/saq_next_meeting_attempts_1_4_slides_2026_07_13.md` is the immutable
+  completed 2026-07-22 deck at `b41b1d1`. It reported `R07`, `R08`, `R10`,
+  `R11`, and `R12`; its Attempt 4 snapshot stops at
+  `saq-arbitrary-cardinality-feasibility-v2@3577edd`. Later R0 compatibility
+  and S0 prefix-novelty decisions are post-meeting updates and must not be
+  written back into that historical deck.
 
 ## Current Attempt 4 Boundary
 
@@ -56,6 +57,9 @@ A4-V2-PAR-R1 NOT_AUTHORIZED / NOT_RUN
 A4-V2-SRUN NOT_AUTHORIZED / NOT_RUN
 data NOT_AUTHORIZED / NOT_RUN
 A4-V2 portfolio CLOSED / STOP_NO_FURTHER_ARTIFACT_RECOVERY
+A4-R0 NO_GO_UNCHANGED_SAQ_COMPATIBILITY / REVIEWED_TERMINAL
+A4-S0 NO_GO_DIRECT_COMPOSITION / REVIEWED_TERMINAL
+A4-S1 NOT_AUTHORIZED / NOT_RUN
 ```
 
 The six canonical A4-1S parity artifacts are committed at `335837e`; their
@@ -154,11 +158,25 @@ sources with historical CACHE-I/PREP commits. That separate problem is not
 fixed here and forbids cache-verifier/PAR-readiness claims. No Python, START,
 PREP, build, data access, or scientific execution occurred.
 
+Two post-meeting static gates now close the attempted successor. R0 decision
+`saq-a4-r0-static-gate@617ad25` found that every proposed unchanged-SAQ mapping
+changes representation state or query behavior, so it returned
+`NO_GO_UNCHANGED_SAQ_COMPATIBILITY`. The separately authorized source-only S0
+gate at `saq-a4-prefix-novelty-gate@7f4c001` returned
+`NO_GO_DIRECT_COMPOSITION`. Riskin fixes the original fine VQ encoder before
+progressive assignment; ABAPQ only allocates bits among independent PQ
+subspaces and retains ordinary indices, one full-distortion objective, and
+standard ADC/SDC. Derived Codebooks and Polysemous already supply the
+coarse/fine label and ANN-oriented assignment pieces. No S1 code, data,
+synthetic execution, or performance work is authorized.
+
 ## Next Admissible Summary Work
 
 There is no active source-branch research or execution authority and no next
-authorized Attempt 4 step. Audited closure
-`saq-arbitrary-cardinality-feasibility-v2@3577edd` preserves runtime status
+authorized Attempt 4 step. The latest static successor decision is
+`saq-a4-prefix-novelty-gate@7f4c001 / NO_GO_DIRECT_COMPOSITION`; it preserves
+the earlier audited closure. `saq-arbitrary-cardinality-feasibility-v2@3577edd`
+preserves runtime status
 `CRASH_OR_UNKNOWN / START_ONLY` while separately setting portfolio state
 `CLOSED / STOP_NO_FURTHER_ARTIFACT_RECOVERY`. It creates no artifact terminal,
 scientific decision, or performance result. CRASH-I, retry, CACHE-BIND,
@@ -202,6 +220,9 @@ branch.
   reviewed terminal `ARTIFACT_INVALID` with no valid PAR authority, and
   HOST-I reauthorization, the separate historical-source repair, PREP,
   rerun, A4-V2-SRUN, data, and SAQ work remain unauthorized;
+- implementing S1 or another prefix-code successor after the reviewed S0
+  `NO_GO_DIRECT_COMPOSITION` decision without a new user-authorized question
+  and protocol;
 - opening registered base, query, ground-truth, or index artifacts;
 - modifying SAQ/CAQ, index, estimator, packing, or search code;
 - expanding any source branch's experimental authorization; or
