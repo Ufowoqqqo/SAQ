@@ -1,4 +1,5 @@
 #include "core.hpp"
+#include "synthetic.hpp"
 
 #include <iostream>
 #include <string>
@@ -19,10 +20,14 @@ int main() {
         std::cerr << "FAIL " << failure << "\n";
         return 3;
     }
+    if (!a4or::run_control_validity_smoke(failure)) {
+        std::cerr << "FAIL " << failure << "\n";
+        return 4;
+    }
     const auto panel = a4or::synthetic_panel();
     if (panel.size() != 8192 * 128) {
         std::cerr << "FAIL synthetic shape\n";
-        return 4;
+        return 5;
     }
     std::cout << "PASS tiny_total=" << passed
               << " max_objective_error=" << max_error

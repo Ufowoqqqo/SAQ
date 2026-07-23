@@ -49,3 +49,12 @@ evidence. This does not affect the P split failure.
 No natural data, benchmark query, ground truth, index, or previous A4 outcome
 artifact was read. This result rejects the frozen control configuration only;
 it is not evidence about natural-data quality, Recall, QPS, or SAQ improvement.
+
+## Postmortem
+
+The P-control postmortem is recorded in
+`docs/saq_a4_or_c_progress_2026_07_23.md`. It found that Faiss's split events
+were intermediate empty-cluster repairs: all 768 inspected final redo models
+had zero empty assignments and zero duplicate centers, and both P rates
+encoded every synthetic row successfully. This does not alter the committed
+`CONTROL_INVALID` result.

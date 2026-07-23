@@ -52,6 +52,10 @@ struct Block {
 struct Replay {
     double direct = 0, sufficient = 0;
     std::size_t collisions = 0;
+    std::size_t empty_centers = 0;
+    std::size_t encoded_labels = 0;
+    bool shape_valid = true;
+    bool encoding_valid = true;
     bool ambiguity = false;
 };
 
@@ -88,6 +92,32 @@ std::size_t collisions(const Block& block) {
 Replay replay(const std::vector<float>& panel, const std::vector<Block>& blocks,
               const std::vector<std::uint8_t>* supplied_codes = nullptr) {
     Replay result;
+    std::size_t total_dimension = 0;
+    for (const Block& block : blocks) {
+        if (block.dimension == 0 || block.centers == 0 ||
+            block.centers >
+                    std::numeric_limits<std::size_t>::max() / block.dimension ||
+            block.values.size() != block.centers * block.dimension ||
+            block.dimension > kDimensions ||
+            total_dimension > kDimensions - block.dimension ||
+            (block.radix &&
+             (block.centers % block.radix != 0 || block.dimension != 2))) {
+            result.shape_valid = false;
+            result.encoding_valid = false;
+            return result;
+        }
+        total_dimension += block.dimension;
+    }
+    if (total_dimension != kDimensions) {
+        result.shape_valid = false;
+        result.encoding_valid = false;
+        return result;
+    }
+    if (supplied_codes &&
+        supplied_codes->size() != kRows * blocks.size()) {
+        result.encoding_valid = false;
+        return result;
+    }
     std::size_t offset = 0;
     for (std::size_t g = 0; g < blocks.size(); ++g) {
         const Block& block = blocks[g];
@@ -117,7 +147,11 @@ Replay replay(const std::vector<float>& panel, const std::vector<Block>& blocks,
                 if (unpack(label, block.radix, k2) != std::pair{z1, z2})
                     throw std::runtime_error("mixed-radix replay");
             } else label = nearest(x, block);
-            if (label >= block.centers) throw std::runtime_error("invalid label");
+            if (label >= block.centers) {
+                result.encoding_valid = false;
+                continue;
+            }
+            ++result.encoded_labels;
             ++count[label];
             for (std::size_t j = 0; j < block.dimension; ++j) {
                 const double value = x[j];
@@ -129,18 +163,21 @@ Replay replay(const std::vector<float>& panel, const std::vector<Block>& blocks,
             }
         }
         Sum sufficient;
-        for (std::size_t k = 0; k < block.centers; ++k)
+        for (std::size_t k = 0; k < block.centers; ++k) {
+            result.empty_centers += count[k] == 0;
             for (std::size_t j = 0; j < block.dimension; ++j) {
                 const double center = block.values[k * block.dimension + j];
                 const std::size_t at = k * block.dimension + j;
                 sufficient.add(square[at].get() - 2 * center * sum[at].get() +
                                count[k] * center * center);
             }
+        }
         result.direct += direct.get();
         result.sufficient += sufficient.get();
         offset += block.dimension;
     }
-    if (offset != kDimensions) throw std::runtime_error("block shape");
+    result.encoding_valid = result.encoding_valid &&
+            result.encoded_labels == kRows * blocks.size();
     return result;
 }
 
@@ -337,6 +374,55 @@ std::array<int, 4> decisions(double d, double a, double p, double v) {
 
 }  // namespace
 
+bool run_control_validity_smoke(std::string& failure) {
+    std::vector<float> panel(kRows * kDimensions);
+    std::vector<std::uint8_t> codes(kRows);
+    Block valid{kDimensions, 1, std::vector<float>(kDimensions), 0, false};
+    const Replay valid_replay = replay(panel, {valid}, &codes);
+    if (!valid_replay.encoding_valid || valid_replay.encoded_labels != kRows ||
+        valid_replay.empty_centers != 0 || valid_replay.collisions != 0) {
+        failure = "valid final control rejected";
+        return false;
+    }
+
+    Block empty{kDimensions, 2, std::vector<float>(2 * kDimensions), 0, false};
+    empty.values[kDimensions] = 1;
+    const Replay empty_replay = replay(panel, {empty}, &codes);
+    if (!empty_replay.encoding_valid || empty_replay.empty_centers != 1 ||
+        empty_replay.collisions != 0) {
+        failure = "final empty center not detected";
+        return false;
+    }
+
+    Block collision{kDimensions, 2, std::vector<float>(2 * kDimensions), 0,
+                    false};
+    for (std::size_t row = 0; row < kRows; ++row) codes[row] = row % 2;
+    const Replay collision_replay = replay(panel, {collision}, &codes);
+    if (!collision_replay.encoding_valid ||
+        collision_replay.empty_centers != 0 ||
+        collision_replay.collisions != 1) {
+        failure = "final center collision not detected";
+        return false;
+    }
+
+    codes.assign(kRows, 0);
+    codes[0] = 1;
+    const Replay invalid_encoding = replay(panel, {valid}, &codes);
+    if (invalid_encoding.encoding_valid ||
+        invalid_encoding.encoded_labels != kRows - 1) {
+        failure = "invalid encoded label accepted";
+        return false;
+    }
+    Block malformed = valid;
+    malformed.values.pop_back();
+    const Replay invalid_shape = replay(panel, {malformed}, &codes);
+    if (invalid_shape.shape_valid || invalid_shape.encoding_valid) {
+        failure = "invalid final shape accepted";
+        return false;
+    }
+    return true;
+}
+
 SyntheticResult run_synthetic_admission() {
     SyntheticResult out;
     const auto wall_start = std::chrono::steady_clock::now();
@@ -361,12 +447,12 @@ SyntheticResult run_synthetic_admission() {
                                                      bits, dyadic));
             mark = cpu_us();
             const auto dm = allocate(curves, bits, true);
-            d[hi][bi] = replay(panel, dm);
             out.d_cpu_us += cpu_us() - mark;
+            d[hi][bi] = replay(panel, dm);
             mark = cpu_us();
             auto am = allocate(curves, bits, false);
-            a[hi][bi] = replay(panel, am);
             out.a_cpu_us += cpu_us() - mark;
+            a[hi][bi] = replay(panel, am);
             if (hi == 0) primary_a[bi] = std::move(am);
         }
     }
@@ -383,6 +469,10 @@ SyntheticResult run_synthetic_admission() {
                     block.dimension == shape.pq_dsub && block.centers == 256 &&
                     block.values.size() == 256 * shape.pq_dsub;
         p[bi] = replay(panel, pc.blocks, &pc.codes);
+        out.p_shape_valid = out.p_shape_valid && p[bi].shape_valid;
+        out.p_encoding_valid = out.p_encoding_valid && p[bi].encoding_valid;
+        out.p_empty_centers += p[bi].empty_centers;
+        out.p_encoded_labels += p[bi].encoded_labels;
         out.p_nsplit += pc.split_count;
         out.p_cpu_us += cpu_us() - mark;
         mark = cpu_us();
@@ -393,6 +483,10 @@ SyntheticResult run_synthetic_admission() {
                     block.centers == shape.v_centers &&
                     block.values.size() == 2 * shape.v_centers;
         v[bi] = replay(panel, vc.blocks);
+        out.v_shape_valid = out.v_shape_valid && v[bi].shape_valid;
+        out.v_encoding_valid = out.v_encoding_valid && v[bi].encoding_valid;
+        out.v_empty_centers += v[bi].empty_centers;
+        out.v_encoded_labels += v[bi].encoded_labels;
         out.v_nsplit += vc.split_count;
         out.v_cpu_us += cpu_us() - mark;
     }
@@ -443,10 +537,12 @@ SyntheticResult run_synthetic_admission() {
     else if (!(std::isfinite(out.eta) && out.eta <= out.eta_limit)) out.failure = "eta";
     else if (!out.p_shape_valid) out.failure = "P_shape";
     else if (!out.v_shape_valid) out.failure = "V_shape";
+    else if (!out.p_encoding_valid) out.failure = "P_encoding";
+    else if (!out.v_encoding_valid) out.failure = "V_encoding";
+    else if (out.p_empty_centers) out.failure = "P_final_occupancy";
+    else if (out.v_empty_centers) out.failure = "V_final_occupancy";
     else if (out.p_collisions) out.failure = "P_center_collision_zero";
     else if (out.v_collisions) out.failure = "V_center_collision_zero";
-    else if (out.p_nsplit) out.failure = "P_nsplit_zero";
-    else if (out.v_nsplit) out.failure = "V_nsplit_zero";
     else if (!out.sensitivity_same) out.failure = "sensitivity";
     else if (!out.near_tie_same) out.failure = "near_tie";
     else if (out.peak_rss_bytes > 17179869184ULL) out.failure = "rss";

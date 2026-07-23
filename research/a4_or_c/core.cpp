@@ -35,7 +35,7 @@ struct Costs {
     std::size_t width;
     std::vector<Cost> values;
     Cost operator()(std::size_t lo, std::size_t hi) const {
-        return values[lo * width + hi];
+        return values[hi * width + lo];
     }
 };
 
@@ -102,7 +102,7 @@ Costs stable_costs(const std::vector<Point>& p) {
             mean = next_mean;
             iw = inext_weight;
             imean = inext_mean;
-            result.values[lo * width + hi + 1] = {m2, im2};
+            result.values[(hi + 1) * width + lo] = {m2, im2};
         }
     }
     return result;
@@ -188,28 +188,38 @@ std::vector<CurveEntry> scalar_curve_ordered(const std::vector<Point>& points,
     std::vector<std::vector<bool>> ambiguities(max_k + 1,
                                                std::vector<bool>(n + 1));
     std::vector<CurveEntry> curve;
+    struct Candidate {
+        std::size_t boundary;
+        double central;
+        Enclosure enclosure;
+        bool ambiguity;
+    };
+    std::vector<Candidate> evaluated;
+    evaluated.reserve(n);
+    std::vector<std::size_t> candidates;
+    candidates.reserve(n);
     for (std::size_t k = 1; k <= max_k; ++k) {
         std::vector<Cell> current(n + 1);
         for (std::size_t end = k; end <= n; ++end) {
-            std::vector<std::size_t> candidates(end - (k - 1));
-            std::iota(candidates.begin(), candidates.end(), k - 1);
-            if (order == CandidateOrder::Reverse)
-                std::reverse(candidates.begin(), candidates.end());
-            else if (order == CandidateOrder::Shuffle)
-                std::sort(candidates.begin(), candidates.end(), [](auto a, auto b) {
-                    const auto ha = splitmix64(0x51ed270bULL ^ a);
-                    const auto hb = splitmix64(0x51ed270bULL ^ b);
-                    return ha < hb || (ha == hb && a < b);
-                });
-            struct Candidate {
-                std::size_t boundary;
-                double central;
-                Enclosure enclosure;
-                bool ambiguity;
-            };
-            std::vector<Candidate> evaluated;
+            candidates.clear();
+            if (order != CandidateOrder::Forward) {
+                candidates.resize(end - (k - 1));
+                std::iota(candidates.begin(), candidates.end(), k - 1);
+                if (order == CandidateOrder::Reverse)
+                    std::reverse(candidates.begin(), candidates.end());
+                else
+                    std::sort(candidates.begin(), candidates.end(),
+                              [](auto a, auto b) {
+                                  const auto ha =
+                                          splitmix64(0x51ed270bULL ^ a);
+                                  const auto hb =
+                                          splitmix64(0x51ed270bULL ^ b);
+                                  return ha < hb || (ha == hb && a < b);
+                              });
+            }
+            evaluated.clear();
             double min_upper = std::numeric_limits<double>::infinity();
-            for (std::size_t boundary : candidates) {
+            const auto evaluate = [&](std::size_t boundary) {
                 const Cost cost = costs(boundary, end);
                 Candidate candidate{boundary,
                                     previous[boundary].central + cost.central,
@@ -218,25 +228,36 @@ std::vector<CurveEntry> scalar_curve_ordered(const std::vector<Point>& points,
                                     previous[boundary].ambiguity};
                 min_upper = std::min(min_upper, candidate.enclosure.upper);
                 evaluated.push_back(candidate);
+            };
+            if (order == CandidateOrder::Forward) {
+                for (std::size_t boundary = k - 1; boundary < end; ++boundary)
+                    evaluate(boundary);
+            } else {
+                for (std::size_t boundary : candidates) evaluate(boundary);
             }
-            std::vector<Candidate> plausible;
-            for (const Candidate& candidate : evaluated)
-                if (candidate.enclosure.lower <= min_upper)
-                    plausible.push_back(candidate);
-            if (plausible.empty()) throw std::runtime_error("empty plausible set");
-            const auto selected = std::min_element(
-                    plausible.begin(), plausible.end(),
-                    [](const Candidate& a, const Candidate& b) {
-                        return a.boundary < b.boundary;
-                    });
+            Candidate selected{};
+            bool have_selected = false;
+            bool have_central = false;
+            std::uint64_t first_central = 0;
+            std::size_t plausible_count = 0;
             bool unequal = false;
-            for (const Candidate& candidate : plausible)
-                unequal = unequal ||
-                          std::bit_cast<std::uint64_t>(candidate.central) !=
-                                  std::bit_cast<std::uint64_t>(selected->central);
-            current[end] = {selected->central, selected->enclosure,
-                            selected->boundary,
-                            selected->ambiguity || (plausible.size() > 1 && unequal)};
+            for (const Candidate& candidate : evaluated) {
+                if (candidate.enclosure.lower > min_upper) continue;
+                ++plausible_count;
+                const std::uint64_t central =
+                        std::bit_cast<std::uint64_t>(candidate.central);
+                if (!have_central)
+                    first_central = central, have_central = true;
+                else
+                    unequal = unequal || central != first_central;
+                if (!have_selected || candidate.boundary < selected.boundary)
+                    selected = candidate, have_selected = true;
+            }
+            if (!have_selected) throw std::runtime_error("empty plausible set");
+            current[end] = {selected.central, selected.enclosure,
+                            selected.boundary,
+                            selected.ambiguity ||
+                                    (plausible_count > 1 && unequal)};
             choices[k][end] = current[end].boundary;
             ambiguities[k][end] = current[end].ambiguity;
         }
