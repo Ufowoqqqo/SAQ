@@ -30,9 +30,11 @@ Current summary inventory:
   and S0 prefix-novelty decisions are post-meeting updates and must not be
   written back into that historical deck.
 - `docs/saq_next_meeting_a4_literature_review_2026_07_22.md` and its Beamer
-  source are the current unpresented successor draft. They explain the reviewed
-  R12 literature boundary through `saq-a4-prefix-novelty-gate@7f4c001`.
-  The generated PDF is under `build/meeting-summary-literature-review/`.
+  source are the current unpresented successor draft. They explain the R12
+  literature boundary through `saq-a4-prefix-novelty-gate@7f4c001` and the
+  completed D/A/P/V base-only result at
+  `saq-a4-original-reopening-protocol@5503e87`. The generated PDF is under
+  `build/meeting-summary-literature-review/`.
 
 ## Current Attempt 4 Boundary
 
@@ -64,6 +66,9 @@ A4-V2 portfolio CLOSED / STOP_NO_FURTHER_ARTIFACT_RECOVERY
 A4-R0 NO_GO_UNCHANGED_SAQ_COMPATIBILITY / REVIEWED_TERMINAL
 A4-S0 NO_GO_DIRECT_COMPOSITION / REVIEWED_TERMINAL
 A4-S1 NOT_AUTHORIZED / NOT_RUN
+A4-OR-C PASS_A4_OR_C_SYNTHETIC_ONLY
+A4-OR-B NO_GO_BASE_ONLY / COMPLETE
+benchmark query and native scan NOT_RUN
 ```
 
 The six canonical A4-1S parity artifacts are committed at `335837e`; their
@@ -73,9 +78,18 @@ at `f1b464b`. The frozen pipeline stopped after 61 scalar-coordinate shards:
 timed CPU was `34,805,155,525 us`, and the registered `5/2` projection was
 `24.170246892361` CPU-hours, above the 24-hour ceiling. Canonical shard
 serialization is included in that cost, so this is not a solver-only
-complexity claim. There is no natural-data, block-VQ, ANN, or SAQ integration
-result. The A4-1S formulation is closed, the base gate was not run, and
-untracked files in an experiment worktree are not evidence.
+complexity claim. This historical A4-1S path produced no natural-data,
+block-VQ, ANN, or SAQ integration result.
+
+The original scientific question was later reopened on
+`saq-a4-original-reopening-protocol`. Revised synthetic admission passed at
+`383ffcc`, and the frozen query-unaware base-data comparison completed at
+`5503e87`. On GIST/CIFAR and B4/B8, arbitrary-cardinality A recovered
+essentially none of the dyadic-to-block-VQ opportunity. Held-out reconstruction
+gain was `0%/0.0928%` on GIST and `0%/-0.0455%` on CIFAR, while same-capacity
+2D block VQ reduced dyadic reconstruction error by about `11.4%/17.2%` and
+`8.8%/10.9%`. The terminal result is `NO_GO_BASE_ONLY`. No benchmark-query,
+Recall, QPS, or native-scan stage was entered.
 
 The V2 primary-source review is committed at `c4ccea3`, and the parent
 protocol is independently reviewed at `f86a51d`. Source-only A4-V2-I
@@ -162,7 +176,8 @@ sources with historical CACHE-I/PREP commits. That separate problem is not
 fixed here and forbids cache-verifier/PAR-readiness claims. No Python, START,
 PREP, build, data access, or scientific execution occurred.
 
-Two post-meeting static gates now close the attempted successor. R0 decision
+Two post-meeting static gates separately close the attempted prefix successor.
+R0 decision
 `saq-a4-r0-static-gate@617ad25` found that every proposed unchanged-SAQ mapping
 changes representation state or query behavior, so it returned
 `NO_GO_UNCHANGED_SAQ_COMPATIBILITY`. The separately authorized source-only S0
@@ -171,24 +186,19 @@ gate at `saq-a4-prefix-novelty-gate@7f4c001` returned
 progressive assignment; BAPQ only allocates bits among independent PQ
 subspaces and retains ordinary indices, one full-distortion objective, and
 standard ADC/SDC. Derived Codebooks and Polysemous already supply the
-coarse/fine label and ANN-oriented assignment pieces. No S1 code, data,
-synthetic execution, or performance work is authorized.
+coarse/fine label and ANN-oriented assignment pieces. No S1 code or
+performance work was executed. These conclusions remain separate from the
+later `NO_GO_BASE_ONLY` result for the reopened original formulation.
 
 ## Next Admissible Summary Work
 
-There is no active source-branch research or execution authority and no next
-authorized Attempt 4 step. The latest static successor decision is
-`saq-a4-prefix-novelty-gate@7f4c001 / NO_GO_DIRECT_COMPOSITION`; it preserves
-the earlier audited closure. `saq-arbitrary-cardinality-feasibility-v2@3577edd`
-preserves runtime status
-`CRASH_OR_UNKNOWN / START_ONLY` while separately setting portfolio state
-`CLOSED / STOP_NO_FURTHER_ARTIFACT_RECOVERY`. It creates no artifact terminal,
-scientific decision, or performance result. CRASH-I, retry, CACHE-BIND,
-PAR-R1, SRUN, data reads, and SAQ changes remain `NOT_AUTHORIZED / NOT_RUN`.
-
-Reopening requires a new explicit user decision, new research question, and
-fresh cost-justified protocol from a clean branch or named snapshot. This
-summary handoff grants no such authority.
+The active summary task is to present
+`saq-a4-original-reopening-protocol@5503e87 / NO_GO_BASE_ONLY` accurately and
+explain the resulting literature boundary. The deck must not describe the
+original formulation as empirically unresolved, and it must not imply Recall
+or QPS evidence. A structured-2D successor would be a new research question,
+not another arbitrary-cardinality sweep or an automatic continuation granted
+by this summary branch.
 
 For the next handoff, re-read `AGENTS.md` and the registry, fetch, require this
 worktree to be clean and equal to its remote, record that remote commit, and

@@ -8,206 +8,323 @@
 \usepackage{lmodern}
 \usepackage{booktabs,tabularx,array}
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{\usepackage{url}}
-\hypersetup{hidelinks,pdftitle={Attempt 4 Literature Review - What We Actually Tried and Why It Stopped}}
+\hypersetup{hidelinks,pdftitle={Attempt 4 - What the Data Changed}}
 \newcommand{\paper}[1]{\textbf{#1}}
-\title{Attempt 4 Literature Review}
-\subtitle{\texorpdfstring{What we actually tried and why it stopped\\[2mm]\small Corrected next-meeting draft --- not yet presented}{What we actually tried and why it stopped --- Corrected next-meeting draft, not yet presented}}
+\newcommand{\plain}[1]{\textcolor{blue!65!black}{\textbf{#1}}}
+\title{Attempt 4: What the Data Changed}
+\subtitle{\texorpdfstring{From arbitrary scalar cardinalities to the real two-dimensional question\\[2mm]\small Updated next-meeting draft --- not yet presented}{From arbitrary scalar cardinalities to the real two-dimensional question}}
 \author{}
-\date{2026-07-22}
+\date{2026-07-23}
+
 \begin{document}
 \begin{frame}\titlepage\end{frame}
 
-\begin{frame}{1. First, Correct the Main Misunderstanding}
-The original Attempt 4 was \textbf{not} a progressive-pruning proposal.
+\begin{frame}{1. The Short Answer}
+\begin{block}{Original question}
+Can one fixed-width word work better if two scalar coordinates receive arbitrary numbers of reconstruction levels?
+\end{block}
+\begin{enumerate}
+  \item We finally completed the missing GIST/CIFAR base-data comparison.
+  \item Arbitrary scalar cardinalities produced essentially no held-out gain.
+  \item A same-capacity two-dimensional codebook produced a clear gain.
+\end{enumerate}
+\begin{alertblock}{Decision}
+The missing flexibility is the \textbf{shape of the joint codebook}, not the number of scalar levels. The original formulation stops before query testing.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{2. First Avoid One Old Misunderstanding}
+The original Attempt 4 was \textbf{not} progressive pruning.
 \begin{columns}[T]
 \column{0.47\textwidth}
 \begin{block}{Original Attempt 4}
-Use the full fixed-width word once. Allow arbitrary scalar level counts and encode them with a mixed-radix address.
+Read one full word once. Change scalar level counts. Use one mixed-radix lookup.
 \end{block}
 \column{0.47\textwidth}
 \begin{block}{Later prefix successor}
-Read a prefix for a coarse pass, then read the full word for a more accurate pass.
+Read a short prefix, then more bits. Add coarse filtering and accurate refinement.
 \end{block}
 \end{columns}
-\begin{alertblock}{Correction}These are different research questions with different stop reasons.\end{alertblock}
+\begin{alertblock}{Keep the conclusions separate}
+The prefix successor was separately closed as a direct composition of known mechanisms. Today's result concerns the original single-lookup idea.
+\end{alertblock}
 \end{frame}
 
-\begin{frame}{2. Original Intuition: Use the Word More Fully}
-Two scalar coordinates share one four-bit word, so there are 16 possible addresses.
+\begin{frame}{3. Original Intuition: Use a Four-Bit Word More Fully}
+Two scalar coordinates share one four-bit word: 16 possible addresses.
 \begin{center}
 \begin{tabular}{ccl}
-ordinary & $2$ bits $+$ $2$ bits & $4\times4=16$ states\\
-ordinary & $1$ bit $+$ $3$ bits & $2\times8=16$ states\\
-Attempt 4 & arbitrary $K_1,K_2$ & $K_1K_2\leq16$
+\toprule
+Model & Allocation & Joint states\\
+\midrule
+ordinary & 2 bits $+$ 2 bits & $4\times4=16$\\
+ordinary & 1 bit $+$ 3 bits & $2\times8=16$\\
+Attempt 4 & arbitrary $K_1,K_2$ & $K_1K_2\leq16$\\
+\bottomrule
 \end{tabular}
 \end{center}
-Ordinary allocation forces each level count to be a power of two. Attempt 4 also permits choices such as $(K_1,K_2)=(3,5)$, which uses 15 addresses.
-\begin{block}{Intuition}Three useful levels on one coordinate and five on another may fit the data better than every legal power-of-two allocation.\end{block}
+\begin{block}{Example}
+$(K_1,K_2)=(3,5)$ uses 15 addresses. Three levels on one coordinate and five on the other might fit unequal coordinate difficulty better than every power-of-two allocation.
+\end{block}
 \end{frame}
 
-\begin{frame}{3. Running Example: What $(3,5)$ Proves}
-\begin{center}
-coordinate 1: $\{-1,0,1\}$ \hspace{8mm} coordinate 2: $\{-2,-1,0,1,2\}$
-\end{center}
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X c c}
-\toprule Allocation & Joint states & Error per vector\\
-\midrule arbitrary scalar product $(3,5)$ & 15 & $0$\\
-best power-of-two product $(4,4)$ & 16 & $0.1$\\
-unrestricted 16-center two-dimensional codebook & 16 & $0$\\
-\bottomrule
-\end{tabularx}
-\begin{block}{Claim ceiling}The example proves that the power-of-two restriction can waste choices. It proves no natural-data, Recall, or speed advantage. The unrestricted block codebook also fits exactly.\end{block}
-\end{frame}
-
-\begin{frame}[fragile]{4. How the Original Code Would Work}
-For labels $z_1,z_2$, store one mixed-radix address:
+\begin{frame}[fragile]{4. Core Method: Fit, Pack, Look Up}
+\begin{enumerate}
+  \item Fit scalar quantizers for every permitted level count.
+  \item Choose $K_1,K_2$ with the smallest summed scalar error.
+  \item Pack scalar labels $z_1,z_2$ into one label:
+\end{enumerate}
 \begin{verbatim}
 u = z1 + K1 * z2
+T[u] = distance(query pair, reconstructed pair u)
 \end{verbatim}
-For $(K_1,K_2)=(3,5)$, addresses 0--14 are used and address 15 is unused.
-\medskip
-For each query, build one group table:
-\begin{verbatim}
-T[u] = distance(query group, reconstruction u)
-\end{verbatim}
-The scan reads one fixed word and performs one lookup per group.
-\begin{alertblock}{Not part of the mechanism}No prefix, progressive decoding, or first-stage candidate pruning.\end{alertblock}
+The scan still reads one word and performs one lookup.
+\begin{alertblock}{The key restriction}
+All centers form a rectangular product $\{a_i\}\times\{b_j\}$. Changing $K_1,K_2$ changes the number of rows and columns; it cannot move one joint center independently.
+\end{alertblock}
 \end{frame}
 
-\begin{frame}{5. What Prior Work Already Covers}
-\paper{Muresan--Effros (2002)}: optimal one-dimensional quantizers with an integer number of levels, including non-power-of-two counts.
-\medskip
-\paper{Brandt (2010)}: learned scalar quantizers, integer bit allocation, packed database words, query tables, and nearest-neighbor scan.
-\medskip
-\paper{Finite Scalar Quantization (2024)}: product codebooks built from small scalar level sets, including non-power-of-two factors.
-\medskip
-\paper{Mixed-radix indexing}: the standard mapping from several finite alphabets to one integer address.
-\begin{block}{Novelty boundary}Arbitrary level counts and mixed-radix packing alone are not enough. The remaining claim must be a measured database accuracy--cost advantage.\end{block}
-\end{frame}
-
-\begin{frame}{6. BAPQ and Quicker ADC: Close, but Different}
-\paper{Adaptive Bit Allocation Product Quantization (BAPQ, 2016)} gives different integer bit counts to independent subspaces. Five bits still means exactly 32 codewords, not an arbitrary count such as 27.
-\medskip
-\paper{Quicker ADC (2021)} studies four-, five-, and six-bit product subcodes, packed layouts, split lookup tables, and processor cost. Its sizes also remain powers of two.
-\begin{block}{Why they matter}They do not implement $(3,5)$ mixed radix, but they are mandatory strong baselines for allocation, packing, lookup, and scan speed.\end{block}
-\scriptsize BAPQ = adaptive bit allocation product quantization; ADC = query-to-code distance lookup.
-\end{frame}
-
-\begin{frame}{7. Dense Rates and Arbitrary Levels Are Crowded}
-\begin{itemize}
-  \item \paper{FSQ (2024)} already uses products of small scalar level sets.
-  \item \paper{Q-Palette (2025)} studies fractional-rate quantizers and mixed allocation.
-  \item \paper{FibQuant (2026)} studies dense fixed-rate random-access vector coding and exposes the advantage of a vector code over a scalar-product restriction for its canonical source.
-\end{itemize}
-These papers do not collectively contain the exact database scan design.
-\begin{alertblock}{Paper-level burden}``More rate choices'' is not a contribution by itself. Attempt 4 must move a measured database-systems trade-off.\end{alertblock}
-\scriptsize FSQ = finite scalar quantization.
-\end{frame}
-
-\begin{frame}{8. Product Quantization and Block VQ Are Two Controls}
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.30\textwidth} X}
-\toprule Control & Question answered\\
-\midrule optimized product quantization & Does an ordinary power-of-two product code already obtain the same accuracy and scan speed?\\
-same-capacity two-dimensional block vector quantization & Does the scalar-product restriction lose too much by forbidding general two-dimensional centers?\\
+\begin{frame}{5. Running Example: What $(3,5)$ Can and Cannot Prove}
+\begin{center}
+$x_1\in\{-1,0,1\}$ \hspace{10mm} $x_2\in\{-2,-1,0,1,2\}$
+\end{center}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X c c}
+\toprule Model & States & Error\\
+\midrule arbitrary scalar product $(3,5)$ & 15 & $0$\\
+ordinary power-of-two product $(4,4)$ & 16 & positive\\
+unrestricted 16-center 2D codebook & 16 & $0$\\
 \bottomrule
 \end{tabularx}
-\medskip The block codebook is more expressive. Attempt 4 needs a measured reason to retain factorization: for example, lower training cost, less model state, or cheaper table construction.
-\scriptsize VQ = vector quantization.
+\begin{block}{Claim ceiling}
+The example proves that power-of-two scalar allocation can waste choices. It does not prove natural-data, Recall, or speed gains. The unrestricted 2D codebook also fits exactly.
+\end{block}
 \end{frame}
 
-\begin{frame}{9. What We Actually Established}
-\begin{description}
-  \item[A4-0] The synthetic $(3,5)$ example passed. This validated the instrument only.
-  \item[A4-1S] The exact frozen construction stopped on its cost gate before natural-data work.
-  \item[V2] No valid terminal scientific record was produced; runtime remains unknown.
-  \item[A4-R0] The representation cannot be inserted as an unchanged SAQ encoder swap.
-\end{description}
-\begin{alertblock}{Still unmeasured}Natural-data prevalence, Recall, throughput, optimized product quantization, and trained block vector quantization.\end{alertblock}
-\end{frame}
-
-\begin{frame}{10. What the 24-Hour Stop Means}
-\begin{tabular}{lr}
-\toprule Recorded work & CPU time\\
-\midrule exact scalar construction & $4.64$ hours\\
-canonical evidence serialization & $5.03$ hours\\
-completed 61-of-128-coordinate prefix & $9.668$ hours\\
-registered full-pipeline lower bound & $24.17$ hours\\
-\bottomrule
-\end{tabular}
-\medskip
-The frozen ceiling was $24.0$ CPU-hours, so that registered procedure stopped.
-\begin{block}{Correct interpretation}This is a cost result for one exact solver-and-evidence pipeline. It is not a lower bound for every possible implementation of arbitrary-cardinality quantization.\end{block}
-\end{frame}
-
-\begin{frame}{11. Why It Was Not an Unchanged SAQ Swap}
-Attempt 4 needs learned centers, per-group cardinalities, mixed-radix labels, unused-address handling, new distance tables, and a joint-label query consumer.
-\medskip
-Existing SAQ stores per-coordinate bitplanes and reconstructs its estimate using a uniform step size and a per-vector rescaling factor.
-\begin{alertblock}{R0 decision}\texttt{NO\_GO\_UNCHANGED\_SAQ\_COMPATIBILITY}: equal payload bytes do not give the bytes the same meaning. Integration requires a new representation and query path.\end{alertblock}
-This does not establish that arbitrary cardinalities are ineffective.
-\end{frame}
-
-\begin{frame}{12. The Prefix Proposal Came Later}
-Only after R0 did the project define a broader successor:
-\begin{center}
-\begin{tabular}{c|c}
-first $p$ bits & all $B$ bits\\
-coarse lookup and filtering & accurate lookup
-\end{tabular}
-\end{center}
-It added a learned label permutation, nested prefix partition, and two query stages. Its protocol explicitly called itself \textbf{a new direction}.
-\begin{block}{Why progressive papers appear}They evaluate this later successor, not the original mixed-radix intuition.\end{block}
-\end{frame}
-
-\begin{frame}{13. Why Only the Prefix Successor Was Closed}
-\begin{itemize}
-  \item \paper{Riskin et al. (1994)} add progressive reconstructions after fixing a fine vector quantizer.
-  \item \paper{Derived Codebooks (2019)} derive a coarse grouping from a fine product code, then scan and refine.
-  \item \paper{Polysemous Codes (2016)} learn labels for cheap filtering while retaining accurate product-code lookup.
-\end{itemize}
-Combining these mechanisms with a known arbitrary-level product code left no new constraint or algorithm.
-\begin{alertblock}{S0 decision}\texttt{NO\_GO\_DIRECT\_COMPOSITION} closes the prefix successor. It is not the stop reason for original Attempt 4.\end{alertblock}
-\end{frame}
-
-\begin{frame}{14. Keep the Two Conclusions Separate}
-\scriptsize
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.23\textwidth} >{\raggedright\arraybackslash}p{0.33\textwidth} X}
-\toprule Direction & What stopped it & What remains unknown\\
-\midrule original arbitrary-cardinality Attempt 4 & frozen exact-pipeline cost; incompatible with unchanged SAQ & natural-data gain, Recall, speed, fair product/block comparison\\
-later prefix-code successor & direct composition of known mechanisms & implementation not justified\\
+\begin{frame}{6. Four Arms Answer Four Different Questions}
+\small
+\begin{tabularx}{\textwidth}{c >{\raggedright\arraybackslash}p{0.30\textwidth} X}
+\toprule & Plain-language meaning & Question\\
+\midrule
+\texttt{D} & power-of-two scalar grid & What does the ordinary rectangular restriction achieve?\\
+\texttt{A} & arbitrary scalar cardinalities & Does changing only row/column counts help?\\
+\texttt{P} & independently trained ordinary PQ & Does a standard strong implementation dominate?\\
+\texttt{V} & same-capacity 2D vector codebook & How much is available if joint centers move freely?\\
 \bottomrule
 \end{tabularx}
 \normalsize
-\begin{block}{Accurate summary}The original coding intuition remains experimentally unresolved. A later prefix reformulation was separately rejected on prior-work grounds.\end{block}
+\begin{block}{Why both P and V?}
+P is the deployed-family control. V is the stronger opportunity test: it tells us whether the data has useful 2D structure that A fails to express.
+\end{block}
 \end{frame}
 
-\begin{frame}{15. If We Reconsider Original Attempt 4}
-A fresh decision should return to the original question and require:
+\begin{frame}{7. What Was Actually Measured}
+\begin{tabularx}{\textwidth}{>{\bfseries}p{0.29\textwidth} X}
+datasets & GIST and CIFAR\\
+fitting / held-out & 8,192 / 8,192 base residuals per dataset\\
+groups & 64 fixed adjacent coordinate pairs\\
+rates & B4 and B8\\
+reported evidence & reconstruction, base-pair distance proxy, group prevalence, fitting and model costs\\
+\end{tabularx}
+\begin{alertblock}{Evidence boundary}
+No benchmark query or ground-truth file was read. This is offline base-data evidence, not Recall or throughput evidence.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{8. Main Result: A Did Not Generalize}
+\scriptsize
+\begin{tabular}{lrrrr}
+\toprule
+Dataset/rate & D error removed by A & D-to-V gap closed & pair-proxy gain & groups helped\\
+\midrule
+GIST B4  & $0\%$       & $0\%$        & $0\%$        & $0/64$\\
+GIST B8  & $0.0928\%$  & $0.5396\%$   & $0.1237\%$   & $7/64$\\
+CIFAR B4 & $0\%$       & $0\%$        & $0\%$        & $0/64$\\
+CIFAR B8 & $-0.0455\%$ & $-0.4186\%$  & $-0.1252\%$  & $6/64$\\
+\bottomrule
+\end{tabular}
+\normalsize\par
+\medskip
+At B4, A chose $(4,4)$ everywhere. At B8, it chose non-power-of-two allocations in 14 GIST and 8 CIFAR groups, so the larger family was genuinely exercised.
+\begin{alertblock}{Registered decision}
+Those choices still produced no material held-out benefit. Every materiality hypothesis for A failed after multiplicity correction.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{9. The Important Positive Observation: Two Dimensions Help}
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+Reduction from ordinary scalar grid to 2D VQ & B4 & B8\\
+\midrule
+GIST  & $11.4\%$ & $17.2\%$\\
+CIFAR & $8.8\%$  & $10.9\%$\\
+\bottomrule
+\end{tabular}
+\end{center}
+All four registered tests for the existence of this opportunity passed.
+\begin{block}{Interpretation}
+The result is not ``there is nothing to improve.'' Natural residual pairs contain useful 2D structure, but changing only the two scalar alphabet sizes does not capture it.
+\end{block}
+\begin{alertblock}{Geometric intuition}
+A rectangular grid can add rows or columns. A 2D codebook can place every center where the data actually needs it.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{10. Lower Reconstruction Error Is Still Not Recall}
+\begin{center}
+\large lower reconstruction error\\[1mm]
+$\Downarrow$ \textit{sometimes, not automatically}\\[1mm]
+lower query-to-database distance error\\[1mm]
+$\Downarrow$ \textit{sometimes, not automatically}\\[1mm]
+higher Recall at matched throughput
+\end{center}
+\normalsize
+We measured the first and a base-pair proxy for the second. A failed both.
+\begin{alertblock}{Why query evaluation stopped}
+Continuing to benchmark Recall or QPS would spend effort on a formulation that already failed its cheaper discriminating test.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{11. Closest Work I: PQ and OPQ}
+\paper{Product Quantization (PQ)} splits a vector into blocks, learns one vector codebook per block, and accumulates query distance from small tables.
+\medskip
+\paper{Optimized Product Quantization (OPQ)} jointly learns a rotation and the block codebooks:
+\begin{center}
+\plain{rotate} $\rightarrow$ \plain{split into blocks} $\rightarrow$ \plain{nearest centers} $\rightarrow$ \plain{store labels}
+\end{center}
+\begin{block}{Boundary}
+OPQ can improve which dimensions are grouped and how variance is distributed. ``Learn a rotation, then quantize'' is therefore not a new mechanism. OPQ is a required baseline for any future 2D model.
+\end{block}
+\end{frame}
+
+\begin{frame}{12. Closest Work II: AQ and CQ}
+\paper{Additive Quantization (AQ)} reconstructs a vector as a sum:
+\[
+  x \approx c_1[i_1]+c_2[i_2]+\cdots+c_m[i_m].
+\]
+This is expressive, but encoding and distance evaluation are harder.
+\medskip
+\paper{Composite Quantization (CQ)} constrains interactions between dictionaries so query distances can still be evaluated from lookup tables.
+\begin{alertblock}{Boundary}
+``Build one center from several learned pieces'' is already covered. A new model needs a stricter database property---for example one fixed label, one lookup, or materially cheaper table construction.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{13. Closest Work III: Optimize the Consumed Error}
+Standard PQ usually minimizes reconstruction error for individual vectors.
+\medskip
+\paper{Pairwise Quantization} learns a linear transform so the following quantizer better preserves pairwise squared distances or scalar products:
+\begin{center}
+\plain{base-pair statistics} $\rightarrow$ \plain{learned transform} $\rightarrow$ \plain{ordinary quantizer}
+\end{center}
+\begin{block}{Why it matters}
+Our consumer is a distance estimator. Pairwise-oriented training is therefore an important baseline objective.
+\end{block}
+\begin{alertblock}{Claim boundary}
+Changing from reconstruction loss to a known pairwise loss is not itself a contribution; Recall and systems performance still have to move.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{14. Closest Work IV: Systems Costs}
+\paper{Quicker ADC} studies irregular subcode granularity, packed layouts, split lookup tables, and SIMD scanning. Nonstandard packing must beat an optimized scan.
+\medskip
+\paper{SegPQ} compresses PQ codebooks and supports query processing over the compressed representation. It reports up to $4.7\times$ codebook compression with about $3.3\%$ added query-processing overhead.
+\begin{alertblock}{What reviewers will ask}
+A smaller codebook or different label layout is insufficient. Measure table construction, cache behavior, decoding, Recall, and throughput together.
+\end{alertblock}
+\scriptsize ADC means query-to-code distance lookup; SIMD means one processor instruction handles several values in parallel.
+\end{frame}
+
+\begin{frame}{15. The Original Idea Is Already Crowded}
+\small
+\begin{itemize}
+  \item \paper{Muresan--Effros}: optimal 1D quantization for integer level counts.
+  \item \paper{Brandt}: learned scalar quantizers, integer bit allocation, packed words, tables, and ANN scan.
+  \item \paper{FSQ}: products of small scalar level sets, including non-power-of-two factors.
+  \item \paper{BAPQ}: unequal integer bit allocation among PQ subspaces.
+  \item \paper{Mixed-radix indexing}: standard finite-alphabet addressing.
+  \item \paper{Q-Palette / FibQuant}: broader dense-rate coding territory.
+\end{itemize}
+\normalsize
+\begin{alertblock}{New empirical closure}
+Even where arbitrary level counts were selected, they did not recover the observed 2D opportunity.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}[fragile]{16. A Better Modeling Question}
+\begin{block}{New question}
+Can a compact structured 2D codebook recover most of full 2D VQ quality while preserving a fixed label and cheap lookup?
+\end{block}
+One example is a shared-shape affine model:
+\begin{verbatim}
+center[g,k] = mean[g] + transform[g] * shared_shape[k]
+\end{verbatim}
+\begin{itemize}
+  \item one reusable non-rectangular 2D shape;
+  \item a small scale/rotate/shear transform for each group;
+  \item one fixed-width database label $k$; and
+  \item one query table and one lookup per group.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{17. Why That Is Not Yet a Contribution}
+At B8, a rough FP32 shared-affine representation is about 3.5 KiB; independent 2D centers use 128 KiB.
+\medskip
+But one global 128-KiB model is already small.
+\begin{alertblock}{The systems question}
+Compression matters only in a setting with many local codebooks, many probed cells, or frequent updates, where table construction, cache, memory, or update cost is measured to be material.
+\end{alertblock}
+Without a systems effect, ordinary 2D PQ/VQ is the simpler answer. SegPQ also prevents us from claiming codebook compression alone.
+\end{frame}
+
+\begin{frame}{18. Cheapest Discriminating Next Check}
+Before building another ANN path:
 \begin{enumerate}
-  \item a cheaper construction method with controlled approximation error;
-  \item separately optimized power-of-two product and same-capacity block-vector controls;
-  \item complete accounting of model bytes, table construction, encoding time, and scan cost; and
-  \item a frozen test of the Recall--throughput frontier.
+  \item fit the shared-shape affine model on the existing fitting panels;
+  \item evaluate it on the existing held-out panels against D and V;
+  \item measure how much of the D-to-V gap it recovers;
+  \item count model bytes and table-building arithmetic; and
+  \item stop if it needs nearly unrestricted per-group centers or recovers little of V's gain.
 \end{enumerate}
-\begin{alertblock}{Current boundary}This is the unresolved evidence list, not execution authorization. It does not reopen the stopped branch.\end{alertblock}
+\begin{block}{Escalation rule}
+Only a strong base-only result would justify a later native table-build and scan comparison. Freeze the model before touching benchmark queries.
+\end{block}
 \end{frame}
 
-\begin{frame}[allowframebreaks]{References and Decision Records}
+\begin{frame}{19. Final Decision}
+\begin{tabularx}{\textwidth}{>{\bfseries}p{0.36\textwidth} X}
+arbitrary scalar cardinalities & \texttt{CLOSED: NO\_GO\_BASE\_ONLY}\\
+same-capacity 2D opportunity & real on both datasets and rates\\
+Recall / QPS & not measured\\
+prefix successor & separately closed as direct composition\\
+structured 2D successor & a new question, not yet established\\
+\end{tabularx}
+\begin{alertblock}{Meeting takeaway}
+The original $(K_1,K_2)$ idea is not the right model for natural residuals. Evidence points to joint 2D geometry, but a future direction must also move a real database-systems cost frontier.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}[allowframebreaks]{References and Evidence}
 \tiny
 \begin{itemize}
   \item Muresan and Effros. ``Quantization as Histogram Segmentation.'' DCC 2002.
   \item Brandt. ``Transform Coding for Fast Approximate Nearest Neighbor Search in High Dimensions.'' CVPR 2010.
-  \item Mentzer et al. ``Finite Scalar Quantization.'' ICLR 2024. \url{https://arxiv.org/abs/2309.15505}
-  \item Ge et al. ``Optimized Product Quantization.'' CVPR 2013.
+  \item Ge et al. ``Optimized Product Quantization.'' CVPR 2013. \url{https://www.microsoft.com/en-us/research/wp-content/uploads/2013/06/cvpr13opq.pdf}
+  \item Babenko and Lempitsky. ``Additive Quantization for Extreme Vector Compression.'' CVPR 2014. \url{https://openaccess.thecvf.com/content_cvpr_2014/html/Babenko_Additive_Quantization_for_2014_CVPR_paper.html}
+  \item Zhang, Du, and Wang. ``Composite Quantization for Approximate Nearest Neighbor Search.'' ICML 2014. \url{https://proceedings.mlr.press/v32/zhangd14.html}
   \item Guo et al. ``Adaptive Bit Allocation Product Quantization.'' Neurocomputing, 2016. \url{https://doi.org/10.1016/j.neucom.2015.07.062}
-  \item Andre et al. ``Quicker ADC.'' TPAMI 2021. \url{https://arxiv.org/abs/1812.09162}
+  \item Babenko, Arandjelovic, and Lempitsky. ``Pairwise Quantization.'' 2016. \url{https://arxiv.org/abs/1606.01550}
+  \item Mentzer et al. ``Finite Scalar Quantization.'' ICLR 2024. \url{https://arxiv.org/abs/2309.15505}
+  \item André, Kermarrec, and Le Scouarnec. ``Quicker ADC.'' TPAMI. \url{https://arxiv.org/abs/1812.09162}
+  \item Liu et al. ``Not Small Enough? SegPQ.'' PVLDB 2025. \url{https://www.vldb.org/pvldb/vol18/p3730-liu.pdf}
   \item Lee and Song. ``Q-Palette.'' 2025. \url{https://arxiv.org/abs/2509.20214}
   \item Lee and Kim. ``FibQuant.'' 2026. \url{https://arxiv.org/abs/2605.11478}
-  \item Riskin et al. ``Index Assignment for Progressive Transmission of Full Search Vector Quantization.'' IEEE TIP, 1994. \url{https://doi.org/10.1109/83.287025}
-  \item Andre et al. ``Derived Codebooks for High-Accuracy Nearest Neighbor Search.'' 2019. \url{https://arxiv.org/abs/1905.06900}
-  \item Douze et al. ``Polysemous Codes.'' ECCV 2016. \url{https://arxiv.org/abs/1609.01882}
-  \item Original formulation: \texttt{saq\_attempt4\_arbitrary\_cardinality\_related\_work\_and\_gate\_2026\_07\_13.md}.
-  \item R0: \texttt{saq-a4-r0-static-gate@617ad25}. Prefix successor S0: \texttt{saq-a4-prefix-novelty-gate@7f4c001}.
+  \item Riskin et al. ``Index Assignment for Progressive Transmission of Full Search Vector Quantization.'' IEEE TIP, 1994.
+  \item André et al. ``Derived Codebooks for High-Accuracy Nearest Neighbor Search.'' 2019.
+  \item Douze et al. ``Polysemous Codes.'' ECCV 2016.
+  \item Base-only result: \texttt{saq-a4-original-reopening-protocol@5503e87}, \texttt{docs/saq\_a4\_or\_b\_base\_only\_result\_2026\_07\_23.md}.
+  \item R0: \texttt{saq-a4-r0-static-gate@617ad25}. Prefix S0: \texttt{saq-a4-prefix-novelty-gate@7f4c001}.
 \end{itemize}
 \end{frame}
+
 \end{document}
