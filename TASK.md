@@ -1,16 +1,15 @@
-# Current Task: A4-OR-B base-data feasibility
+# Current Task: A4-OR-B base-data feasibility complete
 
 ## Branch and base
 
 - Active branch: `saq-a4-original-reopening-protocol`
 - Base commit: `383ffccb16e38cb324b5c037360acaa78d02e1d8`
 - Prerequisite: revised `PASS_A4_OR_C_SYNTHETIC_ONLY`
-- Active mode: `IMPLEMENT` then `EXPERIMENT`
+- Active mode: `REVIEW`
 
-The user has authorized continuing the current Attempt 4 through dataset
-experiments. This activates the existing A4-OR-B base-only question; it does
-not authorize changing its scientific question or using benchmark queries to
-tune the encoder.
+The authorized base-only experiment completed on both datasets. Its terminal
+result is `NO_GO_BASE_ONLY`. This does not authorize benchmark-query or native
+scan evaluation.
 
 ## Research question and hypothesis
 
@@ -36,9 +35,28 @@ Datasets and shapes:
 - `cifar60k_k512`: 60,000 by 512, 512 IVF cells.
 
 For each dataset use exactly 8,192 fitting and 8,192 held-out base residuals,
-the inherited cluster-stratified SHA-256 selection rule, 64 fixed adjacent
-coordinate pairs, and B4/B8. Pair consecutive held-out rows within each cell
-without reuse.
+64 fixed adjacent coordinate pairs, and B4/B8. Pair consecutive held-out rows
+within each cell without reuse.
+
+The inherited inventory is corrected before any model outcome is observed:
+
+- compute occupancy from the content-identified assignment file;
+- define eligible cells as exactly those with at least four base rows;
+- exclude all rows from ineligible cells;
+- within each eligible cell, preserve the inherited SHA-256 ordering and
+  even-rank fitting/odd-rank held-out pool split;
+- in each pool reserve the first two rows from every eligible cell;
+- allocate the remaining rows to reach exactly 8,192 by the inherited
+  capacity-proportional largest-remainder rule, breaking remainder ties by
+  ascending original cell id; and
+- bootstrap over the eligible original cell ids, retaining the inherited
+  vector/pair weighting.
+
+This changes only the sampling frame needed to make the registered inputs
+feasible. It does not change datasets, selected coordinate groups, rates,
+sample sizes, arms, metrics, thresholds, or query-unaware scope. Results
+estimate behavior conditional on eligible cells and must report the excluded
+cell and row counts.
 
 Residuals are one binary32 subtraction:
 
@@ -69,9 +87,9 @@ Current located GIST root:
 
 `/rwproject/kdd-db/kluaq/saq/data/gist_sample50k/`
 
-The frozen CIFAR PCA artifacts are not currently located. The raw CIFAR base
-is not a substitute unless the exact frozen PCA/IVF artifacts can be
-reproduced and match their registered hashes.
+The frozen CIFAR PCA artifacts were reproduced under `/tmp` from the raw base
+without reading query or ground-truth files. The PCA base, centroids, and
+cluster ids match all three registered hashes exactly.
 
 ## Forbidden reads and changes
 
@@ -85,10 +103,10 @@ Do not modify SAQ/CAQ production search code during A4-OR-B.
 
 ## Implementation plan and budget
 
-Smallest falsifiable question: can the inherited GIST inventory be constructed
-exactly as registered before any model is fitted? Only after that preflight
-passes is the cheapest scientific check a GIST B4/B8 native smoke using the
-complete frozen fit and held-out inventory.
+Smallest falsifiable question: can the corrected eligible-cell GIST inventory
+be constructed deterministically before any model is fitted? Only after that
+preflight passes is the cheapest scientific check a GIST B4/B8 native smoke
+using the complete frozen fit and held-out inventory.
 
 Expected files:
 
@@ -123,26 +141,26 @@ Deliver:
 - fitting, encoding, table, model-byte, transient-memory, and lookup ledger;
 - a truthful `PASS_A4_OR_B_BASE_ONLY` or `NO_GO_BASE_ONLY` interpretation.
 
-A4-OR-B is done only after both datasets run successfully and all required
-rows are present. A pass permits implementing the query-free native scan
-microbenchmark. Benchmark-query evaluation begins only after encoder,
-representation, and operating points are frozen.
+A4-OR-B is complete. Both datasets ran successfully and every required
+D/A/P/V, B4/B8, H1024/H2048, reconstruction, pair, group, cost, and bootstrap
+row was produced. The result is recorded in:
+
+`docs/saq_a4_or_b_base_only_result_2026_07_23.md`.
+
+Only a pass would have permitted the query-free native scan microbenchmark.
+The observed no-go ends this formulation before query evaluation.
 
 ## Current blocker and next action
 
-The registered GIST files are available and their hashes match, but the
-inherited inventory rule is infeasible before model fitting: all 512 cells are
-occupied, yet 168 cells contain fewer than four rows (minimum one). Those 168
-cells contain 219 of the 50,000 vectors. The rule requires at least two fitting
-and two held-out rows in every cell, so the exact 8,192/8,192 inventory cannot
-be constructed. The inventory tool fails closed on this contradiction.
+There is no implementation, input, control, resource, or statistical blocker.
+The scientific hypothesis failed: all `L_G`, `L_C`, and `L_Q5` hypotheses
+failed Holm, while only the four `L_V` opportunity checks passed. B4 selected
+no non-dyadic allocation; B8 activated non-dyadic allocations but produced
+near-zero or negative held-out gains.
 
-The three frozen CIFAR PCA/IVF inputs are also missing from their expected
-locations.
-
-Next action: resolve the GIST input-contract contradiction before observing
-model outcomes. A defensible candidate is to freeze an eligible-cell sampling
-frame containing only cells with at least four rows, while retaining the
-8,192/8,192 sizes and proportional allocation; this is a sampling-method
-correction and must not be applied silently. Then rerun the inventory preflight
-and proceed to the native reader/scorer only if it passes.
+Do not implement a native scan kernel or access benchmark queries for this
+formulation. The concrete next repository action is a bounded diff review and,
+if requested, commit and push. Any further scientific work must begin from a
+different mechanism-level question about how to capture the observed
+two-dimensional opportunity; changing rates, groups, thresholds, or datasets
+would be a rescue sweep and is forbidden.

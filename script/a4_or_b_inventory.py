@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the frozen A4-OR-B fit/held-out inventory from IVF assignments."""
+"""Build an A4-OR-B fit/held-out inventory from IVF assignments."""
 
 from __future__ import annotations
 
@@ -13,7 +13,8 @@ PROTOCOL = "saq-attempt4-a4-1-20260713-schema2"
 CELLS = 512
 ROWS_PER_SPLIT = 8192
 BASE_PER_CELL = 2
-EXTRAS = ROWS_PER_SPLIT - CELLS * BASE_PER_CELL
+STRICT_RULE = "strict-all-cells"
+ELIGIBLE_RULE = "eligible-min4-v1"
 
 
 def read_single_ivecs(path: Path) -> list[int]:
@@ -34,19 +35,27 @@ def digest(dataset_id: str, cell_id: int, vector_id: int) -> bytes:
     return hashlib.sha256(key).digest()
 
 
-def allocate(pool_sizes: list[int]) -> list[int]:
-    if len(pool_sizes) != CELLS or min(pool_sizes) < BASE_PER_CELL:
+def allocate(cell_ids: list[int], pool_sizes: list[int]) -> list[int]:
+    if not cell_ids or len(pool_sizes) != len(cell_ids):
+        raise ValueError("cell ids and pool sizes must be nonempty and aligned")
+    if min(pool_sizes) < BASE_PER_CELL:
         raise ValueError("every split pool must contain at least two rows per cell")
     capacity = [size - BASE_PER_CELL for size in pool_sizes]
     total = sum(capacity)
-    if total < EXTRAS:
+    extras = ROWS_PER_SPLIT - len(cell_ids) * BASE_PER_CELL
+    if extras < 0:
+        raise ValueError("reserved rows exceed the split size")
+    if total < extras:
         raise ValueError("split pool is too small")
-    quotient = [EXTRAS * value // total for value in capacity]
-    remainder = [EXTRAS * value % total for value in capacity]
-    missing = EXTRAS - sum(quotient)
-    order = sorted(range(CELLS), key=lambda c: (-remainder[c], c))
-    for cell in order[:missing]:
-        quotient[cell] += 1
+    quotient = [extras * value // total for value in capacity]
+    remainder = [extras * value % total for value in capacity]
+    missing = extras - sum(quotient)
+    order = sorted(
+        range(len(cell_ids)),
+        key=lambda index: (-remainder[index], cell_ids[index]),
+    )
+    for index in order[:missing]:
+        quotient[index] += 1
     quotas = [BASE_PER_CELL + value for value in quotient]
     if sum(quotas) != ROWS_PER_SPLIT:
         raise AssertionError("quota sum")
@@ -55,34 +64,52 @@ def allocate(pool_sizes: list[int]) -> list[int]:
     return quotas
 
 
-def build(dataset_id: str, assignments: list[int]) -> list[tuple]:
+def build(
+    dataset_id: str,
+    assignments: list[int],
+    sampling_rule: str,
+) -> tuple[list[tuple], dict[str, int]]:
     cells: dict[int, list[tuple[bytes, int]]] = defaultdict(list)
     for vector_id, cell_id in enumerate(assignments):
         if not 0 <= cell_id < CELLS:
             raise ValueError(f"invalid cell {cell_id} at vector {vector_id}")
         cells[cell_id].append((digest(dataset_id, cell_id, vector_id), vector_id))
-    if len(cells) != CELLS or min(map(len, cells.values())) < 4:
-        raise ValueError("all 512 cells must contain at least four base rows")
+    if sampling_rule == STRICT_RULE:
+        if len(cells) != CELLS or min(map(len, cells.values())) < 4:
+            raise ValueError("all 512 cells must contain at least four base rows")
+        cell_ids = list(range(CELLS))
+    elif sampling_rule == ELIGIBLE_RULE:
+        cell_ids = [
+            cell_id for cell_id in range(CELLS) if len(cells[cell_id]) >= 4
+        ]
+        if not cell_ids:
+            raise ValueError("no cell contains at least four base rows")
+    else:
+        raise ValueError(f"unknown sampling rule: {sampling_rule}")
 
-    pools: dict[str, list[list[tuple[bytes, int]]]] = {
-        "fit": [[] for _ in range(CELLS)],
-        "heldout": [[] for _ in range(CELLS)],
+    pools: dict[str, dict[int, list[tuple[bytes, int]]]] = {
+        "fit": {},
+        "heldout": {},
     }
-    for cell_id in range(CELLS):
+    for cell_id in cell_ids:
         ordered = sorted(cells[cell_id])
         pools["fit"][cell_id] = ordered[0::2]
         pools["heldout"][cell_id] = ordered[1::2]
 
-    selected: dict[str, list[list[tuple[bytes, int]]]] = {}
+    selected: dict[str, dict[int, list[tuple[bytes, int]]]] = {}
     for split in ("fit", "heldout"):
-        quotas = allocate([len(rows) for rows in pools[split]])
-        selected[split] = [
-            pools[split][cell][: quotas[cell]] for cell in range(CELLS)
-        ]
+        quotas = allocate(
+            cell_ids,
+            [len(pools[split][cell_id]) for cell_id in cell_ids],
+        )
+        selected[split] = {
+            cell_id: pools[split][cell_id][:quota]
+            for cell_id, quota in zip(cell_ids, quotas)
+        }
 
     output: list[tuple] = []
     for split in ("fit", "heldout"):
-        for cell_id in range(CELLS):
+        for cell_id in cell_ids:
             rows = selected[split][cell_id]
             for selected_rank, (raw_digest, vector_id) in enumerate(rows):
                 pair_id = selected_rank // 2 if split == "heldout" else -1
@@ -104,7 +131,15 @@ def build(dataset_id: str, assignments: list[int]) -> list[tuple]:
                         pair_side,
                     )
                 )
-    return output
+    stats = {
+        "occupied_cells": len(cells),
+        "eligible_cells": len(cell_ids),
+        "excluded_cells": CELLS - len(cell_ids),
+        "excluded_rows": sum(
+            len(rows) for cell_id, rows in cells.items() if cell_id not in cell_ids
+        ),
+    }
+    return output, stats
 
 
 def write_tsv(path: Path, rows: list[tuple]) -> None:
@@ -120,9 +155,10 @@ def write_tsv(path: Path, rows: list[tuple]) -> None:
 
 def self_test() -> None:
     assignments = [cell for cell in range(CELLS) for _ in range(40)]
-    rows = build("self_test", assignments)
+    rows, stats = build("self_test", assignments, STRICT_RULE)
     fit = [row for row in rows if row[0] == "fit"]
     heldout = [row for row in rows if row[0] == "heldout"]
+    assert stats["eligible_cells"] == CELLS
     assert len(fit) == ROWS_PER_SPLIT
     assert len(heldout) == ROWS_PER_SPLIT
     assert len({row[1] for row in fit}) == CELLS
@@ -132,28 +168,64 @@ def self_test() -> None:
         16
     }
 
+    sparse = assignments.copy()
+    sparse.extend([CELLS - 1])
+    sparse = [
+        cell_id
+        for vector_id, cell_id in enumerate(sparse)
+        if cell_id != 0 or vector_id < 3
+    ]
+    try:
+        build("self_test_sparse", sparse, STRICT_RULE)
+    except ValueError as error:
+        assert "at least four" in str(error)
+    else:
+        raise AssertionError("strict rule accepted a sparse cell")
+    rows, stats = build("self_test_sparse", sparse, ELIGIBLE_RULE)
+    assert stats["eligible_cells"] == CELLS - 1
+    assert stats["excluded_cells"] == 1
+    assert stats["excluded_rows"] == 3
+    assert sum(row[0] == "fit" for row in rows) == ROWS_PER_SPLIT
+    assert sum(row[0] == "heldout" for row in rows) == ROWS_PER_SPLIT
+
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset-id")
     parser.add_argument("--cluster-ids", type=Path)
     parser.add_argument("--output", type=Path)
+    parser.add_argument(
+        "--sampling-rule",
+        choices=(STRICT_RULE, ELIGIBLE_RULE),
+    )
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     if args.self_test:
         self_test()
         print("PASS inventory_self_test")
         return 0
-    if not args.dataset_id or not args.cluster_ids or not args.output:
-        parser.error("--dataset-id, --cluster-ids, and --output are required")
+    if (
+        not args.dataset_id
+        or not args.cluster_ids
+        or not args.output
+        or not args.sampling_rule
+    ):
+        parser.error(
+            "--dataset-id, --cluster-ids, --output, and --sampling-rule "
+            "are required"
+        )
     assignments = read_single_ivecs(args.cluster_ids)
-    rows = build(args.dataset_id, assignments)
+    rows, stats = build(args.dataset_id, assignments, args.sampling_rule)
     write_tsv(args.output, rows)
     fit_count = sum(row[0] == "fit" for row in rows)
     heldout_count = sum(row[0] == "heldout" for row in rows)
     pair_count = sum(row[6] == "left" for row in rows)
     print(
-        f"PASS rows={len(assignments)} fit={fit_count} "
+        f"PASS sampling_rule={args.sampling_rule} rows={len(assignments)} "
+        f"occupied_cells={stats['occupied_cells']} "
+        f"eligible_cells={stats['eligible_cells']} "
+        f"excluded_cells={stats['excluded_cells']} "
+        f"excluded_rows={stats['excluded_rows']} fit={fit_count} "
         f"heldout={heldout_count} pairs={pair_count}"
     )
     return 0
