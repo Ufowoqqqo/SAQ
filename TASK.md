@@ -1,4 +1,4 @@
-# Current Task: shared-shape affine 2D VQ base-only test
+# Current Task: shared-affine convergence and compact-table check
 
 ## Branch and base
 
@@ -6,10 +6,11 @@
 - Base commit: `5503e87d0584fe50c9233fbe3a02cdd577db07ea`
 - Active mode: `IMPLEMENT`, followed by the permitted smallest `EXPERIMENT`
 
-The current user instruction authorizes the non-destructive implementation,
-build, test, debugging, and base-only experiment steps needed to reach the
-done criteria below. It does not authorize benchmark-query evaluation or
-production SAQ changes.
+The prior shared-affine base-only test passed at commit `6b82b3e`. The current
+instruction authorizes one bounded follow-up: check whether the fit converges
+beyond iteration 20 and whether the compact representation can build
+equivalent lookup tables without persistent expanded centers. It does not
+authorize benchmark-query evaluation or production SAQ changes.
 
 ## Research question and hypothesis
 
@@ -51,8 +52,9 @@ efficiency diagnostic. Independent V retains the stricter per-group occupancy
 check.
 
 These are mechanism-level feasibility thresholds, not statistical or
-paper-performance claims. Failure ends this specific shared-affine model;
-success permits a separately scoped native table-construction study.
+paper-performance claims. Their earlier success permitted the current
+compact-table algebra check; it did not by itself authorize native performance
+measurement.
 
 ## Inputs and relevant paths
 
@@ -106,22 +108,66 @@ outcomes. Do not modify production SAQ/CAQ source, the query estimator, index
 format, planner, or search schedule. Do not add per-cluster models, plan ids,
 mixed dispatch, query-trained triggers, or a rescue parameter sweep.
 
+## Frozen convergence check
+
+Preserve the iteration-20 model as `S20`. Starting from that exact state:
+
+- continue the identical alternating updates to at most 100 accepted
+  iterations in total;
+- use fit SSE only for stopping;
+- declare convergence after three consecutive accepted iterations whose
+  relative fit-SSE improvement is at most `1e-8`;
+- retain the best finite non-increasing state;
+- record fit SSE and relative improvement for every accepted iteration; and
+- evaluate held-out rows only after the stopping point is fixed.
+
+Do not tune the tolerance, consecutive-count rule, or cap after observing
+held-out results. If the fit reaches iteration 100 without satisfying the
+rule, report `CONVERGENCE_UNRESOLVED`; do not extend the cap.
+
+The final fit must retain the original four-cell reconstruction, group, pair,
+and validity gates. Report the held-out difference between S20 and the final
+state, but do not use it to choose an iteration.
+
+## Frozen compact-table check
+
+For group affine map `A`, mean `mu`, shared point `z`, and query pair `q`,
+build each table entry directly from:
+
+```text
+u = q - mu
+distance = ||u||^2 - 2 z^T A^T u + z^T A^T A z
+```
+
+The candidate path may keep one `K`-entry float table and constant-size
+per-group terms. It must not persist or materialize all `64*K` expanded
+centers. Expanded centers remain allowed only as a reference check.
+
+Required equivalence:
+
+- compact on-the-fly encoding labels exactly equal expanded-reference labels;
+- table-entry absolute error is at most
+  `8 * float_epsilon * max(1, abs(reference))`;
+- compact and reference table-entry counts are identical;
+- each pair-proxy difference is within the sum of the actual lookup-entry
+  tolerances used by that pair; and
+- the path keeps one lookup per group and adds no dispatch or model id.
+
+Report compact persistent bytes, peak table bytes, reference expanded bytes,
+table construction time, maximum entry difference, encoding mismatches, and
+pair-proxy difference. This is still prototype evidence, not a native
+performance claim.
+
 ## Implementation and commands
 
-Implement the smallest deterministic candidate:
+Modify only the existing `research/structured_2d` prototype and focused
+documentation. Preserve the original K-means initialization, full-affine
+updates, panel, D/V controls, evaluator, and decision thresholds.
 
-1. compute each group's fit-only mean and full-covariance 2D whitening map;
-2. train one pooled K-center codebook in standardized 2D space;
-3. expand it through each group's inverse transform;
-4. alternate deterministic nearest-center assignment and least-squares
-   updates of all six per-group affine parameters and the shared shape for at
-   most 20 accepted non-increasing fit-SSE iterations;
-5. retain the best finite state and evaluate with the unchanged D/V encoder,
-   reconstruction scorer, and base-pair proxy.
-
-The compact persistent model contains `2*K + 6*64` binary32 values. Expanded
-centers used only for evaluation are transient and must not be reported as
-persistent model bytes.
+New or materially changed research code must contain concise comments that
+explain non-obvious mechanisms, formulas, invariants, numeric tolerances, and
+memory boundaries for human review. Comments must explain intent and
+correctness rather than paraphrase statements.
 
 Allowed commands include:
 
@@ -139,7 +185,7 @@ git diff --check
 - one measurement process and one computational thread;
 - at most 16 GiB peak RSS;
 - at most 2 CPU-hours for both datasets;
-- no more than 20 accepted alternating-refinement iterations;
+- no more than 100 accepted alternating-refinement iterations in total;
 - no rate, seed, iteration, or initialization sweep;
 - instrumentation and output serialization outside timed fit/encode regions.
 
@@ -151,34 +197,45 @@ is permitted here.
 
 Deliver:
 
-- deterministic unit tests for affine expansion, compact byte accounting,
-  fitting validity, and encoding replay;
-- D/S/V fit and held-out reconstruction, group results, base-pair proxy,
-  fitting and encoding times, compact/transient bytes, and table entries for
-  GIST and CIFAR at B4/B8;
-- the four reconstruction and applicable pair-opportunity recovery ratios;
-- a truthful `PASS_SHARED_AFFINE_BASE_ONLY` or
-  `NO_GO_SHARED_AFFINE_BASE_ONLY` result note.
+- deterministic tests for convergence bookkeeping, full-affine updates,
+  compact encoding equality, table algebra, tolerance enforcement, and pair
+  equivalence;
+- per-iteration fit traces for GIST/CIFAR B4/B8;
+- S20 and final held-out reconstruction, group, pair, and validity results;
+- compact/reference table equivalence and memory/time ledgers; and
+- a truthful convergence and compact-table conclusion appended to the result
+  note.
 
-Done means the code builds, focused tests pass, both registered datasets
-complete within budget, validity checks pass, and the frozen decision is
-reported with limitations. Compilation errors, test failures, debugging, and
-negative results are not blockers.
+Done means the code builds, focused tests pass, all four registered cells
+complete within budget, the frozen rules are applied without rescue changes,
+and both checks are reported with limitations. Compilation errors, test
+failures, debugging, and negative results are not blockers.
 
 ## Current blocker and next action
 
-The authorized base-only test is complete. All validity checks and all four
-frozen decision cells passed. The result is recorded in:
+The bounded check is complete:
+
+```text
+PASS_COMPACT_TABLE_EQUIVALENCE
+PASS_SHARED_AFFINE_BASE_ONLY_RETAINED
+CONVERGENCE_UNRESOLVED_AT_100
+```
+
+All four compact checks have zero encoding mismatches, zero table-tolerance
+violations, zero pair-tolerance violations, and exact table-entry counts. The
+candidate needs only one 64-byte B4 or 1,024-byte B8 table in addition to the
+1,664-byte or 3,584-byte compact model.
+
+All four fits reached iteration 100 without three consecutive relative
+improvements at or below `1e-8`; the cap was not extended. Continuing from
+iteration 20 changes held-out SSE by at most 0.164%, and every original
+scientific gate remains passed.
+
+The result is appended to:
 
 `docs/saq_structured_2d_base_only_result_2026_07_23.md`.
 
-The frozen overall decision is `PASS_SHARED_AFFINE_BASE_ONLY`. Reconstruction
-recovery is 88.0%/148.1% on GIST B4/B8 and 106.1%/188.9% on CIFAR B4/B8; all
-64 groups improve over D in every cell, and every applicable pair-proxy check
-passes.
-
-No current implementation blocker remains. Do not proceed to native query
-evaluation or production integration. All four fits accepted the 20-iteration
-cap and B8 pooled fitting remains 4.6--5.6x slower than V. The smallest next
-scientific action, if requested, is a fit-only convergence and compact-table
-algebra check before any native microbenchmark.
+No implementation blocker remains. Do not start native benchmarking or query
+evaluation automatically. The unresolved scientific choice is whether to
+define a justified fixed-budget truncated fitter or improve the optimizer
+under a separately frozen rule.

@@ -34,6 +34,22 @@ outputs.
 Fit all means, transforms, shared shapes, assignments, and stopping decisions
 from fit rows only. Held-out rows are evaluation-only.
 
+## Review clarity
+
+New or materially changed research code must include concise comments for:
+
+- the scientific mechanism implemented by a non-obvious block;
+- the formula represented by numerical accumulators or matrix updates;
+- invariants that make a compact or optimized path equivalent to its
+  reference; and
+- deliberate numeric tolerances, stopping rules, and memory-accounting
+  boundaries.
+
+Comments should explain why the code is correct and what claim it supports,
+not restate individual statements. Keep functions small enough that a human
+reviewer can follow data ownership, fit/held-out separation, and units without
+reverse-engineering the experiment.
+
 ## Build and tests
 
 ```bash
@@ -43,9 +59,10 @@ cmake --build /tmp/saq-structured-2d-build -j2
 ctest --test-dir /tmp/saq-structured-2d-build --output-on-failure
 ```
 
-Keep one computational thread for measured runs. Use fixed seeds and at most
-20 accepted non-increasing refinement iterations. Generated outputs belong
-under `/tmp`.
+Keep one computational thread for measured runs. Use fixed seeds. The original
+result keeps its iteration-20 snapshot; the authorized convergence check may
+continue it to the fit-only stopping rule in `TASK.md`. Generated outputs
+belong under `/tmp`.
 
 ## Local done criteria
 

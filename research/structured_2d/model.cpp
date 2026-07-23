@@ -46,6 +46,9 @@ AffineGroup fit_group_transform(const std::vector<float>& fit,
     c00 += ridge;
     c11 += ridge;
 
+    // Cholesky gives a deterministic inverse-whitening map x = mean + Lz.
+    // It is only the initialization: alternating regression later learns all
+    // four entries of each group's affine matrix.
     const double l00 = std::sqrt(c00);
     if (!(l00 > 0) || !std::isfinite(l00))
         throw std::runtime_error("invalid group covariance");
@@ -94,6 +97,9 @@ std::size_t split_count(const faiss::Clustering& clustering) {
 }
 
 bool solve3(double matrix[3][3], double right[3], double result[3]) {
+    // The affine regression has only three predictors [1,z0,z1]. Partial
+    // pivoting keeps this local solver explicit and reviewable without adding
+    // a second linear-algebra dependency.
     for (std::size_t column = 0; column < 3; ++column) {
         std::size_t pivot = column;
         for (std::size_t row = column + 1; row < 3; ++row)
@@ -144,6 +150,8 @@ void update_groups(const std::vector<float>& fit,
                    const std::vector<float>& shape,
                    std::vector<AffineGroup>& groups) {
     for (std::size_t group = 0; group < kGroups; ++group) {
+        // Accumulate one shared 3x3 normal matrix and two right-hand sides:
+        // [mean, A_row] independently predicts each coordinate of x.
         double normal[3][3]{};
         double right0[3]{};
         double right1[3]{};
@@ -200,6 +208,8 @@ void update_shape(const std::vector<float>& fit,
         std::size_t count = 0;
     };
     std::vector<Normal> normals(centers);
+    // For a fixed label k, minimizing sum_g ||x-mu_g-A_g z_k||^2 yields
+    // (sum A_g^T A_g) z_k = sum A_g^T (x-mu_g).
     for (std::size_t group = 0; group < kGroups; ++group) {
         const auto& affine = groups[group];
         const double a00 = affine.transform[0];
@@ -288,6 +298,8 @@ SharedAffineModel train(const std::vector<float>& fit, int word_bits) {
 
     std::vector<float> pooled;
     standardize(fit, result.groups, pooled);
+    // One pooled codebook is the shared-shape hypothesis. The seed, 300
+    // iterations, and eight restarts match the frozen deterministic setup.
     faiss::Clustering clustering(2, centers);
     clustering.niter = 300;
     clustering.nredo = 8;
@@ -311,7 +323,9 @@ SharedAffineModel train(const std::vector<float>& fit, int word_bits) {
 }
 
 void refine(const std::vector<float>& fit, SharedAffineModel& model,
-            std::size_t maximum_iterations) {
+            std::size_t maximum_total_iterations,
+            double relative_tolerance,
+            std::size_t required_consecutive) {
     if (fit.size() != kRows * kDimensions ||
         model.shape.size() !=
                 2 * (std::size_t{1} << model.word_bits) ||
@@ -321,9 +335,34 @@ void refine(const std::vector<float>& fit, SharedAffineModel& model,
     if (!evaluation.shape_valid || !evaluation.encoding_valid ||
         !std::isfinite(evaluation.direct_sse))
         throw std::runtime_error("invalid affine initialization");
-    for (std::size_t iteration = 0;
-         iteration < maximum_iterations; ++iteration) {
+    if (model.fit_trace.empty())
+        model.fit_trace.push_back(
+                {model.refinement_iterations,
+                 evaluation.direct_sse, 0});
+    if (required_consecutive != 0) model.converged = false;
+
+    // The convergence decision is fit-only. When continuing an iteration-20
+    // snapshot, reconstruct the trailing small-improvement streak from its
+    // trace so that stopping does not depend on how calls are partitioned.
+    std::size_t small_improvement_streak = 0;
+    if (required_consecutive != 0) {
+        for (auto step = model.fit_trace.rbegin();
+             step != model.fit_trace.rend() && step->iteration != 0 &&
+             step->relative_improvement <= relative_tolerance;
+             ++step)
+            ++small_improvement_streak;
+        if (small_improvement_streak >= required_consecutive) {
+            model.converged = true;
+            return;
+        }
+    }
+
+    for (std::size_t iteration = model.refinement_iterations;
+         iteration < maximum_total_iterations; ++iteration) {
         SharedAffineModel candidate = model;
+        // With assignments fixed, each group solves x ~= [1,z0,z1] B_g.
+        // Updating the shared z then solves the corresponding 2x2 normal
+        // equation across groups. Reassignment can only further reduce SSE.
         update_groups(
                 fit, evaluation.codes, candidate.shape, candidate.groups);
         update_shape(
@@ -341,13 +380,33 @@ void refine(const std::vector<float>& fit, SharedAffineModel& model,
             throw std::runtime_error("invalid affine refinement");
         const double previous = evaluation.direct_sse;
         const double next = candidate_evaluation.direct_sse;
-        if (next > previous + 1e-10 * std::max(1.0, previous))
+        if (next > previous + 1e-10 * std::max(1.0, previous)) {
+            model.stopped_nonmonotonic = true;
             break;
+        }
+        const double relative_improvement =
+                (previous - next) / std::max(1.0, previous);
         model = std::move(candidate);
         evaluation = std::move(candidate_evaluation);
         ++model.refinement_iterations;
-        if (previous - next <= 1e-10 * std::max(1.0, previous))
+        model.fit_trace.push_back(
+                {model.refinement_iterations, next, relative_improvement});
+
+        if (required_consecutive != 0) {
+            small_improvement_streak =
+                    relative_improvement <= relative_tolerance
+                    ? small_improvement_streak + 1
+                    : 0;
+            if (small_improvement_streak >= required_consecutive) {
+                model.converged = true;
+                break;
+            }
+        } else if (relative_improvement <= 1e-10) {
+            // Preserve the original iteration-20 trainer's exact fixed-point
+            // shortcut; the bounded follow-up uses the explicit 3-step rule.
+            model.converged = true;
             break;
+        }
     }
 }
 

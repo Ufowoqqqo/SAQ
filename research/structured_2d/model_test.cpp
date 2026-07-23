@@ -1,4 +1,5 @@
 #include "model.hpp"
+#include "compact.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -107,12 +108,89 @@ void full_affine_refinement_test() {
     model.groups = initial;
     model.expanded = structured2d::expand(2, shape, initial);
     const double before = a4orb::evaluate(fit, model.expanded).direct_sse;
-    structured2d::refine(fit, model, 3);
+    structured2d::refine(fit, model, 6, 1e-8, 2);
     const double after = a4orb::evaluate(fit, model.expanded).direct_sse;
     require(model.refinement_iterations > 0, "refinement iteration");
     require(after < 1e-8 * before, "affine refinement objective");
     require(std::fabs(model.groups[0].transform[1]) > 0.1,
             "full affine upper-right coefficient");
+    require(model.converged, "fit-only convergence");
+    require(model.fit_trace.size() ==
+                    model.refinement_iterations + 1,
+            "trace length");
+    for (std::size_t step = 1; step < model.fit_trace.size(); ++step)
+        require(model.fit_trace[step].fit_sse <=
+                        model.fit_trace[step - 1].fit_sse,
+                "monotone trace");
+}
+
+a4orb::Panel make_compact_panel() {
+    a4orb::Panel panel;
+    panel.fit.resize(
+            a4orb::kRowsPerSplit * a4orb::kPanelDimensions);
+    panel.heldout.resize(panel.fit.size());
+    panel.fit_rows.resize(a4orb::kRowsPerSplit);
+    panel.heldout_rows.resize(a4orb::kRowsPerSplit);
+    panel.heldout_pairs = a4orb::kRowsPerSplit / 2;
+    for (std::size_t row = 0; row < a4orb::kRowsPerSplit; ++row) {
+        const float x = (row & 1) ? 1 : -1;
+        const float y = (row & 2) ? 1 : -1;
+        for (std::size_t group = 0; group < a4orb::kGroups; ++group) {
+            const std::size_t at =
+                    row * a4orb::kPanelDimensions + 2 * group;
+            panel.fit[at] = panel.heldout[at] = x;
+            panel.fit[at + 1] = panel.heldout[at + 1] = y;
+        }
+        panel.heldout_rows[row] = {
+                0, static_cast<std::uint32_t>(row),
+                static_cast<std::uint32_t>(row),
+                static_cast<std::int32_t>(row / 2),
+                (row & 1) ? a4orb::PairSide::Right
+                          : a4orb::PairSide::Left};
+    }
+    return panel;
+}
+
+void compact_equivalence_test() {
+    structured2d::SharedAffineModel model;
+    model.word_bits = 2;
+    model.shape = {-1, -1, 1, -1, -1, 1, 1, 1};
+    model.groups.resize(a4orb::kGroups);
+    for (auto& group : model.groups) {
+        group.transform[0] = 1;
+        group.transform[3] = 1;
+    }
+    model.expanded =
+            structured2d::expand(2, model.shape, model.groups);
+    const auto panel = make_compact_panel();
+    const auto fit = a4orb::evaluate(panel.fit, model.expanded);
+    const auto heldout =
+            a4orb::evaluate(panel.heldout, model.expanded);
+    const auto pairs =
+            a4orb::evaluate_pairs(panel, model.expanded, heldout);
+    const auto check = structured2d::check_compact(
+            panel, model, fit, heldout, pairs);
+    require(structured2d::valid(check, pairs), "compact equivalence");
+    require(check.peak_table_bytes == 4 * sizeof(float),
+            "one-table memory");
+
+    // The reference is deliberately inconsistent with the compact state.
+    // The tolerance checker must detect this instead of silently blessing a
+    // candidate merely because its encoding labels happen to remain stable.
+    auto perturbed = model;
+    perturbed.expanded.blocks[0].values[0] += 0.25F;
+    const auto bad_fit =
+            a4orb::evaluate(panel.fit, perturbed.expanded);
+    const auto bad_heldout =
+            a4orb::evaluate(panel.heldout, perturbed.expanded);
+    const auto bad_pairs = a4orb::evaluate_pairs(
+            panel, perturbed.expanded, bad_heldout);
+    const auto bad_check = structured2d::check_compact(
+            panel, perturbed, bad_fit, bad_heldout, bad_pairs);
+    require(bad_check.table_tolerance_violations > 0,
+            "compact tolerance enforcement");
+    require(!structured2d::valid(bad_check, bad_pairs),
+            "compact invalid reference");
 }
 
 }  // namespace
@@ -122,6 +200,7 @@ int main() {
         expansion_test();
         encoding_replay_test();
         full_affine_refinement_test();
+        compact_equivalence_test();
         std::cout << "PASS structured_2d_model_test\n";
         return 0;
     } catch (const std::exception& error) {

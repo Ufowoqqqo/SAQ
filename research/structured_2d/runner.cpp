@@ -1,4 +1,5 @@
 #include "model.hpp"
+#include "compact.hpp"
 
 #include "../a4_or_b/panel.hpp"
 
@@ -45,6 +46,21 @@ struct Record {
     std::size_t compact_bytes = 0;
     std::size_t transient_bytes = 0;
     std::size_t refinement_iterations = 0;
+    bool converged = false;
+    bool stopped_nonmonotonic = false;
+};
+
+struct CompactRecord {
+    int rate = 0;
+    structured2d::CompactCheck check;
+    Timing timing;
+    std::uint64_t reference_table_entries = 0;
+    bool valid = false;
+};
+
+struct TraceRecord {
+    int rate = 0;
+    std::vector<structured2d::RefinementStep> steps;
 };
 
 std::uint64_t cpu_us() {
@@ -67,6 +83,12 @@ Timing stop_timer(const Timer& start) {
                             std::chrono::steady_clock::now() -
                             start.wall_start)
                             .count())};
+}
+
+Timing add_timing(const Timing& first, const Timing& second) {
+    return {
+            first.cpu_us + second.cpu_us,
+            first.wall_us + second.wall_us};
 }
 
 template <typename Function>
@@ -119,7 +141,9 @@ bool valid(const Record& record) {
     bool occupancy = true;
     if (record.model.arm == 'V') {
         occupancy = record.fit.empty_centers == 0;
-    } else if (record.model.arm == 'S') {
+    } else if (record.model.arm == 'S' || record.model.arm == 'T') {
+        // T is the iteration-20 snapshot of the same shared-label model.
+        // Both snapshots therefore use pooled, not per-group, occupancy.
         occupancy =
                 structured2d::pooled_occupancy_valid(
                         record.model, record.fit);
@@ -131,7 +155,9 @@ Record evaluate_model(int rate, a4orb::Model model,
                       const a4orb::Panel& panel, Timing training,
                       std::size_t compact_bytes = 0,
                       std::size_t transient_bytes = 0,
-                      std::size_t refinement_iterations = 0) {
+                      std::size_t refinement_iterations = 0,
+                      bool converged = false,
+                      bool stopped_nonmonotonic = false) {
     Record record;
     record.rate = rate;
     record.model = std::move(model);
@@ -142,6 +168,8 @@ Record evaluate_model(int rate, a4orb::Model model,
                     : compact_bytes;
     record.transient_bytes = transient_bytes;
     record.refinement_iterations = refinement_iterations;
+    record.converged = converged;
+    record.stopped_nonmonotonic = stopped_nonmonotonic;
     record.fit = timed(
             [&] { return a4orb::evaluate(panel.fit, record.model); },
             record.fit_evaluation);
@@ -183,7 +211,8 @@ void write_summary(const std::filesystem::path& path,
     output << "dataset\tfingerprint\trate\tarm\tshape\tfit_sse"
               "\theldout_sse\tpair_mae\tcompact_bytes"
               "\ttransient_expanded_bytes\ttraining_splits"
-              "\trefinement_iterations"
+              "\trefinement_iterations\tconverged"
+              "\tstopped_nonmonotonic"
               "\tfit_empty_centers\theldout_empty_centers"
               "\tfit_collisions\theldout_collisions\tvalid"
               "\tfit_cpu_us\tfit_wall_us\tencode_fit_cpu_us"
@@ -200,6 +229,8 @@ void write_summary(const std::filesystem::path& path,
                << record.compact_bytes << '\t' << record.transient_bytes
                << '\t' << record.model.training_splits << '\t'
                << record.refinement_iterations << '\t'
+               << record.converged << '\t'
+               << record.stopped_nonmonotonic << '\t'
                << record.fit.empty_centers << '\t'
                << record.heldout.empty_centers << '\t'
                << record.fit.collisions << '\t'
@@ -265,6 +296,52 @@ bool write_decision(const std::filesystem::path& path,
     return all_pass;
 }
 
+void write_traces(const std::filesystem::path& path,
+                  const std::string& dataset,
+                  const std::vector<TraceRecord>& traces) {
+    std::ofstream output(path);
+    if (!output) throw std::runtime_error("cannot write traces");
+    output << std::setprecision(17);
+    output << "dataset\trate\titeration\tfit_sse"
+              "\trelative_improvement\n";
+    for (const auto& trace : traces)
+        for (const auto& step : trace.steps)
+            output << dataset << '\t' << trace.rate << '\t'
+                   << step.iteration << '\t' << step.fit_sse << '\t'
+                   << step.relative_improvement << '\n';
+}
+
+void write_compact(const std::filesystem::path& path,
+                   const std::string& dataset,
+                   const std::vector<CompactRecord>& records) {
+    std::ofstream output(path);
+    if (!output) throw std::runtime_error("cannot write compact checks");
+    output << std::setprecision(17);
+    output << "dataset\trate\tfit_encoding_mismatches"
+              "\theldout_encoding_mismatches"
+              "\ttable_tolerance_violations"
+              "\tpair_tolerance_violations"
+              "\tmax_table_abs_difference"
+              "\tmax_pair_abs_error_difference"
+              "\ttable_entries\treference_table_entries"
+              "\tpeak_table_bytes\tcheck_cpu_us\tcheck_wall_us"
+              "\tvalid\n";
+    for (const auto& record : records)
+        output << dataset << '\t' << record.rate << '\t'
+               << record.check.fit_encoding_mismatches << '\t'
+               << record.check.heldout_encoding_mismatches << '\t'
+               << record.check.table_tolerance_violations << '\t'
+               << record.check.pair_tolerance_violations << '\t'
+               << record.check.max_table_absolute_difference << '\t'
+               << record.check.max_pair_absolute_error_difference << '\t'
+               << record.check.table_entries_built << '\t'
+               << record.reference_table_entries << '\t'
+               << record.check.peak_table_bytes << '\t'
+               << record.timing.cpu_us << '\t'
+               << record.timing.wall_us << '\t'
+               << record.valid << '\n';
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -294,6 +371,8 @@ int main(int argc, char** argv) {
         std::cout << "DONE D curves cpu_us=" << curves_time.cpu_us << '\n';
 
         std::vector<Record> records;
+        std::vector<CompactRecord> compact_records;
+        std::vector<TraceRecord> traces;
         for (const int rate : {4, 8}) {
             Timing d_time;
             auto d = timed(
@@ -307,17 +386,67 @@ int main(int argc, char** argv) {
             const auto arbitrary =
                     a4orb::allocate_scalar(curves, rate, false);
             Timing s_time;
-            std::cout << "START S B=" << rate << '\n';
-            auto shared = timed(
+            std::cout << "START S20 B=" << rate << '\n';
+            auto shared20 = timed(
                     [&] { return structured2d::train(panel.fit, rate); },
                     s_time);
+            auto s20_model = shared20.expanded;
+            s20_model.arm = 'T';
             records.push_back(evaluate_model(
-                    rate, std::move(shared.expanded), panel, s_time,
+                    rate, std::move(s20_model), panel, s_time,
+                    structured2d::persistent_model_bytes(shared20),
+                    structured2d::transient_expanded_bytes(shared20),
+                    shared20.refinement_iterations,
+                    shared20.converged,
+                    shared20.stopped_nonmonotonic));
+            std::cout << "DONE S20 B=" << rate
+                      << " cpu_us=" << s_time.cpu_us << '\n';
+
+            // Continue the exact iteration-20 state. The stopping rule reads
+            // only the accumulated fit trace; held-out evaluation happens
+            // after refine() fixes the final iteration.
+            auto shared = shared20;
+            Timing continuation_time;
+            std::cout << "START S_CONVERGENCE B=" << rate << '\n';
+            timed(
+                    [&] {
+                        structured2d::refine(
+                                panel.fit, shared, 100, 1e-8, 3);
+                        return 0;
+                    },
+                    continuation_time);
+            const Timing final_training =
+                    add_timing(s_time, continuation_time);
+            shared.expanded.arm = 'S';
+            records.push_back(evaluate_model(
+                    rate, shared.expanded, panel, final_training,
                     structured2d::persistent_model_bytes(shared),
                     structured2d::transient_expanded_bytes(shared),
-                    shared.refinement_iterations));
-            std::cout << "DONE S B=" << rate
-                      << " cpu_us=" << s_time.cpu_us << '\n';
+                    shared.refinement_iterations,
+                    shared.converged,
+                    shared.stopped_nonmonotonic));
+            const Record& final_record = records.back();
+            CompactRecord compact;
+            compact.rate = rate;
+            compact.reference_table_entries =
+                    final_record.pairs.table_entries_built;
+            compact.check = timed(
+                    [&] {
+                        return structured2d::check_compact(
+                                panel, shared, final_record.fit,
+                                final_record.heldout,
+                                final_record.pairs);
+                    },
+                    compact.timing);
+            compact.valid =
+                    structured2d::valid(
+                            compact.check, final_record.pairs);
+            compact_records.push_back(std::move(compact));
+            traces.push_back({rate, shared.fit_trace});
+            std::cout << "DONE S_CONVERGENCE B=" << rate
+                      << " iterations=" << shared.refinement_iterations
+                      << " converged=" << shared.converged
+                      << " cpu_us=" << continuation_time.cpu_us << '\n';
 
             Timing v_time;
             std::cout << "START V B=" << rate << '\n';
@@ -339,14 +468,32 @@ int main(int argc, char** argv) {
                 output_directory / "summary.tsv", dataset,
                 fingerprint, records);
         write_groups(output_directory / "groups.tsv", dataset, records);
+        write_traces(
+                output_directory / "convergence_trace.tsv",
+                dataset, traces);
+        write_compact(
+                output_directory / "compact.tsv",
+                dataset, compact_records);
         const bool pass = write_decision(
                 output_directory / "decision.tsv", dataset, records);
         const bool all_valid =
                 std::all_of(records.begin(), records.end(), valid);
+        const bool compact_valid = std::all_of(
+                compact_records.begin(), compact_records.end(),
+                [](const CompactRecord& record) {
+                    return record.valid;
+                });
+        const bool convergence_all = std::all_of(
+                records.begin(), records.end(),
+                [](const Record& record) {
+                    return record.model.arm != 'S' || record.converged;
+                });
         std::cout << "RESULT valid=" << all_valid
+                  << " compact_valid=" << compact_valid
+                  << " convergence_all=" << convergence_all
                   << " cell_pass=" << pass
                   << " output=" << output_directory << '\n';
-        return all_valid ? 0 : 1;
+        return all_valid && compact_valid ? 0 : 1;
     } catch (const std::exception& error) {
         std::cerr << "FAIL " << error.what() << '\n';
         return 1;

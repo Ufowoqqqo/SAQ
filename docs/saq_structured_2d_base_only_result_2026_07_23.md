@@ -165,3 +165,118 @@ fit-only convergence and compact-table algebra check:
 
 Only if that check freezes an affordable representation and fit rule should a
 separate query-free native microbenchmark be considered.
+
+## Bounded convergence and compact-table follow-up
+
+Follow-up date: 2026-07-23
+
+```text
+PASS_COMPACT_TABLE_EQUIVALENCE
+PASS_SHARED_AFFINE_BASE_ONLY_RETAINED
+CONVERGENCE_UNRESOLVED_AT_100
+```
+
+### Frozen convergence rule
+
+The iteration-20 state was retained as `T`. The identical fit-only alternating
+updates then continued to at most 100 accepted iterations. Convergence
+required three consecutive relative fit-SSE improvements at or below `1e-8`.
+Held-out rows were evaluated only after this stopping point was fixed.
+
+No cell converged by iteration 100:
+
+| Dataset | Rate | Fit SSE at 20 | Fit SSE at 100 | Iteration-100 relative improvement | Held-out SSE at 20 | Held-out SSE at 100 | Held-out change |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| GIST | B4 | 173.2217 | 172.8954 | 2.65e-5 | 178.3937 | 178.4181 | +0.0137% |
+| GIST | B8 | 12.5442 | 12.4057 | 3.07e-6 | 13.8247 | 13.8436 | +0.1367% |
+| CIFAR | B4 | 80.7703 | 80.7038 | 1.89e-6 | 81.5090 | 81.5081 | -0.0011% |
+| CIFAR | B8 | 5.7478 | 5.7141 | 1.18e-5 | 6.0106 | 6.0204 | +0.1633% |
+
+The final relative improvements remain 189--2,984 times larger than the
+frozen tolerance. The cap was not extended.
+
+The base-only scientific decision is nevertheless stable: every final cell
+still passes the original reconstruction, group-prevalence, pair, and
+validity gates. Continuing from 20 to 100 iterations changes held-out SSE by
+at most 0.164%. This supports robustness of the feasibility result to the
+tested additional fitting, but it does not establish convergence or justify
+calling iteration 20 an optimizer fixed point.
+
+### Compact-table equivalence
+
+The candidate constructs each table directly from:
+
+```text
+u = q - mean
+distance = ||u||^2 - 2 z^T A^T u + z^T A^T A z
+```
+
+It computes the query-dependent constant, `A^T u`, and the three unique
+entries of `A^T A` once per group, then emits one K-entry float table. It does
+not persist or materialize all `64*K` centers. Expanded centers are used only
+by the reference side of the check.
+
+| Dataset | Rate | Encoding mismatches | Table violations | Pair violations | Maximum table difference | Maximum pair-error difference | Peak candidate table |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| GIST | B4 | 0 | 0 | 0 | 2.38e-7 | 1.18e-7 | 64 B |
+| GIST | B8 | 0 | 0 | 0 | 4.77e-7 | 6.42e-8 | 1,024 B |
+| CIFAR | B4 | 0 | 0 | 0 | 1.49e-8 | 1.70e-8 | 64 B |
+| CIFAR | B8 | 0 | 0 | 0 | 5.96e-8 | 2.59e-8 | 1,024 B |
+
+All compact and reference table-entry counts match exactly: 4,112,384 and
+65,798,144 for GIST B4/B8, and 4,057,088 and 64,913,408 for CIFAR B4/B8.
+Every entry satisfies the frozen
+`8 * float_epsilon * max(1, abs(reference))` tolerance. Every pair difference
+is within the sum of the actual lookup tolerances used by that pair.
+
+The full audit check, including compact encoding, reference table comparison,
+and pair comparison over the complete panels, used about 0.08 seconds at B4
+and 1.21 seconds at B8. These times are not a native hot-path benchmark.
+
+The compact representation therefore remains 1,664 bytes at B4 and 3,584
+bytes at B8, with one 64-byte or 1,024-byte working table respectively. The
+131,072-byte B8 expanded model is not required by the candidate path.
+
+### Follow-up artifacts
+
+- `/tmp/structured-2d-convergence-gist/summary.tsv`
+- `/tmp/structured-2d-convergence-gist/groups.tsv`
+- `/tmp/structured-2d-convergence-gist/decision.tsv`
+- `/tmp/structured-2d-convergence-gist/convergence_trace.tsv`
+- `/tmp/structured-2d-convergence-gist/compact.tsv`
+- `/tmp/structured-2d-convergence-cifar/summary.tsv`
+- `/tmp/structured-2d-convergence-cifar/groups.tsv`
+- `/tmp/structured-2d-convergence-cifar/decision.tsv`
+- `/tmp/structured-2d-convergence-cifar/convergence_trace.tsv`
+- `/tmp/structured-2d-convergence-cifar/compact.tsv`
+
+SHA-256:
+
+```text
+0159b6fbfb4bcc5adddef9f7de85f197300ac12b0e91d21691aca6e1b2b77f47  GIST summary
+f5bbef45116dd38b9246e1860f621964a45f509ff90bc4e517fc666fa404097b  GIST groups
+dea4a6b2399a029966b0e06ecf5222458807a951161f29c18f8fd05998357d04  GIST decision
+fc0bebf01d64c476af803de89d679dad44aaa1a60de429bba88b55b014689836  GIST trace
+fbf1a4fe56b3e033c622dfb62baadf5c6ab4a16285dc2b6d3ec1248acb16287d  GIST compact
+d996339b3f77b1c8be5651107b630f2c94e307e8d255f290fbe2f004fcf81aa0  CIFAR summary
+a6d9ca4a15e1ec4de4c8c24ad80d80783a908974d22a8388d88f1ca5fbdcc9e6  CIFAR groups
+7b68b86f094fdf831e0f085f9fc797f947638f59d4d7f0ccced691043d42cec7  CIFAR decision
+fb23f4d5be5b3b13a4ff6a5e0f25b212a5f8c194f2b94152d1d7954016e56361  CIFAR trace
+4e537e54bce10ca547390c09c3d29e59d34484ed851844a57ac68e7d32b176cb  CIFAR compact
+```
+
+### Updated claim boundary
+
+The compact-table algebra is feasible and numerically equivalent under the
+frozen checks. The original base-only mechanism result remains positive after
+80 additional fit-only iterations.
+
+The fit itself is not converged under the declared rule. Before native
+microbenchmarking, the project must choose between:
+
+- defining and justifying a fixed-budget truncated fitter as part of the
+  method; or
+- improving the optimizer and testing a newly frozen convergence rule.
+
+This follow-up does not authorize either choice, benchmark-query access, or a
+production integration.

@@ -13,6 +13,12 @@ struct AffineGroup {
     float transform[4]{};
 };
 
+struct RefinementStep {
+    std::size_t iteration = 0;
+    double fit_sse = 0;
+    double relative_improvement = 0;
+};
+
 struct SharedAffineModel {
     int word_bits = 0;
     std::vector<float> shape;
@@ -20,11 +26,16 @@ struct SharedAffineModel {
     a4orb::Model expanded;
     std::size_t training_splits = 0;
     std::size_t refinement_iterations = 0;
+    std::vector<RefinementStep> fit_trace;
+    bool converged = false;
+    bool stopped_nonmonotonic = false;
 };
 
 SharedAffineModel train(const std::vector<float>& fit, int word_bits);
 void refine(const std::vector<float>& fit, SharedAffineModel& model,
-            std::size_t maximum_iterations);
+            std::size_t maximum_total_iterations,
+            double relative_tolerance = 0,
+            std::size_t required_consecutive = 0);
 a4orb::Model expand(int word_bits, const std::vector<float>& shape,
                     const std::vector<AffineGroup>& groups);
 std::size_t persistent_model_bytes(const SharedAffineModel& model);

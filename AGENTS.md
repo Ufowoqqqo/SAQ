@@ -98,6 +98,12 @@ tuning opportunity.
 Preserve user changes and unrelated dirty files. Use focused edits and
 non-destructive Git commands. Do not commit or push unless requested.
 
+Write research code for human review. Add concise comments around non-obvious
+mechanisms, formulas, invariants, numeric tolerances, and ownership or memory
+boundaries. Explain why the code is correct and what assumption it preserves;
+do not clutter straightforward statements with comments that merely restate
+the code.
+
 ## Default permissions and genuine stop conditions
 
 Within `TASK.md` boundaries, one user instruction authorizes all
