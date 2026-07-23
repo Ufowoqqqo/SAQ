@@ -283,7 +283,8 @@ a4orb::Model expand(int word_bits, const std::vector<float>& shape,
     return result;
 }
 
-SharedAffineModel train(const std::vector<float>& fit, int word_bits) {
+SharedAffineModel train(const std::vector<float>& fit, int word_bits,
+                        std::size_t fixed_budget_iterations) {
     if (fit.size() != kRows * kDimensions)
         throw std::invalid_argument("fit panel shape");
     if (word_bits != 4 && word_bits != 8)
@@ -318,7 +319,9 @@ SharedAffineModel train(const std::vector<float>& fit, int word_bits) {
     result.expanded = expand(word_bits, result.shape, result.groups);
     result.expanded.training_splits = result.training_splits;
     if (!finite(result)) throw std::runtime_error("non-finite shared model");
-    refine(fit, result, 20);
+    // The public method returns the fixed-budget construction. Callers that
+    // need the historical iteration-20 sensitivity must request it explicitly.
+    refine(fit, result, fixed_budget_iterations);
     return result;
 }
 
@@ -402,8 +405,8 @@ void refine(const std::vector<float>& fit, SharedAffineModel& model,
                 break;
             }
         } else if (relative_improvement <= 1e-10) {
-            // Preserve the original iteration-20 trainer's exact fixed-point
-            // shortcut; the bounded follow-up uses the explicit 3-step rule.
+            // The fixed-budget method may stop early only when another
+            // accepted update is numerically immaterial at the frozen scale.
             model.converged = true;
             break;
         }
@@ -436,6 +439,19 @@ bool finite(const SharedAffineModel& model) {
                     block.values.begin(), block.values.end(), finite_value))
             return false;
     return true;
+}
+
+bool fixed_budget_complete(const SharedAffineModel& model,
+                           std::size_t fixed_budget_iterations) {
+    // Do not accept a model stopped by a looser caller-supplied convergence
+    // rule. Early completion is valid only at the method's frozen 1e-10
+    // numerical fixed-point threshold.
+    const bool numerical_fixed_point =
+            model.converged && !model.fit_trace.empty() &&
+            model.fit_trace.back().relative_improvement <= 1e-10;
+    return !model.stopped_nonmonotonic &&
+            (model.refinement_iterations == fixed_budget_iterations ||
+             numerical_fixed_point);
 }
 
 bool pooled_occupancy_valid(const a4orb::Model& model,

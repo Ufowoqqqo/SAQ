@@ -48,6 +48,7 @@ struct Record {
     std::size_t refinement_iterations = 0;
     bool converged = false;
     bool stopped_nonmonotonic = false;
+    bool fixed_budget_complete = false;
 };
 
 struct CompactRecord {
@@ -157,7 +158,8 @@ Record evaluate_model(int rate, a4orb::Model model,
                       std::size_t transient_bytes = 0,
                       std::size_t refinement_iterations = 0,
                       bool converged = false,
-                      bool stopped_nonmonotonic = false) {
+                      bool stopped_nonmonotonic = false,
+                      bool budget_complete = false) {
     Record record;
     record.rate = rate;
     record.model = std::move(model);
@@ -170,6 +172,7 @@ Record evaluate_model(int rate, a4orb::Model model,
     record.refinement_iterations = refinement_iterations;
     record.converged = converged;
     record.stopped_nonmonotonic = stopped_nonmonotonic;
+    record.fixed_budget_complete = budget_complete;
     record.fit = timed(
             [&] { return a4orb::evaluate(panel.fit, record.model); },
             record.fit_evaluation);
@@ -212,7 +215,7 @@ void write_summary(const std::filesystem::path& path,
               "\theldout_sse\tpair_mae\tcompact_bytes"
               "\ttransient_expanded_bytes\ttraining_splits"
               "\trefinement_iterations\tconverged"
-              "\tstopped_nonmonotonic"
+              "\tstopped_nonmonotonic\tfixed_budget_complete"
               "\tfit_empty_centers\theldout_empty_centers"
               "\tfit_collisions\theldout_collisions\tvalid"
               "\tfit_cpu_us\tfit_wall_us\tencode_fit_cpu_us"
@@ -231,6 +234,7 @@ void write_summary(const std::filesystem::path& path,
                << record.refinement_iterations << '\t'
                << record.converged << '\t'
                << record.stopped_nonmonotonic << '\t'
+               << record.fixed_budget_complete << '\t'
                << record.fit.empty_centers << '\t'
                << record.heldout.empty_centers << '\t'
                << record.fit.collisions << '\t'
@@ -386,9 +390,13 @@ int main(int argc, char** argv) {
             const auto arbitrary =
                     a4orb::allocate_scalar(curves, rate, false);
             Timing s_time;
-            std::cout << "START S20 B=" << rate << '\n';
+            std::cout << "START S20_SENSITIVITY B=" << rate << '\n';
             auto shared20 = timed(
-                    [&] { return structured2d::train(panel.fit, rate); },
+                    [&] {
+                        return structured2d::train(
+                                panel.fit, rate,
+                                structured2d::kSensitivityIterations);
+                    },
                     s_time);
             auto s20_model = shared20.expanded;
             s20_model.arm = 'T';
@@ -398,20 +406,23 @@ int main(int argc, char** argv) {
                     structured2d::transient_expanded_bytes(shared20),
                     shared20.refinement_iterations,
                     shared20.converged,
-                    shared20.stopped_nonmonotonic));
-            std::cout << "DONE S20 B=" << rate
+                    shared20.stopped_nonmonotonic,
+                    structured2d::fixed_budget_complete(
+                            shared20,
+                            structured2d::kSensitivityIterations)));
+            std::cout << "DONE S20_SENSITIVITY B=" << rate
                       << " cpu_us=" << s_time.cpu_us << '\n';
 
-            // Continue the exact iteration-20 state. The stopping rule reads
-            // only the accumulated fit trace; held-out evaluation happens
-            // after refine() fixes the final iteration.
+            // Continue the exact iteration-20 state to the method's fixed
+            // construction budget. Held-out data never selects an iteration.
             auto shared = shared20;
             Timing continuation_time;
-            std::cout << "START S_CONVERGENCE B=" << rate << '\n';
+            std::cout << "START S_FIXED_BUDGET B=" << rate << '\n';
             timed(
                     [&] {
                         structured2d::refine(
-                                panel.fit, shared, 100, 1e-8, 3);
+                                panel.fit, shared,
+                                structured2d::kFixedBudgetIterations);
                         return 0;
                     },
                     continuation_time);
@@ -424,7 +435,8 @@ int main(int argc, char** argv) {
                     structured2d::transient_expanded_bytes(shared),
                     shared.refinement_iterations,
                     shared.converged,
-                    shared.stopped_nonmonotonic));
+                    shared.stopped_nonmonotonic,
+                    structured2d::fixed_budget_complete(shared)));
             const Record& final_record = records.back();
             CompactRecord compact;
             compact.rate = rate;
@@ -443,9 +455,10 @@ int main(int argc, char** argv) {
                             compact.check, final_record.pairs);
             compact_records.push_back(std::move(compact));
             traces.push_back({rate, shared.fit_trace});
-            std::cout << "DONE S_CONVERGENCE B=" << rate
+            std::cout << "DONE S_FIXED_BUDGET B=" << rate
                       << " iterations=" << shared.refinement_iterations
-                      << " converged=" << shared.converged
+                      << " budget_complete="
+                      << structured2d::fixed_budget_complete(shared)
                       << " cpu_us=" << continuation_time.cpu_us << '\n';
 
             Timing v_time;
@@ -483,17 +496,18 @@ int main(int argc, char** argv) {
                 [](const CompactRecord& record) {
                     return record.valid;
                 });
-        const bool convergence_all = std::all_of(
+        const bool fixed_budget_all = std::all_of(
                 records.begin(), records.end(),
                 [](const Record& record) {
-                    return record.model.arm != 'S' || record.converged;
+                    return record.model.arm != 'S' ||
+                            record.fixed_budget_complete;
                 });
         std::cout << "RESULT valid=" << all_valid
                   << " compact_valid=" << compact_valid
-                  << " convergence_all=" << convergence_all
+                  << " fixed_budget_all=" << fixed_budget_all
                   << " cell_pass=" << pass
                   << " output=" << output_directory << '\n';
-        return all_valid && compact_valid ? 0 : 1;
+        return all_valid && compact_valid && fixed_budget_all ? 0 : 1;
     } catch (const std::exception& error) {
         std::cerr << "FAIL " << error.what() << '\n';
         return 1;

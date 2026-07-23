@@ -1,4 +1,4 @@
-# Current Task: shared-affine convergence and compact-table check
+# Current Task: fixed-budget shared-affine fitter
 
 ## Branch and base
 
@@ -6,11 +6,12 @@
 - Base commit: `5503e87d0584fe50c9233fbe3a02cdd577db07ea`
 - Active mode: `IMPLEMENT`, followed by the permitted smallest `EXPERIMENT`
 
-The prior shared-affine base-only test passed at commit `6b82b3e`. The current
-instruction authorizes one bounded follow-up: check whether the fit converges
-beyond iteration 20 and whether the compact representation can build
-equivalent lookup tables without persistent expanded centers. It does not
-authorize benchmark-query evaluation or production SAQ changes.
+The shared-affine base-only test and compact-table check passed. The current
+instruction selects a fixed-budget construction algorithm instead of pursuing
+optimizer convergence. It authorizes making the already executed 100-round
+S model primary and retaining iteration 20 only as a construction-budget
+sensitivity point. It does not authorize benchmark-query evaluation or
+production SAQ changes.
 
 ## Research question and hypothesis
 
@@ -108,26 +109,31 @@ outcomes. Do not modify production SAQ/CAQ source, the query estimator, index
 format, planner, or search schedule. Do not add per-cluster models, plan ids,
 mixed dispatch, query-trained triggers, or a rescue parameter sweep.
 
-## Frozen convergence check
+## Fixed-budget method definition
 
-Preserve the iteration-20 model as `S20`. Starting from that exact state:
+The primary S construction is:
 
-- continue the identical alternating updates to at most 100 accepted
-  iterations in total;
-- use fit SSE only for stopping;
-- declare convergence after three consecutive accepted iterations whose
-  relative fit-SSE improvement is at most `1e-8`;
-- retain the best finite non-increasing state;
-- record fit SSE and relative improvement for every accepted iteration; and
-- evaluate held-out rows only after the stopping point is fixed.
+1. the frozen pooled K-means initialization;
+2. exactly the same full-affine block updates and reassignment rule;
+3. at most 100 accepted non-increasing refinement rounds; and
+4. early termination only at the existing `1e-10` numerical fixed-point
+   safeguard or on a reported non-monotonic numeric failure.
 
-Do not tune the tolerance, consecutive-count rule, or cap after observing
-held-out results. If the fit reaches iteration 100 without satisfying the
-rule, report `CONVERGENCE_UNRESOLVED`; do not extend the cap.
+This is a bounded index-construction algorithm, not a claim that the
+non-convex objective has converged. The iteration count is part of the
+construction-cost contract.
 
-The final fit must retain the original four-cell reconstruction, group, pair,
-and validity gates. Report the held-out difference between S20 and the final
-state, but do not use it to choose an iteration.
+Iteration 100 was frozen before the convergence follow-up outcomes were
+observed. It is selected without using held-out quality: all four registered
+runs exhausted that budget, had lower fit SSE than iteration 20, retained the
+scientific gates, and passed compact-table equivalence. No recorded update had
+relative improvement below `1e-10`, so the fixed-budget execution is
+step-for-step identical to the recorded S100 models.
+
+Keep iteration 20 as `T`, a sensitivity point showing the construction
+budget/quality trade-off. It is not an alternative selected by held-out
+performance. Continue to report the convergence trace and the fact that the
+objective was still improving at iteration 100.
 
 ## Frozen compact-table check
 
@@ -185,7 +191,7 @@ git diff --check
 - one measurement process and one computational thread;
 - at most 16 GiB peak RSS;
 - at most 2 CPU-hours for both datasets;
-- no more than 100 accepted alternating-refinement iterations in total;
+- exactly the fixed method budget of at most 100 accepted refinement rounds;
 - no rate, seed, iteration, or initialization sweep;
 - instrumentation and output serialization outside timed fit/encode regions.
 
@@ -197,28 +203,29 @@ is permitted here.
 
 Deliver:
 
-- deterministic tests for convergence bookkeeping, full-affine updates,
+- deterministic tests for fixed-budget bookkeeping, full-affine updates,
   compact encoding equality, table algebra, tolerance enforcement, and pair
   equivalence;
 - per-iteration fit traces for GIST/CIFAR B4/B8;
-- S20 and final held-out reconstruction, group, pair, and validity results;
+- the iteration-20 sensitivity and primary S100 reconstruction, group, pair,
+  validity, and construction-cost results;
 - compact/reference table equivalence and memory/time ledgers; and
-- a truthful convergence and compact-table conclusion appended to the result
-  note.
+- a truthful fixed-budget claim and convergence limitation in the result note.
 
-Done means the code builds, focused tests pass, all four registered cells
-complete within budget, the frozen rules are applied without rescue changes,
-and both checks are reported with limitations. Compilation errors, test
+Done means the API defaults to the 100-round primary construction, the runner
+labels S20 only as sensitivity, focused tests pass, and existing S100 evidence
+is shown to be generated by the same update path. Compilation errors, test
 failures, debugging, and negative results are not blockers.
 
 ## Current blocker and next action
 
-The bounded check is complete:
+The fixed-budget choice is implemented:
 
 ```text
+ADOPT_FIXED_BUDGET_100
 PASS_COMPACT_TABLE_EQUIVALENCE
 PASS_SHARED_AFFINE_BASE_ONLY_RETAINED
-CONVERGENCE_UNRESOLVED_AT_100
+NOT_CONVERGED_AT_100
 ```
 
 All four compact checks have zero encoding mismatches, zero table-tolerance
@@ -226,16 +233,17 @@ violations, zero pair-tolerance violations, and exact table-entry counts. The
 candidate needs only one 64-byte B4 or 1,024-byte B8 table in addition to the
 1,664-byte or 3,584-byte compact model.
 
-All four fits reached iteration 100 without three consecutive relative
-improvements at or below `1e-8`; the cap was not extended. Continuing from
-iteration 20 changes held-out SSE by at most 0.164%, and every original
-scientific gate remains passed.
+All four primary fits completed 100 rounds. Continuing from iteration 20
+changes held-out SSE by at most 0.164%, and every original scientific gate
+remains passed. The objective was still improving, which is reported as a
+limitation rather than treated as a failed construction gate.
 
 The result is appended to:
 
 `docs/saq_structured_2d_base_only_result_2026_07_23.md`.
 
-No implementation blocker remains. Do not start native benchmarking or query
-evaluation automatically. The unresolved scientific choice is whether to
-define a justified fixed-budget truncated fitter or improve the optimizer
-under a separately frozen rule.
+No implementation blocker remains. Do not describe S100 as converged. The
+smallest next step, if separately requested, is a query-free native
+microbenchmark of the compact S100 table builder against expanded S100 and V
+under a frozen construction/search cost contract. Benchmark-query evaluation
+remains unauthorized.

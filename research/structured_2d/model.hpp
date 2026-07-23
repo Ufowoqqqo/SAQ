@@ -7,6 +7,12 @@
 
 namespace structured2d {
 
+// The method is a bounded index-construction algorithm, not a converged
+// optimizer. Iteration 100 is primary; iteration 20 is retained only as the
+// preregistered construction-budget sensitivity point.
+constexpr std::size_t kSensitivityIterations = 20;
+constexpr std::size_t kFixedBudgetIterations = 100;
+
 struct AffineGroup {
     float mean[2]{};
     // Row-major full 2x2 affine linear map.
@@ -31,7 +37,9 @@ struct SharedAffineModel {
     bool stopped_nonmonotonic = false;
 };
 
-SharedAffineModel train(const std::vector<float>& fit, int word_bits);
+SharedAffineModel train(
+        const std::vector<float>& fit, int word_bits,
+        std::size_t fixed_budget_iterations = kFixedBudgetIterations);
 void refine(const std::vector<float>& fit, SharedAffineModel& model,
             std::size_t maximum_total_iterations,
             double relative_tolerance = 0,
@@ -41,6 +49,9 @@ a4orb::Model expand(int word_bits, const std::vector<float>& shape,
 std::size_t persistent_model_bytes(const SharedAffineModel& model);
 std::size_t transient_expanded_bytes(const SharedAffineModel& model);
 bool finite(const SharedAffineModel& model);
+bool fixed_budget_complete(
+        const SharedAffineModel& model,
+        std::size_t fixed_budget_iterations = kFixedBudgetIterations);
 bool pooled_occupancy_valid(const a4orb::Model& model,
                             const a4orb::Evaluation& evaluation);
 

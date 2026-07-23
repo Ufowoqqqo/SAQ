@@ -278,5 +278,76 @@ microbenchmarking, the project must choose between:
   method; or
 - improving the optimizer and testing a newly frozen convergence rule.
 
-This follow-up does not authorize either choice, benchmark-query access, or a
+At that checkpoint the follow-up did not itself select either choice or
+authorize benchmark-query access or production integration. The subsequent
+user decision is recorded below.
+
+## Fixed-budget method decision
+
+Decision date: 2026-07-23
+
+```text
+ADOPT_FIXED_BUDGET_100
+PASS_COMPACT_TABLE_EQUIVALENCE
+PASS_SHARED_AFFINE_BASE_ONLY_RETAINED
+NOT_CONVERGED_AT_100
+```
+
+The project selects the fixed-budget construction interpretation. S100 is the
+primary model; S20 is retained only as a preregistered construction-budget
+sensitivity point.
+
+This does not retroactively claim convergence. The method is now defined as
+the frozen pooled initialization followed by at most 100 accepted monotonic
+full-affine refinement rounds. Early exit is allowed only at the existing
+`1e-10` numerical fixed-point safeguard; a non-monotonic numerical stop is a
+construction failure.
+
+The choice does not use held-out quality:
+
+- the 100-round cap was frozen before the follow-up outcomes;
+- all four S100 models have lower fit SSE than their S20 snapshots;
+- all four retain the original scientific gates;
+- all four pass compact-table equivalence; and
+- no recorded iteration had relative fit improvement at or below `1e-10`.
+
+The last point proves that replacing the follow-up's three-step convergence
+test with the fixed-budget rule does not change any recorded update. The
+minimum single-round relative improvements across iterations 1--100 are
+`5.04e-6`, `3.07e-6`, `1.55e-6`, and `1.18e-5` for GIST B4/B8 and CIFAR B4/B8.
+The existing S100 artifacts therefore remain authoritative without rerunning
+the registered panels.
+
+### Construction-cost interpretation
+
+The additional rounds from 20 to 100 cost about 3 seconds at B4 and 20 seconds
+at B8. Total measured S100 fitting time versus V is:
+
+| Dataset | Rate | S100 fit time | V fit time | S100 / V |
+| --- | ---: | ---: | ---: | ---: |
+| GIST | B4 | 12.50 s | 13.21 s | 0.95x |
+| GIST | B8 | 694.39 s | 166.46 s | 4.17x |
+| CIFAR | B4 | 11.76 s | 13.43 s | 0.88x |
+| CIFAR | B8 | 695.71 s | 133.80 s | 5.20x |
+
+The fixed budget resolves method ambiguity, not the B8 construction-cost
+problem. B8 pooled initialization remains the dominant overhead and must be
+included in any later Pareto claim.
+
+### Updated claim
+
+The defensible claim is:
+
+> Under a deterministic 100-round construction budget, the compact
+> shared-affine model retains the four-cell base-only feasibility result and
+> builds equivalent one-lookup tables without persistent center expansion.
+
+The project must not claim that the non-convex objective converged, that S100
+is a local optimum, or that the 100-round budget is universally optimal. A
+later paper-facing evaluation must report S20 as construction sensitivity and
+the complete S100 build cost.
+
+The next eligible engineering check is a query-free native compact-table
+microbenchmark against expanded S100 and V. It requires a separately frozen
+cost contract and does not authorize benchmark queries, Recall/QPS, or
 production integration.

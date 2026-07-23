@@ -59,10 +59,10 @@ cmake --build /tmp/saq-structured-2d-build -j2
 ctest --test-dir /tmp/saq-structured-2d-build --output-on-failure
 ```
 
-Keep one computational thread for measured runs. Use fixed seeds. The original
-result keeps its iteration-20 snapshot; the authorized convergence check may
-continue it to the fit-only stopping rule in `TASK.md`. Generated outputs
-belong under `/tmp`.
+Keep one computational thread for measured runs and use fixed seeds. The
+primary method uses the 100-round construction budget in `TASK.md`; iteration
+20 is a sensitivity snapshot, not a held-out-selected alternative. Generated
+outputs belong under `/tmp`.
 
 ## Local done criteria
 

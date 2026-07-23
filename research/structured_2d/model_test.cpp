@@ -13,6 +13,8 @@ void require(bool condition, const char* message) {
 }
 
 void expansion_test() {
+    static_assert(structured2d::kSensitivityIterations == 20);
+    static_assert(structured2d::kFixedBudgetIterations == 100);
     std::vector<float> shape{0, 0, 1, 0, 0, 1, -1, -1};
     std::vector<structured2d::AffineGroup> groups(a4orb::kGroups);
     for (auto& group : groups) {
@@ -115,6 +117,8 @@ void full_affine_refinement_test() {
     require(std::fabs(model.groups[0].transform[1]) > 0.1,
             "full affine upper-right coefficient");
     require(model.converged, "fit-only convergence");
+    require(structured2d::fixed_budget_complete(model, 6),
+            "early fixed-point budget completion");
     require(model.fit_trace.size() ==
                     model.refinement_iterations + 1,
             "trace length");
@@ -122,6 +126,28 @@ void full_affine_refinement_test() {
         require(model.fit_trace[step].fit_sse <=
                         model.fit_trace[step - 1].fit_sse,
                 "monotone trace");
+}
+
+void fixed_budget_status_test() {
+    structured2d::SharedAffineModel model;
+    model.refinement_iterations =
+            structured2d::kFixedBudgetIterations;
+    require(structured2d::fixed_budget_complete(model),
+            "full fixed budget");
+    model.refinement_iterations =
+            structured2d::kSensitivityIterations;
+    require(!structured2d::fixed_budget_complete(model),
+            "incomplete primary budget");
+    model.converged = true;
+    model.fit_trace.push_back({20, 1.0, 1e-8});
+    require(!structured2d::fixed_budget_complete(model),
+            "loose convergence is not a fixed-budget stop");
+    model.refinement_iterations =
+            structured2d::kFixedBudgetIterations;
+    model.converged = false;
+    model.stopped_nonmonotonic = true;
+    require(!structured2d::fixed_budget_complete(model),
+            "non-monotonic stop");
 }
 
 a4orb::Panel make_compact_panel() {
@@ -200,6 +226,7 @@ int main() {
         expansion_test();
         encoding_replay_test();
         full_affine_refinement_test();
+        fixed_budget_status_test();
         compact_equivalence_test();
         std::cout << "PASS structured_2d_model_test\n";
         return 0;
