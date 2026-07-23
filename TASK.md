@@ -35,6 +35,11 @@ Current summary inventory:
   completed D/A/P/V base-only result at
   `saq-a4-original-reopening-protocol@5503e87`. The generated PDF is under
   `build/meeting-summary-literature-review/`.
+- `docs/saq_next_meeting_a4_literature_review_speaker_notes_2026_07_23.md`
+  and `docs/saq_next_meeting_a4_literature_review_qa_card_2026_07_23.md` are
+  the page-aligned presenter notes and compact Q&A card for that successor
+  deck. They are meeting-preparation material and do not advance the
+  scientific snapshot or reporting state.
 
 ## Current Attempt 4 Boundary
 
