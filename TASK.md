@@ -1,166 +1,184 @@
-# Current Task: A4-OR-B base-data feasibility complete
+# Current Task: shared-shape affine 2D VQ base-only test
 
 ## Branch and base
 
-- Active branch: `saq-a4-original-reopening-protocol`
-- Base commit: `383ffccb16e38cb324b5c037360acaa78d02e1d8`
-- Prerequisite: revised `PASS_A4_OR_C_SYNTHETIC_ONLY`
-- Active mode: `REVIEW`
+- Active branch: `saq-structured-2d-modeling`
+- Base commit: `5503e87d0584fe50c9233fbe3a02cdd577db07ea`
+- Active mode: `IMPLEMENT`, followed by the permitted smallest `EXPERIMENT`
 
-The authorized base-only experiment completed on both datasets. Its terminal
-result is `NO_GO_BASE_ONLY`. This does not authorize benchmark-query or native
-scan evaluation.
+The current user instruction authorizes the non-destructive implementation,
+build, test, debugging, and base-only experiment steps needed to reach the
+done criteria below. It does not authorize benchmark-query evaluation or
+production SAQ changes.
 
 ## Research question and hypothesis
 
-On the frozen GIST and CIFAR residual panels at 32- and 64-byte payloads, test
-whether arbitrary-cardinality mixed-radix factorization:
+A4-OR-B found a real held-out gap between dyadic scalar allocation (D) and
+independent per-group two-dimensional vector quantization (V), while more
+flexible scalar allocation did not recover it. Test whether most of that gap
+comes from a reusable non-rectangular two-dimensional shape rather than 64
+unrelated group-specific codebooks.
 
-- removes more than 5% of dyadic reconstruction error;
-- closes more than half of the opportunity exposed by same-capacity 2D block
-  VQ;
-- improves the base-pair distance-estimator proxy by more than 5%;
-- remains within 1% of independently trained ordinary PQ; and
-- has a material fitting-time or model-byte advantage without a twofold
-  regression in the other metric.
-
-This is a query-unaware, base-only feasibility gate. It is not Recall, QPS, or
-unchanged-SAQ compatibility evidence.
-
-## Frozen inputs and inventory
-
-Datasets and shapes:
-
-- `gist_sample50k_k512`: 50,000 by 960, 512 IVF cells;
-- `cifar60k_k512`: 60,000 by 512, 512 IVF cells.
-
-For each dataset use exactly 8,192 fitting and 8,192 held-out base residuals,
-64 fixed adjacent coordinate pairs, and B4/B8. Pair consecutive held-out rows
-within each cell without reuse.
-
-The inherited inventory is corrected before any model outcome is observed:
-
-- compute occupancy from the content-identified assignment file;
-- define eligible cells as exactly those with at least four base rows;
-- exclude all rows from ineligible cells;
-- within each eligible cell, preserve the inherited SHA-256 ordering and
-  even-rank fitting/odd-rank held-out pool split;
-- in each pool reserve the first two rows from every eligible cell;
-- allocate the remaining rows to reach exactly 8,192 by the inherited
-  capacity-proportional largest-remainder rule, breaking remainder ties by
-  ascending original cell id; and
-- bootstrap over the eligible original cell ids, retaining the inherited
-  vector/pair weighting.
-
-This changes only the sampling frame needed to make the registered inputs
-feasible. It does not change datasets, selected coordinate groups, rates,
-sample sizes, arms, metrics, thresholds, or query-unaware scope. Results
-estimate behavior conditional on eligible cells and must report the excluded
-cell and row counts.
-
-Residuals are one binary32 subtraction:
+For each rate, fit one shared two-dimensional codebook `z[k]` and one affine
+map per fixed adjacent-coordinate group:
 
 ```text
-residual[j] = float32(base_pca[j] - centroid_pca[cell_id,j])
+center[g,k] = mean[g] + transform[g] * z[k]
 ```
 
-The exact selection rule, coordinate lists, shapes, sizes, and input hashes
-are preserved at Git commit `3aa2f6e` in:
+The label remains exactly B bits, each group still uses one lookup, and no
+per-vector or per-cell model choice is added. The candidate is called S.
 
-- `docs/saq_attempt4_a4_1_base_only_input_spec_2026_07_13.json`;
-- `docs/saq_attempt4_a4_1_base_only_feasibility_preregistration_2026_07_13.md`.
+The primary effect size is held-out reconstruction recovery:
 
-The current A4-OR-B decision rule is Section 9--11 of
-`docs/saq_attempt4_original_reopening_protocol_2026_07_22.md`.
+```text
+recovery = (SSE_D - SSE_S) / (SSE_D - SSE_V)
+```
 
-## Allowed reads
+The feasibility hypothesis passes only if, in every dataset/rate cell:
 
-Read only:
+- D has positive opportunity relative to V;
+- S recovers at least 70% of that opportunity;
+- S improves at least 48 of the 64 groups relative to D;
+- S recovers at least 50% of the D-to-V base-pair proxy opportunity whenever
+  that opportunity is positive; and
+- shape, encoding replay, occupancy, finiteness, and center-collision checks
+  pass.
 
-- the six content-identified PCA-base, PCA-centroid, and cluster-id files;
-- source, build configuration, pinned Faiss, and Git metadata needed for this
-  implementation;
-- the frozen input/preregistration documents named above; and
-- newly generated A4-OR-B outputs from this worktree.
+For S, occupancy is checked on the final pooled fit assignment because the
+labels belong to one shared shape; per-group unused labels are reported as an
+efficiency diagnostic. Independent V retains the stricter per-group occupancy
+check.
 
-Current located GIST root:
+These are mechanism-level feasibility thresholds, not statistical or
+paper-performance claims. Failure ends this specific shared-affine model;
+success permits a separately scoped native table-construction study.
 
-`/rwproject/kdd-db/kluaq/saq/data/gist_sample50k/`
+## Inputs and relevant paths
 
-The frozen CIFAR PCA artifacts were reproduced under `/tmp` from the raw base
-without reading query or ground-truth files. The PCA base, centroids, and
-cluster ids match all three registered hashes exactly.
+Reuse the committed A4-OR-B panel construction and D/V evaluation code:
+
+- `research/a4_or_b/panel.{hpp,cpp}`
+- `research/a4_or_b/models.{hpp,cpp}`
+- `research/a4_or_c/core.{hpp,cpp}`
+- `docs/saq_a4_or_b_base_only_result_2026_07_23.md`
+- `docs/saq_attempt4_a4_1_base_only_input_spec_2026_07_13.json`
+
+Read exactly the registered PCA base, PCA centroid, and cluster-id inputs:
+
+- GIST files under `data/gist_sample50k/`;
+- reproduced CIFAR files under `/tmp/a4-or-b-cifar-inputs-default/`;
+- deterministic inventories `/tmp/a4_or_b_gist_inventory.tsv` and
+  `/tmp/a4_or_b_cifar_inventory.tsv`.
+
+Use exactly 8,192 fit and 8,192 held-out residuals, 64 fixed adjacent
+coordinate pairs, and B4/B8. Fit D and V in the same executable and process as
+S using the inherited deterministic implementations. Do not use prior
+uncommitted outcome files as numerical baselines.
+
+## Allowed reads and writes
+
+Allowed reads:
+
+- the source, build configuration, Git metadata, pinned Faiss, and documents
+  named above;
+- the six registered PCA-base, PCA-centroid, and cluster-id files;
+- the two deterministic inventories; and
+- outputs newly generated by this worktree.
+
+Allowed writes:
+
+- `TASK.md`;
+- concise local guidance and implementation under `research/structured_2d/`;
+- one result note under `docs/`;
+- focused tests; and
+- generated builds and experiment outputs under `/tmp`.
 
 ## Forbidden reads and changes
 
 Do not read benchmark queries, ground truth, Recall/QPS results, serialized
-indexes, variance files, PCA matrices, prior A4 outcomes, or outputs from other
-branches. Do not use held-out base rows for fitting or model selection.
+indexes, variance files, unrelated prior branch outputs, or held-out rows
+during fitting or model selection.
 
-Do not change datasets, groups, rates, sample sizes, seeds, histogram sizes,
-thresholds, controls, or the query-unaware boundary after observing results.
-Do not modify SAQ/CAQ production search code during A4-OR-B.
+Do not change the panel, coordinate grouping, rates, sample sizes, seeds,
+baseline semantics, metrics, thresholds, or decision rule after seeing S
+outcomes. Do not modify production SAQ/CAQ source, the query estimator, index
+format, planner, or search schedule. Do not add per-cluster models, plan ids,
+mixed dispatch, query-trained triggers, or a rescue parameter sweep.
 
-## Implementation plan and budget
+## Implementation and commands
 
-Smallest falsifiable question: can the corrected eligible-cell GIST inventory
-be constructed deterministically before any model is fitted? Only after that
-preflight passes is the cheapest scientific check a GIST B4/B8 native smoke
-using the complete frozen fit and held-out inventory.
+Implement the smallest deterministic candidate:
 
-Expected files:
+1. compute each group's fit-only mean and full-covariance 2D whitening map;
+2. train one pooled K-center codebook in standardized 2D space;
+3. expand it through each group's inverse transform;
+4. alternate deterministic nearest-center assignment and least-squares
+   updates of all six per-group affine parameters and the shared shape for at
+   most 20 accepted non-increasing fit-SSE iterations;
+5. retain the best finite state and evaluate with the unchanged D/V encoder,
+   reconstruction scorer, and base-pair proxy.
 
-- `research/a4_or_b/`: native reader, trainer, encoder, scorer, and CLI,
-  approximately 500--1,000 scientific lines;
-- `script/a4_or_b_inventory.py`: deterministic selection only, under 250
-  support lines;
-- `script/a4_or_b_statistics.py`: frozen bootstrap/Holm analysis only, under
-  350 support lines.
+The compact persistent model contains `2*K + 6*64` binary32 values. Expanded
+centers used only for evaluation are transient and must not be reported as
+persistent model bytes.
 
-Use existing `research/a4_or_c` scalar DP and pinned Faiss rather than copying
-or importing old A4 runners. Keep generated inventories, builds, models, and
-large contributions under `/tmp`.
+Allowed commands include:
 
-Resource boundary:
+```bash
+cmake -S research/structured_2d -B /tmp/saq-structured-2d-build \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build /tmp/saq-structured-2d-build -j2
+ctest --test-dir /tmp/saq-structured-2d-build --output-on-failure
+/tmp/saq-structured-2d-build/structured_2d_runner ...
+git diff --check
+```
 
-- one process and one thread for registered measurements;
-- 16 GiB peak RSS;
-- JSON/logging/hashing outside timed scientific regions;
-- fail rather than silently reducing rows, groups, starts, iterations, or
-  controls.
+## Resource budget
+
+- one measurement process and one computational thread;
+- at most 16 GiB peak RSS;
+- at most 2 CPU-hours for both datasets;
+- no more than 20 accepted alternating-refinement iterations;
+- no rate, seed, iteration, or initialization sweep;
+- instrumentation and output serialization outside timed fit/encode regions.
+
+This implementation is `PROTOTYPE_NOT_PERFORMANCE_EVIDENCE`. The scientific
+hot path is nearest-center encoding and lookup-table use; no SOTA speed claim
+is permitted here.
 
 ## Deliverables and done criteria
 
 Deliver:
 
-- exact input identity and inventory hashes;
-- D/A/P/V held-out reconstruction and base-pair contributions for both
-  datasets and both rates;
-- 20 frozen bootstrap contrasts with Holm correction;
-- group prevalence and leave-one-group-out checks;
-- fitting, encoding, table, model-byte, transient-memory, and lookup ledger;
-- a truthful `PASS_A4_OR_B_BASE_ONLY` or `NO_GO_BASE_ONLY` interpretation.
+- deterministic unit tests for affine expansion, compact byte accounting,
+  fitting validity, and encoding replay;
+- D/S/V fit and held-out reconstruction, group results, base-pair proxy,
+  fitting and encoding times, compact/transient bytes, and table entries for
+  GIST and CIFAR at B4/B8;
+- the four reconstruction and applicable pair-opportunity recovery ratios;
+- a truthful `PASS_SHARED_AFFINE_BASE_ONLY` or
+  `NO_GO_SHARED_AFFINE_BASE_ONLY` result note.
 
-A4-OR-B is complete. Both datasets ran successfully and every required
-D/A/P/V, B4/B8, H1024/H2048, reconstruction, pair, group, cost, and bootstrap
-row was produced. The result is recorded in:
-
-`docs/saq_a4_or_b_base_only_result_2026_07_23.md`.
-
-Only a pass would have permitted the query-free native scan microbenchmark.
-The observed no-go ends this formulation before query evaluation.
+Done means the code builds, focused tests pass, both registered datasets
+complete within budget, validity checks pass, and the frozen decision is
+reported with limitations. Compilation errors, test failures, debugging, and
+negative results are not blockers.
 
 ## Current blocker and next action
 
-There is no implementation, input, control, resource, or statistical blocker.
-The scientific hypothesis failed: all `L_G`, `L_C`, and `L_Q5` hypotheses
-failed Holm, while only the four `L_V` opportunity checks passed. B4 selected
-no non-dyadic allocation; B8 activated non-dyadic allocations but produced
-near-zero or negative held-out gains.
+The authorized base-only test is complete. All validity checks and all four
+frozen decision cells passed. The result is recorded in:
 
-Do not implement a native scan kernel or access benchmark queries for this
-formulation. The concrete next repository action is a bounded diff review and,
-if requested, commit and push. Any further scientific work must begin from a
-different mechanism-level question about how to capture the observed
-two-dimensional opportunity; changing rates, groups, thresholds, or datasets
-would be a rescue sweep and is forbidden.
+`docs/saq_structured_2d_base_only_result_2026_07_23.md`.
+
+The frozen overall decision is `PASS_SHARED_AFFINE_BASE_ONLY`. Reconstruction
+recovery is 88.0%/148.1% on GIST B4/B8 and 106.1%/188.9% on CIFAR B4/B8; all
+64 groups improve over D in every cell, and every applicable pair-proxy check
+passes.
+
+No current implementation blocker remains. Do not proceed to native query
+evaluation or production integration. All four fits accepted the 20-iteration
+cap and B8 pooled fitting remains 4.6--5.6x slower than V. The smallest next
+scientific action, if requested, is a fit-only convergence and compact-table
+algebra check before any native microbenchmark.
