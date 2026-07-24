@@ -23,6 +23,17 @@ struct CompactCheck {
     std::vector<double> absolute_errors;
 };
 
+// Reconstruct one binary32 center coordinate without materializing the
+// expanded 64*K codebooks. Encoding and direct-score fixtures share this
+// function so their rounding semantics cannot silently diverge.
+float compact_center_coordinate(
+        const SharedAffineModel& model, std::size_t group,
+        std::size_t label, std::size_t coordinate);
+
+std::uint16_t encode_compact_point(
+        const float* point, const SharedAffineModel& model,
+        std::size_t group);
+
 void build_compact_table(
         const float* query, const SharedAffineModel& model,
         std::size_t group, std::span<float> table);

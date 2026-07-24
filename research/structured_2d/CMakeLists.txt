@@ -25,10 +25,15 @@ set(SHARED_SOURCES
 
 add_executable(structured_2d_model_test
   ${SHARED_SOURCES} model_test.cpp)
+add_executable(structured_2d_full_index_test
+  ${SHARED_SOURCES} full_index.cpp full_index_test.cpp)
 add_executable(structured_2d_runner
   ${SHARED_SOURCES} runner.cpp)
 
-foreach(target structured_2d_model_test structured_2d_runner)
+foreach(target
+    structured_2d_model_test
+    structured_2d_full_index_test
+    structured_2d_runner)
   target_include_directories(${target} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/../a4_or_b
@@ -40,3 +45,6 @@ endforeach()
 set(BUILD_TESTING ON CACHE BOOL "" FORCE)
 enable_testing()
 add_test(NAME structured_2d_model_test COMMAND structured_2d_model_test)
+add_test(
+  NAME structured_2d_full_index_test
+  COMMAND structured_2d_full_index_test)

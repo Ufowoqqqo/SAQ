@@ -33,42 +33,6 @@ struct Sum {
     double get() const { return value + correction; }
 };
 
-float center_coordinate(const SharedAffineModel& model, std::size_t group,
-                        std::size_t label, std::size_t coordinate) {
-    const auto& affine = model.groups[group];
-    const double z0 = model.shape[2 * label];
-    const double z1 = model.shape[2 * label + 1];
-    if (coordinate == 0)
-        return static_cast<float>(
-                affine.mean[0] + affine.transform[0] * z0 +
-                affine.transform[1] * z1);
-    return static_cast<float>(
-            affine.mean[1] + affine.transform[2] * z0 +
-            affine.transform[3] * z1);
-}
-
-std::size_t compact_label(const float* point,
-                          const SharedAffineModel& model,
-                          std::size_t group) {
-    const std::size_t centers = model.shape.size() / 2;
-    double best = std::numeric_limits<double>::infinity();
-    std::size_t selected = 0;
-    for (std::size_t label = 0; label < centers; ++label) {
-        // Recreate one binary32 center at a time. This is exactly the center
-        // rounding used by expand(), but never materializes 64*K centers.
-        const double delta0 =
-                static_cast<double>(point[0]) -
-                center_coordinate(model, group, label, 0);
-        const double delta1 =
-                static_cast<double>(point[1]) -
-                center_coordinate(model, group, label, 1);
-        const double distance =
-                delta0 * delta0 + delta1 * delta1;
-        if (distance < best) best = distance, selected = label;
-    }
-    return selected;
-}
-
 std::size_t encoding_mismatches(
         const std::vector<float>& panel,
         const SharedAffineModel& model,
@@ -83,7 +47,7 @@ std::size_t encoding_mismatches(
             const float* point =
                     panel.data() + row * kDimensions + 2 * group;
             const std::size_t label =
-                    compact_label(point, model, group);
+                    encode_compact_point(point, model, group);
             mismatches += label != reference.codes[row * kGroups + group];
             if (codes != nullptr)
                 (*codes)[row * kGroups + group] =
@@ -218,6 +182,51 @@ void build_compact_table_sse2_unchecked(
 #endif
 
 }  // namespace
+
+float compact_center_coordinate(
+        const SharedAffineModel& model, std::size_t group,
+        std::size_t label, std::size_t coordinate) {
+    const std::size_t centers = model.shape.size() / 2;
+    if (model.shape.empty() || model.shape.size() % 2 != 0 ||
+        group >= model.groups.size() || label >= centers ||
+        coordinate >= 2)
+        throw std::out_of_range("compact center coordinate");
+    const auto& affine = model.groups[group];
+    const double z0 = model.shape[2 * label];
+    const double z1 = model.shape[2 * label + 1];
+    if (coordinate == 0)
+        return static_cast<float>(
+                affine.mean[0] + affine.transform[0] * z0 +
+                affine.transform[1] * z1);
+    return static_cast<float>(
+            affine.mean[1] + affine.transform[2] * z0 +
+            affine.transform[3] * z1);
+}
+
+std::uint16_t encode_compact_point(
+        const float* point, const SharedAffineModel& model,
+        std::size_t group) {
+    if (point == nullptr || model.shape.empty() ||
+        model.shape.size() % 2 != 0 ||
+        group >= model.groups.size())
+        throw std::invalid_argument("compact point encoding shape");
+    const std::size_t centers = model.shape.size() / 2;
+    double best = std::numeric_limits<double>::infinity();
+    std::size_t selected = 0;
+    for (std::size_t label = 0; label < centers; ++label) {
+        // Centers are rounded to binary32 exactly as in expand().
+        const double delta0 =
+                static_cast<double>(point[0]) -
+                compact_center_coordinate(model, group, label, 0);
+        const double delta1 =
+                static_cast<double>(point[1]) -
+                compact_center_coordinate(model, group, label, 1);
+        const double distance =
+                delta0 * delta0 + delta1 * delta1;
+        if (distance < best) best = distance, selected = label;
+    }
+    return static_cast<std::uint16_t>(selected);
+}
 
 void build_compact_table(
         const float* query, const SharedAffineModel& model,

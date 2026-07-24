@@ -1,10 +1,10 @@
-# Current Task: freeze independent VQ fair query evaluation
+# Current Task: query-free structured-2D full-index fixture
 
 ## Branch and base
 
 - Active branch: `saq-structured-2d-modeling`
-- Base: `76fb83aa94d0bdee2e553199d2fd490286151b4f`
-- Mode: `IDEATE` and `REVIEW`; documentation only
+- Base: `da9c22bb3fa632045eb38ad3caf3f288c07dec28`
+- Mode: `IMPLEMENT`
 
 ## Research question and hypothesis
 
@@ -65,14 +65,14 @@ change this task.
 Allowed reads now:
 
 - repository source, Git metadata, build definitions, and research documents;
-- primary papers and official implementation documentation; and
-- already documented base-only summaries.
+- already documented base-only summaries; and
+- synthetic inputs created by the focused fixture.
 
 Allowed writes now:
 
 - `TASK.md`;
-- the fair-query design under `docs/research/`; and
-- temporary text-only review output under `/tmp`.
+- focused source and tests under `research/structured_2d/`; and
+- build and synthetic fixture outputs under `/tmp`.
 
 Forbidden now:
 
@@ -80,8 +80,8 @@ Forbidden now:
   query or ground-truth file;
 - reading old Recall/QPS output or serialized indexes;
 - running a query executable;
-- modifying scientific or production source;
-- building an index or running an experiment; and
+- modifying production `saqlib/` or the frozen fair-query design;
+- building a natural-data index or running a natural-data experiment; and
 - creating a new method, metric, baseline-selection rule, or authorization
   stage.
 
@@ -101,10 +101,14 @@ rg ...
 sed -n ...
 find ... -type f
 wc ...
+cmake -S research/structured_2d -B /tmp/saq-structured-2d-build \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build /tmp/saq-structured-2d-build -j2
+ctest --test-dir /tmp/saq-structured-2d-build --output-on-failure
 ```
 
-This documentation task has a two-hour wall-time budget and no experimental
-CPU budget. It must not start a long-running process.
+This fixture task has a four-hour wall-time budget, two aggregate CPU-hours,
+and 4 GiB peak RSS. It must use synthetic data only.
 
 The future frozen evaluation has the separate resource ceiling written in the
 design: 16 GiB peak RSS, 48 aggregate CPU-hours, and 24 hours wall time.
@@ -113,33 +117,37 @@ design: 16 GiB peak RSS, 48 aggregate CPU-hours, and 24 hours wall time.
 
 Deliver:
 
-- one readable evaluation design that completely specifies datasets,
-  representation semantics, direct and SOTA controls, byte accounting,
-  Recall alignment, candidate distributions, timing/QPS, resources, pass/fail
-  interpretation, and query-access prerequisites; and
-- this current-state task file.
+- a reusable prototype S full-index representation with compact packed codes,
+  shared centroids, list offsets, database IDs, and no raw database vectors;
+- one tiny deterministic fixture with at least three cells and a nonzero
+  unencoded tail, exercised at both 32-byte B4 and 64-byte B8;
+- fixed preassigned-list search whose optimized compact-table scores agree
+  with direct binary64 reconstruction;
+- deterministic top-100 ordering by `(distance,id)`;
+- portable save/load parity and complete serialized-byte accounting; and
+- focused build and test integration.
 
 Done means:
 
-- no required metric, baseline, code budget, dataset, probe schedule, distance
-  term, timing boundary, or decision threshold remains query-selectable;
-- an independent bounded review finds no blocker or high-severity fairness
-  defect;
-- the diff contains documentation only;
+- the fixture proves head-plus-tail score parity, preassigned-list order,
+  candidate count, packed payload size, deterministic replay, save/load
+  parity, and complete byte accounting for B4 and B8;
+- the search representation contains no raw database vectors;
+- all focused tests pass in Release mode;
 - `git diff --check` passes; and
 - no query, ground truth, old QPS result, or serialized index was read.
 
 ## Current blocker and next action
 
-The evaluation is not executable yet. S has a 128-coordinate trainer and
-packed microkernel, but no full-database IVF encoder, correct GIST tail score,
-shared preassigned-list runner, serialized index, or end-to-end harness.
-Standard SIFT1M/GIST1M objects are also not currently bound by path and hash.
+There is no blocker for this fixture. The reusable prototype container,
+multi-cell preassigned search, binary serialization, and B4/B8 synthetic
+fixture are implemented and pass the focused Release and AddressSanitizer
+checks. This is correctness evidence only; the search wrapper still performs
+prototype validation and full sorting and is
+`PROTOTYPE_NOT_PERFORMANCE_EVIDENCE`.
 
-After this design passes review, the next action is query-free: implement one
-tiny synthetic multi-cell fixture that proves S's packed head-plus-tail score,
-shared list schedule, deterministic top-100 behavior, save/load parity, and
-complete byte accounting. Then build the finite baseline pool and perform the
-frozen synthetic-query CPU-cost projection. Query and ground-truth contents
-remain unread until those checks pass and the complete projected evaluation
-fits the frozen 48 CPU-hour budget.
+The next task, after this checkpoint, is to build the finite query-free
+baseline pool and perform the frozen synthetic-query CPU-cost projection.
+Query and ground-truth contents remain unread until every prerequisite in the
+frozen design passes and the complete projected evaluation fits the 48
+CPU-hour ceiling.
