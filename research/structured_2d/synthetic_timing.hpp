@@ -16,6 +16,10 @@ struct TopKResult {
     std::uint64_t candidates = 0;
 };
 
+// Canonicalize Faiss's (-1, FLT_MAX) missing-result slots to (-1, +inf)
+// and pad a short custom result to exactly top_k entries.
+void normalize_topk(TopKResult& result, std::size_t top_k);
+
 // Native IVFPQ scanner with one shared heap. For a head-only GIST arm,
 // full_dimensions and full_centroids include the tail and tail_start=128.
 // For residual OPQ, transform is non-null and index.by_residual must be false.

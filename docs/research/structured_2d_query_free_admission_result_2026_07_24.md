@@ -7,9 +7,8 @@ Design:
 
 ## Decision
 
-The complete query-free synthetic admission is **resource-infeasible** under
-the user-authorized 256 aggregate CPU-hour and unchanged 24 wall-hour
-ceilings.
+The complete query-free synthetic admission is **admitted** under the final
+user-authorized 256 aggregate CPU-hour, 120 wall-hour, and 16 GiB ceilings.
 
 All required query-free pool, correctness, distribution, and synthetic timing
 work completed without opening natural benchmark queries or ground truth. The
@@ -18,15 +17,15 @@ frozen projection is:
 | Resource | Projected | Authorized | Decision |
 | --- | ---: | ---: | --- |
 | Aggregate CPU | 252.483 h | 256 h | ADMIT |
-| Registered evaluation wall time, lower bound | 98.772 h | 24 h | STOP |
+| Registered evaluation wall time, lower bound | 98.772 h | 120 h | ADMIT |
 | Peak RSS | 3.64 GiB | 16 GiB | ADMIT |
 
-The CPU gate now passes with only 3.517 CPU-hours of headroom. The wall-time
-gate fails by at least 74.772 hours even before adding construction, index
-loading, orchestration, or result-computation wall time. Therefore no natural
-query or ground-truth object may be opened under this admission. No arm,
-dataset, `nlist`, `nprobe`, mode, or repetition may be removed to make the
-result fit.
+The CPU gate passes with only 3.517 CPU-hours of headroom. Including the
+tracked successful construction and final synthetic matrix gives a
+103.839-hour wall lower bound, leaving about 16.161 hours for failed-attempt
+charges, future index loading, orchestration, and result computation. The
+bound official natural query and ground-truth objects may therefore be opened
+for the frozen evaluation, with live enforcement of all three resource caps.
 
 This is a resource-boundary result, not evidence for or against the Recall,
 latency, QPS, or Pareto position of S.
@@ -209,7 +208,7 @@ narrowly; the independent wall-time lower bound is the decisive blocker.
 ## Interpretation
 
 The full frozen evaluation package fits just inside 256 aggregate CPU-hours
-but cannot finish inside the unchanged 24-hour sequential wall boundary. The
+and the final 120-hour sequential wall boundary. The
 registered wall projection is 98.772 hours: 88.072 hours for single-query
 latency and 10.700 hours for batch12 throughput. SIFT accounts for 84.059
 hours and GIST for 14.712 hours. These are lower bounds because they omit
@@ -226,8 +225,7 @@ latency, QPS, or SOTA comparison. The scientific hot path is per-list table
 construction plus packed-code candidate scanning. Instrumentation,
 serialization, and provenance work are outside the timed phases.
 
-The next action is a user decision: either close this frozen admission, raise
-the wall-time ceiling above the conservative 98.772-hour lower bound with
-additional operational margin, or explicitly change the evaluation scope.
-Until then, preserve the pool and timing evidence and do not access natural
-queries or ground truth.
+The official SIFT1M/GIST1M query and ground-truth objects were subsequently
+bound and validated as recorded in
+`docs/research/structured_2d_query_binding_2026_07_25.md`. The natural matrix
+may execute without changing its scope or choices.

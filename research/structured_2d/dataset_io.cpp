@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
+#include <unordered_set>
 
 namespace structured2d::admission {
 namespace {
@@ -175,6 +176,58 @@ std::vector<std::uint64_t> read_u64(
     if (!input || input.peek() != std::ifstream::traits_type::eof())
         throw std::runtime_error("u64 input shape");
     return values;
+}
+
+std::vector<std::uint32_t> read_ivecs(
+        const std::filesystem::path& path,
+        std::size_t expected_rows,
+        std::size_t expected_dimensions,
+        std::uint32_t exclusive_upper_bound,
+        bool require_unique_rows) {
+    if (expected_rows == 0 || expected_dimensions == 0 ||
+        exclusive_upper_bound == 0)
+        throw std::invalid_argument("ivecs expected shape");
+    const std::uint64_t row_bytes = checked_product(
+            expected_dimensions + 1, sizeof(std::uint32_t),
+            "ivecs row bytes");
+    if (std::filesystem::file_size(path) !=
+        checked_product(expected_rows, row_bytes, "ivecs bytes"))
+        throw std::runtime_error("ivecs file size");
+    std::ifstream input(path, std::ios::binary);
+    if (!input) throw std::runtime_error("open ivecs");
+    std::vector<std::uint32_t> result(
+            checked_product(
+                    expected_rows, expected_dimensions,
+                    "ivecs allocation"));
+    for (std::size_t row = 0; row < expected_rows; ++row) {
+        std::uint32_t dimensions = 0;
+        input.read(
+                reinterpret_cast<char*>(&dimensions),
+                sizeof(dimensions));
+        if (!input || dimensions != expected_dimensions)
+            throw std::runtime_error("ivecs row dimension");
+        std::uint32_t* target =
+                result.data() + row * expected_dimensions;
+        input.read(
+                reinterpret_cast<char*>(target),
+                static_cast<std::streamsize>(
+                        expected_dimensions * sizeof(std::uint32_t)));
+        if (!input) throw std::runtime_error("truncated ivecs row");
+        std::unordered_set<std::uint32_t> unique;
+        if (require_unique_rows)
+            unique.reserve(expected_dimensions);
+        for (std::size_t column = 0;
+             column < expected_dimensions; ++column) {
+            if (target[column] >= exclusive_upper_bound)
+                throw std::runtime_error("ivecs ID range");
+            if (require_unique_rows &&
+                !unique.insert(target[column]).second)
+                throw std::runtime_error("duplicate ivecs row ID");
+        }
+    }
+    if (input.peek() != std::ifstream::traits_type::eof())
+        throw std::runtime_error("trailing ivecs bytes");
+    return result;
 }
 
 }  // namespace structured2d::admission

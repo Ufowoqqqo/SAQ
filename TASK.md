@@ -1,10 +1,10 @@
-# Current Task: query-free baseline-pool admission
+# Current Task: frozen structured-2D natural-query evaluation
 
 ## Branch and base
 
 - Active branch: `saq-structured-2d-modeling`
 - Base: `ce350f47aabb0f8ed972ec92ad78585571794291`
-- Mode: `IMPLEMENT` and `EXPERIMENT`
+- Mode: `EXPERIMENT` with focused implementation/debugging
 
 ## Research question and hypothesis
 
@@ -69,6 +69,8 @@ Allowed reads now:
 - public source metadata needed to bind those two objects;
 - newly built coarse assignments, PCA state, indexes, serialization records,
   and synthetic-query outputs from this task; and
+- the official SIFT1M and GIST1M query and ground-truth objects after their
+  paths, byte sizes, shapes, and SHA-256 identities are recorded; and
 - already documented base-only summaries and synthetic fixture outputs.
 
 Allowed writes now:
@@ -77,16 +79,17 @@ Allowed writes now:
 - focused source and tests under `research/structured_2d/`; and
 - focused result documentation under `docs/research/`; and
 - downloaded learn/base objects, builds, indexes, and query-free outputs
-  under `/tmp`.
+  under `/tmp`; and
+- frozen natural-query timing, ID, Recall, and frontier outputs under `/tmp`.
 
 Forbidden now:
 
-- opening, hashing, parsing, sampling, or executing any natural benchmark
-  query or ground-truth file;
+- opening any natural benchmark query or ground-truth object other than the
+  bound official SIFT1M/GIST1M objects;
 - reading old Recall/QPS output or serialized indexes;
-- running a query executable;
 - modifying production `saqlib/` or the frozen fair-query design;
-- reading held-out query quality, Recall, or ground-truth-derived metrics; and
+- using query/ground-truth outcomes to tune an encoder, arm registry, coarse
+  grid, probe schedule, threshold, metric, or claim; and
 - creating a new method, metric, baseline-selection rule, or authorization
   stage.
 
@@ -115,11 +118,10 @@ cmake --build /tmp/saq-structured-2d-build -j2
 ctest --test-dir /tmp/saq-structured-2d-build --output-on-failure
 ```
 
-This admission uses the user-revised evaluation ceiling authorized on
-2026-07-24: 16 GiB peak RSS, 256 aggregate CPU-hours, and 24 hours wall time.
-Only the CPU ceiling changed from the original design's 48 hours. One index
-arm may be resident at a time. Natural query and ground-truth contents remain
-unread.
+This evaluation uses the user-revised ceilings: 16 GiB peak RSS, 256
+aggregate CPU-hours, and 120 hours wall time. The CPU ceiling was last raised
+on 2026-07-24 and the wall ceiling on 2026-07-25. One index arm may be
+resident at a time.
 
 ## Deliverables and done criteria
 
@@ -136,7 +138,12 @@ Deliver:
 - real list-size distributions for every frozen `nprobe`;
 - 64 deterministic finite synthetic queries per dataset; and
 - one warmup plus three measured passes in both one-thread latency and
-  12-thread batch modes, followed by the frozen 1.25x/7-repeat CPU projection.
+  12-thread batch modes, followed by the frozen 1.25x/7-repeat CPU projection;
+- bound official query/ground-truth identities and shapes;
+- all seven registered natural-query repetitions for every admitted logical
+  arm cell, `nprobe`, and timing mode; and
+- Recall@100, latency distributions, batch QPS, complete-byte joins, discrete
+  frontiers, materiality decisions, and limitations under the frozen rules.
 
 The synthetic vectors are fixed before any timing outcome: estimate each
 coordinate's mean and population variance from the complete PCA-transformed
@@ -159,8 +166,13 @@ Done means:
   budget, and `nprobe` in both timing modes;
 - the projected total includes already consumed build CPU and is compared
   with the user-authorized 256 CPU-hour ceiling;
+- the tracked and projected wall total remains within 120 hours;
+- every fixed arm/operating-point output is stable across repetitions;
+- the final analysis applies the frozen discrete-frontier rules without
+  interpolation or outcome-dependent point removal;
 - `git diff --check` passes; and
-- no query, ground truth, old QPS result, or serialized index was read.
+- no unbound query/ground truth, old QPS result, or old serialized index was
+  read.
 
 ## Current state and next action
 
@@ -176,15 +188,21 @@ used 1.245 CPU-hours. Applying the frozen 1.25x/seven-repeat formula projects
 another 203.088 CPU-hours, for 252.483 aggregate CPU-hours. The user raised
 the CPU ceiling to 256 hours, so the CPU gate passes narrowly. The registered
 evaluation wall-time lower bound is 98.772 hours, exceeding the unchanged
-24-hour ceiling before loading and orchestration. The wall-time resource
-boundary is therefore the active blocker. Including 4.465 tracked successful
+24-hour ceiling before loading and orchestration. Including 4.465 tracked successful
 construction wall-hours and 0.602 hours for the final synthetic matrix gives
 a 103.839-hour tracked lower bound before failed attempts, probes, future
-loads, orchestration, and Recall computation. Natural query and ground-truth
-contents remain unread and unauthorized.
+loads, orchestration, and Recall computation. The user subsequently raised
+the wall ceiling to 120 hours. CPU, wall, and memory admission gates now pass
+with narrow margins. Natural query and ground-truth contents remain unread at
+the admission checkpoint; the official objects have since been bound and
+validated under the frozen evaluation.
 
 The authoritative result is
 `docs/research/structured_2d_query_free_admission_result_2026_07_24.md`.
-The one concrete next action is to preserve the completed evidence and obtain
-a user decision to close the admission, raise the wall-time ceiling with
-operational margin, or explicitly change the evaluation scope.
+The unexpected GIST PQ128 Recall decrease has been diagnosed as the frozen
+head-only tail-centroid reconstruction admitting cross-cell false positives,
+not as a routing or Recall bug. The evidence is recorded in
+`docs/research/structured_2d_gist_pq_nprobe_diagnosis_2026_07_25.md`.
+The one concrete next action is to run the complete natural matrix with the
+frozen cross-arm cyclic repetition order while enforcing the 256 CPU-hour,
+120 wall-hour, and 16 GiB limits.

@@ -34,6 +34,8 @@ add_executable(structured_2d_admission_test
   admission.cpp admission_test.cpp)
 add_executable(structured_2d_dataset_io_test
   dataset_io.cpp dataset_io_test.cpp)
+add_executable(structured_2d_bind_query_objects
+  dataset_io.cpp bind_query_objects.cpp)
 add_executable(structured_2d_common_test
   admission.cpp dataset_io.cpp common.cpp common_test.cpp)
 add_executable(structured_2d_prepare_common
@@ -58,6 +60,8 @@ add_executable(structured_2d_write_distributions
   admission.cpp dataset_io.cpp write_distributions.cpp)
 add_executable(structured_2d_refresh_synthetic_preassignments
   admission.cpp dataset_io.cpp refresh_synthetic_preassignments.cpp)
+add_executable(structured_2d_prepare_natural_schedule
+  admission.cpp dataset_io.cpp prepare_natural_schedule.cpp)
 add_executable(structured_2d_synthetic_timing_test
   synthetic_timing.cpp synthetic_timing_test.cpp)
 add_executable(structured_2d_run_synthetic_timing
@@ -73,6 +77,7 @@ foreach(target
     structured_2d_full_index_test
     structured_2d_admission_test
     structured_2d_dataset_io_test
+    structured_2d_bind_query_objects
     structured_2d_common_test
     structured_2d_prepare_common
     structured_2d_faiss_pool_test
@@ -84,6 +89,7 @@ foreach(target
     structured_2d_probe_opq_cost
     structured_2d_write_distributions
     structured_2d_refresh_synthetic_preassignments
+    structured_2d_prepare_natural_schedule
     structured_2d_synthetic_timing_test
     structured_2d_run_synthetic_timing
     structured_2d_inspect_opq

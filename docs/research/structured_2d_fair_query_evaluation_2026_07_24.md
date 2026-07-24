@@ -620,15 +620,16 @@ operating point. A performance run with unstable Recall or IDs is invalid.
 
 On 2026-07-24, after the original 48-hour construction checkpoint stopped,
 the user first raised the aggregate CPU ceiling to 64 CPU-hours and then,
-after the complete synthetic projection, raised it to 256 CPU-hours.
+after the complete synthetic projection, raised it to 256 CPU-hours. On
+2026-07-25 the user raised the wall-time ceiling from 24 to 120 hours.
 All datasets, arms, cells, repetitions, metrics, data boundaries, memory
-limits, and wall-time limits below remain unchanged.
+limits, and other resource limits below remain unchanged.
 
 Implementation, index construction, and query evaluation are sequential:
 
 - at most 16 GiB peak RSS;
 - at most 256 aggregate CPU-hours;
-- at most 24 hours wall time;
+- at most 120 hours wall time;
 - one index arm resident at a time, except for shared immutable inputs; and
 - no GPU result enters the CPU claim.
 

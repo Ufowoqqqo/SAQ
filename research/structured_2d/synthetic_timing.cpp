@@ -137,6 +137,31 @@ std::uint32_t decode_label(
 
 }  // namespace
 
+void normalize_topk(TopKResult& result, std::size_t top_k) {
+    if (top_k == 0 ||
+        result.ids.size() != result.distances.size() ||
+        result.ids.size() > top_k)
+        throw std::invalid_argument("top-k normalization shape");
+    for (std::size_t rank = 0; rank < result.ids.size(); ++rank) {
+        if (result.ids[rank] == -1) {
+            if (result.distances[rank] !=
+                        std::numeric_limits<float>::max() &&
+                !(std::isinf(result.distances[rank]) &&
+                  result.distances[rank] > 0))
+                throw std::runtime_error(
+                        "invalid missing top-k distance");
+            result.distances[rank] =
+                    std::numeric_limits<float>::infinity();
+        } else if (result.ids[rank] < 0 ||
+                   !std::isfinite(result.distances[rank])) {
+            throw std::runtime_error("invalid populated top-k slot");
+        }
+    }
+    result.ids.resize(top_k, -1);
+    result.distances.resize(
+            top_k, std::numeric_limits<float>::infinity());
+}
+
 TopKResult search_ivfpq_lists(
         const faiss::IndexIVFPQ& index,
         const faiss::LinearTransform* transform,
@@ -295,15 +320,27 @@ std::uint64_t hash_topk(
             hash *= 1099511628211ULL;
         }
     };
-    for (const auto& result : results) {
+    for (std::size_t query = 0; query < results.size(); ++query) {
+        const auto& result = results[query];
         if (result.ids.size() != result.distances.size())
             throw std::invalid_argument("top-k hash shape");
         append(result.ids.size());
         for (std::size_t index = 0;
              index < result.ids.size(); ++index) {
-            if (!std::isfinite(result.distances[index]) ||
-                result.ids[index] < 0)
-                throw std::runtime_error("invalid top-k output");
+            const bool missing =
+                    result.ids[index] == -1 &&
+                    std::isinf(result.distances[index]) &&
+                    result.distances[index] > 0;
+            if ((!std::isfinite(result.distances[index]) ||
+                 result.ids[index] < 0) &&
+                !missing)
+                throw std::runtime_error(
+                        "invalid top-k output at query=" +
+                        std::to_string(query) +
+                        " rank=" + std::to_string(index) +
+                        " id=" + std::to_string(result.ids[index]) +
+                        " distance=" +
+                        std::to_string(result.distances[index]));
             append(static_cast<std::uint64_t>(result.ids[index]));
             append(std::bit_cast<std::uint32_t>(
                     result.distances[index]));

@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <tuple>
 #include <utility>
@@ -132,12 +133,38 @@ void opq_test() {
             4, 2, lists, 4));
 }
 
+void normalize_test() {
+    structured2d::admission::TopKResult result;
+    result.ids = {7, -1};
+    result.distances = {
+            1.5F, std::numeric_limits<float>::max()};
+    structured2d::admission::normalize_topk(result, 3);
+    require(result.ids == std::vector<faiss::idx_t>({7, -1, -1}),
+            "normalized IDs");
+    require(
+            result.distances[0] == 1.5F &&
+                    std::isinf(result.distances[1]) &&
+                    std::isinf(result.distances[2]),
+            "normalized distances");
+
+    result.ids = {-2};
+    result.distances = {1.0F};
+    bool rejected = false;
+    try {
+        structured2d::admission::normalize_topk(result, 1);
+    } catch (const std::runtime_error&) {
+        rejected = true;
+    }
+    require(rejected, "invalid negative ID rejected");
+}
+
 }  // namespace
 
 int main() {
     try {
         regular_and_d_test();
         opq_test();
+        normalize_test();
         std::cout << "PASS structured_2d_synthetic_timing_test\n";
         return 0;
     } catch (const std::exception& error) {

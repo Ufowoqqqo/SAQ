@@ -58,5 +58,11 @@ std::vector<std::uint32_t> read_u32(
 std::vector<std::uint64_t> read_u64(
         const std::filesystem::path& path,
         std::size_t expected_values);
+std::vector<std::uint32_t> read_ivecs(
+        const std::filesystem::path& path,
+        std::size_t expected_rows,
+        std::size_t expected_dimensions,
+        std::uint32_t exclusive_upper_bound,
+        bool require_unique_rows);
 
 }  // namespace structured2d::admission
