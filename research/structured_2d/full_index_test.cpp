@@ -61,7 +61,7 @@ structured2d::SharedAffineModel make_model(int word_bits) {
 struct SyntheticInput {
     std::vector<float> centroids;
     std::vector<std::uint32_t> assignments;
-    std::vector<std::uint32_t> ids;
+    std::vector<std::uint64_t> ids;
     std::vector<float> base;
 };
 
@@ -85,7 +85,7 @@ SyntheticInput make_input(
     for (std::size_t row = 0; row < kRows; ++row) {
         const std::size_t cell = row % kCells;
         input.assignments[row] = static_cast<std::uint32_t>(cell);
-        input.ids[row] = static_cast<std::uint32_t>(
+        input.ids[row] = static_cast<std::uint64_t>(
                 1000 + ((37 * row) % kRows));
         for (std::size_t group = 0;
              group < a4orb::kGroups; ++group) {
@@ -256,8 +256,8 @@ void full_index_fixture(int word_bits) {
     std::unordered_map<std::uint32_t, double> measured;
     for (const auto& hit : all.hits)
         measured.emplace(hit.id, hit.distance);
-    const std::uint32_t list0_id = index.ids[index.list_offsets[0]];
-    const std::uint32_t list1_id = index.ids[index.list_offsets[1]];
+    const std::uint64_t list0_id = index.ids[index.list_offsets[0]];
+    const std::uint64_t list1_id = index.ids[index.list_offsets[1]];
     require(
             measured.at(list1_id) + 300 < measured.at(list0_id),
             "search path includes nonzero tail");

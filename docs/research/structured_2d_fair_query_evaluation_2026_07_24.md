@@ -618,10 +618,16 @@ operating point. A performance run with unstable Recall or IDs is invalid.
 
 ## Resource boundary
 
+On 2026-07-24, after the original 48-hour construction checkpoint stopped,
+the user first raised the aggregate CPU ceiling to 64 CPU-hours and then,
+after the complete synthetic projection, raised it to 256 CPU-hours.
+All datasets, arms, cells, repetitions, metrics, data boundaries, memory
+limits, and wall-time limits below remain unchanged.
+
 Implementation, index construction, and query evaluation are sequential:
 
 - at most 16 GiB peak RSS;
-- at most 48 aggregate CPU-hours;
+- at most 256 aggregate CPU-hours;
 - at most 24 hours wall time;
 - one index arm resident at a time, except for shared immutable inputs; and
 - no GPU result enters the CPU claim.
@@ -645,7 +651,7 @@ mode project the registered CPU work as:
 
 Sum both mode projections, then add actual training, encoding, serialization,
 load-test, and remaining baseline-build CPU already consumed. If the sum over
-all required arms and cells exceeds 48 CPU-hours, do not read query/ground
+all required arms and cells exceeds 256 CPU-hours, do not read query/ground
 truth and do not delete a cell to fit the cap. Report the evaluation as
 infeasible under the frozen resource boundary; changing the budget or scope
 would be a new user decision.

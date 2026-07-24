@@ -18,7 +18,7 @@ struct FullIndex {
     SharedAffineModel model;
     std::vector<float> centroids;
     std::vector<std::uint64_t> list_offsets;
-    std::vector<std::uint32_t> ids;
+    std::vector<std::uint64_t> ids;
     std::vector<std::uint8_t> payload;
 };
 
@@ -33,7 +33,7 @@ struct IndexByteAccounting {
 };
 
 struct SearchHit {
-    std::uint32_t id = 0;
+    std::uint64_t id = 0;
     double distance = 0;
 
     friend bool operator==(const SearchHit&, const SearchHit&) = default;
@@ -50,7 +50,7 @@ struct SearchResult {
 FullIndex build_full_index(
         std::size_t dimensions, std::span<const float> centroids,
         std::span<const std::uint32_t> assignments,
-        std::span<const std::uint32_t> ids,
+        std::span<const std::uint64_t> ids,
         std::span<const float> base,
         const SharedAffineModel& model);
 
@@ -59,6 +59,14 @@ bool valid_full_index(const FullIndex& index);
 IndexByteAccounting byte_accounting(const FullIndex& index);
 
 SearchResult search_preassigned(
+        const FullIndex& index, std::span<const float> query,
+        std::span<const std::uint32_t> preassigned_lists,
+        std::size_t top_k);
+
+// Hot-path variant for an index already validated by build_full_index() or
+// load_full_index(). It preserves all query/list checks but does not rescan
+// and rehash every stored database ID for every query.
+SearchResult search_preassigned_validated(
         const FullIndex& index, std::span<const float> query,
         std::span<const std::uint32_t> preassigned_lists,
         std::size_t top_k);

@@ -3,6 +3,8 @@
 #include "compact.hpp"
 #include "microbench.hpp"
 
+#include <faiss/utils/Heap.h>
+
 #include <algorithm>
 #include <array>
 #include <bit>
@@ -10,7 +12,6 @@
 #include <fstream>
 #include <initializer_list>
 #include <limits>
-#include <numeric>
 #include <stdexcept>
 #include <type_traits>
 #include <unordered_set>
@@ -22,7 +23,7 @@ constexpr std::size_t kHeadDimensions = a4orb::kPanelDimensions;
 constexpr std::size_t kGroups = a4orb::kGroups;
 constexpr std::array<char, 8> kMagic{
         'S', '2', 'D', 'I', 'V', 'F', '0', '1'};
-constexpr std::uint32_t kVersion = 1;
+constexpr std::uint32_t kVersion = 2;
 constexpr std::uint64_t kHeaderBytes =
         kMagic.size() + 2 * sizeof(std::uint32_t) +
         7 * sizeof(std::uint64_t);
@@ -131,18 +132,12 @@ void validate_preassigned(
     }
 }
 
-bool hit_less(const SearchHit& left, const SearchHit& right) {
-    if (left.distance != right.distance)
-        return left.distance < right.distance;
-    return left.id < right.id;
-}
-
 }  // namespace
 
 FullIndex build_full_index(
         std::size_t dimensions, std::span<const float> centroids,
         std::span<const std::uint32_t> assignments,
-        std::span<const std::uint32_t> ids,
+        std::span<const std::uint64_t> ids,
         std::span<const float> base,
         const SharedAffineModel& model) {
     require_model(model);
@@ -161,7 +156,7 @@ FullIndex build_full_index(
         throw std::invalid_argument("full index input shape");
     const std::size_t cells = centroids.size() / dimensions;
 
-    std::unordered_set<std::uint32_t> unique_ids;
+    std::unordered_set<std::uint64_t> unique_ids;
     unique_ids.reserve(ids.size());
     std::vector<std::uint64_t> counts(cells);
     for (std::size_t row = 0; row < ids.size(); ++row) {
@@ -234,11 +229,11 @@ bool valid_full_index(const FullIndex& index) {
                     index.centroids.begin(), index.centroids.end(),
                     [](float value) { return std::isfinite(value); }))
             return false;
-        std::unordered_set<std::uint32_t> ids;
+        std::unordered_set<std::uint64_t> ids;
         ids.reserve(index.ids.size());
         return std::all_of(
                 index.ids.begin(), index.ids.end(),
-                [&ids](std::uint32_t id) {
+                [&ids](std::uint64_t id) {
                     return ids.insert(id).second;
                 });
     } catch (const std::exception&) {
@@ -265,7 +260,7 @@ IndexByteAccounting byte_accounting(const FullIndex& index) {
             index.list_offsets.size(), sizeof(std::uint64_t),
             "offset bytes");
     result.database_id_bytes = checked_product(
-            index.ids.size(), sizeof(std::uint32_t), "id bytes");
+            index.ids.size(), sizeof(std::uint64_t), "id bytes");
     result.packed_code_bytes = index.payload.size();
     result.complete_serialized_bytes = checked_sum(
             {result.header_bytes, result.model_bytes,
@@ -275,11 +270,11 @@ IndexByteAccounting byte_accounting(const FullIndex& index) {
     return result;
 }
 
-SearchResult search_preassigned(
+SearchResult search_preassigned_impl(
         const FullIndex& index, std::span<const float> query,
         std::span<const std::uint32_t> preassigned_lists,
-        std::size_t top_k) {
-    if (!valid_full_index(index) ||
+        std::size_t top_k, bool validate_index) {
+    if ((validate_index && !valid_full_index(index)) ||
         query.size() != index.dimensions || top_k == 0)
         throw std::invalid_argument("preassigned search shape");
     if (!std::all_of(
@@ -293,7 +288,19 @@ SearchResult search_preassigned(
     const std::size_t stride =
             payload_bytes_per_candidate(index.model.word_bits);
     std::vector<float> tables(kGroups * centers);
-    std::vector<SearchHit> scored;
+    std::uint64_t candidates_scored = 0;
+    for (const std::uint32_t list : preassigned_lists)
+        candidates_scored +=
+                index.list_offsets[list + 1] -
+                index.list_offsets[list];
+    const std::size_t result_count =
+            std::min<std::uint64_t>(top_k, candidates_scored);
+    std::vector<float> heap_distances(result_count);
+    std::vector<std::int64_t> heap_ids(result_count);
+    if (result_count != 0)
+        faiss::maxheap_heapify(
+                result_count, heap_distances.data(),
+                heap_ids.data());
     for (const std::uint32_t list : preassigned_lists) {
         const float* centroid =
                 index.centroids.data() +
@@ -324,7 +331,6 @@ SearchResult search_preassigned(
                 static_cast<std::size_t>(index.list_offsets[list]);
         const std::size_t last =
                 static_cast<std::size_t>(index.list_offsets[list + 1]);
-        scored.reserve(scored.size() + last - first);
         for (std::size_t candidate = first;
              candidate < last; ++candidate) {
             const auto code = std::span<const std::uint8_t>(
@@ -338,27 +344,50 @@ SearchResult search_preassigned(
                                    : code[group / 2] >> 4);
                 distance += tables[group * centers + label];
             }
-            scored.push_back({index.ids[candidate], distance});
+            const float float_distance =
+                    static_cast<float>(distance);
+            const std::int64_t id =
+                    static_cast<std::int64_t>(index.ids[candidate]);
+            if (result_count != 0 &&
+                faiss::CMax<float, std::int64_t>::cmp2(
+                        heap_distances[0], float_distance,
+                        heap_ids[0], id))
+                faiss::maxheap_replace_top(
+                        result_count, heap_distances.data(),
+                        heap_ids.data(), float_distance, id);
         }
     }
-    std::sort(scored.begin(), scored.end(), hit_less);
-    if (scored.size() > top_k) scored.resize(top_k);
+    if (result_count != 0)
+        faiss::maxheap_reorder(
+                result_count, heap_distances.data(),
+                heap_ids.data());
+    std::vector<SearchHit> scored(result_count);
+    for (std::size_t index = 0; index < result_count; ++index)
+        scored[index] = SearchHit{
+                static_cast<std::uint64_t>(heap_ids[index]),
+                heap_distances[index]};
     return {
             std::move(scored),
-            static_cast<std::uint64_t>(
-                    std::accumulate(
-                            preassigned_lists.begin(),
-                            preassigned_lists.end(), std::uint64_t{0},
-                            [&index](
-                                    std::uint64_t total,
-                                    std::uint32_t list) {
-                                return total +
-                                        index.list_offsets[list + 1] -
-                                        index.list_offsets[list];
-                            })),
+            candidates_scored,
             std::vector<std::uint32_t>(
                     preassigned_lists.begin(),
                     preassigned_lists.end())};
+}
+
+SearchResult search_preassigned(
+        const FullIndex& index, std::span<const float> query,
+        std::span<const std::uint32_t> preassigned_lists,
+        std::size_t top_k) {
+    return search_preassigned_impl(
+            index, query, preassigned_lists, top_k, true);
+}
+
+SearchResult search_preassigned_validated(
+        const FullIndex& index, std::span<const float> query,
+        std::span<const std::uint32_t> preassigned_lists,
+        std::size_t top_k) {
+    return search_preassigned_impl(
+            index, query, preassigned_lists, top_k, false);
 }
 
 double direct_reconstruction_score(
@@ -447,7 +476,7 @@ void save_full_index(
     }
     for (const std::uint64_t value : index.list_offsets)
         write_little(output, value);
-    for (const std::uint32_t value : index.ids)
+    for (const std::uint64_t value : index.ids)
         write_little(output, value);
     output.write(
             reinterpret_cast<const char*>(index.payload.data()),
@@ -502,8 +531,8 @@ FullIndex load_full_index(const std::filesystem::path& path) {
     }
     for (std::uint64_t& value : result.list_offsets)
         value = read_little<std::uint64_t>(input);
-    for (std::uint32_t& value : result.ids)
-        value = read_little<std::uint32_t>(input);
+    for (std::uint64_t& value : result.ids)
+        value = read_little<std::uint64_t>(input);
     input.read(
             reinterpret_cast<char*>(result.payload.data()),
             result.payload.size());
