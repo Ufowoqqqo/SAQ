@@ -1,8 +1,13 @@
 #include "model.hpp"
 #include "compact.hpp"
 
+#include <array>
+#include <bit>
+#include <cfenv>
 #include <cmath>
+#include <cstdint>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <vector>
 
@@ -150,6 +155,94 @@ void fixed_budget_status_test() {
             "non-monotonic stop");
 }
 
+structured2d::SharedAffineModel make_parity_model(int word_bits) {
+    const std::size_t centers = std::size_t{1} << word_bits;
+    structured2d::SharedAffineModel model;
+    model.word_bits = word_bits;
+    model.shape.resize(2 * centers);
+    for (std::size_t label = 0; label < centers; ++label) {
+        model.shape[2 * label] =
+                (static_cast<float>(label) -
+                 static_cast<float>(centers) / 2) /
+                static_cast<float>(centers);
+        model.shape[2 * label + 1] =
+                (static_cast<float>((29 * label) % centers) -
+                 static_cast<float>(centers) / 2) /
+                static_cast<float>(centers);
+    }
+    model.shape[0] = std::numeric_limits<float>::quiet_NaN();
+    model.shape[2] = std::numeric_limits<float>::infinity();
+    model.shape[4] = -std::numeric_limits<float>::infinity();
+    model.shape[6] = std::numeric_limits<float>::denorm_min();
+    model.shape[7] = -std::numeric_limits<float>::denorm_min();
+    model.shape[8] = -0.0F;
+    model.shape[9] = 0.0F;
+    model.shape[10] = std::numeric_limits<float>::max() / 4;
+    model.shape[11] = -std::numeric_limits<float>::max() / 4;
+
+    model.groups.resize(a4orb::kGroups);
+    for (std::size_t group = 0; group < model.groups.size(); ++group) {
+        auto& affine = model.groups[group];
+        affine.mean[0] = 0.001F * static_cast<float>(group);
+        affine.mean[1] = -0.002F * static_cast<float>(group);
+        affine.transform[0] = 0.8F + 0.001F * group;
+        affine.transform[1] = 0.13F;
+        affine.transform[2] = -0.07F;
+        affine.transform[3] = 1.1F - 0.001F * group;
+    }
+    return model;
+}
+
+void sse2_scalar_parity_test() {
+    const int original_rounding = std::fegetround();
+    bool all_equal = true;
+    const std::array<int, 4> roundings{
+            FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO};
+    const std::array<std::array<float, 2>, 3> queries{{
+            {0.125F, -0.875F},
+            {-0.0F, 0.0F},
+            {std::numeric_limits<float>::quiet_NaN(), 1.0F}}};
+
+    for (const int rounding : roundings) {
+        require(std::fesetround(rounding) == 0, "set rounding mode");
+        for (const int bits : {4, 8}) {
+            const auto model = make_parity_model(bits);
+            const std::size_t centers = std::size_t{1} << bits;
+            std::vector<float> actual(centers), reference(centers);
+            for (const std::size_t group :
+                 {std::size_t{0}, std::size_t{7}, std::size_t{63}}) {
+                for (const auto& query : queries) {
+                    structured2d::build_compact_table(
+                            query.data(), model, group, actual);
+                    structured2d::build_compact_table_scalar_reference(
+                            query.data(), model, group, reference);
+                    for (std::size_t label = 0;
+                         label < centers; ++label)
+                        all_equal = all_equal &&
+                                std::bit_cast<std::uint32_t>(
+                                        actual[label]) ==
+                                std::bit_cast<std::uint32_t>(
+                                        reference[label]);
+                }
+            }
+        }
+    }
+    require(std::fesetround(original_rounding) == 0,
+            "restore rounding mode");
+    require(all_equal, "SSE2/scalar bitwise parity");
+
+    // Exercise the scalar tail independently of the even B4/B8 codebooks.
+    auto odd = make_parity_model(4);
+    odd.shape.resize(10);
+    std::vector<float> actual(5), reference(5);
+    const std::array<float, 2> query{0.25F, -0.5F};
+    structured2d::build_compact_table(
+            query.data(), odd, 0, actual);
+    structured2d::build_compact_table_scalar_reference(
+            query.data(), odd, 0, reference);
+    require(actual == reference, "SSE2 scalar tail");
+}
+
 a4orb::Panel make_compact_panel() {
     a4orb::Panel panel;
     panel.fit.resize(
@@ -238,6 +331,7 @@ int main() {
         encoding_replay_test();
         full_affine_refinement_test();
         fixed_budget_status_test();
+        sse2_scalar_parity_test();
         compact_equivalence_test();
         std::cout << "PASS structured_2d_model_test\n";
         return 0;

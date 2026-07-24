@@ -6,6 +6,10 @@
 #include <stdexcept>
 #include <vector>
 
+#if defined(__SSE2__)
+#include <emmintrin.h>
+#endif
+
 namespace structured2d {
 namespace {
 
@@ -146,17 +150,93 @@ float compact_distance(const TableTerms& terms,
     return static_cast<float>(std::max(0.0, value));
 }
 
+std::size_t compact_table_centers(
+        const SharedAffineModel& model, std::size_t group,
+        std::span<float> table) {
+    const std::size_t centers = model.shape.size() / 2;
+    if (model.shape.size() % 2 != 0 ||
+        group >= model.groups.size() || table.size() != centers)
+        throw std::invalid_argument("compact table shape");
+    return centers;
+}
+
+void build_compact_table_scalar_unchecked(
+        const TableTerms& terms, const SharedAffineModel& model,
+        std::span<float> table, std::size_t first_label = 0) {
+    for (std::size_t label = first_label; label < table.size(); ++label)
+        table[label] = compact_distance(terms, model, label);
+}
+
+#if defined(__SSE2__)
+void build_compact_table_sse2_unchecked(
+        const TableTerms& terms, const SharedAffineModel& model,
+        std::span<float> table) {
+    const __m128d constant = _mm_set1_pd(terms.constant);
+    const __m128d h0 = _mm_set1_pd(terms.h0);
+    const __m128d h1 = _mm_set1_pd(terms.h1);
+    const __m128d m00 = _mm_set1_pd(terms.m00);
+    const __m128d m01 = _mm_set1_pd(terms.m01);
+    const __m128d m11 = _mm_set1_pd(terms.m11);
+    const __m128d zero = _mm_setzero_pd();
+
+    std::size_t label = 0;
+    for (; label + 1 < table.size(); label += 2) {
+        const __m128 interleaved =
+                _mm_loadu_ps(model.shape.data() + 2 * label);
+        const __m128 z0_float = _mm_shuffle_ps(
+                interleaved, interleaved, _MM_SHUFFLE(2, 0, 2, 0));
+        const __m128 z1_float = _mm_shuffle_ps(
+                interleaved, interleaved, _MM_SHUFFLE(3, 1, 3, 1));
+        const __m128d z0 = _mm_cvtps_pd(z0_float);
+        const __m128d z1 = _mm_cvtps_pd(z1_float);
+
+        // Preserve the scalar expression tree exactly, but evaluate two
+        // independent labels in packed double lanes. The ordered comparison
+        // is false for NaN, negative values, and signed zero, matching
+        // std::max(0.0, value) and producing positive zero without a branch.
+        const __m128d linear = _mm_add_pd(
+                _mm_mul_pd(z0, h0), _mm_mul_pd(z1, h1));
+        __m128d value = _mm_sub_pd(
+                constant, _mm_add_pd(linear, linear));
+        value = _mm_add_pd(
+                value, _mm_mul_pd(_mm_mul_pd(z0, z0), m00));
+        value = _mm_add_pd(
+                value,
+                _mm_mul_pd(
+                        _mm_mul_pd(_mm_add_pd(z0, z0), z1), m01));
+        value = _mm_add_pd(
+                value, _mm_mul_pd(_mm_mul_pd(z1, z1), m11));
+        value = _mm_and_pd(value, _mm_cmpgt_pd(value, zero));
+        const __m128 converted = _mm_cvtpd_ps(value);
+        _mm_storel_pi(
+                reinterpret_cast<__m64*>(table.data() + label),
+                converted);
+    }
+    build_compact_table_scalar_unchecked(
+            terms, model, table, label);
+}
+#endif
+
 }  // namespace
 
 void build_compact_table(
         const float* query, const SharedAffineModel& model,
         std::size_t group, std::span<float> table) {
-    const std::size_t centers = model.shape.size() / 2;
-    if (group >= model.groups.size() || table.size() != centers)
-        throw std::invalid_argument("compact table shape");
+    (void)compact_table_centers(model, group, table);
     const TableTerms terms = table_terms(query, model, group);
-    for (std::size_t label = 0; label < centers; ++label)
-        table[label] = compact_distance(terms, model, label);
+#if defined(__SSE2__)
+    build_compact_table_sse2_unchecked(terms, model, table);
+#else
+    build_compact_table_scalar_unchecked(terms, model, table);
+#endif
+}
+
+void build_compact_table_scalar_reference(
+        const float* query, const SharedAffineModel& model,
+        std::size_t group, std::span<float> table) {
+    (void)compact_table_centers(model, group, table);
+    const TableTerms terms = table_terms(query, model, group);
+    build_compact_table_scalar_unchecked(terms, model, table);
 }
 
 void build_expanded_table(
@@ -211,11 +291,11 @@ CompactCheck check_compact(
         for (std::size_t group = 0; group < kGroups; ++group) {
             const float* query = panel.heldout.data() +
                     right * kDimensions + 2 * group;
-            const TableTerms terms =
-                    table_terms(query, model, group);
+            // Validate the production SIMD/fallback builder over the complete
+            // held-out pair set; scalar parity is checked independently.
+            build_compact_table(query, model, group, table);
             for (std::size_t label = 0; label < centers; ++label) {
-                const float candidate =
-                        compact_distance(terms, model, label);
+                const float candidate = table[label];
                 const float reference = reference_distance(
                         query, model.expanded.blocks[group], label);
                 const double difference = std::fabs(
@@ -226,7 +306,6 @@ CompactCheck check_compact(
                         result.max_table_absolute_difference, difference);
                 result.table_tolerance_violations +=
                         difference > tolerance;
-                table[label] = candidate;
             }
             result.table_entries_built += centers;
             const std::size_t code =

@@ -602,3 +602,110 @@ c6ae8d912d203b4019ec96294d5ebb2d35744623b2579f8e74127fd9bc264ebb  B8 compact per
 ff96bbc00442172c4770bfbbc5a9cec492460edbcc02ee3689c462f16dd2dfcd  fast-math vectorization
 2ed414f4e59c87491bd50b0ccf43589fbb74eef9e5a90482acc0020779adbf91  fast-math timing
 ```
+
+## Semantics-preserving SSE2 compact builder
+
+Implementation date: 2026-07-24
+
+```text
+PASS_SSE2_SCALAR_BITWISE_PARITY
+PASS_SSE2_PACKED_DOUBLE_HOT_PATH
+PASS_NATIVE_TABLE_BUILD_AFFORDABILITY
+PASS_NATIVE_LOOKUP_PARITY
+PASS_NATIVE_TABLE_CORRECTNESS
+```
+
+### Implementation boundary
+
+Starting from profiling commit `e6a43c6`, the compact builder now processes
+two labels in packed SSE2 double lanes. The scalar formula remains the
+reference, odd-label tail, and non-SSE2 fallback.
+
+The packed path preserves the scalar expression tree, disables contraction
+through the existing compiler flags, converts packed doubles to binary32 under
+the current MXCSR rounding mode, and replaces the per-label clamp branch with
+an ordered `value > 0` mask. The mask maps negative values, signed zero, and
+NaN to positive zero exactly as `std::max(0.0, value)` does. It adds no model
+fields, derived `64*K` state, table entries, dispatch ids, or persistent
+bytes.
+
+Focused tests establish bitwise SSE2/scalar equality for B4 and B8 across:
+
+- ordinary deterministic shapes, queries, and affine maps;
+- NaN, positive and negative infinity, subnormals, signed zero, and
+  overflow-sized values;
+- nearest, downward, upward, and toward-zero rounding modes; and
+- an odd codebook size exercising the scalar tail.
+
+The existing compact-versus-expanded tolerance, encoding, pair, occupancy,
+collision, and fixed-budget tests also pass.
+An ASan-only build also passes with leak detection disabled because
+LeakSanitizer is unsupported under the execution sandbox's ptrace boundary.
+
+### Hot-path verification
+
+The strict production assembly contains packed `mulpd`, `addpd`, `subpd`,
+ordered packed comparison, mask, and `cvtpd2ps` instructions. The two-label
+body has no per-label clamp branch; scalar comparisons occur only in the odd
+tail/fallback.
+
+Before any registered rerun, the query-free synthetic B8 profile measured
+compact/expanded at approximately `1.84x` cycles and `1.82x` elapsed time over
+five runs, passing the frozen `2.0x` prerequisite.
+
+### Registered native result
+
+The original runner, inputs, B4/B8 rates, one warmup, nine repetitions, arm
+rotation, CPU 0 affinity, single-thread settings, correctness checks, and
+thresholds were unchanged.
+
+| Dataset | Rate | Scalar C/E build | SSE2 C/E build | Ratio reduction | SSE2 C/E lookup | Table violations | Cell pass |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| GIST | B4 | 2.353x | 1.855x | 21.1% | 1.002x | 0 | yes |
+| GIST | B8 | 2.887x | 1.851x | 35.9% | 1.006x | 0 | yes |
+| CIFAR | B4 | 2.482x | 1.829x | 26.3% | 0.999x | 0 | yes |
+| CIFAR | B8 | 2.899x | 1.859x | 35.9% | 0.999x | 0 | yes |
+
+Median compact build costs are now 1.946 and 1.574 ns/entry for GIST B4/B8,
+and 1.939 and 1.575 ns/entry for CIFAR B4/B8. All four cells pass the original
+`C/E <= 2.0x` affordability rule. Lookup parity and the previous scientific
+gates remain passed.
+
+The compact persistent sizes remain 1,664 bytes at B4 and 3,584 bytes at B8,
+versus 8,192 and 131,072 bytes for expanded S/V. The result therefore repairs
+the measured builder bottleneck without weakening the previously reported
+model-size reduction.
+
+### Claim boundary
+
+This is native prototype performance evidence for the isolated table builder
+and lookup layout. It does not establish Recall, end-to-end QPS, cache behavior
+inside the production estimator, integration cost, statistical generality, or
+a SOTA system-level Pareto improvement. The implementation is an artifact
+optimization enabling later evaluation, not the scientific contribution.
+
+Artifacts:
+
+- `/tmp/structured-2d-sse2-gist-v2/`;
+- `/tmp/structured-2d-sse2-cifar-v2/`;
+- `/tmp/structured_2d_sse2_vectorization.txt`;
+- `/tmp/structured_2d_sse2_assembly.txt`;
+- `/tmp/structured_2d_sse2_perf_b8_compact_preunroll.txt`;
+- `/tmp/structured_2d_sse2_perf_b8_expanded.txt`.
+
+SHA-256:
+
+```text
+6029a2dc3aa55ebfa406ff34672c22ddae6eabb578d6332be1589ad45c007044  GIST raw
+9665ae94678cd609da631625353ff116812b2631b77be5fd252539bc2a6dfb08  GIST decision
+e70e1e0dd3cf96eaa9303fd06fda70315ccc340b36280fb694bdbbb839ac0c48  GIST summary
+de3141f21a0ada01cbeb983ec7767fa31ba031e7e68a7a08acdfb7cb05ef5a04  GIST compact check
+d59fed29a829693460510961719bcc6dee5ff2d5ae96fd96763aed70a3a97b66  CIFAR raw
+37fe5f981150450284f87325130707b5762d3c4a4136843dd9aaa3bb82075b56  CIFAR decision
+86119d061c149b87fec58756c90f2d42b9605c6af2775ea72e37b7884e48bca3  CIFAR summary
+d0028243e87c8a559b71ba238b88b22da55fc5fcf257080542bb12bc3fae7307  CIFAR compact check
+b9847fa11a0e2ec92c5e2fef8061cee11884fc2ff4eea82f7b438fae2d452ced  SSE2 vectorization
+221d9a140c938d246e095ee5646567d97b2271164d54a2ba52dc53ad2fb9fda2  SSE2 assembly
+cc54dad0693e2c5adf94817ac26c485a308e3e9e0b639c382f72fd109e9da601  SSE2 compact perf
+20b1df37eccb97bf815d3a708ef179f2490a0c490611b9b9622830d1e2b7a891  SSE2 expanded perf
+```

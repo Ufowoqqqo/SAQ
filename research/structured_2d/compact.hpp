@@ -27,6 +27,11 @@ void build_compact_table(
         const float* query, const SharedAffineModel& model,
         std::size_t group, std::span<float> table);
 
+// Independent scalar reference and fallback for exact SIMD parity checks.
+void build_compact_table_scalar_reference(
+        const float* query, const SharedAffineModel& model,
+        std::size_t group, std::span<float> table);
+
 void build_expanded_table(
         const float* query, const a4orb::Block& block,
         std::span<float> table);

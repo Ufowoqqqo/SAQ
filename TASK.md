@@ -1,4 +1,4 @@
-# Current Task: bounded compact-table builder profiling
+# Current Task: semantics-preserving SSE2 compact-table builder
 
 ## Branch and base
 
@@ -6,12 +6,12 @@
 - Base commit: `5503e87d0584fe50c9233fbe3a02cdd577db07ea`
 - Active mode: `IMPLEMENT`, followed by the permitted smallest `EXPERIMENT`
 
-The fixed-budget S100 construction and query-free native microbenchmark are
-complete. The current instruction authorizes profiling only the existing
-compact and expanded table builders at commit `b0d654c`, using deterministic
-synthetic coefficients and the frozen B4/B8 work counts. It does not authorize
-an optimization, benchmark-query evaluation, Recall/QPS measurement, or
-production SAQ changes.
+The fixed-budget S100 construction, query-free native microbenchmark, and
+bounded profile are complete. The current instruction authorizes one explicit
+SSE2 implementation of the compact table-entry loop, starting from profiling
+commit `e6a43c6`. It does not authorize changing the representation, numeric
+semantics, benchmark-query evaluation, Recall/QPS measurement, or production
+SAQ code.
 
 ## Research question and hypothesis
 
@@ -240,6 +240,42 @@ or rerun the registered scientific panels. Stop after locating the dominant
 mechanism and deciding whether a semantics-preserving optimization is
 plausible.
 
+## Frozen SSE2 implementation boundary
+
+Change only the compact builder and focused tests under
+`research/structured_2d`. Process two labels per SSE2 iteration and retain the
+current scalar calculation as the reference, odd-tail implementation, and
+non-SSE2 fallback.
+
+The SSE2 path must preserve:
+
+- the exact double-operation ordering of the scalar polynomial;
+- `-ffp-contract=off`, current MXCSR rounding, and binary32 output conversion;
+- positive finite and positive-infinity results;
+- conversion of negative, signed-zero, and NaN intermediate values to
+  positive binary32 zero;
+- the current table size, label order, one-table memory boundary, API, and
+  persistent model bytes; and
+- no additional per-group, per-label, or `64*K` stored state.
+
+Required validation before registered measurement:
+
+- bitwise scalar/SSE2 equality at B4 and B8 for deterministic ordinary and
+  adversarial values;
+- equality under nearest, downward, upward, and toward-zero rounding modes;
+- existing expanded-reference tolerances, encoding, pair, and compact tests;
+- compiler evidence that the production compact loop contains packed
+  double-precision operations and no per-label clamp branch; and
+- query-free synthetic B8 compact/expanded table-build time below `2.0x`
+  under the same strict flags.
+
+Only after all checks pass may the unchanged GIST/CIFAR B4/B8 native
+microbenchmark be rerun. Its original nine repetitions, arm rotation,
+correctness gates, lookup gate, `2.0x` build threshold, thread/affinity
+settings, and output accounting remain frozen. Stop without a panel rerun if
+bitwise parity fails, synthetic B8 misses `2.0x`, or the implementation needs
+new persistent state.
+
 ## Implementation and commands
 
 Modify only the existing `research/structured_2d` prototype and focused
@@ -329,7 +365,7 @@ All four dataset/rate cells completed. C/E table-build ratios are
 `0.998x`, and `1.008x`, so every cell passes lookup parity. Correctness
 violations are zero.
 
-The bounded profile is also complete:
+The bounded profile is complete:
 
 ```text
 BOTTLENECK_IDENTIFIED_SCALAR_COMPACT_LOOP
@@ -345,8 +381,31 @@ At B8 the strict synthetic profile retires about `3.54x` as many instructions,
 remain below 0.2%, so prediction failure is not the bottleneck.
 
 A diagnostic `-ffast-math` build vectorizes the unchanged compact loop and
-reduces synthetic C/E time to about `1.42x` at B8, below the frozen `2.0x` threshold,
-but it is not an admissible fix. The next eligible action is one
-semantics-preserving explicit SIMD implementation with the current scalar path
-as reference and fallback. It requires separate authorization. Benchmark-query
-evaluation remains unauthorized.
+reduces synthetic C/E time to about `1.42x` at B8, below the frozen `2.0x`
+threshold, but it is not an admissible fix.
+
+The explicit SSE2 implementation and frozen rerun are complete:
+
+```text
+PASS_SSE2_SCALAR_BITWISE_PARITY
+PASS_SSE2_PACKED_DOUBLE_HOT_PATH
+PASS_NATIVE_TABLE_BUILD_AFFORDABILITY
+PASS_NATIVE_LOOKUP_PARITY
+PASS_NATIVE_TABLE_CORRECTNESS
+```
+
+Scalar/SSE2 outputs are bitwise equal for B4/B8 ordinary and adversarial
+values under all four rounding modes. The production loop uses packed
+double-precision operations plus an ordered compare mask and retains the
+scalar odd tail/fallback without new model state.
+
+Registered C/E build ratios are `1.855x`, `1.851x`, `1.829x`, and `1.859x`
+for GIST B4/B8 and CIFAR B4/B8. All are below the unchanged `2.0x` gate.
+Lookup ratios remain within 0.6%, compact/expanded table violations remain
+zero, and the scientific/fixed-budget gates remain passed.
+
+The result is recorded in
+`docs/saq_structured_2d_base_only_result_2026_07_23.md`. No correctness or
+measurement blocker remains. This establishes native prototype affordability,
+not Recall/QPS or a SOTA system-level result. Benchmark-query evaluation
+remains unauthorized.
