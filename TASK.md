@@ -1,203 +1,145 @@
-# Current Task: independent full-word VQ consumer integration
+# Current Task: freeze independent VQ fair query evaluation
 
 ## Branch and base
 
 - Active branch: `saq-structured-2d-modeling`
-- Active-task base: `23290a5`
-- Mode: `IMPLEMENT`, followed by the permitted smallest `EXPERIMENT`
+- Base: `76fb83aa94d0bdee2e553199d2fd490286151b4f`
+- Mode: `IDEATE` and `REVIEW`; documentation only
 
-The previous unchanged-production-estimator gate is complete and correctly
-returned `NO_GO_UNCHANGED_ESTIMATOR_INTEGRATION`. This task does not require S
-to remain inside SAQ's bitplane representation. It tests S as an independent
-full-word VQ representation while retaining SAQ only as later comparison
-context.
+## Research question and hypothesis
 
-## Research question and decision being tested
+At exactly 32 or 64 packed code bytes per database vector, can the independent
+shared-shape full-affine two-dimensional VQ representation (`S`) move the
+Recall@100--latency/QPS frontier against the best matched PQ/OPQ control under
+identical IVF candidates and complete end-to-end timing?
 
-Can the compact shared-affine S100 model support a real packed candidate
-payload and full-word scan loop without losing its one-lookup-per-group
-semantics or making compact table construction unaffordable after it is
-amortized across candidates?
+The hypothesis is that S's reusable non-Cartesian 2D shape improves distance
+ordering enough to repay compact per-cell table construction. It fails if
+full-dimensional PQ/OPQ has equal or better quality, real IVF lists are too
+small to amortize tables, or any gain depends on weaker Recall, different
+candidates, omitted work, or extra storage.
 
-For one query-like probe, the consumer is:
+## Authoritative design
 
-```text
-build 64 K-entry tables
-for each candidate:
-    decode 64 joint labels from its fixed-size payload
-    estimate = sum_g table[g][label[g]]
-```
-
-S passes this integration gate only if representation parity holds and both
-the median CPU and wall total compact costs at 8,192 candidates are at most
-`1.10x` the identical expanded-S consumer in every registered dataset/rate
-cell. This is a native prototype gate, not Recall/QPS or a SOTA claim.
-
-## Frozen representation and workloads
-
-- exactly 64 fixed adjacent-coordinate groups;
-- B4 uses 16 labels and exactly 32 payload bytes per candidate;
-- B8 uses 256 labels and exactly 64 payload bytes per candidate;
-- B4 stores the even group in the low nibble and the odd group in the high
-  nibble of the same byte;
-- B8 stores one label byte per group;
-- compact S, expanded S, and independent V all use the same payload rule;
-- no invalid labels, variable-length coding, model id, per-cell choice, mixed
-  dispatch, or candidate-dependent table;
-- candidate counts are exactly `64`, `256`, `1,024`, and `8,192`;
-- probes are the existing 64 midpoint-stratified fit rows;
-- one untimed warmup and nine measured repetitions, with arm order rotated
-  `C/E/V`, `E/V/C`, and `V/C/E`;
-- one process, one computational thread, reused allocations, and no logging or
-  serialization inside timed regions.
-
-Packing is index-construction work and remains outside the query scan timing.
-Decoding, bounds-safe label extraction, lookup, and accumulation are inside
-the packed scan timing. Model fitting, expansion, correctness checks, and
-output writing remain outside all timed regions.
-
-## Correctness and accounting requirements
-
-For B4 and B8:
-
-- all 64 labels survive pack/unpack exactly;
-- payload bytes are exactly 32 or 64;
-- compact and expanded S reuse exactly the same packed payload;
-- decoded labels remain in `[0,K)`;
-- compact and expanded tables satisfy the existing per-entry tolerance;
-- compact and expanded scan sums differ by no more than the sum of the actual
-  selected-entry tolerances;
-- expanded scan equals direct reconstruction-table lookup under the same
-  accumulation order;
-- every candidate performs exactly 64 lookups;
-- C keeps only one K-entry working table per group construction and never
-  persists the `64*K` expanded centers;
-- persistent model bytes and peak query-table bytes are reported separately
-  from candidate payload bytes.
-
-Report packed scan CPU and wall nanoseconds per candidate for every fixed
-candidate count, including min/max/median/MAD. Combine the separately measured
-table-build and packed-scan medians to report the C/E and C/V total-cost ratios
-at each count. The first affordable fixed count is the first count where both
-CPU and wall C/E scan ratios and both CPU and wall C/E combined-total ratios
-are at most `1.10x`.
-
-The gate passes only if:
-
-- every correctness and accounting check passes;
-- packed C/E scan time is at most `1.10x` for both CPU and wall time at 8,192
-  candidates in all four dataset/rate cells; and
-- combined C/E table-build plus packed-scan time is at most `1.10x` for both
-  CPU and wall time at 8,192 candidates in all four cells.
-
-Do not change counts, thresholds, packing order, probes, repetitions, or arm
-order after observing results.
-
-## Relevant paths
-
-- `research/structured_2d/{compact,microbench,model}.{hpp,cpp}`
-- `research/structured_2d/{model_test,runner}.cpp`
-- `research/a4_or_b/{panel,models}.{hpp,cpp}`
+- `docs/research/structured_2d_fair_query_evaluation_2026_07_24.md`
+- `docs/research/RESEARCH_CHARTER.md`
 - `docs/saq_structured_2d_base_only_result_2026_07_23.md`
-- `docs/saq_attempt4_a4_1_base_only_input_spec_2026_07_13.json`
+- `research/structured_2d/`
+- `research/a4_or_b/`
+- `third_party/faiss/` at
+  `0ca9df4792b173d573044ee14ca0704780176e82`
+- production SAQ/CAQ source at design base `76fb83a`
 
-Reuse the existing registered panel construction, S100 fit, D/V controls,
-compact and expanded table builders, timing clocks, summary statistics, and
-runner. Do not create another benchmark framework or output format when the
-existing TSV path can be extended.
+Historical A4 documents explain earlier evidence but do not authorize or
+change this task.
 
-## Reads, writes, and forbidden data
+## Frozen decisions
 
-Allowed reads:
+- confirmatory datasets: standard SIFT1M and GIST1M learn/base/query/GT splits;
+- metric and output: full-dimensional L2, top 100, Recall@100;
+- code budgets: exactly 32 and 64 packed bytes per database vector;
+- coarse IVF: shared `nlist={1024,4096}` and identical preassigned lists;
+- probe schedules:
+  - 1024: `1,2,4,8,16,32,64,128,256`;
+  - 4096: `4,8,16,32,64,128,256,512,1024`;
+- S view: first 128 full-PCA residual coordinates, 64 adjacent pairs;
+- GIST tail: reconstruct the unencoded residual tail as the coarse centroid
+  and add its exact query-to-centroid tail norm once per selected list;
+- every measured arm recomputes the identical common PCA/coarse search inside
+  its end-to-end timer; saved preassignments are consistency references only;
+- OPQ is trained and applied to residuals after the common coarse assignment
+  and may not change probed lists;
+- primary controls: D128, V128, PQ128, OPQ128, full-dimensional IVFPQ,
+  IVFPQ FastScan, and OPQ-IVFPQ;
+- quality/context controls: IVF-Flat and actual-byte SAQ/CAQ/RaBitQ points
+  selected only from the finite source/config pools in the design;
+- complete table construction, transform, coarse assignment, scan, and top-k
+  work is included in end-to-end timing;
+- single-thread latency and 12-physical-core batch QPS use one warmup and seven
+  measured repetitions; and
+- the materiality rule is the exact discrete-frontier rule in the design
+  document, without interpolation or query-selected operating points.
 
-- relevant repository source, Git metadata, build files, and current-task
-  documents;
-- the registered GIST PCA base, PCA centroid, and cluster-id inputs;
-- the reproduced CIFAR counterparts under
-  `/tmp/a4-or-b-cifar-inputs-default/`;
-- the two deterministic inventories; and
-- outputs newly produced by this worktree.
+## Reads and writes
 
-Allowed writes:
+Allowed reads now:
 
-- `TASK.md` and local guidance;
-- focused implementation and tests under `research/structured_2d/`;
-- the existing structured-2D result note; and
-- build and experiment outputs under `/tmp`.
+- repository source, Git metadata, build definitions, and research documents;
+- primary papers and official implementation documentation; and
+- already documented base-only summaries.
 
-Do not read benchmark queries, ground truth, Recall/QPS results, serialized
-indexes, variance files, or unrelated branch outputs. Held-out rows remain
-evaluation-only and must not select packing, counts, thresholds, or timing
-rules.
+Allowed writes now:
 
-Do not modify production `saqlib/`, the SAQ estimator, planner, index format,
-or search schedule. Do not introduce a fast-stage claim, query-trained rule,
-per-cluster model, plan id, or rescue sweep.
+- `TASK.md`;
+- the fair-query design under `docs/research/`; and
+- temporary text-only review output under `/tmp`.
+
+Forbidden now:
+
+- opening, hashing, parsing, sampling, or executing any natural benchmark
+  query or ground-truth file;
+- reading old Recall/QPS output or serialized indexes;
+- running a query executable;
+- modifying scientific or production source;
+- building an index or running an experiment; and
+- creating a new method, metric, baseline-selection rule, or authorization
+  stage.
+
+Filename discovery and source-level path inspection do not authorize file
+content reads.
 
 ## Commands and budget
 
+Allowed:
+
 ```bash
-cmake -S research/structured_2d -B /tmp/saq-structured-2d-build \
-  -DCMAKE_BUILD_TYPE=Release
-cmake --build /tmp/saq-structured-2d-build -j2
-ctest --test-dir /tmp/saq-structured-2d-build --output-on-failure
-/tmp/saq-structured-2d-build/structured_2d_runner ...
-git diff --check
 git status --short --branch
+git diff
+git diff --check
+git log
+rg ...
+sed -n ...
+find ... -type f
+wc ...
 ```
 
-- at most 16 GiB peak RSS;
-- at most 2 CPU-hours total;
-- one measurement process and one computational thread;
-- fixed S100 construction, with S20 retained only as the existing sensitivity
-  record;
-- no rate, seed, model, count, repetition, or threshold sweep.
+This documentation task has a two-hour wall-time budget and no experimental
+CPU budget. It must not start a long-running process.
+
+The future frozen evaluation has the separate resource ceiling written in the
+design: 16 GiB peak RSS, 48 aggregate CPU-hours, and 24 hours wall time.
 
 ## Deliverables and done criteria
 
 Deliver:
 
-- reusable B4/B8 matched-label pack/decode and packed scan functions;
-- deterministic adversarial and ordinary roundtrip/scan tests;
-- registered C/E/V packed-scan and amortization results for GIST/CIFAR B4/B8;
-- exact commands, flags, affinity/thread settings, CPU identity, output paths,
-  and hashes; and
-- a concise interpretation appended to the existing result note.
+- one readable evaluation design that completely specifies datasets,
+  representation semantics, direct and SOTA controls, byte accounting,
+  Recall alignment, candidate distributions, timing/QPS, resources, pass/fail
+  interpretation, and query-access prerequisites; and
+- this current-state task file.
 
-Done means Release build/tests pass, the frozen correctness rules and gate are
-applied to all four cells without rescue changes, an independent bounded
-review has no blocker/high finding, and the result is committed and pushed.
+Done means:
 
-## Current result
-
-All four registered cells pass:
-
-```text
-PASS_PACKED_PAYLOAD_PARITY
-PASS_PACKED_SCAN_CORRECTNESS
-PASS_PACKED_SCAN_AFFORDABILITY_AT_8192
-PASS_COMBINED_AFFORDABILITY_AT_8192
-```
-
-At 8,192 candidates, C/E combined CPU and wall ratios are respectively:
-
-- GIST B4: `1.0002x`, `1.0001x`;
-- GIST B8: `1.0412x`, `1.0412x`;
-- CIFAR B4: `1.0007x`, `1.0008x`; and
-- CIFAR B8: `1.0375x`, `1.0374x`.
-
-B4 first becomes affordable at 256 candidates on both datasets. B8 first
-becomes affordable at 8,192 candidates on both datasets. This is the main
-limitation exposed by the gate: the 64 KiB B8 query table is viable only when
-its construction is amortized across a large candidate set.
+- no required metric, baseline, code budget, dataset, probe schedule, distance
+  term, timing boundary, or decision threshold remains query-selectable;
+- an independent bounded review finds no blocker or high-severity fairness
+  defect;
+- the diff contains documentation only;
+- `git diff --check` passes; and
+- no query, ground truth, old QPS result, or serialized index was read.
 
 ## Current blocker and next action
 
-There is no implementation or native-integration blocker. Benchmark-query
-evaluation remains outside this task and has not been run.
+The evaluation is not executable yet. S has a 128-coordinate trainer and
+packed microkernel, but no full-database IVF encoder, correct GIST tail score,
+shared preassigned-list runner, serialized index, or end-to-end harness.
+Standard SIFT1M/GIST1M objects are also not currently bound by path and hash.
 
-After committing and pushing this result, the next scientific action is to
-freeze a fair query-evaluation contract for the independent VQ
-representation. That changes the active metric and data boundary, so it must
-name the comparison systems, matched bit budgets and quality points before
-benchmark queries are read.
+After this design passes review, the next action is query-free: implement one
+tiny synthetic multi-cell fixture that proves S's packed head-plus-tail score,
+shared list schedule, deterministic top-100 behavior, save/load parity, and
+complete byte accounting. Then build the finite baseline pool and perform the
+frozen synthetic-query CPU-cost projection. Query and ground-truth contents
+remain unread until those checks pass and the complete projected evaluation
+fits the frozen 48 CPU-hour budget.
