@@ -1,5 +1,6 @@
 #include "model.hpp"
 #include "compact.hpp"
+#include "microbench.hpp"
 
 #include "../a4_or_b/panel.hpp"
 
@@ -64,6 +65,13 @@ struct TraceRecord {
     std::vector<structured2d::RefinementStep> steps;
 };
 
+struct Distribution {
+    double minimum = 0;
+    double median = 0;
+    double maximum = 0;
+    double median_absolute_deviation = 0;
+};
+
 std::uint64_t cpu_us() {
     timespec value{};
     if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &value) != 0)
@@ -123,6 +131,20 @@ double mean(const std::vector<double>& values) {
     if (values.empty()) throw std::runtime_error("empty mean");
     return std::accumulate(values.begin(), values.end(), 0.0) /
             values.size();
+}
+
+Distribution distribution(std::vector<double> values) {
+    if (values.empty()) throw std::runtime_error("empty distribution");
+    std::sort(values.begin(), values.end());
+    const double median = values[values.size() / 2];
+    std::vector<double> deviations;
+    deviations.reserve(values.size());
+    for (const double value : values)
+        deviations.push_back(std::fabs(value - median));
+    std::sort(deviations.begin(), deviations.end());
+    return {
+            values.front(), median, values.back(),
+            deviations[deviations.size() / 2]};
 }
 
 bool valid(const Record& record) {
@@ -346,6 +368,166 @@ void write_compact(const std::filesystem::path& path,
                << record.valid << '\n';
 }
 
+void write_native_raw(
+        const std::filesystem::path& path,
+        const std::string& dataset, std::uint64_t fingerprint,
+        const std::vector<structured2d::NativeBenchmark>& benchmarks) {
+    std::ofstream output(path);
+    if (!output) throw std::runtime_error("cannot write native timings");
+    output << std::setprecision(17);
+    output << "dataset\tfingerprint\trate\tarm\trepetition"
+              "\tbuild_cpu_ns\tbuild_wall_ns\tlookup_cpu_ns"
+              "\tlookup_wall_ns\ttable_entries\tlookups"
+              "\tbuild_checksum\tlookup_checksum\n";
+    for (const auto& benchmark : benchmarks)
+        for (const auto& timing : benchmark.timings)
+            output << dataset << '\t' << fingerprint << '\t'
+                   << benchmark.word_bits << '\t' << timing.arm << '\t'
+                   << timing.repetition << '\t'
+                   << timing.build_cpu_ns << '\t'
+                   << timing.build_wall_ns << '\t'
+                   << timing.lookup_cpu_ns << '\t'
+                   << timing.lookup_wall_ns << '\t'
+                   << timing.table_entries << '\t'
+                   << timing.lookups << '\t'
+                   << timing.build_checksum << '\t'
+                   << timing.lookup_checksum << '\n';
+}
+
+struct NativeSummary {
+    int rate = 0;
+    char arm = '?';
+    std::uint64_t table_entries = 0;
+    std::uint64_t lookups = 0;
+    Distribution build_cpu;
+    Distribution build_wall;
+    Distribution lookup_cpu;
+    Distribution lookup_wall;
+};
+
+NativeSummary summarize_native(
+        const structured2d::NativeBenchmark& benchmark, char arm) {
+    std::vector<double> build_cpu, build_wall, lookup_cpu, lookup_wall;
+    std::uint64_t table_entries = 0;
+    std::uint64_t lookups = 0;
+    for (const auto& timing : benchmark.timings) {
+        if (timing.arm != arm) continue;
+        table_entries = timing.table_entries;
+        lookups = timing.lookups;
+        build_cpu.push_back(
+                static_cast<double>(timing.build_cpu_ns) /
+                timing.table_entries);
+        build_wall.push_back(
+                static_cast<double>(timing.build_wall_ns) /
+                timing.table_entries);
+        lookup_cpu.push_back(
+                static_cast<double>(timing.lookup_cpu_ns) /
+                timing.lookups);
+        lookup_wall.push_back(
+                static_cast<double>(timing.lookup_wall_ns) /
+                timing.lookups);
+    }
+    if (build_cpu.size() != structured2d::kMicrobenchmarkRepetitions)
+        throw std::runtime_error("native repetition count");
+    return {
+            benchmark.word_bits, arm, table_entries, lookups,
+            distribution(std::move(build_cpu)),
+            distribution(std::move(build_wall)),
+            distribution(std::move(lookup_cpu)),
+            distribution(std::move(lookup_wall))};
+}
+
+void write_distribution(std::ofstream& output,
+                        const Distribution& value) {
+    output << value.minimum << '\t' << value.median << '\t'
+           << value.maximum << '\t'
+           << value.median_absolute_deviation;
+}
+
+bool write_native_summary(
+        const std::filesystem::path& summary_path,
+        const std::filesystem::path& decision_path,
+        const std::string& dataset, std::uint64_t fingerprint,
+        const std::vector<structured2d::NativeBenchmark>& benchmarks) {
+    std::ofstream summary(summary_path);
+    std::ofstream decision(decision_path);
+    if (!summary || !decision)
+        throw std::runtime_error("cannot write native summary");
+    summary << std::setprecision(17);
+    decision << std::setprecision(17);
+    summary << "dataset\tfingerprint\trate\tarm\trepetitions"
+               "\ttable_entries_per_rep\tlookups_per_rep"
+               "\tbuild_cpu_ns_per_entry_min"
+               "\tbuild_cpu_ns_per_entry_median"
+               "\tbuild_cpu_ns_per_entry_max"
+               "\tbuild_cpu_ns_per_entry_mad"
+               "\tbuild_wall_ns_per_entry_min"
+               "\tbuild_wall_ns_per_entry_median"
+               "\tbuild_wall_ns_per_entry_max"
+               "\tbuild_wall_ns_per_entry_mad"
+               "\tlookup_cpu_ns_min\tlookup_cpu_ns_median"
+               "\tlookup_cpu_ns_max\tlookup_cpu_ns_mad"
+               "\tlookup_wall_ns_min\tlookup_wall_ns_median"
+               "\tlookup_wall_ns_max\tlookup_wall_ns_mad\n";
+    decision << "dataset\trate\tcompact_table_violations"
+                "\tmax_compact_table_difference\tshared_codes_reused"
+                "\tcompact_expanded_build_wall_ratio"
+                "\tcompact_expanded_lookup_wall_ratio"
+                "\tcompact_v_build_wall_ratio"
+                "\tcompact_v_lookup_wall_ratio"
+                "\tbuild_affordable\tlookup_parity\tcell_pass\n";
+
+    bool all_pass = true;
+    for (const auto& benchmark : benchmarks) {
+        const NativeSummary compact = summarize_native(benchmark, 'C');
+        const NativeSummary expanded = summarize_native(benchmark, 'E');
+        const NativeSummary independent = summarize_native(benchmark, 'V');
+        for (const NativeSummary* record :
+             {&compact, &expanded, &independent}) {
+            summary << dataset << '\t' << fingerprint << '\t'
+                    << record->rate << '\t' << record->arm << '\t'
+                    << structured2d::kMicrobenchmarkRepetitions << '\t'
+                    << record->table_entries << '\t'
+                    << record->lookups << '\t';
+            write_distribution(summary, record->build_cpu);
+            summary << '\t';
+            write_distribution(summary, record->build_wall);
+            summary << '\t';
+            write_distribution(summary, record->lookup_cpu);
+            summary << '\t';
+            write_distribution(summary, record->lookup_wall);
+            summary << '\n';
+        }
+        const double build_ce =
+                compact.build_wall.median /
+                expanded.build_wall.median;
+        const double lookup_ce =
+                compact.lookup_wall.median /
+                expanded.lookup_wall.median;
+        const double build_cv =
+                compact.build_wall.median /
+                independent.build_wall.median;
+        const double lookup_cv =
+                compact.lookup_wall.median /
+                independent.lookup_wall.median;
+        const bool build_pass = build_ce <= 2.0;
+        const bool lookup_pass = lookup_ce <= 1.10;
+        const bool cell_pass =
+                structured2d::valid(benchmark) &&
+                build_pass && lookup_pass;
+        all_pass = all_pass && cell_pass;
+        decision << dataset << '\t' << benchmark.word_bits << '\t'
+                 << benchmark.compact_table_violations << '\t'
+                 << benchmark.max_compact_table_difference << '\t'
+                 << benchmark.shared_codes_reused << '\t'
+                 << build_ce << '\t' << lookup_ce << '\t'
+                 << build_cv << '\t' << lookup_cv << '\t'
+                 << build_pass << '\t' << lookup_pass << '\t'
+                 << cell_pass << '\n';
+    }
+    return all_pass;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -377,6 +559,7 @@ int main(int argc, char** argv) {
         std::vector<Record> records;
         std::vector<CompactRecord> compact_records;
         std::vector<TraceRecord> traces;
+        std::vector<structured2d::NativeBenchmark> native_benchmarks;
         for (const int rate : {4, 8}) {
             Timing d_time;
             auto d = timed(
@@ -469,8 +652,18 @@ int main(int argc, char** argv) {
                                 panel.fit, rate, arbitrary);
                     },
                     v_time);
-            records.push_back(evaluate_model(
-                    rate, std::move(v), panel, v_time));
+            auto v_record = evaluate_model(
+                    rate, std::move(v), panel, v_time);
+            std::cout << "START NATIVE_MICROBENCH B=" << rate << '\n';
+            native_benchmarks.push_back(
+                    structured2d::benchmark_native_tables(
+                            panel, shared, final_record.fit,
+                            v_record.model, v_record.fit));
+            records.push_back(std::move(v_record));
+            std::cout << "DONE NATIVE_MICROBENCH B=" << rate
+                      << " valid="
+                      << structured2d::valid(native_benchmarks.back())
+                      << '\n';
             std::cout << "DONE V B=" << rate
                       << " cpu_us=" << v_time.cpu_us << '\n';
         }
@@ -487,6 +680,13 @@ int main(int argc, char** argv) {
         write_compact(
                 output_directory / "compact.tsv",
                 dataset, compact_records);
+        write_native_raw(
+                output_directory / "native_microbenchmark.tsv",
+                dataset, fingerprint, native_benchmarks);
+        const bool native_pass = write_native_summary(
+                output_directory / "native_microbenchmark_summary.tsv",
+                output_directory / "native_microbenchmark_decision.tsv",
+                dataset, fingerprint, native_benchmarks);
         const bool pass = write_decision(
                 output_directory / "decision.tsv", dataset, records);
         const bool all_valid =
@@ -505,9 +705,13 @@ int main(int argc, char** argv) {
         std::cout << "RESULT valid=" << all_valid
                   << " compact_valid=" << compact_valid
                   << " fixed_budget_all=" << fixed_budget_all
+                  << " native_pass=" << native_pass
                   << " cell_pass=" << pass
                   << " output=" << output_directory << '\n';
-        return all_valid && compact_valid && fixed_budget_all ? 0 : 1;
+        return all_valid && compact_valid && fixed_budget_all &&
+                native_pass
+                ? 0
+                : 1;
     } catch (const std::exception& error) {
         std::cerr << "FAIL " << error.what() << '\n';
         return 1;

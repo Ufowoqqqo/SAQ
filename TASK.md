@@ -1,4 +1,4 @@
-# Current Task: fixed-budget shared-affine fitter
+# Current Task: query-free native compact-table microbenchmark
 
 ## Branch and base
 
@@ -6,11 +6,10 @@
 - Base commit: `5503e87d0584fe50c9233fbe3a02cdd577db07ea`
 - Active mode: `IMPLEMENT`, followed by the permitted smallest `EXPERIMENT`
 
-The shared-affine base-only test and compact-table check passed. The current
-instruction selects a fixed-budget construction algorithm instead of pursuing
-optimizer convergence. It authorizes making the already executed 100-round
-S model primary and retaining iteration 20 only as a construction-budget
-sensitivity point. It does not authorize benchmark-query evaluation or
+The fixed-budget S100 construction and compact-table algebra have passed. The
+current instruction authorizes one bounded native C++ microbenchmark comparing
+compact S100, expanded S100, and independent V table construction and lookup.
+It does not authorize benchmark-query evaluation, Recall/QPS measurement, or
 production SAQ changes.
 
 ## Research question and hypothesis
@@ -53,9 +52,8 @@ efficiency diagnostic. Independent V retains the stricter per-group occupancy
 check.
 
 These are mechanism-level feasibility thresholds, not statistical or
-paper-performance claims. Their earlier success permitted the current
-compact-table algebra check; it did not by itself authorize native performance
-measurement.
+paper-performance claims. Their success and the compact-equivalence result
+permit the current query-free native cost measurement.
 
 ## Inputs and relevant paths
 
@@ -164,6 +162,62 @@ table construction time, maximum entry difference, encoding mismatches, and
 pair-proxy difference. This is still prototype evidence, not a native
 performance claim.
 
+## Frozen native microbenchmark
+
+The benchmark uses only the registered **fit base residuals** as deterministic
+probe and candidate inputs. They are not benchmark queries. Held-out rows,
+benchmark queries, ground truth, Recall/QPS outputs, and serialized indexes
+must not be read by the timed benchmark.
+
+Compare three arms at B4 and B8 on both registered datasets:
+
+- `C`: compact S100, building each table directly from the shared shape and
+  group affine terms without materializing expanded centers;
+- `E`: the identical S100 model with its `64*K` binary32 centers expanded;
+- `V`: the existing independent per-group 2D V model with `64*K` binary32
+  centers.
+
+All arms build one contiguous K-entry binary32 table per group and perform one
+indexed binary32 lookup per group/candidate. Model fitting, model expansion,
+code generation, allocation, correctness checks, logging, and output writing
+are outside timed regions.
+
+Freeze the workloads as follows:
+
+- table construction: all 8,192 fit rows as probes, all 64 groups, and all K
+  entries;
+- lookup: 64 fit probes selected by the midpoint of 64 equal row strata,
+  all 8,192 fit candidate codes, and all 64 groups;
+- one untimed warmup followed by nine measured repetitions;
+- rotate arm order across repetitions as `C/E/V`, `E/V/C`, `V/C/E`;
+- reuse allocated buffers, run one process and one computational thread, and
+  prevent dead-code removal without adding logging or serialization inside
+  timed regions; and
+- report median CPU and wall nanoseconds per table entry and per lookup,
+  together with minimum, maximum, and median absolute deviation.
+
+Before timing, require:
+
+- exact table-entry and lookup counts for every arm;
+- finite tables and lookup checksums;
+- compact-S versus expanded-S table differences within the existing
+  `8 * float_epsilon * max(1, abs(reference))` bound on all 64 frozen probes;
+  and
+- exact reuse of S codes between C and E.
+
+The preregistered affordability interpretation is:
+
+- `C/E` median table-build time per entry must be at most `2.0x` in every
+  dataset/rate cell; and
+- lookup median time per lookup must be no more than `10%` slower than E in
+  every cell.
+
+These thresholds test whether compact arithmetic destroys the storage benefit
+before production integration. V is a measured SOTA-mechanism control, not an
+acceptance denominator. Passing does not establish end-to-end QPS, cache
+behavior inside SAQ, Recall parity, or movement of a system-level Pareto
+frontier. Any later query evaluation requires a separate task.
+
 ## Implementation and commands
 
 Modify only the existing `research/structured_2d` prototype and focused
@@ -192,40 +246,45 @@ git diff --check
 - at most 16 GiB peak RSS;
 - at most 2 CPU-hours for both datasets;
 - exactly the fixed method budget of at most 100 accepted refinement rounds;
-- no rate, seed, iteration, or initialization sweep;
+- no rate, seed, iteration, initialization, probe-count, repetition-count, or
+  arm-order sweep;
 - instrumentation and output serialization outside timed fit/encode regions.
 
-This implementation is `PROTOTYPE_NOT_PERFORMANCE_EVIDENCE`. The scientific
-hot path is nearest-center encoding and lookup-table use; no SOTA speed claim
-is permitted here.
+This implementation remains `PROTOTYPE_NOT_PERFORMANCE_EVIDENCE` until the
+frozen native microbenchmark completes. Its scientific hot paths are table
+construction and contiguous code-indexed lookup. The measurement may establish
+native prototype affordability but cannot support a SOTA system-speed claim.
 
 ## Deliverables and done criteria
 
 Deliver:
 
-- deterministic tests for fixed-budget bookkeeping, full-affine updates,
-  compact encoding equality, table algebra, tolerance enforcement, and pair
-  equivalence;
-- per-iteration fit traces for GIST/CIFAR B4/B8;
-- the iteration-20 sensitivity and primary S100 reconstruction, group, pair,
-  validity, and construction-cost results;
-- compact/reference table equivalence and memory/time ledgers; and
-- a truthful fixed-budget claim and convergence limitation in the result note.
+- reusable native table builders for C, E, and V;
+- deterministic tests for table values, code reuse, counts, and validation;
+- per-repetition CPU and wall measurements plus frozen summary statistics for
+  all twelve dataset/rate/arm cells;
+- exact commands, compiler flags, thread/affinity setting, CPU identity, and
+  output hashes; and
+- a truthful affordability decision appended to the existing result note.
 
-Done means the API defaults to the 100-round primary construction, the runner
-labels S20 only as sensitivity, focused tests pass, and existing S100 evidence
-is shown to be generated by the same update path. Compilation errors, test
-failures, debugging, and negative results are not blockers.
+Done means the Release build and focused tests pass, all frozen correctness
+checks pass, all four registered dataset/rate cells finish within budget, and
+the two affordability rules are applied without rescue changes. Compilation
+errors, test failures, debugging, and negative timing results are not blockers.
 
 ## Current blocker and next action
 
-The fixed-budget choice is implemented:
+The fixed-budget choice is committed at `9f8df90`. The microbenchmark contract
+above was frozen before implementing or observing its timings.
 
 ```text
 ADOPT_FIXED_BUDGET_100
 PASS_COMPACT_TABLE_EQUIVALENCE
 PASS_SHARED_AFFINE_BASE_ONLY_RETAINED
 NOT_CONVERGED_AT_100
+PASS_NATIVE_TABLE_CORRECTNESS
+PASS_NATIVE_LOOKUP_PARITY
+FAIL_NATIVE_TABLE_BUILD_AFFORDABILITY
 ```
 
 All four compact checks have zero encoding mismatches, zero table-tolerance
@@ -242,8 +301,17 @@ The result is appended to:
 
 `docs/saq_structured_2d_base_only_result_2026_07_23.md`.
 
-No implementation blocker remains. Do not describe S100 as converged. The
-smallest next step, if separately requested, is a query-free native
-microbenchmark of the compact S100 table builder against expanded S100 and V
-under a frozen construction/search cost contract. Benchmark-query evaluation
-remains unauthorized.
+All four dataset/rate cells completed. C/E table-build ratios are
+`2.353x`, `2.887x`, `2.482x`, and `2.899x`, so every cell fails the frozen
+`2.0x` affordability rule. C/E lookup ratios are `0.998x`, `1.002x`,
+`0.998x`, and `1.008x`, so every cell passes lookup parity. Correctness
+violations are zero.
+
+The result is recorded in
+`docs/saq_structured_2d_base_only_result_2026_07_23.md`. No implementation or
+measurement blocker remains. The scientific direction now has a genuine
+choice: profile and optimize the exact compact builder, measure its
+amortization only in a separately authorized unchanged-estimator integration,
+or stop. Do not choose automatically, and do not describe this microbenchmark
+as Recall/QPS or SOTA performance evidence. Benchmark-query evaluation remains
+unauthorized.

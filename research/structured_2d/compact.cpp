@@ -146,12 +146,33 @@ float compact_distance(const TableTerms& terms,
     return static_cast<float>(std::max(0.0, value));
 }
 
-double entry_tolerance(float reference) {
+}  // namespace
+
+void build_compact_table(
+        const float* query, const SharedAffineModel& model,
+        std::size_t group, std::span<float> table) {
+    const std::size_t centers = model.shape.size() / 2;
+    if (group >= model.groups.size() || table.size() != centers)
+        throw std::invalid_argument("compact table shape");
+    const TableTerms terms = table_terms(query, model, group);
+    for (std::size_t label = 0; label < centers; ++label)
+        table[label] = compact_distance(terms, model, label);
+}
+
+void build_expanded_table(
+        const float* query, const a4orb::Block& block,
+        std::span<float> table) {
+    if (block.dimension != 2 || table.size() != block.centers ||
+        block.values.size() != 2 * block.centers)
+        throw std::invalid_argument("expanded table shape");
+    for (std::size_t label = 0; label < block.centers; ++label)
+        table[label] = reference_distance(query, block, label);
+}
+
+double table_entry_tolerance(float reference) {
     return 8 * std::numeric_limits<float>::epsilon() *
             std::max(1.0, std::fabs(static_cast<double>(reference)));
 }
-
-}  // namespace
 
 CompactCheck check_compact(
         const a4orb::Panel& panel,
@@ -199,7 +220,8 @@ CompactCheck check_compact(
                         query, model.expanded.blocks[group], label);
                 const double difference = std::fabs(
                         static_cast<double>(candidate) - reference);
-                const double tolerance = entry_tolerance(reference);
+                const double tolerance =
+                        table_entry_tolerance(reference);
                 result.max_table_absolute_difference = std::max(
                         result.max_table_absolute_difference, difference);
                 result.table_tolerance_violations +=
@@ -212,7 +234,8 @@ CompactCheck check_compact(
             estimate.add(table[code]);
             const float reference_lookup = reference_distance(
                     query, model.expanded.blocks[group], code);
-            lookup_tolerance += entry_tolerance(reference_lookup);
+            lookup_tolerance +=
+                    table_entry_tolerance(reference_lookup);
 
             const float* stored = panel.heldout.data() +
                     left * kDimensions + 2 * group;

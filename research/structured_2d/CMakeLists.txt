@@ -18,6 +18,7 @@ set(STRUCTURED_2D_FLAGS
 set(SHARED_SOURCES
   model.cpp
   compact.cpp
+  microbench.cpp
   ../a4_or_b/models.cpp
   ../a4_or_b/panel.cpp
   ../a4_or_c/core.cpp)

@@ -351,3 +351,147 @@ The next eligible engineering check is a query-free native compact-table
 microbenchmark against expanded S100 and V. It requires a separately frozen
 cost contract and does not authorize benchmark queries, Recall/QPS, or
 production integration.
+
+## Query-free native compact-table microbenchmark
+
+Measurement date: 2026-07-23
+
+```text
+PASS_NATIVE_TABLE_CORRECTNESS
+PASS_NATIVE_LOOKUP_PARITY
+FAIL_NATIVE_TABLE_BUILD_AFFORDABILITY
+PROTOTYPE_NOT_PERFORMANCE_EVIDENCE
+```
+
+### Frozen boundary
+
+Before observing timing results, the `Frozen native microbenchmark` section
+of `TASK.md` froze:
+
+- fit base residuals only; no benchmark queries, ground truth, Recall/QPS, or
+  serialized indexes;
+- compact S100 (`C`), the identical expanded S100 (`E`), and independent V;
+- all 8,192 fit rows, 64 groups, and every table entry for table construction;
+- 64 stratum-midpoint fit probes, all 8,192 fit codes, and 64 groups for
+  lookup;
+- one warmup, nine measured repetitions, and rotating `C/E/V` arm order;
+- wall-clock median as the primary comparison, with CPU time and dispersion
+  retained; and
+- affordability gates of `C/E <= 2.0x` for table construction and no more
+  than 10% lookup slowdown.
+
+Training, expansion, encoding, allocation, validation, and output were outside
+the timed regions. Each B4 repetition built 8,388,608 table entries; each B8
+repetition built 134,217,728. Every arm performed 33,554,432 lookups per
+repetition.
+
+The executable was built with GCC 11.5.0, CMake 4.0.3, Release `-O3 -DNDEBUG`,
+the local strict floating-point flags in `CMakeLists.txt`, generic Faiss, and
+OpenBLAS 0.3.29. Measurements used one process pinned to CPU 0 of an Intel
+Core i9-10920X, with OpenMP, OpenBLAS, and MKL thread counts fixed to one.
+
+Exact build and execution commands:
+
+```bash
+cmake -S research/structured_2d -B /tmp/saq-structured-2d-build \
+  -DCMAKE_BUILD_TYPE=Release -DFAISS_ENABLE_GPU=OFF \
+  -DFAISS_ENABLE_PYTHON=OFF -DFAISS_OPT_LEVEL=generic \
+  -DBLA_VENDOR=OpenBLAS \
+  -DBLAS_LIBRARIES=/usr/lib64/libopenblaso-r0.3.29.so \
+  -DLAPACK_LIBRARIES=/usr/lib64/libopenblaso-r0.3.29.so
+cmake --build /tmp/saq-structured-2d-build -j2
+ctest --test-dir /tmp/saq-structured-2d-build --output-on-failure
+
+env OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  OMP_DYNAMIC=FALSE taskset -c 0 \
+  /tmp/saq-structured-2d-build/structured_2d_runner \
+  gist_sample50k_k512 \
+  /rwproject/kdd-db/kluaq/saq/data/gist_sample50k/gist_sample50k_base_pca.fvecs \
+  /rwproject/kdd-db/kluaq/saq/data/gist_sample50k/gist_sample50k_centroid_512_pca.fvecs \
+  /rwproject/kdd-db/kluaq/saq/data/gist_sample50k/gist_sample50k_cluster_id_512.ivecs \
+  /tmp/a4_or_b_gist_inventory.tsv 50000 960 \
+  /tmp/structured-2d-native-gist-9f8df90
+
+env OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  OMP_DYNAMIC=FALSE taskset -c 0 \
+  /tmp/saq-structured-2d-build/structured_2d_runner \
+  cifar60k_k512 \
+  /tmp/a4-or-b-cifar-inputs-default/cifar60k_base_pca.fvecs \
+  /tmp/a4-or-b-cifar-inputs-default/cifar60k_centroid_512_pca.fvecs \
+  /tmp/a4-or-b-cifar-inputs-default/cifar60k_cluster_id_512.ivecs \
+  /tmp/a4_or_b_cifar_inventory.tsv 60000 512 \
+  /tmp/structured-2d-native-cifar-9f8df90
+```
+
+### Correctness
+
+All four dataset/rate cells passed:
+
+- exact table-entry and lookup counts;
+- finite build and lookup checksums;
+- exact reuse of S codes by C and E; and
+- zero compact-versus-expanded table-tolerance violations.
+
+Maximum compact-versus-expanded absolute table differences were `5.96e-8`
+and `2.38e-7` for GIST B4/B8, and `1.49e-8` and `2.98e-8` for CIFAR B4/B8.
+
+### Native costs
+
+The table columns below are median wall nanoseconds. Lookup is normalized per
+code-indexed table access.
+
+| Dataset | Rate | C build ns/entry | E build ns/entry | V build ns/entry | C/E build | C lookup ns | E lookup ns | V lookup ns | C/E lookup |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| GIST | B4 | 2.898 | 1.232 | 1.209 | 2.353x | 0.922 | 0.923 | 0.923 | 0.998x |
+| GIST | B8 | 2.533 | 0.877 | 0.876 | 2.887x | 0.935 | 0.933 | 0.940 | 1.002x |
+| CIFAR | B4 | 2.845 | 1.146 | 1.097 | 2.482x | 0.925 | 0.927 | 0.925 | 0.998x |
+| CIFAR | B8 | 2.480 | 0.855 | 0.850 | 2.899x | 0.919 | 0.912 | 0.917 | 1.008x |
+
+The measured median absolute deviations are small: build MAD ranges from
+`0.0025` to `0.0093 ns/entry`, and lookup MAD from `0.0013` to
+`0.0083 ns/lookup`.
+
+For one 64-group probe, the medians imply roughly:
+
+- B4: compact table construction costs 2.9 microseconds versus 1.1--1.3
+  microseconds for E/V; and
+- B8: compact table construction costs 40.6--41.5 microseconds versus
+  13.9--14.4 microseconds for E/V.
+
+The persistent model sizes remain 1,664 bytes (B4) and 3,584 bytes (B8) for C,
+versus 8,192 and 131,072 bytes for E/V. Thus compact S100 exchanges a 4.9x
+(B4) or 36.6x (B8) model-size reduction for 2.35--2.90x table-build time in
+this native prototype. Once a table exists, lookup cost is indistinguishable
+at this resolution because all arms use the same contiguous binary32 layout.
+
+### Decision and claim boundary
+
+The lookup-parity gate passes in all four cells. The table-construction gate
+fails in all four: compact construction is consistently slower than the
+frozen `2.0x` limit. The likely mechanism is the extra shared-affine polynomial
+arithmetic per entry; the present experiment isolates the location of the
+overhead but is not a profiler result.
+
+This is a useful negative result. Compact S100 is memory-feasible and
+lookup-compatible, but the current native builder is not yet affordable under
+the frozen rule. The result does not establish end-to-end QPS, Recall parity,
+cache behavior inside production SAQ, or a SOTA Pareto improvement. A later
+decision may either profile and optimize this exact builder under a new frozen
+scope, quantify amortization in an authorized unchanged-estimator integration,
+or stop the direction; this measurement does not choose among them.
+
+Artifacts:
+
+- `/tmp/structured-2d-native-gist-9f8df90/`;
+- `/tmp/structured-2d-native-cifar-9f8df90/`.
+
+SHA-256 for the raw, decision, and summary timing files:
+
+```text
+0cf1ee98d7ff428906eb5cb8de7e83ca1edcfd13228835b75d9d547b8c3c34b4  GIST raw
+3f9b7136931e331210ffe2ad24956dbb62bcb1966fbb193897a27056f7e13ace  GIST decision
+e0749661ed6b60c8e8cafe2c25838c32df141a7bc4d419a7a70cfd8a3e6110dc  GIST summary
+9f6f4e48df2dd1fcdc026d92a79dfd8696e14abf4d99996b40c6c09f4ca75f0b  CIFAR raw
+e953b8fc033299cf4011862cc163ec91669a16de7a2e62f650eb4e9069dff540  CIFAR decision
+40d882f4ef475af1c46e057d481d07fc56af3653ace99940e65d75c36e768211  CIFAR summary
+```

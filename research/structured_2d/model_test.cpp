@@ -199,6 +199,17 @@ void compact_equivalence_test() {
     require(structured2d::valid(check, pairs), "compact equivalence");
     require(check.peak_table_bytes == 4 * sizeof(float),
             "one-table memory");
+    std::vector<float> compact_table(4), expanded_table(4);
+    structured2d::build_compact_table(
+            panel.fit.data(), model, 0, compact_table);
+    structured2d::build_expanded_table(
+            panel.fit.data(), model.expanded.blocks[0], expanded_table);
+    for (std::size_t label = 0; label < compact_table.size(); ++label)
+        require(
+                std::fabs(compact_table[label] - expanded_table[label]) <=
+                        structured2d::table_entry_tolerance(
+                                expanded_table[label]),
+                "public native table builders");
 
     // The reference is deliberately inconsistent with the compact state.
     // The tolerance checker must detect this instead of silently blessing a
