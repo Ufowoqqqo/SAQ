@@ -774,3 +774,196 @@ production source or estimator was changed. A synthetic parity or
 amortization run was not performed because it would test a newly defined VQ
 consumer after the unchanged-estimator admission condition had already
 failed.
+
+## Why the unchanged bitplane direction is not worth implementing
+
+A bounded representation analysis checked whether S could be redesigned to
+retain the production SAQ decoder without adding codebook state or a new
+consumer.
+
+For one production segment with `b` bits per scalar coordinate, the decoder
+can only reconstruct levels
+
+```text
+l_b(c) = -1 + (c + 1/2) * 2 / 2^b
+```
+
+followed by one `rescale` shared by the entire vector segment. Matching one
+joint B-bit label for two coordinates requires `B=2b`; B4 therefore maps to a
+`4x4` Cartesian grid and B8 to a `16x16` grid. Equal payload size does not
+change that decoder geometry.
+
+For equality on every query, each S center would have to equal a scaled
+Cartesian decoder point after a fixed relabeling. A direct counterexample is
+a legal shared shape whose 16 B4 centers are the vertices of a regular
+16-gon: every center is a convex-hull vertex, whereas a `4x4` Cartesian grid
+has only four hull vertices. Scaling, invertible affine maps, and label
+permutations cannot remove this mismatch. The analogous regular 256-gon gives
+the B8 counterexample.
+
+A narrow radial exception exists for a segment containing only one pair if
+the existing per-vector `rescale` is reinterpreted as a label-dependent radial
+factor. It does not extend to the current multi-group segment, where all
+groups share one factor, and it does not match the current factor producer.
+
+The conclusion is that direction 2 either:
+
+- degenerates to the existing Cartesian scalar grid;
+- produces bytes with the wrong distance meaning; or
+- introduces a new decoder, table, or factor semantics and thereby becomes
+  direction 1.
+
+No implementation or data run was needed for this conclusion.
+
+## Independent full-word VQ packed-consumer integration
+
+Date: 2026-07-24
+
+Decision:
+
+```text
+PASS_PACKED_PAYLOAD_PARITY
+PASS_PACKED_SCAN_CORRECTNESS
+PASS_PACKED_SCAN_AFFORDABILITY_AT_8192
+PASS_COMBINED_AFFORDABILITY_AT_8192
+```
+
+This follow-up deliberately treats S as an independent full-word VQ
+representation rather than an SAQ encoder substitution.
+
+### Representation and measured path
+
+- B4 packs 64 joint labels into 32 bytes, with the even group in the low
+  nibble and the odd group in the high nibble.
+- B8 stores one label byte per group, for 64 bytes per candidate.
+- C and E reuse the identical packed S payload; V uses the same packing rule
+  with its independently trained labels.
+- Every candidate decodes and performs exactly 64 table lookups.
+- Packing, allocation, model fitting, output, and correctness checks remain
+  outside timed regions. Decode, lookup, and binary64 accumulation are inside
+  the packed scan timing.
+- One query-like invocation reuses one `64*K` binary32 table buffer: 4 KiB at
+  B4 and 64 KiB at B8. The benchmark does not retain all 64 probe tables
+  simultaneously.
+
+The fixed candidate counts are 64, 256, 1,024, and 8,192. The measurement
+uses the existing 64 midpoint-stratified fit probes, one warmup, nine
+repetitions, and the frozen C/E/V arm rotation. Both CPU and wall scan ratios,
+and both CPU and wall combined table-build-plus-scan ratios, must be at most
+`1.10x`.
+
+### Correctness
+
+All four cells have:
+
+- zero compact-table tolerance violations;
+- zero packed-scan tolerance violations;
+- exact packed-label replay and C/E payload reuse;
+- exact expanded packed-scan versus direct lookup equality; and
+- exact payload, query-table, candidate, table-entry, and lookup accounting.
+
+Maximum compact/expanded table and packed-scan differences are:
+
+| Dataset | Rate | Max table difference | Max scan difference |
+| --- | ---: | ---: | ---: |
+| GIST | B4 | `5.96e-8` | `6.77e-8` |
+| GIST | B8 | `2.38e-7` | `1.55e-7` |
+| CIFAR | B4 | `1.49e-8` | `2.04e-8` |
+| CIFAR | B8 | `2.98e-8` | `3.24e-8` |
+
+### Native result
+
+At 8,192 candidates:
+
+| Dataset | Rate | C/E scan CPU | C/E scan wall | C/E total CPU | C/E total wall | C/V total wall | First affordable count |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| GIST | B4 | `0.9983x` | `0.9982x` | `1.0002x` | `1.0001x` | `1.0017x` | 256 |
+| GIST | B8 | `1.0030x` | `1.0031x` | `1.0412x` | `1.0412x` | `1.0438x` | 8,192 |
+| CIFAR | B4 | `0.9991x` | `0.9991x` | `1.0007x` | `1.0008x` | `0.9985x` | 256 |
+| CIFAR | B8 | `0.9994x` | `0.9993x` | `1.0375x` | `1.0374x` | `1.0374x` | 8,192 |
+
+Packed scan itself is indistinguishable across C/E/V because all three arms
+use the same label width and decoder. Compact table construction remains more
+expensive, but at 8,192 candidates it adds only about 3.7%--4.1% total cost at
+B8 and effectively no total cost at B4.
+
+The candidate-count curve is important negative evidence. B4 amortizes by 256
+candidates, but B8 does not pass at 1,024 candidates and first passes only at
+8,192. The method is therefore plausible for large candidate batches, but the
+current evidence does not support small-cell or low-`nprobe` affordability.
+
+### Commands and environment
+
+Build:
+
+```bash
+cmake -S research/structured_2d -B /tmp/saq-structured-2d-build \
+  -DCMAKE_BUILD_TYPE=Release -DFAISS_ENABLE_GPU=OFF \
+  -DFAISS_ENABLE_PYTHON=OFF -DFAISS_OPT_LEVEL=generic \
+  -DBLA_VENDOR=OpenBLAS \
+  -DBLAS_LIBRARIES=/usr/lib64/libopenblaso-r0.3.29.so \
+  -DLAPACK_LIBRARIES=/usr/lib64/libopenblaso-r0.3.29.so
+cmake --build /tmp/saq-structured-2d-build -j2
+ctest --test-dir /tmp/saq-structured-2d-build --output-on-failure
+```
+
+The packing and decode tests also passed an AddressSanitizer build:
+
+```bash
+cmake -S research/structured_2d -B /tmp/saq-structured-2d-asan \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer" \
+  -DFAISS_ENABLE_GPU=OFF -DFAISS_ENABLE_PYTHON=OFF \
+  -DFAISS_OPT_LEVEL=generic -DBLA_VENDOR=OpenBLAS \
+  -DBLAS_LIBRARIES=/usr/lib64/libopenblaso-r0.3.29.so \
+  -DLAPACK_LIBRARIES=/usr/lib64/libopenblaso-r0.3.29.so
+cmake --build /tmp/saq-structured-2d-asan -j2
+ASAN_OPTIONS=detect_leaks=0 \
+  ctest --test-dir /tmp/saq-structured-2d-asan --output-on-failure
+```
+
+Both registered runs used:
+
+```text
+OMP_NUM_THREADS=1
+OPENBLAS_NUM_THREADS=1
+MKL_NUM_THREADS=1
+OMP_DYNAMIC=FALSE
+taskset -c 0
+```
+
+The executable and input arguments are the same as the earlier native runs,
+with output directories:
+
+- `/tmp/structured-2d-packed-gist-23290a5-v1`;
+- `/tmp/structured-2d-packed-cifar-23290a5-v1`.
+
+Hardware and compiler:
+
+```text
+Intel Core i9-10920X @ 3.50 GHz
+GCC 11.5.0
+Release, -O3, -fno-fast-math, -ffp-contract=off,
+-frounding-math, -mfpmath=sse
+```
+
+SHA-256:
+
+```text
+1a91013ace7570e0041a1e9e1d8272e653a9bc96a296e5c3709777efec36cf67  GIST raw
+562cad14831a17ee6b7a5269ab5090de5826540886f5e6033b0ab950c7a5a284  GIST summary
+28f269d205f2d0070814ade0c927bed4ece898c734d3f1a102a6da39d1a0a2c5  GIST decision
+10402fc5574d5576d57b7ff373a7492c0d8a55810558409147e071a016eb2227  GIST compact
+137e6dbd92a4d7295d1a9016d80ed0b95f79538c38c0a7f282edd471cebf4fbd  CIFAR raw
+8bf7e739126f6d0f2b1c23b44e149c6e7611afa14165d19826ee0a23a4a3cd7a  CIFAR summary
+1eac7e8b1126ee2afaaa53fea42ceeea8bdd3d42a77a47475fa597cca6150b4c  CIFAR decision
+18e1c476e8e56d5cbff193f08b383143e5a34015f70c2b78847e69ccbf6b4dbf  CIFAR compact
+```
+
+### Claim boundary
+
+This establishes a correct packed full-word consumer and native prototype
+affordability for 8,192-candidate batches. It does not establish benchmark
+Recall, ranking quality, end-to-end QPS, behavior at production candidate
+distributions, a fast pruning stage, or a SOTA Pareto improvement. Those
+claims require a separately frozen fair query evaluation.

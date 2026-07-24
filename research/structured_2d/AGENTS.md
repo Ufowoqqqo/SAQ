@@ -6,8 +6,9 @@ Test one query-unaware base-only mechanism: a shared two-dimensional codebook
 with one mean and one full 2x2 affine transform per fixed adjacent-coordinate
 group. Compare it fairly with the inherited D and independent V controls.
 
-This is a feasibility prototype, not performance evidence or a production SAQ
-implementation.
+This is an independent full-word VQ prototype, not a production SAQ
+implementation. The current task may measure its native packed consumer, but
+must not describe that consumer as the unchanged production SAQ estimator.
 
 ## Dependencies
 
@@ -17,6 +18,8 @@ Reuse:
 - `../a4_or_b/models.{hpp,cpp}` for D/V training and unchanged evaluation;
 - `../a4_or_c/core.{hpp,cpp}` for scalar allocation;
 - the repository's pinned Faiss for deterministic 2D K-means.
+- the existing compact/expanded builders, native timing code, runner, and TSV
+  outputs in this directory for packed-consumer integration.
 
 Do not copy or alter those implementations unless a demonstrated correctness
 defect prevents this task.
@@ -32,7 +35,9 @@ ground truth, Recall/QPS results, serialized indexes, or unrelated branch
 outputs.
 
 Fit all means, transforms, shared shapes, assignments, and stopping decisions
-from fit rows only. Held-out rows are evaluation-only.
+from fit rows only. Held-out rows are evaluation-only. Candidate payload
+packing is fixed-width: B4 is 32 bytes with the even group in the low nibble;
+B8 is 64 bytes with one group per byte.
 
 ## Review clarity
 
@@ -72,5 +77,6 @@ shared label is used in the pooled fit assignment; still report per-group
 empty labels as an efficiency diagnostic. For independent V, require every
 label in every group. Run D/S/V on the identical GIST and CIFAR panels at
 B4/B8, report reconstruction, group, pair-proxy, time, compact and transient
-memory, and table entries, then apply the frozen `TASK.md` decision without
-rescue sweeps.
+memory, table entries, packed payload parity, decoded lookup count, packed scan
+cost, and table-build amortization, then apply the frozen `TASK.md` decision
+without rescue sweeps.

@@ -376,65 +376,79 @@ void write_native_raw(
     if (!output) throw std::runtime_error("cannot write native timings");
     output << std::setprecision(17);
     output << "dataset\tfingerprint\trate\tarm\trepetition"
-              "\tbuild_cpu_ns\tbuild_wall_ns\tlookup_cpu_ns"
-              "\tlookup_wall_ns\ttable_entries\tlookups"
-              "\tbuild_checksum\tlookup_checksum\n";
+              "\tcandidate_count\tpayload_bytes_per_candidate"
+              "\tbuild_cpu_ns\tbuild_wall_ns\tscan_cpu_ns"
+              "\tscan_wall_ns\ttable_entries\tcandidates_scanned"
+              "\tlookups\tbuild_checksum\tscan_checksum\n";
     for (const auto& benchmark : benchmarks)
         for (const auto& timing : benchmark.timings)
-            output << dataset << '\t' << fingerprint << '\t'
-                   << benchmark.word_bits << '\t' << timing.arm << '\t'
-                   << timing.repetition << '\t'
-                   << timing.build_cpu_ns << '\t'
-                   << timing.build_wall_ns << '\t'
-                   << timing.lookup_cpu_ns << '\t'
-                   << timing.lookup_wall_ns << '\t'
-                   << timing.table_entries << '\t'
-                   << timing.lookups << '\t'
-                   << timing.build_checksum << '\t'
-                   << timing.lookup_checksum << '\n';
+            for (const auto& scan : timing.scans)
+                output << dataset << '\t' << fingerprint << '\t'
+                       << benchmark.word_bits << '\t' << timing.arm << '\t'
+                       << timing.repetition << '\t'
+                       << scan.candidate_count << '\t'
+                       << benchmark.payload_bytes << '\t'
+                       << timing.build_cpu_ns << '\t'
+                       << timing.build_wall_ns << '\t'
+                       << scan.cpu_ns << '\t' << scan.wall_ns << '\t'
+                       << timing.table_entries << '\t'
+                       << scan.candidates_scanned << '\t'
+                       << scan.lookups << '\t'
+                       << timing.build_checksum << '\t'
+                       << scan.checksum << '\n';
 }
 
 struct NativeSummary {
     int rate = 0;
     char arm = '?';
+    std::size_t candidate_count = 0;
     std::uint64_t table_entries = 0;
     std::uint64_t lookups = 0;
     Distribution build_cpu;
     Distribution build_wall;
-    Distribution lookup_cpu;
-    Distribution lookup_wall;
+    Distribution scan_cpu;
+    Distribution scan_wall;
 };
 
 NativeSummary summarize_native(
-        const structured2d::NativeBenchmark& benchmark, char arm) {
-    std::vector<double> build_cpu, build_wall, lookup_cpu, lookup_wall;
+        const structured2d::NativeBenchmark& benchmark, char arm,
+        std::size_t candidate_count) {
+    std::vector<double> build_cpu, build_wall, scan_cpu, scan_wall;
     std::uint64_t table_entries = 0;
     std::uint64_t lookups = 0;
     for (const auto& timing : benchmark.timings) {
         if (timing.arm != arm) continue;
         table_entries = timing.table_entries;
-        lookups = timing.lookups;
+        const auto found = std::find_if(
+                timing.scans.begin(), timing.scans.end(),
+                [&](const structured2d::PackedScanTiming& scan) {
+                    return scan.candidate_count == candidate_count;
+                });
+        if (found == timing.scans.end())
+            throw std::runtime_error("missing packed scan count");
+        lookups = found->lookups;
         build_cpu.push_back(
                 static_cast<double>(timing.build_cpu_ns) /
-                timing.table_entries);
+                structured2d::kMicrobenchmarkProbes);
         build_wall.push_back(
                 static_cast<double>(timing.build_wall_ns) /
-                timing.table_entries);
-        lookup_cpu.push_back(
-                static_cast<double>(timing.lookup_cpu_ns) /
-                timing.lookups);
-        lookup_wall.push_back(
-                static_cast<double>(timing.lookup_wall_ns) /
-                timing.lookups);
+                structured2d::kMicrobenchmarkProbes);
+        scan_cpu.push_back(
+                static_cast<double>(found->cpu_ns) /
+                found->candidates_scanned);
+        scan_wall.push_back(
+                static_cast<double>(found->wall_ns) /
+                found->candidates_scanned);
     }
     if (build_cpu.size() != structured2d::kMicrobenchmarkRepetitions)
         throw std::runtime_error("native repetition count");
     return {
-            benchmark.word_bits, arm, table_entries, lookups,
+            benchmark.word_bits, arm, candidate_count,
+            table_entries, lookups,
             distribution(std::move(build_cpu)),
             distribution(std::move(build_wall)),
-            distribution(std::move(lookup_cpu)),
-            distribution(std::move(lookup_wall))};
+            distribution(std::move(scan_cpu)),
+            distribution(std::move(scan_wall))};
 }
 
 void write_distribution(std::ofstream& output,
@@ -455,75 +469,140 @@ bool write_native_summary(
         throw std::runtime_error("cannot write native summary");
     summary << std::setprecision(17);
     decision << std::setprecision(17);
-    summary << "dataset\tfingerprint\trate\tarm\trepetitions"
-               "\ttable_entries_per_rep\tlookups_per_rep"
-               "\tbuild_cpu_ns_per_entry_min"
-               "\tbuild_cpu_ns_per_entry_median"
-               "\tbuild_cpu_ns_per_entry_max"
-               "\tbuild_cpu_ns_per_entry_mad"
-               "\tbuild_wall_ns_per_entry_min"
-               "\tbuild_wall_ns_per_entry_median"
-               "\tbuild_wall_ns_per_entry_max"
-               "\tbuild_wall_ns_per_entry_mad"
-               "\tlookup_cpu_ns_min\tlookup_cpu_ns_median"
-               "\tlookup_cpu_ns_max\tlookup_cpu_ns_mad"
-               "\tlookup_wall_ns_min\tlookup_wall_ns_median"
-               "\tlookup_wall_ns_max\tlookup_wall_ns_mad\n";
-    decision << "dataset\trate\tcompact_table_violations"
-                "\tmax_compact_table_difference\tshared_codes_reused"
-                "\tcompact_expanded_build_wall_ratio"
-                "\tcompact_expanded_lookup_wall_ratio"
-                "\tcompact_v_build_wall_ratio"
-                "\tcompact_v_lookup_wall_ratio"
-                "\tbuild_affordable\tlookup_parity\tcell_pass\n";
+    summary << "dataset\tfingerprint\trate\tarm\tcandidate_count"
+               "\trepetitions\ttable_entries_per_rep\tlookups_per_rep"
+               "\tbuild_cpu_ns_per_probe_min"
+               "\tbuild_cpu_ns_per_probe_median"
+               "\tbuild_cpu_ns_per_probe_max"
+               "\tbuild_cpu_ns_per_probe_mad"
+               "\tbuild_wall_ns_per_probe_min"
+               "\tbuild_wall_ns_per_probe_median"
+               "\tbuild_wall_ns_per_probe_max"
+               "\tbuild_wall_ns_per_probe_mad"
+               "\tscan_cpu_ns_per_candidate_min"
+               "\tscan_cpu_ns_per_candidate_median"
+               "\tscan_cpu_ns_per_candidate_max"
+               "\tscan_cpu_ns_per_candidate_mad"
+               "\tscan_wall_ns_per_candidate_min"
+               "\tscan_wall_ns_per_candidate_median"
+               "\tscan_wall_ns_per_candidate_max"
+               "\tscan_wall_ns_per_candidate_mad\n";
+    decision << "dataset\trate\tcandidate_count\tpayload_bytes"
+                "\tpeak_query_table_bytes\tcompact_table_violations"
+                "\tscan_tolerance_violations"
+                "\tmax_compact_table_difference"
+                "\tmax_scan_difference\tshared_codes_reused"
+                "\texpanded_direct_match"
+                "\tcompact_expanded_scan_cpu_ratio"
+                "\tcompact_expanded_scan_wall_ratio"
+                "\tcompact_v_scan_cpu_ratio"
+                "\tcompact_v_scan_wall_ratio"
+                "\tcompact_expanded_total_cpu_ratio"
+                "\tcompact_expanded_total_wall_ratio"
+                "\tcompact_v_total_cpu_ratio"
+                "\tcompact_v_total_wall_ratio"
+                "\tfirst_compact_expanded_affordable_count"
+                "\tcount_affordable\tcell_pass\n";
 
     bool all_pass = true;
     for (const auto& benchmark : benchmarks) {
-        const NativeSummary compact = summarize_native(benchmark, 'C');
-        const NativeSummary expanded = summarize_native(benchmark, 'E');
-        const NativeSummary independent = summarize_native(benchmark, 'V');
-        for (const NativeSummary* record :
-             {&compact, &expanded, &independent}) {
-            summary << dataset << '\t' << fingerprint << '\t'
-                    << record->rate << '\t' << record->arm << '\t'
-                    << structured2d::kMicrobenchmarkRepetitions << '\t'
-                    << record->table_entries << '\t'
-                    << record->lookups << '\t';
-            write_distribution(summary, record->build_cpu);
-            summary << '\t';
-            write_distribution(summary, record->build_wall);
-            summary << '\t';
-            write_distribution(summary, record->lookup_cpu);
-            summary << '\t';
-            write_distribution(summary, record->lookup_wall);
-            summary << '\n';
+        if (!structured2d::valid(benchmark))
+            throw std::runtime_error(
+                    "invalid native benchmark before ratios");
+        std::size_t first_affordable = 0;
+        for (const std::size_t count :
+             structured2d::kCandidateCounts) {
+            const NativeSummary compact =
+                    summarize_native(benchmark, 'C', count);
+            const NativeSummary expanded =
+                    summarize_native(benchmark, 'E', count);
+            const auto affordability =
+                    structured2d::evaluate_affordability(
+                            count,
+                            compact.build_cpu.median,
+                            compact.build_wall.median,
+                            compact.scan_cpu.median,
+                            compact.scan_wall.median,
+                            expanded.build_cpu.median,
+                            expanded.build_wall.median,
+                            expanded.scan_cpu.median,
+                            expanded.scan_wall.median);
+            if (affordability.pass) {
+                first_affordable = count;
+                break;
+            }
         }
-        const double build_ce =
-                compact.build_wall.median /
-                expanded.build_wall.median;
-        const double lookup_ce =
-                compact.lookup_wall.median /
-                expanded.lookup_wall.median;
-        const double build_cv =
-                compact.build_wall.median /
-                independent.build_wall.median;
-        const double lookup_cv =
-                compact.lookup_wall.median /
-                independent.lookup_wall.median;
-        const bool build_pass = build_ce <= 2.0;
-        const bool lookup_pass = lookup_ce <= 1.10;
-        const bool cell_pass =
-                structured2d::valid(benchmark) &&
-                build_pass && lookup_pass;
-        all_pass = all_pass && cell_pass;
-        decision << dataset << '\t' << benchmark.word_bits << '\t'
-                 << benchmark.compact_table_violations << '\t'
-                 << benchmark.max_compact_table_difference << '\t'
-                 << benchmark.shared_codes_reused << '\t'
-                 << build_ce << '\t' << lookup_ce << '\t'
-                 << build_cv << '\t' << lookup_cv << '\t'
-                 << build_pass << '\t' << lookup_pass << '\t'
-                 << cell_pass << '\n';
+        for (const std::size_t count :
+             structured2d::kCandidateCounts) {
+            const NativeSummary compact =
+                    summarize_native(benchmark, 'C', count);
+            const NativeSummary expanded =
+                    summarize_native(benchmark, 'E', count);
+            const NativeSummary independent =
+                    summarize_native(benchmark, 'V', count);
+            for (const NativeSummary* record :
+                 {&compact, &expanded, &independent}) {
+                summary << dataset << '\t' << fingerprint << '\t'
+                        << record->rate << '\t' << record->arm << '\t'
+                        << count << '\t'
+                        << structured2d::kMicrobenchmarkRepetitions << '\t'
+                        << record->table_entries << '\t'
+                        << record->lookups << '\t';
+                write_distribution(summary, record->build_cpu);
+                summary << '\t';
+                write_distribution(summary, record->build_wall);
+                summary << '\t';
+                write_distribution(summary, record->scan_cpu);
+                summary << '\t';
+                write_distribution(summary, record->scan_wall);
+                summary << '\n';
+            }
+
+            const auto ce = structured2d::evaluate_affordability(
+                    count,
+                    compact.build_cpu.median,
+                    compact.build_wall.median,
+                    compact.scan_cpu.median,
+                    compact.scan_wall.median,
+                    expanded.build_cpu.median,
+                    expanded.build_wall.median,
+                    expanded.scan_cpu.median,
+                    expanded.scan_wall.median);
+            const auto cv = structured2d::evaluate_affordability(
+                    count,
+                    compact.build_cpu.median,
+                    compact.build_wall.median,
+                    compact.scan_cpu.median,
+                    compact.scan_wall.median,
+                    independent.build_cpu.median,
+                    independent.build_wall.median,
+                    independent.scan_cpu.median,
+                    independent.scan_wall.median);
+            const bool count_pass = ce.pass;
+            if (count == structured2d::kCandidateCounts.back())
+                all_pass = all_pass && count_pass;
+            const std::size_t centers =
+                    benchmark.word_bits == 4 ? 16 : 256;
+            decision << dataset << '\t' << benchmark.word_bits << '\t'
+                     << count << '\t' << benchmark.payload_bytes << '\t'
+                     << 64 * centers * sizeof(float)
+                     << '\t' << benchmark.compact_table_violations << '\t'
+                     << benchmark.scan_tolerance_violations << '\t'
+                     << benchmark.max_compact_table_difference << '\t'
+                     << benchmark.max_scan_difference << '\t'
+                     << benchmark.shared_codes_reused << '\t'
+                     << benchmark.expanded_direct_match << '\t'
+                     << ce.scan_cpu_ratio << '\t'
+                     << ce.scan_wall_ratio << '\t'
+                     << cv.scan_cpu_ratio << '\t'
+                     << cv.scan_wall_ratio << '\t'
+                     << ce.total_cpu_ratio << '\t'
+                     << ce.total_wall_ratio << '\t'
+                     << cv.total_cpu_ratio << '\t'
+                     << cv.total_wall_ratio << '\t'
+                     << first_affordable << '\t' << ce.pass << '\t'
+                     << count_pass << '\n';
+        }
     }
     return all_pass;
 }

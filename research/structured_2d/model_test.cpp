@@ -1,5 +1,6 @@
 #include "model.hpp"
 #include "compact.hpp"
+#include "microbench.hpp"
 
 #include <array>
 #include <bit>
@@ -323,6 +324,200 @@ void compact_equivalence_test() {
             "compact invalid reference");
 }
 
+void packed_consumer_test() {
+    for (const int bits : {4, 8}) {
+        const std::size_t centers = std::size_t{1} << bits;
+        constexpr std::size_t candidates = 5;
+        std::vector<std::uint16_t> labels(
+                candidates * a4orb::kGroups);
+        for (std::size_t candidate = 0;
+             candidate < candidates; ++candidate) {
+            for (std::size_t group = 0;
+                 group < a4orb::kGroups; ++group) {
+                // Mix ordinary modular labels with boundary-heavy rows.
+                const std::size_t selector = candidate % 3;
+                labels[candidate * a4orb::kGroups + group] =
+                        selector == 0 ? (7 * group + candidate) % centers
+                        : selector == 1 ? (group & 1U ? centers - 1 : 0)
+                                        : centers - 1 - (group % centers);
+            }
+        }
+
+        const auto payload =
+                structured2d::pack_labels(labels, bits);
+        require(payload.size() ==
+                        candidates *
+                        structured2d::payload_bytes_per_candidate(bits),
+                "packed payload bytes");
+        for (std::size_t candidate = 0;
+             candidate < candidates; ++candidate)
+            for (std::size_t group = 0;
+                 group < a4orb::kGroups; ++group)
+                require(
+                        structured2d::decode_label(
+                                payload, bits, candidate, group) ==
+                                labels[candidate * a4orb::kGroups + group],
+                        "packed roundtrip");
+        if (bits == 4)
+            require(
+                    payload[0] ==
+                            static_cast<std::uint8_t>(
+                                    labels[0] | (labels[1] << 4)),
+                    "B4 low-nibble-first");
+
+        std::vector<float> expanded(
+                a4orb::kGroups * centers);
+        for (std::size_t group = 0;
+             group < a4orb::kGroups; ++group)
+            for (std::size_t label = 0; label < centers; ++label)
+                expanded[group * centers + label] =
+                        static_cast<float>(group * 0.25 + label * 0.5);
+        auto compact = expanded;
+        for (float& value : compact)
+            value = std::nextafter(
+                    value, std::numeric_limits<float>::infinity());
+        const double compact_sum = structured2d::scan_packed_tables(
+                compact, payload, bits, candidates);
+        const double expanded_sum = structured2d::scan_packed_tables(
+                expanded, payload, bits, candidates);
+        double direct_sum = 0;
+        for (std::size_t candidate = 0;
+             candidate < candidates; ++candidate) {
+            double estimate = 0;
+            for (std::size_t group = 0;
+                 group < a4orb::kGroups; ++group)
+                estimate += expanded[
+                        group * centers +
+                        labels[candidate * a4orb::kGroups + group]];
+            direct_sum += estimate;
+        }
+        double selected_tolerance = 0;
+        for (std::size_t candidate = 0;
+             candidate < candidates; ++candidate)
+            for (std::size_t group = 0;
+                 group < a4orb::kGroups; ++group)
+                selected_tolerance +=
+                        structured2d::table_entry_tolerance(
+                                expanded[
+                                        group * centers +
+                                        labels[candidate *
+                                                       a4orb::kGroups +
+                                               group]]);
+        require(std::fabs(compact_sum - expanded_sum) <=
+                        selected_tolerance,
+                "compact/expanded selected-entry tolerance");
+        require(expanded_sum == direct_sum,
+                "packed/direct accumulation parity");
+
+        bool rejected = false;
+        auto invalid = labels;
+        invalid.front() = static_cast<std::uint16_t>(centers);
+        try {
+            (void)structured2d::pack_labels(invalid, bits);
+        } catch (const std::invalid_argument&) {
+            rejected = true;
+        }
+        require(rejected, "invalid packed label rejection");
+
+        rejected = false;
+        try {
+            (void)structured2d::decode_label(
+                    payload, bits, candidates, 0);
+        } catch (const std::out_of_range&) {
+            rejected = true;
+        }
+        require(rejected, "packed decode bounds");
+
+        rejected = false;
+        try {
+            (void)structured2d::scan_packed_tables(
+                    expanded,
+                    std::span<const std::uint8_t>(
+                            payload.data(), payload.size() - 1),
+                    bits, candidates);
+        } catch (const std::invalid_argument&) {
+            rejected = true;
+        }
+        require(rejected, "truncated packed scan rejection");
+    }
+}
+
+void integration_policy_test() {
+    require(structured2d::kCandidateCounts ==
+                    std::array<std::size_t, 4>{
+                            64, 256, 1024, 8192},
+            "fixed candidate counts");
+    const std::array<std::array<char, 3>, 3> rotations{{
+            {'C', 'E', 'V'}, {'E', 'V', 'C'}, {'V', 'C', 'E'}}};
+    for (std::size_t repetition = 0;
+         repetition < structured2d::kMicrobenchmarkRepetitions;
+         ++repetition)
+        require(
+                structured2d::measurement_arm_order(repetition) ==
+                        rotations[repetition % rotations.size()],
+                "fixed arm rotation");
+
+    for (const int bits : {0, 3, 5, 9}) {
+        require(!structured2d::supported_word_bits(bits),
+                "illegal bits unsupported");
+        const std::vector<std::uint16_t> labels(a4orb::kGroups);
+        std::size_t rejected = 0;
+        try {
+            (void)structured2d::payload_bytes_per_candidate(bits);
+        } catch (const std::invalid_argument&) {
+            ++rejected;
+        }
+        try {
+            (void)structured2d::pack_labels(labels, bits);
+        } catch (const std::invalid_argument&) {
+            ++rejected;
+        }
+        try {
+            (void)structured2d::decode_label({}, bits, 0, 0);
+        } catch (const std::invalid_argument&) {
+            ++rejected;
+        }
+        try {
+            (void)structured2d::scan_packed_tables({}, {}, bits, 0);
+        } catch (const std::invalid_argument&) {
+            ++rejected;
+        }
+        require(rejected == 4, "illegal bits rejected before shifts");
+    }
+
+    const auto affordable = structured2d::evaluate_affordability(
+            8192, 10, 10, 1, 1, 10, 10, 1, 1);
+    require(affordable.pass, "CPU/wall affordability pass");
+    const auto cpu_fail = structured2d::evaluate_affordability(
+            8192, 10, 10, 1.11, 1, 10, 10, 1, 1);
+    require(!cpu_fail.pass, "CPU scan affordability enforced");
+    bool rejected = false;
+    try {
+        (void)structured2d::evaluate_affordability(
+                8192, 10, 10, 1, 1, 10, 10, 0, 1);
+    } catch (const std::invalid_argument&) {
+        rejected = true;
+    }
+    require(rejected, "affordability denominator guard");
+
+    structured2d::NativeBenchmark admission;
+    admission.word_bits = 4;
+    admission.shared_codes_reused = true;
+    admission.payload_bytes = 32;
+    admission.expanded_direct_match = true;
+    structured2d::require_native_timing_admission(admission);
+    auto parity_failure = admission;
+    parity_failure.compact_table_violations = 1;
+    rejected = false;
+    try {
+        structured2d::require_native_timing_admission(parity_failure);
+    } catch (const std::runtime_error&) {
+        rejected = true;
+    }
+    require(rejected && parity_failure.timings.empty(),
+            "parity failure rejected before timing");
+}
+
 }  // namespace
 
 int main() {
@@ -333,6 +528,8 @@ int main() {
         fixed_budget_status_test();
         sse2_scalar_parity_test();
         compact_equivalence_test();
+        packed_consumer_test();
+        integration_policy_test();
         std::cout << "PASS structured_2d_model_test\n";
         return 0;
     } catch (const std::exception& error) {
