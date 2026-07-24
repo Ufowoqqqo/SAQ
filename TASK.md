@@ -1,411 +1,125 @@
-# Current Task: semantics-preserving SSE2 compact-table builder
+# Current Task: unchanged-estimator integration gate
 
 ## Branch and base
 
 - Active branch: `saq-structured-2d-modeling`
 - Base commit: `5503e87d0584fe50c9233fbe3a02cdd577db07ea`
-- Active mode: `IMPLEMENT`, followed by the permitted smallest `EXPERIMENT`
+- Gate snapshot: `0dfa0df2cfca44d3bd17cb400192ea3f17e4ac03`
+- Mode: `REVIEW`; implementation is allowed only if the admission mapping
+  shows that the production estimator can consume S without semantic changes.
 
-The fixed-budget S100 construction, query-free native microbenchmark, and
-bounded profile are complete. The current instruction authorizes one explicit
-SSE2 implementation of the compact table-entry loop, starting from profiling
-commit `e6a43c6`. It does not authorize changing the representation, numeric
-semantics, benchmark-query evaluation, Recall/QPS measurement, or production
-SAQ code.
+## Research question
 
-## Research question and hypothesis
+Can the compact shared-affine S100 representation enter the existing
+production SAQ accurate-estimator path while leaving all of the following
+unchanged?
 
-A4-OR-B found a real held-out gap between dyadic scalar allocation (D) and
-independent per-group two-dimensional vector quantization (V), while more
-flexible scalar allocation did not recover it. Test whether most of that gap
-comes from a reusable non-rectangular two-dimensional shape rather than 64
-unrelated group-specific codebooks.
+- the B-bit candidate code and its meaning;
+- the per-vector norm and `ExFactor.rescale`;
+- the segment plan, rotations, padding, index format, and candidate schedule;
+- the accurate-estimator formula and lookup count; and
+- the absence of per-cluster model ids or mixed dispatch.
 
-For each rate, fit one shared two-dimensional codebook `z[k]` and one affine
-map per fixed adjacent-coordinate group:
+The cheapest decisive check is an interface and code-semantics mapping before
+any synthetic timing. If the existing estimator has no consumer for S's joint
+two-coordinate label and learned codebook, the gate stops as incompatible;
+writing a new consumer is not a repair of an unchanged-estimator gate.
 
-```text
-center[g,k] = mean[g] + transform[g] * z[k]
-```
+## Decision
 
-The label remains exactly B bits, each group still uses one lookup, and no
-per-vector or per-cell model choice is added. The candidate is called S.
-
-The primary effect size is held-out reconstruction recovery:
+The admission mapping fails:
 
 ```text
-recovery = (SSE_D - SSE_S) / (SSE_D - SSE_V)
+NO_GO_UNCHANGED_ESTIMATOR_INTEGRATION
 ```
 
-The feasibility hypothesis passes only if, in every dataset/rate cell:
+Production SAQ stores and consumes per-coordinate short and long bitplanes.
+Within each segment, its accurate path reconstructs an inner product using
+that segment's uniform `sq_delta`, per-vector `ExFactor.rescale`, and the
+existing fast-scan state. S instead stores one joint label per
+adjacent-coordinate group and evaluates it through a learned K-entry
+two-dimensional squared-distance table.
 
-- D has positive opportunity relative to V;
-- S recovers at least 70% of that opportunity;
-- S improves at least 48 of the 64 groups relative to D;
-- S recovers at least 50% of the D-to-V base-pair proxy opportunity whenever
-  that opportunity is positive; and
-- shape, encoding replay, occupancy, finiteness, and center-collision checks
-  pass.
+There is no production interface that interprets S's joint label as the
+unchanged bitplanes. The current `research/structured_2d` lookup loop is a
+different full-word VQ consumer. Calling that loop the production SAQ
+estimator, forcing `rescale=1`, or multiplying `rescale` into its table would
+change the estimator semantics and cannot pass this gate.
 
-For S, occupancy is checked on the final pooled fit assignment because the
-labels belong to one shared shape; per-group unused labels are reported as an
-efficiency diagnostic. Independent V retains the stricter per-group occupancy
-check.
+This confirms that the earlier A4 R0 compatibility result also applies to the
+shared-affine S representation. It is not a new negative result about S's
+reconstruction quality or compact-builder performance.
 
-These are mechanism-level feasibility thresholds, not statistical or
-paper-performance claims. Their success and the compact-equivalence result
-permit the current query-free native cost measurement.
+## Relevant paths
 
-## Inputs and relevant paths
-
-Reuse the committed A4-OR-B panel construction and D/V evaluation code:
-
-- `research/a4_or_b/panel.{hpp,cpp}`
-- `research/a4_or_b/models.{hpp,cpp}`
-- `research/a4_or_c/core.{hpp,cpp}`
-- `docs/saq_a4_or_b_base_only_result_2026_07_23.md`
-- `docs/saq_attempt4_a4_1_base_only_input_spec_2026_07_13.json`
-
-Read exactly the registered PCA base, PCA centroid, and cluster-id inputs:
-
-- GIST files under `data/gist_sample50k/`;
-- reproduced CIFAR files under `/tmp/a4-or-b-cifar-inputs-default/`;
-- deterministic inventories `/tmp/a4_or_b_gist_inventory.tsv` and
-  `/tmp/a4_or_b_cifar_inventory.tsv`.
-
-Use exactly 8,192 fit and 8,192 held-out residuals, 64 fixed adjacent
-coordinate pairs, and B4/B8. Fit D and V in the same executable and process as
-S using the inherited deterministic implementations. Do not use prior
-uncommitted outcome files as numerical baselines.
+- `research/structured_2d/compact.{hpp,cpp}`
+- `research/structured_2d/microbench.{hpp,cpp}`
+- `research/structured_2d/model_test.cpp`
+- `saqlib/index/ivf.hpp`
+- `saqlib/quantization/saq_searcher.hpp`
+- `saqlib/quantization/saq_estimator.hpp`
+- `saqlib/quantization/caq/caq_estimator.hpp`
+- `saqlib/quantization/fastscan/lut.hpp`
+- `saqlib/quantization/cluster_data.hpp`
+- `docs/saq_attempt4_r0_static_compatibility_decision_2026_07_22.md`
+- `docs/saq_structured_2d_base_only_result_2026_07_23.md`
 
 ## Allowed reads and writes
 
-Allowed reads:
+Allowed reads are the source, Git metadata, current-task documents, and
+build/test outputs newly produced in this worktree.
 
-- the source, build configuration, Git metadata, pinned Faiss, and documents
-  named above;
-- the six registered PCA-base, PCA-centroid, and cluster-id files;
-- the two deterministic inventories; and
-- outputs newly generated by this worktree.
-
-Allowed writes:
-
-- `TASK.md`;
-- concise local guidance and implementation under `research/structured_2d/`;
-- one result note under `docs/`;
-- focused tests; and
-- generated builds and experiment outputs under `/tmp`.
+Allowed writes are `TASK.md`, concise documentation under `docs/`, focused
+tests under `research/structured_2d/` if an unchanged interface exists, and
+temporary build output under `/tmp`.
 
 ## Forbidden reads and changes
 
 Do not read benchmark queries, ground truth, Recall/QPS results, serialized
-indexes, variance files, unrelated prior branch outputs, or held-out rows
-during fitting or model selection.
+indexes, variance files, unrelated branch outputs, raw held-out rows, or any
+registered natural-data input. Admission failed before numerical evaluation,
+so this gate needs no dataset access.
 
-Do not change the panel, coordinate grouping, rates, sample sizes, seeds,
-baseline semantics, metrics, thresholds, or decision rule after seeing S
-outcomes. Do not modify production SAQ/CAQ source, the query estimator, index
-format, planner, or search schedule. Do not add per-cluster models, plan ids,
-mixed dispatch, query-trained triggers, or a rescue parameter sweep.
+Do not modify production SAQ/CAQ source, the estimator, code layout, index
+format, plan, candidate schedule, fast stage, or `rescale` semantics. Do not
+add a new table consumer, decoder, model id, per-cluster state, mixed
+dispatch, or query-trained rule under this gate.
 
-## Fixed-budget method definition
-
-The primary S construction is:
-
-1. the frozen pooled K-means initialization;
-2. exactly the same full-affine block updates and reassignment rule;
-3. at most 100 accepted non-increasing refinement rounds; and
-4. early termination only at the existing `1e-10` numerical fixed-point
-   safeguard or on a reported non-monotonic numeric failure.
-
-This is a bounded index-construction algorithm, not a claim that the
-non-convex objective has converged. The iteration count is part of the
-construction-cost contract.
-
-Iteration 100 was frozen before the convergence follow-up outcomes were
-observed. It is selected without using held-out quality: all four registered
-runs exhausted that budget, had lower fit SSE than iteration 20, retained the
-scientific gates, and passed compact-table equivalence. No recorded update had
-relative improvement below `1e-10`, so the fixed-budget execution is
-step-for-step identical to the recorded S100 models.
-
-Keep iteration 20 as `T`, a sensitivity point showing the construction
-budget/quality trade-off. It is not an alternative selected by held-out
-performance. Continue to report the convergence trace and the fact that the
-objective was still improving at iteration 100.
-
-## Frozen compact-table check
-
-For group affine map `A`, mean `mu`, shared point `z`, and query pair `q`,
-build each table entry directly from:
-
-```text
-u = q - mu
-distance = ||u||^2 - 2 z^T A^T u + z^T A^T A z
-```
-
-The candidate path may keep one `K`-entry float table and constant-size
-per-group terms. It must not persist or materialize all `64*K` expanded
-centers. Expanded centers remain allowed only as a reference check.
-
-Required equivalence:
-
-- compact on-the-fly encoding labels exactly equal expanded-reference labels;
-- table-entry absolute error is at most
-  `8 * float_epsilon * max(1, abs(reference))`;
-- compact and reference table-entry counts are identical;
-- each pair-proxy difference is within the sum of the actual lookup-entry
-  tolerances used by that pair; and
-- the path keeps one lookup per group and adds no dispatch or model id.
-
-Report compact persistent bytes, peak table bytes, reference expanded bytes,
-table construction time, maximum entry difference, encoding mismatches, and
-pair-proxy difference. This is still prototype evidence, not a native
-performance claim.
-
-## Frozen native microbenchmark
-
-The benchmark uses only the registered **fit base residuals** as deterministic
-probe and candidate inputs. They are not benchmark queries. Held-out rows,
-benchmark queries, ground truth, Recall/QPS outputs, and serialized indexes
-must not be read by the timed benchmark.
-
-Compare three arms at B4 and B8 on both registered datasets:
-
-- `C`: compact S100, building each table directly from the shared shape and
-  group affine terms without materializing expanded centers;
-- `E`: the identical S100 model with its `64*K` binary32 centers expanded;
-- `V`: the existing independent per-group 2D V model with `64*K` binary32
-  centers.
-
-All arms build one contiguous K-entry binary32 table per group and perform one
-indexed binary32 lookup per group/candidate. Model fitting, model expansion,
-code generation, allocation, correctness checks, logging, and output writing
-are outside timed regions.
-
-Freeze the workloads as follows:
-
-- table construction: all 8,192 fit rows as probes, all 64 groups, and all K
-  entries;
-- lookup: 64 fit probes selected by the midpoint of 64 equal row strata,
-  all 8,192 fit candidate codes, and all 64 groups;
-- one untimed warmup followed by nine measured repetitions;
-- rotate arm order across repetitions as `C/E/V`, `E/V/C`, `V/C/E`;
-- reuse allocated buffers, run one process and one computational thread, and
-  prevent dead-code removal without adding logging or serialization inside
-  timed regions; and
-- report median CPU and wall nanoseconds per table entry and per lookup,
-  together with minimum, maximum, and median absolute deviation.
-
-Before timing, require:
-
-- exact table-entry and lookup counts for every arm;
-- finite tables and lookup checksums;
-- compact-S versus expanded-S table differences within the existing
-  `8 * float_epsilon * max(1, abs(reference))` bound on all 64 frozen probes;
-  and
-- exact reuse of S codes between C and E.
-
-The preregistered affordability interpretation is:
-
-- `C/E` median table-build time per entry must be at most `2.0x` in every
-  dataset/rate cell; and
-- lookup median time per lookup must be no more than `10%` slower than E in
-  every cell.
-
-These thresholds test whether compact arithmetic destroys the storage benefit
-before production integration. V is a measured SOTA-mechanism control, not an
-acceptance denominator. Passing does not establish end-to-end QPS, cache
-behavior inside SAQ, Recall parity, or movement of a system-level Pareto
-frontier. Any later query evaluation requires a separate task.
-
-## Bounded profiling boundary
-
-Profile the unchanged `build_compact_table` and `build_expanded_table`
-functions from commit `b0d654c`. Use an uncommitted driver under `/tmp` with
-deterministic finite synthetic means, transforms, shapes, and probes. Match
-8,192 probes, 64 groups, and B4/B8, pin one process to CPU 0, and keep all
-thread libraries at one thread.
-
-Permitted evidence is:
-
-- GCC vectorization diagnostics under the frozen strict floating-point flags;
-- disassembly of the two builder loops;
-- `perf stat` cycles, instructions, branches, and branch misses; and
-- diagnostic-only compiler variants that establish optimization headroom but
-  are clearly excluded from correctness and performance claims.
-
-Do not modify repository source, use dataset inputs, relax numeric semantics,
-or rerun the registered scientific panels. Stop after locating the dominant
-mechanism and deciding whether a semantics-preserving optimization is
-plausible.
-
-## Frozen SSE2 implementation boundary
-
-Change only the compact builder and focused tests under
-`research/structured_2d`. Process two labels per SSE2 iteration and retain the
-current scalar calculation as the reference, odd-tail implementation, and
-non-SSE2 fallback.
-
-The SSE2 path must preserve:
-
-- the exact double-operation ordering of the scalar polynomial;
-- `-ffp-contract=off`, current MXCSR rounding, and binary32 output conversion;
-- positive finite and positive-infinity results;
-- conversion of negative, signed-zero, and NaN intermediate values to
-  positive binary32 zero;
-- the current table size, label order, one-table memory boundary, API, and
-  persistent model bytes; and
-- no additional per-group, per-label, or `64*K` stored state.
-
-Required validation before registered measurement:
-
-- bitwise scalar/SSE2 equality at B4 and B8 for deterministic ordinary and
-  adversarial values;
-- equality under nearest, downward, upward, and toward-zero rounding modes;
-- existing expanded-reference tolerances, encoding, pair, and compact tests;
-- compiler evidence that the production compact loop contains packed
-  double-precision operations and no per-label clamp branch; and
-- query-free synthetic B8 compact/expanded table-build time below `2.0x`
-  under the same strict flags.
-
-Only after all checks pass may the unchanged GIST/CIFAR B4/B8 native
-microbenchmark be rerun. Its original nine repetitions, arm rotation,
-correctness gates, lookup gate, `2.0x` build threshold, thread/affinity
-settings, and output accounting remain frozen. Stop without a panel rerun if
-bitwise parity fails, synthetic B8 misses `2.0x`, or the implementation needs
-new persistent state.
-
-## Implementation and commands
-
-Modify only the existing `research/structured_2d` prototype and focused
-documentation. Preserve the original K-means initialization, full-affine
-updates, panel, D/V controls, evaluator, and decision thresholds.
-
-New or materially changed research code must contain concise comments that
-explain non-obvious mechanisms, formulas, invariants, numeric tolerances, and
-memory boundaries for human review. Comments must explain intent and
-correctness rather than paraphrase statements.
-
-Allowed commands include:
+## Allowed commands and budget
 
 ```bash
 cmake -S research/structured_2d -B /tmp/saq-structured-2d-build \
   -DCMAKE_BUILD_TYPE=Release
 cmake --build /tmp/saq-structured-2d-build -j2
 ctest --test-dir /tmp/saq-structured-2d-build --output-on-failure
-/tmp/saq-structured-2d-build/structured_2d_runner ...
 git diff --check
+git status --short --branch
 ```
 
-## Resource budget
-
-- one measurement process and one computational thread;
-- at most 16 GiB peak RSS;
-- at most 2 CPU-hours for both datasets;
-- exactly the fixed method budget of at most 100 accepted refinement rounds;
-- no rate, seed, iteration, initialization, probe-count, repetition-count, or
-  arm-order sweep;
-- instrumentation and output serialization outside timed fit/encode regions.
-
-This implementation remains `PROTOTYPE_NOT_PERFORMANCE_EVIDENCE` until the
-frozen native microbenchmark completes. Its scientific hot paths are table
-construction and contiguous code-indexed lookup. The measurement may establish
-native prototype affordability but cannot support a SOTA system-speed claim.
+Budget remains one process, one computational thread for measurements, at
+most 16 GiB peak RSS, and at most 2 CPU-hours. No numerical integration
+experiment or timing is warranted after the admission failure.
 
 ## Deliverables and done criteria
 
 Deliver:
 
-- reusable native table builders for C, E, and V;
-- deterministic tests for table values, code reuse, counts, and validation;
-- per-repetition CPU and wall measurements plus frozen summary statistics for
-  all twelve dataset/rate/arm cells;
-- exact commands, compiler flags, thread/affinity setting, CPU identity, and
-  output hashes; and
-- a truthful affordability decision appended to the existing result note.
+- an exact current-source mapping of the production accurate-estimator path;
+- an explicit comparison with S's compact full-word table consumer;
+- a truthful pass/fail decision without implementing a replacement
+  estimator; and
+- a concise update to the existing structured-2D result note.
 
-Done means the Release build and focused tests pass, all frozen correctness
-checks pass, all four registered dataset/rate cells finish within budget, and
-the two affordability rules are applied without rescue changes. Compilation
-errors, test failures, debugging, and negative timing results are not blockers.
+Done means the source mapping is verified at the named snapshot, the existing
+structured-2D Release test still passes, the result note records the claim
+boundary, and no forbidden data or production source was touched.
 
-## Current blocker and next action
+## Current blocker and one next action
 
-The fixed-budget choice is committed at `9f8df90`. The microbenchmark contract
-above was frozen before implementing or observing its timings.
+The blocker is semantic, not an implementation bug: S's joint-label
+representation has no unchanged production SAQ consumer.
 
-```text
-ADOPT_FIXED_BUDGET_100
-PASS_COMPACT_TABLE_EQUIVALENCE
-PASS_SHARED_AFFINE_BASE_ONLY_RETAINED
-NOT_CONVERGED_AT_100
-PASS_NATIVE_TABLE_CORRECTNESS
-PASS_NATIVE_LOOKUP_PARITY
-FAIL_NATIVE_TABLE_BUILD_AFFORDABILITY
-```
-
-All four compact checks have zero encoding mismatches, zero table-tolerance
-violations, zero pair-tolerance violations, and exact table-entry counts. The
-candidate needs only one 64-byte B4 or 1,024-byte B8 table in addition to the
-1,664-byte or 3,584-byte compact model.
-
-All four primary fits completed 100 rounds. Continuing from iteration 20
-changes held-out SSE by at most 0.164%, and every original scientific gate
-remains passed. The objective was still improving, which is reported as a
-limitation rather than treated as a failed construction gate.
-
-The result is appended to:
-
-`docs/saq_structured_2d_base_only_result_2026_07_23.md`.
-
-All four dataset/rate cells completed. C/E table-build ratios are
-`2.353x`, `2.887x`, `2.482x`, and `2.899x`, so every cell fails the frozen
-`2.0x` affordability rule. C/E lookup ratios are `0.998x`, `1.002x`,
-`0.998x`, and `1.008x`, so every cell passes lookup parity. Correctness
-violations are zero.
-
-The bounded profile is complete:
-
-```text
-BOTTLENECK_IDENTIFIED_SCALAR_COMPACT_LOOP
-EXPANDED_LOOP_AUTO_VECTORIZED_SSE
-SEMANTICS_PRESERVING_SIMD_OPTIMIZATION_PLAUSIBLE
-OPTIMIZATION_NOT_IMPLEMENTED
-```
-
-GCC cannot vectorize compact's label loop because the per-entry nonnegative
-clamp introduces control flow; expanded is vectorized four entries at a time.
-At B8 the strict synthetic profile retires about `3.54x` as many instructions,
-`6.77x` as many branches, and `2.91x` as many cycles for C as E. Branch misses
-remain below 0.2%, so prediction failure is not the bottleneck.
-
-A diagnostic `-ffast-math` build vectorizes the unchanged compact loop and
-reduces synthetic C/E time to about `1.42x` at B8, below the frozen `2.0x`
-threshold, but it is not an admissible fix.
-
-The explicit SSE2 implementation and frozen rerun are complete:
-
-```text
-PASS_SSE2_SCALAR_BITWISE_PARITY
-PASS_SSE2_PACKED_DOUBLE_HOT_PATH
-PASS_NATIVE_TABLE_BUILD_AFFORDABILITY
-PASS_NATIVE_LOOKUP_PARITY
-PASS_NATIVE_TABLE_CORRECTNESS
-```
-
-Scalar/SSE2 outputs are bitwise equal for B4/B8 ordinary and adversarial
-values under all four rounding modes. The production loop uses packed
-double-precision operations plus an ordered compare mask and retains the
-scalar odd tail/fallback without new model state.
-
-Registered C/E build ratios are `1.855x`, `1.851x`, `1.829x`, and `1.859x`
-for GIST B4/B8 and CIFAR B4/B8. All are below the unchanged `2.0x` gate.
-Lookup ratios remain within 0.6%, compact/expanded table violations remain
-zero, and the scientific/fixed-budget gates remain passed.
-
-The result is recorded in
-`docs/saq_structured_2d_base_only_result_2026_07_23.md`. No correctness or
-measurement blocker remains. This establishes native prototype affordability,
-not Recall/QPS or a SOTA system-level result. Benchmark-query evaluation
-remains unauthorized.
+The next action requires a scientific-scope choice from the user: either
+authorize a new full-word VQ consumer and treat S as a different ANN
+representation, or redesign the candidate around the existing per-coordinate
+bitplanes. Neither choice belongs to this completed unchanged-estimator gate.

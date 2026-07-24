@@ -709,3 +709,68 @@ b9847fa11a0e2ec92c5e2fef8061cee11884fc2ff4eea82f7b438fae2d452ced  SSE2 vectoriza
 cc54dad0693e2c5adf94817ac26c485a308e3e9e0b639c382f72fd109e9da601  SSE2 compact perf
 20b1df37eccb97bf815d3a708ef179f2490a0c490611b9b9622830d1e2b7a891  SSE2 expanded perf
 ```
+
+## Unchanged production-estimator integration gate
+
+Date: 2026-07-24
+
+Decision:
+
+```text
+NO_GO_UNCHANGED_ESTIMATOR_INTEGRATION
+```
+
+The gate first mapped S to the actual production SAQ accurate-estimator path
+at snapshot `0dfa0df2`. Admission failed before a numerical or timing run.
+
+The production path is:
+
+1. `IVF::search` constructs `SAQSearcher` and visits selected cells
+   (`saqlib/index/ivf.hpp:275-294`);
+2. `SAQSearcher::searchCluster` runs the one-bit fast stage and then calls
+   `compAccurateDist` for surviving candidates
+   (`saqlib/quantization/saq_searcher.hpp:115-160`);
+3. `SaqCluEstimator::compAccurateDist` sums the existing segment estimators
+   (`saqlib/quantization/saq_estimator.hpp:169-175`); and
+4. each `CaqCluEstimator::compAccurateDist` reads the per-coordinate long
+   bitplanes and `ExFactor.rescale`, reconstructs an inner product through
+   that segment's uniform `sq_delta`, and returns the segment-local expression
+   `||o_segment||^2 + ||q_segment||^2 -
+   2 * rescale * reconstructed_inner_product`
+   (`saqlib/quantization/caq/caq_estimator.hpp:190-215` and
+   `saqlib/quantization/fastscan/lut.hpp:121-125`).
+
+The producer mapping is also explicit: `QuantizerSingle` extracts each
+coordinate's most-significant bit into the short code and packs every
+remaining per-coordinate bit into the long code
+(`saqlib/quantization/quantizer.hpp:147-157,166-205`). The cluster layout sizes
+those buffers from the segment dimension and bit width
+(`saqlib/quantization/cluster_data.hpp:40-56,71-79`).
+
+S has no code with that meaning. It uses one joint B-bit label for each
+adjacent-coordinate group and a learned affine K-entry squared-distance table.
+Its current scan in `research/structured_2d/microbench.cpp:152-167` directly
+indexes those tables. Production SAQ has no joint-label decoder, learned
+codebook lookup, or K-entry full-word table consumer.
+
+Consequently, the following would all change the independent variable rather
+than integrate S into the unchanged estimator:
+
+- treating S's joint label as existing short/long per-coordinate bitplanes;
+- setting `rescale=1` and using the squared-distance table;
+- multiplying `rescale` into that table; or
+- adding a joint-label decoder or a new full-word VQ scan loop.
+
+The earlier R0 result already established this incompatibility for the
+arbitrary-cardinality A4 representation. This gate verifies that the same
+consumer mismatch remains for the more compact shared-affine S model. It does
+not invalidate S's base-only reconstruction result or its optimized table
+builder; it limits the claim to a different full-word VQ representation.
+
+No benchmark query, ground truth, Recall/QPS result, serialized index, raw
+held-out row, or registered natural-data input was read by this gate; existing
+held-out outcomes were not used to select the integration mapping. No
+production source or estimator was changed. A synthetic parity or
+amortization run was not performed because it would test a newly defined VQ
+consumer after the unchanged-estimator admission condition had already
+failed.
