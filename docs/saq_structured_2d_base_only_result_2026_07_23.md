@@ -495,3 +495,110 @@ e0749661ed6b60c8e8cafe2c25838c32df141a7bc4d419a7a70cfd8a3e6110dc  GIST summary
 e953b8fc033299cf4011862cc163ec91669a16de7a2e62f650eb4e9069dff540  CIFAR decision
 40d882f4ef475af1c46e057d481d07fc56af3653ace99940e65d75c36e768211  CIFAR summary
 ```
+
+## Bounded compact-builder hot-path profile
+
+Profiling date: 2026-07-24
+
+```text
+BOTTLENECK_IDENTIFIED_SCALAR_COMPACT_LOOP
+EXPANDED_LOOP_AUTO_VECTORIZED_SSE
+SEMANTICS_PRESERVING_SIMD_OPTIMIZATION_PLAUSIBLE
+OPTIMIZATION_NOT_IMPLEMENTED
+```
+
+The profile used the unchanged builders at commit `b0d654c`. A deterministic
+driver under `/tmp` constructed finite synthetic S models and probes with the
+same 8,192-row, 64-group, B4/B8 work counts. It did not read dataset or query
+files, retrain a model, modify repository source, or rerun the registered
+panels.
+
+### Compiler and assembly evidence
+
+Under the frozen strict flags, GCC 11.5 reports:
+
+- compact's label loop at `compact.cpp:158` is not vectorized because of
+  control flow; and
+- expanded's loop at `compact.cpp:168` is vectorized with 16-byte vectors.
+
+The assembly identifies the control flow as the per-entry nonnegative clamp.
+Compact executes scalar double-precision polynomial operations followed by
+`comisd` and a branch for every label. Expanded computes four distances per
+loop with packed conversions, subtracts, multiplies, adds, and one packed
+store. Branch misses are rare because mathematically valid distances are
+normally positive; the cost is scalar execution and instruction volume, not
+branch unpredictability.
+
+### Hardware counters
+
+`perf stat -r 5` used CPU 0 on the same Intel i9-10920X. B4 commands performed
+three complete workloads per run; B8 commands performed one.
+
+| Rate | Arm | Cycles | Instructions | Branches | Branch miss rate | Elapsed |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| B4 | C | 319,141,673 | 924,892,247 | 63,000,762 | 0.07% | 0.0745 s |
+| B4 | E | 129,764,096 | 328,801,389 | 23,703,704 | 0.19% | 0.0317 s |
+| B8 | C | 1,508,356,863 | 4,222,840,092 | 273,765,407 | 0.20% | 0.3396 s |
+| B8 | E | 518,798,583 | 1,192,987,992 | 40,465,251 | 0.08% | 0.1189 s |
+
+Thus compact versus expanded uses `2.46x/2.91x` cycles,
+`2.81x/3.54x` instructions, and `2.66x/6.77x` branches at B4/B8. The B8 cycle
+ratio directly reproduces the registered `2.89x` builder slowdown.
+
+### Diagnostic headroom
+
+Two compiler variants were used only to distinguish an implementation
+bottleneck from an unavoidable formula lower bound:
+
+- `-march=native` with strict semantics still leaves compact scalar while
+  vectorizing expanded with 32-byte vectors; B8 C/E worsens to about `4.50x`.
+- `-ffast-math` allows GCC to vectorize the unchanged compact loop with
+  16-byte vectors; synthetic C/E falls to about `1.56x` at B4 and `1.42x` at
+  B8.
+
+The fast-math result is not admissible performance or correctness evidence:
+it relaxes NaN, rounding, and related floating-point semantics. It does prove
+that the frozen `2.0x` target is not excluded by the polynomial's operation
+count alone.
+
+### Decision
+
+The current builder failure is primarily an implementation bottleneck, not a
+demonstrated inherent cost of the compact representation. The smallest next
+experiment is an explicit two-label SSE2 path that:
+
+- preserves the existing double-operation order, no-FMA rule, binary32 output,
+  NaN-to-zero behavior, and nonnegative clamp;
+- uses a compare mask instead of per-label control flow;
+- keeps the current scalar implementation as reference and fallback; and
+- adds no `64*K` state or other persistent model bytes.
+
+That optimization was not implemented here. It needs its own bounded
+authorization and must first pass exact/adversarial scalar parity before the
+unchanged native microbenchmark is rerun.
+
+Profiling artifacts:
+
+- `/tmp/structured_2d_builder_profile.cpp`;
+- `/tmp/structured_2d_compact_vectorization.txt`;
+- `/tmp/structured_2d_compact_assembly.txt`;
+- `/tmp/structured_2d_profile_perf_b4_compact.txt`;
+- `/tmp/structured_2d_profile_perf_b4_expanded.txt`;
+- `/tmp/structured_2d_profile_perf_b8_compact.txt`;
+- `/tmp/structured_2d_profile_perf_b8_expanded.txt`;
+- `/tmp/structured_2d_compact_fastmath_vectorization.txt`;
+- `/tmp/structured_2d_profile_fastmath.txt`.
+
+SHA-256:
+
+```text
+e698a8dd30c0a5003e0d65c946c0b8a09252505c4a660c49346e02381f1d5714  driver
+1bab32d1b616039ca299a928feab551b23e42c925412bdad8d046b2c8e737272  vectorization
+c2b460c80351f1afaaa6d9ca8b27ffe46b1dab412c54e53b9688664db3249504  assembly
+a9076fb4cfa3434a7209f022d6f5b4a11f016119adfcf130cf5b6d8c2491973b  B4 compact perf
+af0cdcda414883bf5d097edda9470b101170d41b2e6b5349fb9cfcb444190c11  B4 expanded perf
+c6ae8d912d203b4019ec96294d5ebb2d35744623b2579f8e74127fd9bc264ebb  B8 compact perf
+8e663fb5cc1df081192e2de05d0516cc4099df1e12780c25c5e8e10e1a9fee21  B8 expanded perf
+ff96bbc00442172c4770bfbbc5a9cec492460edbcc02ee3689c462f16dd2dfcd  fast-math vectorization
+2ed414f4e59c87491bd50b0ccf43589fbb74eef9e5a90482acc0020779adbf91  fast-math timing
+```

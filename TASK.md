@@ -1,4 +1,4 @@
-# Current Task: query-free native compact-table microbenchmark
+# Current Task: bounded compact-table builder profiling
 
 ## Branch and base
 
@@ -6,10 +6,11 @@
 - Base commit: `5503e87d0584fe50c9233fbe3a02cdd577db07ea`
 - Active mode: `IMPLEMENT`, followed by the permitted smallest `EXPERIMENT`
 
-The fixed-budget S100 construction and compact-table algebra have passed. The
-current instruction authorizes one bounded native C++ microbenchmark comparing
-compact S100, expanded S100, and independent V table construction and lookup.
-It does not authorize benchmark-query evaluation, Recall/QPS measurement, or
+The fixed-budget S100 construction and query-free native microbenchmark are
+complete. The current instruction authorizes profiling only the existing
+compact and expanded table builders at commit `b0d654c`, using deterministic
+synthetic coefficients and the frozen B4/B8 work counts. It does not authorize
+an optimization, benchmark-query evaluation, Recall/QPS measurement, or
 production SAQ changes.
 
 ## Research question and hypothesis
@@ -218,6 +219,27 @@ acceptance denominator. Passing does not establish end-to-end QPS, cache
 behavior inside SAQ, Recall parity, or movement of a system-level Pareto
 frontier. Any later query evaluation requires a separate task.
 
+## Bounded profiling boundary
+
+Profile the unchanged `build_compact_table` and `build_expanded_table`
+functions from commit `b0d654c`. Use an uncommitted driver under `/tmp` with
+deterministic finite synthetic means, transforms, shapes, and probes. Match
+8,192 probes, 64 groups, and B4/B8, pin one process to CPU 0, and keep all
+thread libraries at one thread.
+
+Permitted evidence is:
+
+- GCC vectorization diagnostics under the frozen strict floating-point flags;
+- disassembly of the two builder loops;
+- `perf stat` cycles, instructions, branches, and branch misses; and
+- diagnostic-only compiler variants that establish optimization headroom but
+  are clearly excluded from correctness and performance claims.
+
+Do not modify repository source, use dataset inputs, relax numeric semantics,
+or rerun the registered scientific panels. Stop after locating the dominant
+mechanism and deciding whether a semantics-preserving optimization is
+plausible.
+
 ## Implementation and commands
 
 Modify only the existing `research/structured_2d` prototype and focused
@@ -307,11 +329,24 @@ All four dataset/rate cells completed. C/E table-build ratios are
 `0.998x`, and `1.008x`, so every cell passes lookup parity. Correctness
 violations are zero.
 
-The result is recorded in
-`docs/saq_structured_2d_base_only_result_2026_07_23.md`. No implementation or
-measurement blocker remains. The scientific direction now has a genuine
-choice: profile and optimize the exact compact builder, measure its
-amortization only in a separately authorized unchanged-estimator integration,
-or stop. Do not choose automatically, and do not describe this microbenchmark
-as Recall/QPS or SOTA performance evidence. Benchmark-query evaluation remains
-unauthorized.
+The bounded profile is also complete:
+
+```text
+BOTTLENECK_IDENTIFIED_SCALAR_COMPACT_LOOP
+EXPANDED_LOOP_AUTO_VECTORIZED_SSE
+SEMANTICS_PRESERVING_SIMD_OPTIMIZATION_PLAUSIBLE
+OPTIMIZATION_NOT_IMPLEMENTED
+```
+
+GCC cannot vectorize compact's label loop because the per-entry nonnegative
+clamp introduces control flow; expanded is vectorized four entries at a time.
+At B8 the strict synthetic profile retires about `3.54x` as many instructions,
+`6.77x` as many branches, and `2.91x` as many cycles for C as E. Branch misses
+remain below 0.2%, so prediction failure is not the bottleneck.
+
+A diagnostic `-ffast-math` build vectorizes the unchanged compact loop and
+reduces synthetic C/E time to about `1.42x` at B8, below the frozen `2.0x` threshold,
+but it is not an admissible fix. The next eligible action is one
+semantics-preserving explicit SIMD implementation with the current scalar path
+as reference and fallback. It requires separate authorization. Benchmark-query
+evaluation remains unauthorized.
