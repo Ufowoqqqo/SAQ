@@ -78,6 +78,58 @@ two-dimensional geometry better than two independent scalar grids.
 shared shape may be too restrictive for all datasets and rates.
 \end{frame}
 
+\begin{frame}{3A. Running Example: Reuse One Shape}
+\small
+For arithmetic only, use four shared points instead of the real 16 or 256:
+\[
+z_0=(-1,0),\quad z_1=(0,-1),\quad
+z_2=(1,0),\quad z_3=(0,1).
+\]
+Each coordinate pair applies its own
+\(\text{centre}_{g,k}=\mu_g+A_gz_k\):
+\begin{center}
+\begin{tabular}{c c c c}
+\toprule
+label \(k\) & shared \(z_k\) & pair A: stretch + shift & pair B: rotate + shift\\
+\midrule
+0 & \((-1,0)\) & \((-1,1)\) & \((-1,-1)\)\\
+1 & \((0,-1)\) & \((1,0)\)  & \((0,0)\)\\
+2 & \((1,0)\)  & \((3,1)\)  & \((-1,1)\)\\
+3 & \((0,1)\)  & \((1,2)\)  & \((-2,0)\)\\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{block}{What is shared?}
+Both pairs reuse the four labels and the same underlying shape. Only a
+two-number shift and a \(2\times2\) transform change by pair.
+\end{block}
+\end{frame}
+
+\begin{frame}{3B. Running Example: Build One Query Table}
+\small
+For pair A, let the transformed query residual be \(q=(2.8,1.2)\).
+Build four squared-distance entries:
+\begin{center}
+\begin{tabular}{c c c}
+\toprule
+label & reconstructed centre & \(T[k]=\lVert q-\text{centre}_k\rVert^2\)\\
+\midrule
+0 & \((-1,1)\) & \(14.48\)\\
+1 & \((1,0)\)  & \(4.68\)\\
+2 & \((3,1)\)  & \(\mathbf{0.08}\)\\
+3 & \((1,2)\)  & \(3.88\)\\
+\bottomrule
+\end{tabular}
+\end{center}
+A database vector storing label \(2\) for this pair contributes
+\(\mathbf{T[2]=0.08}\); its coordinates are not decoded during the scan.
+\begin{alertblock}{Scale up to the real method}
+A full code stores 64 labels. Its score is
+\(T_0[k_0]+\cdots+T_{63}[k_{63}]\): 64 table lookups. Labels use 4 or 8 bits,
+so the vector payload is exactly 32 or 64 bytes.
+\end{alertblock}
+\end{frame}
+
 \begin{frame}{4. Fair Comparison}
 \small
 \begin{tabularx}{\textwidth}{>{\bfseries}p{0.29\textwidth} X}
