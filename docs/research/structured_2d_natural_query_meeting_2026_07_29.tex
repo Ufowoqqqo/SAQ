@@ -1,0 +1,285 @@
+\documentclass[aspectratio=169]{beamer}
+\usetheme{Madrid}
+\usecolortheme{dolphin}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+\setbeamersize{text margin left=6mm,text margin right=6mm}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{booktabs,tabularx,array}
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{\usepackage{url}}
+\hypersetup{hidelinks,pdftitle={Attempt 4 - Final Query Result}}
+\newcommand{\good}[1]{\textcolor{green!45!black}{\textbf{#1}}}
+\newcommand{\bad}[1]{\textcolor{red!75!black}{\textbf{#1}}}
+\title{Attempt 4: Final Query Result}
+\subtitle{The two-dimensional model works locally, but not consistently enough}
+\author{}
+\date{2026-07-29}
+
+\begin{document}
+\begin{frame}\titlepage\end{frame}
+
+\begin{frame}{1. The Answer First}
+\begin{alertblock}{Final decision}
+The current shared two-dimensional model is \textbf{not} a general
+replacement for product quantization.
+\end{alertblock}
+\begin{itemize}
+  \item It has clear wins in some settings.
+  \item It loses or ties in other equally important settings.
+  \item No storage budget passes both datasets and both index settings.
+\end{itemize}
+\begin{block}{What this means}
+The implementation works and the idea has a real signal, but the signal is
+not robust enough for a SIGMOD/VLDB/ICDE contribution in its current form.
+\end{block}
+\end{frame}
+
+\begin{frame}{2. What Was the Question?}
+We compress every database vector to either \textbf{32 bytes} or
+\textbf{64 bytes}.
+\medskip
+\begin{columns}[T]
+\column{0.47\textwidth}
+\begin{block}{Standard approach}
+Split coordinates into small blocks. Learn a separate set of representative
+points for every block.
+\end{block}
+\column{0.47\textwidth}
+\begin{block}{Our approach}
+Learn one reusable two-dimensional shape. Each coordinate pair stretches,
+rotates, and shifts that shared shape.
+\end{block}
+\end{columns}
+\begin{alertblock}{The test}
+At the same code bytes and the same searched database candidates, does our
+model recover more true neighbours without slowing queries?
+\end{alertblock}
+\end{frame}
+
+\begin{frame}[fragile]{3. How the Method Works}
+\small
+\begin{verbatim}
+Training:
+  learn one shared 2D shape
+  for each coordinate pair:
+    learn a shift + 2-by-2 transform
+  store one label per database pair
+Query:
+  build 64 small tables per searched cell
+  scan labels and keep the best 100 IDs
+\end{verbatim}
+\textbf{Why it might help:} a non-rectangular shape can follow natural
+two-dimensional geometry better than two independent scalar grids.
+\medskip
+
+\textbf{Why it might fail:} every searched cell needs new tables, and one
+shared shape may be too restrictive for all datasets and rates.
+\end{frame}
+
+\begin{frame}{4. Fair Comparison}
+\small
+\begin{tabularx}{\textwidth}{>{\bfseries}p{0.29\textwidth} X}
+data & standard SIFT1M and GIST1M queries and exact answers\\
+quality & Recall@100: fraction of the true 100 neighbours recovered\\
+speed & complete queries per second and single-query tail latency\\
+storage & exactly 32 or 64 code bytes per database vector\\
+coarse index & 1,024 and 4,096 database cells\\
+search range & nine fixed numbers of cells searched per query\\
+repetition & one warmup and seven measured runs\\
+hardware & one CPU socket; one-thread latency and 12-core throughput\\
+\end{tabularx}
+\normalsize
+\begin{block}{Included in time}
+Query transformation, cell selection, table construction, database scan, and
+selection of the best 100 IDs.
+\end{block}
+\end{frame}
+
+\begin{frame}{5. What Counts as a Real Win?}
+For one operating point, either:
+\begin{enumerate}
+  \item \textbf{speed route}: at least 10\% more queries per second at nearly
+  the same Recall, without making p95 latency more than 5\% worse; or
+  \item \textbf{quality route}: at least 0.002 more Recall at nearly the same
+  throughput.
+\end{enumerate}
+\medskip
+It must also:
+\begin{itemize}
+  \item use no more complete index bytes;
+  \item use no more than twice the baseline construction CPU; and
+  \item not be beaten simultaneously in quality, speed, and bytes by the
+  contextual comparison.
+\end{itemize}
+\begin{alertblock}{Terminal rule}
+One byte budget and one route must pass \textbf{both datasets and both coarse
+index sizes}. A single attractive point is not enough.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{6. The Complete Matrix Is Valid}
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+Check & Completed & Required\\
+\midrule
+logical method settings & 94 & 94\\
+warmup passes & 188 & 188\\
+measured passes & 1,316 & 1,316\\
+CPU hours & 239.25 & at most 256\\
+wall hours & 101.22 & at most 120\\
+peak memory & 11.12 GiB & at most 16 GiB\\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{block}{Stability}
+For every fixed point, all repetitions returned the same IDs, candidate count,
+and Recall. A second summary run reproduced every output byte-for-byte.
+\end{block}
+\scriptsize One interrupted warmup remained conservatively charged and was
+later rerun successfully; it is not a scientific failure.
+\end{frame}
+
+\begin{frame}{7. Final Result by Dataset and Index Size}
+\small
+\begin{center}
+\begin{tabular}{llcc}
+\toprule
+Dataset & Coarse cells & 32 bytes & 64 bytes\\
+\midrule
+GIST & 1,024 & \good{pass} & \good{pass}\\
+GIST & 4,096 & \bad{fail: index bytes} & \bad{fail: index bytes}\\
+SIFT & 1,024 & \bad{fail} & \bad{fail}\\
+SIFT & 4,096 & \bad{fail} & \good{pass}\\
+\bottomrule
+\end{tabular}
+\end{center}
+\normalsize
+\begin{alertblock}{Why the project-level answer is no}
+Neither column is all green. The 32-byte model loses on SIFT. The 64-byte
+model helps SIFT only with 4,096 coarse cells, not with 1,024.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{8. The Clearest Positive Point}
+\begin{block}{SIFT, 4,096 coarse cells, 64-byte code}
+Searching 256 cells:
+\[
+\text{Recall}=0.9261,\qquad \text{throughput}=966\text{ queries/s}.
+\]
+\end{block}
+Compared with the eligible full-dimensional OPQ point:
+\begin{itemize}
+  \item about \good{56\% more throughput} at matched Recall;
+  \item about \good{29\% lower p95 latency}; and
+  \item quality advantage of \good{0.00214} at matched throughput.
+\end{itemize}
+\begin{alertblock}{Why this still does not establish the contribution}
+The benefit appears only at the 64-byte, 4,096-cell, high-search setting.
+The same model does not repeat it at 1,024 cells or at 32 bytes.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{9. The Decisive Negative Evidence Is SIFT}
+\begin{itemize}
+  \item At 32 bytes and 1,024 cells, S's best raw speed comparison is about
+  \bad{28\% slower}; a representative quality comparison is about
+  \bad{0.079 Recall worse}.
+  \item At 32 bytes and 4,096 cells, its best raw speed comparison is about
+  \bad{19\% slower}, and the best quality comparison is about
+  \bad{0.042 Recall worse}.
+  \item At 64 bytes and 1,024 cells, quality is nearly tied but slightly
+  negative; S is about \bad{11\% slower} with about
+  \bad{17\% worse p95 latency}.
+\end{itemize}
+\begin{block}{Interpretation}
+The shared shape is useful only after enough code capacity and enough scanned
+candidates amortize its tables. That is an operating-region effect, not a
+robust new frontier.
+\end{block}
+\end{frame}
+
+\begin{frame}{10. Why GIST Looks Better---and Why We Are Careful}
+GIST has 960 dimensions, but S stores a label only for the first 128
+transformed coordinates.
+\medskip
+For the remaining 832 coordinates, every vector in one coarse cell reuses the
+cell centre.
+\begin{center}
+\textbf{more searched cells}
+$\rightarrow$ more approximate tail values
+$\rightarrow$ possible false positives
+\end{center}
+\begin{block}{What is valid}
+The GIST numbers are valid for the system definition fixed before seeing
+queries.
+\end{block}
+\begin{alertblock}{What is not valid}
+They are not clean proof that the shared 2D shape alone is better. At 4,096
+cells, the extra routing state also makes S's complete index larger than the
+matched baseline.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{11. Scientific Result vs. Engineering Result}
+\begin{columns}[T]
+\column{0.47\textwidth}
+\begin{block}{Scientific evidence}
+\begin{itemize}
+  \item Shared 2D geometry can improve real query ordering.
+  \item The gain depends strongly on rate and candidate regime.
+  \item Offline reconstruction gains do not predict a common query win.
+\end{itemize}
+\end{block}
+\column{0.47\textwidth}
+\begin{block}{Artifact engineering}
+\begin{itemize}
+  \item deterministic packed scanner;
+  \item shared candidate schedule;
+  \item complete byte and resource accounting;
+  \item 101-hour reproducible matrix.
+\end{itemize}
+\end{block}
+\end{columns}
+\begin{alertblock}{Reviewer view}
+The engineering makes the negative conclusion trustworthy. It does not turn
+the local positive points into a general research contribution.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{12. Final Takeaway and Next Question}
+\begin{alertblock}{Current direction}
+\textbf{Close it under the frozen hypothesis.} Do not rescue it by changing
+datasets, probe grids, thresholds, or storage accounting after seeing results.
+\end{alertblock}
+\begin{block}{Evidence worth preserving}
+The 64-byte high-candidate SIFT region is real. It shows that the mechanism is
+not empty; it is simply not robust.
+\end{block}
+\begin{block}{A scientifically different next question}
+Why does the shared shape help only when code capacity and candidate count are
+high, and can that mechanism be made robust without a query-selected policy
+or extra per-cell state?
+\end{block}
+\end{frame}
+
+\begin{frame}[allowframebreaks]{References and Evidence}
+\tiny
+\begin{itemize}
+  \item Jégou, Douze, and Schmid. ``Product Quantization for Nearest Neighbor
+  Search.'' TPAMI 2011.
+  \item Ge et al. ``Optimized Product Quantization.'' CVPR 2013.
+  \item André, Kermarrec, and Le Scouarnec. ``Quicker ADC.'' TPAMI.
+  \item Gao and Long. ``RaBitQ.'' SIGMOD 2024.
+  \item Gao et al. ``Extended RaBitQ.'' 2024.
+  \item Li et al. ``SAQ.'' 2025.
+  \item Frozen design:
+  \texttt{structured\_2d\_fair\_query\_evaluation\_2026\_07\_24.md}.
+  \item Final result:
+  \texttt{structured\_2d\_natural\_query\_result\_2026\_07\_29.md}.
+\end{itemize}
+\end{frame}
+
+\end{document}

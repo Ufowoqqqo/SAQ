@@ -24,6 +24,10 @@ QUERY_FILES = {
 }
 
 
+class DeadlineReached(RuntimeError):
+    pass
+
+
 def child_cpu() -> float:
     usage = resource.getrusage(resource.RUSAGE_CHILDREN)
     return usage.ru_utime + usage.ru_stime
@@ -243,6 +247,13 @@ def enforce_caps(args: argparse.Namespace) -> None:
         raise RuntimeError(f"CPU cap reached: {cpu_hours:.6f} h")
     if wall_hours >= args.cap_wall_hours:
         raise RuntimeError(f"wall cap reached: {wall_hours:.6f} h")
+    if (
+        args.deadline_epoch is not None
+        and time.time() >= args.deadline_epoch
+    ):
+        raise DeadlineReached(
+            "operational deadline reached at a pass boundary"
+        )
 
 
 def completed_keys(args: argparse.Namespace) -> set[tuple[str, str, int, int, int, str, int]]:
@@ -362,6 +373,7 @@ def main() -> int:
     parser.add_argument("--prior-wall-hours", type=float, required=True)
     parser.add_argument("--cap-cpu-hours", type=float, default=256.0)
     parser.add_argument("--cap-wall-hours", type=float, default=120.0)
+    parser.add_argument("--deadline-epoch", type=float)
     args = parser.parse_args()
     registry = cells(args.finalized)
     write_context(args)
@@ -379,7 +391,16 @@ def main() -> int:
             for cell in registry
         ],
     )
-    run(args, registry)
+    try:
+        run(args, registry)
+    except DeadlineReached as error:
+        cpu_hours, wall_hours = usage(args)
+        print(
+            f"PAUSED {error} aggregate_cpu_hours={cpu_hours:.9f} "
+            f"aggregate_wall_hours={wall_hours:.9f}",
+            flush=True,
+        )
+        return 0
     cpu_hours, wall_hours = usage(args)
     print(
         f"COMPLETE aggregate_cpu_hours={cpu_hours:.9f} "
