@@ -1,0 +1,306 @@
+\documentclass[aspectratio=169]{beamer}
+\usetheme{Madrid}
+\usecolortheme{dolphin}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+\setbeamersize{text margin left=7mm,text margin right=7mm}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{booktabs,tabularx,array}
+\usepackage{xcolor}
+\hypersetup{hidelinks,pdftitle={Mixed-radix: Natural-data Result and Synthetic Witness}}
+\newcommand{\good}[1]{\textcolor{green!45!black}{\textbf{#1}}}
+\newcommand{\bad}[1]{\textcolor{red!75!black}{\textbf{#1}}}
+\title{Original Mixed-radix: What Worked and What Did Not}
+\subtitle{A real mechanism, but no useful natural-data frontier improvement}
+\author{}
+\date{2026-08-01}
+
+\begin{document}
+\begin{frame}\titlepage\end{frame}
+
+\begin{frame}{1. The Answer First}
+\begin{alertblock}{Final result for the tested method}
+The original fixed-adjacent mixed-radix method is \textbf{not competitive on
+SIFT1M or GIST1M} under the frozen Recall--speed evaluation.
+\end{alertblock}
+\begin{itemize}
+  \item At 32 bytes, it becomes exactly the power-of-two control.
+  \item At 64 bytes, Recall changes by at most about one tenth of one
+  percentage point, with both positive and negative signs.
+  \item A synthetic positive control now confirms that the intended mechanism
+  itself is real and reaches the query result.
+\end{itemize}
+\begin{block}{Interpretation}
+The implementation can exploit non-power-of-two cardinalities. The tested
+natural data simply does not contain enough of this structure for a useful win.
+\end{block}
+\end{frame}
+
+\begin{frame}{2. Scope Correction: Which ``Attempt 4'' Is This?}
+\begin{columns}[T]
+\column{0.47\textwidth}
+\begin{block}{Original target: this deck}
+Two adjacent scalar quantizers share one packed word. Their numbers of levels
+may be arbitrary positive integers.
+\end{block}
+\column{0.47\textwidth}
+\begin{block}{Separate branch: not this result}
+The structured-2D method learns a reusable two-dimensional shape with affine
+transforms. It was evaluated separately and is currently set aside.
+\end{block}
+\end{columns}
+\begin{alertblock}{Why the distinction matters}
+Mixed-radix changes how a fixed number of bit patterns is divided between two
+scalar coordinates. It does \textbf{not} learn a shared 2D vector codebook.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{3. The Original Intuition}
+Four bits give exactly \(2^4=16\) possible labels for one coordinate pair.
+\medskip
+\begin{columns}[T]
+\column{0.47\textwidth}
+\begin{block}{Power-of-two allocation}
+Each coordinate receives 1, 2, 4, 8, \ldots levels. A typical balanced split
+is \(4\times4=16\).
+\end{block}
+\column{0.47\textwidth}
+\begin{block}{Mixed-radix allocation}
+Allow any integers \(K_1,K_2\) as long as
+\[
+K_1K_2\leq16.
+\]
+This includes \(3\times5=15\).
+\end{block}
+\end{columns}
+\begin{alertblock}{Hypothesis}
+If one coordinate really needs 3 values and the other needs 5, mixed-radix can
+retain all 15 combinations. Separate binary rounding would need
+\(4\times8=32\) states and cannot fit in four bits.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{4. Running Example: Pack a \(3\times5\) Grid}
+\small
+Let \(z_1\in\{0,1,2\}\) and \(z_2\in\{0,1,2,3,4\}\). Store
+\[
+\text{label}=z_1+3z_2.
+\]
+\begin{center}
+\begin{tabular}{c|ccccc}
+\toprule
+& \(z_2=0\) & 1 & 2 & 3 & 4\\
+\midrule
+\(z_1=0\) & 0 & 3 & 6 & 9 & 12\\
+\(z_1=1\) & 1 & 4 & 7 & 10 & 13\\
+\(z_1=2\) & 2 & 5 & 8 & 11 & 14\\
+\bottomrule
+\end{tabular}
+\end{center}
+Every real combination has a unique label; label 15 is simply unused.
+\medskip
+\begin{block}{What the power-of-two control must do}
+With only 16 labels it may choose \(4\times4\), but then five distinct values
+of the second coordinate must share only four reconstructed values. At least
+two real prototypes can receive the same stored code.
+\end{block}
+\end{frame}
+
+\begin{frame}[fragile]{5. Training, Encoding, and Querying}
+\small
+\begin{verbatim}
+Training, using base/index data only:
+  for each adjacent coordinate pair:
+    estimate scalar reconstruction cost for each level count
+    choose K1, K2 minimizing total cost, subject to K1*K2 <= 2^B
+
+Encoding one database vector:
+  z1 = nearest scalar centre on coordinate 1
+  z2 = nearest scalar centre on coordinate 2
+  store label = z1 + K1*z2
+
+Querying:
+  build the complete 2^B-entry distance table for each pair
+  decode one label per pair, add table values, keep the best 100 IDs
+\end{verbatim}
+\begin{alertblock}{Controlled difference}
+Arbitrary arm A and power-of-two arm D use the same pairs, bytes, candidates,
+table builder, and scan loop. Only the allowed values of \(K_1,K_2\) differ.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{6. What We Actually Compared}
+\small
+\begin{tabularx}{\textwidth}{>{\bfseries}p{0.26\textwidth} X}
+A128 & arbitrary integer radices, such as \(15\times17=255\)\\
+D128 FULL & identical method, but each radix must be a power of two\\
+PQ / OPQ & standard product-quantization baselines for deployability context\\
+data & SIFT1M and GIST1M\\
+payload & exactly 32 or 64 code bytes per database vector\\
+index sizes & 1,024 and 4,096 coarse database cells\\
+quality & Recall@100: how many of the true nearest 100 are returned\\
+speed & single-query latency and 12-core queries per second\\
+search range & nine fixed numbers of cells searched per query\\
+\end{tabularx}
+\begin{block}{Fairness rule}
+A and D search exactly the same candidates and perform the same table work.
+The allocation was fixed before reading query results.
+\end{block}
+\end{frame}
+
+\begin{frame}{7. What the Natural-data Allocator Chose}
+\begin{columns}[T]
+\column{0.47\textwidth}
+\begin{block}{32-byte vectors: 4 bits per pair}
+Every A group selected \(4\times4\). Therefore A and D were literally the
+same representation and returned identical rankings.
+\end{block}
+\column{0.47\textwidth}
+\begin{block}{64-byte vectors: 8 bits per pair}
+Only 10--24 of 64 groups differed from \(16\times16\). Almost all were
+\(15\times17\) or \(17\times15\), using 255 of 256 paid states.
+\end{block}
+\end{columns}
+\begin{alertblock}{Early mechanism diagnosis}
+The reconstruction-based allocator found no large unused-cardinality problem
+on SIFT/GIST. At 64 bytes it mostly moved only one level from one coordinate
+to its partner.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{8. Natural-data Recall Result}
+\small
+At the same number of searched cells, A-minus-D Recall@100 was:
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+Dataset & coarse cells & minimum & maximum\\
+\midrule
+GIST1M & 1,024 & -0.00096 & +0.00054\\
+GIST1M & 4,096 & -0.00106 & +0.00017\\
+SIFT1M & 1,024 & -0.000097 & +0.000066\\
+SIFT1M & 4,096 & -0.000033 & +0.000436\\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{alertblock}{Meaning in plain language}
+The largest gain was 0.054 percentage points; the largest loss was 0.106
+percentage points. The sign changed across datasets, index sizes, and search
+ranges, so there is no stable quality improvement.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{9. Speed and Baseline Result}
+\begin{itemize}
+  \item A/D throughput ratio: \(0.9918\) to \(1.0069\); group medians are
+  essentially 1.
+  \item A/D p95 latency ratio: \(0.9897\) to \(1.0251\).
+  \item This is expected: A and D deliberately execute the same complete-table
+  consumer and nearly the same representation.
+  \item PQ and OPQ generally reach higher Recall in the useful high-quality
+  region.
+\end{itemize}
+\begin{alertblock}{Natural-data decision}
+The fixed-adjacent mixed-radix method did not move a useful Recall--speed
+frontier. A tiny nonzero difference is not a database-systems contribution.
+\end{alertblock}
+\scriptsize Complete matrix: 512 accepted passes; 32.36 CPU-hours;
+17.09 wall-hours; all eight correctness tests pass.
+\end{frame}
+
+\begin{frame}{10. Why Add a Synthetic Positive Control?}
+The natural result left two different explanations:
+\begin{enumerate}
+  \item the mixed-radix mechanism is valid, but the required data structure is
+  absent or weak; or
+  \item the implementation cannot transmit a radix advantage into query
+  ranking, even when such an advantage exists.
+\end{enumerate}
+\begin{block}{Decisive construction}
+Create exact Cartesian prototypes with the cardinalities required by the
+intuition. Put 100 identical database vectors at every prototype, place one
+query exactly on each prototype, search every candidate, and ask whether all
+100 true duplicates are recovered.
+\end{block}
+Positive cases are \(3\times5\) in 4 bits and \(15\times17\) in 8 bits.
+Matching \(4\times4\) and \(16\times16\) cases are zero-effect controls.
+\end{frame}
+
+\begin{frame}{11. Synthetic Result: The Mechanism Reaches Recall}
+\small
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+Case & A shape & D shape & code collisions A/D & Recall A/D\\
+\midrule
+positive B4 & \(3\times5\) & \(4\times4\) & 0 / 3 & \good{1.000 / 0.800}\\
+null B4 & \(4\times4\) & \(4\times4\) & 0 / 0 & 1.000 / 1.000\\
+positive B8 & \(15\times17\) & \(16\times16\) & 0 / 15 & \good{1.000 / 0.941}\\
+null B8 & \(16\times16\) & \(16\times16\) & 0 / 0 & 1.000 / 1.000\\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{block}{Validity checks}
+In both null controls A and D produced identical rankings. In both positive
+cases the rankings differed exactly where D merged prototypes. Two complete
+runs were byte-for-byte identical.
+\end{block}
+\end{frame}
+
+\begin{frame}{12. Put the Two Results Together}
+\begin{center}
+\begin{tabularx}{0.94\textwidth}{>{\bfseries}p{0.24\textwidth} X X}
+\toprule
+Question & Natural SIFT/GIST & Synthetic witness\\
+\midrule
+Can A choose non-dyadic radices? & rarely, and only weakly at 64 bytes & yes,
+exactly \(3\times5\) and \(15\times17\)\\
+Does this avoid collisions? & no material measured benefit & yes, 3 and 15
+control collisions removed\\
+Does it improve Recall? & tiny, mixed-sign changes & yes, by 0.200 and 0.0588\\
+Does it beat PQ/OPQ? & no useful frontier movement & not tested or claimed\\
+\bottomrule
+\end{tabularx}
+\end{center}
+\begin{alertblock}{Combined conclusion}
+The mechanism is real but its necessary structure is not sufficiently strong
+in the tested natural representation. The synthetic result explains the
+negative result; it does not reverse it.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{13. Claim Boundary and Next Question}
+\begin{block}{What we can now say}
+Fixed-word mixed-radix coding can preserve cardinalities that binary rounding
+cannot, and this can prevent query-result collisions.
+\end{block}
+\begin{alertblock}{What we cannot say}
+We have not shown that the condition is common in real vector data, that it
+improves end-to-end QPS, or that it beats an unrestricted PQ/VQ model.
+\end{alertblock}
+\begin{block}{If we continue}
+The next distinct question is whether base data alone can identify coordinate
+groups whose quantization collisions affect near-neighbour ordering. First
+compute an oracle upper bound; do not immediately build another large system.
+\end{block}
+\end{frame}
+
+\begin{frame}{References and Evidence}
+\tiny
+\begin{itemize}
+  \item J\'egou, Douze, and Schmid. ``Product Quantization for Nearest
+  Neighbor Search.'' TPAMI 2011.
+  \item Ge et al. ``Optimized Product Quantization.'' CVPR 2013.
+  \item Gao and Long. ``RaBitQ.'' SIGMOD 2024.
+  \item Li et al. ``SAQ.'' 2025.
+  \item Frozen mixed-radix design:
+  \texttt{mixed\_radix\_query\_design\_2026\_07\_30.md}.
+  \item Natural-query result:
+  \texttt{mixed\_radix\_query\_results\_2026\_08\_01.md}.
+  \item Synthetic mechanism result:
+  \texttt{mixed\_radix\_synthetic\_witness\_result\_2026\_08\_01.md}.
+\end{itemize}
+\end{frame}
+
+\end{document}
