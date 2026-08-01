@@ -64,6 +64,11 @@ add_executable(mixed_radix_index_test
   ../a4_or_b/models.cpp ../a4_or_b/panel.cpp ../a4_or_c/core.cpp
   ../mixed_radix_query/mixed_index.cpp
   ../mixed_radix_query/mixed_index_test.cpp)
+add_executable(mixed_radix_synthetic_witness
+  ../a4_or_b/models.cpp ../a4_or_b/panel.cpp ../a4_or_c/core.cpp
+  synthetic_timing.cpp
+  ../mixed_radix_query/mixed_index.cpp
+  ../mixed_radix_query/synthetic_witness.cpp)
 add_executable(structured_2d_build_opq_arm
   dataset_io.cpp faiss_pool.cpp build_opq_arm.cpp)
 add_executable(structured_2d_probe_opq_cost
@@ -99,6 +104,7 @@ foreach(target
     structured_2d_build_dv_arms
     mixed_radix_build_a_arm
     mixed_radix_index_test
+    mixed_radix_synthetic_witness
     structured_2d_build_opq_arm
     structured_2d_probe_opq_cost
     structured_2d_write_distributions
@@ -121,6 +127,8 @@ target_link_libraries(structured_2d_build_dv_arms PRIVATE OpenSSL::Crypto)
 target_link_libraries(mixed_radix_build_a_arm PRIVATE OpenSSL::Crypto)
 target_link_libraries(
   structured_2d_run_synthetic_timing PRIVATE OpenMP::OpenMP_CXX)
+target_link_libraries(
+  mixed_radix_synthetic_witness PRIVATE OpenMP::OpenMP_CXX)
 
 set(BUILD_TESTING ON CACHE BOOL "" FORCE)
 enable_testing()

@@ -98,3 +98,21 @@ These are artifact correctness findings, not mixed-radix contributions.
   allocation objective would be a different research question, not an
   unmeasured positive conclusion from this experiment.
 - Full result: `docs/research/mixed_radix_query_results_2026_08_01.md`.
+
+## 2026-08-01: synthetic witness confirms the intended mechanism
+
+- Evidence: under frozen `3x5` B4 and `15x17` B8 Cartesian supports, A selected
+  those exact shapes, had zero prototype-code collisions, and reached
+  Recall@100 1.0. D selected `4x4` and `16x16`, incurred 3 and 15 collisions,
+  and reached 0.8 and 0.941176 Recall. Dyadic `4x4` and `16x16` null controls
+  produced identical A/D rankings and Recall 1.0.
+- Reproduction: two full executions produced byte-identical output with
+  SHA-256 `2c0d4c8448594b21e23dc2b9e1bf64062e4806434997d9c8c8bc18545b6a929e`.
+- Interpretation: the implementation can transmit a true radix-cardinality
+  mismatch into Recall. Natural-data failure is therefore evidence that this
+  mismatch was absent or too weak after PCA, not that the consumer was
+  mechanically insensitive.
+- Boundary: this is an explanatory positive control, not natural-data
+  prevalence, PQ/OPQ superiority, or a reversal of the fixed-pair NO-GO.
+- Full result:
+  `docs/research/mixed_radix_synthetic_witness_result_2026_08_01.md`.
