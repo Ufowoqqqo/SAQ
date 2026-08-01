@@ -94,6 +94,10 @@ std::string physical_id(
     if (logical == "S128" || logical == "D128" ||
         logical == "V128")
         return logical + "_" + suffix;
+    if (logical == "A128")
+        return "A128_" + suffix;
+    if (logical == "D128_FULL")
+        return "D128_" + suffix;
     if (dataset == "sift" && logical == "PQ128_M32X8")
         return "PQFULL_M32X8";
     if (dataset == "sift" && logical == "PQ128_M64X8")
@@ -131,6 +135,34 @@ std::vector<std::uint16_t> read_radices(
     return result;
 }
 
+struct MixedShape {
+    std::vector<std::uint16_t> radices;
+    std::vector<std::uint16_t> used_states;
+};
+
+MixedShape read_mixed_shape(
+        const std::filesystem::path& path,
+        std::size_t expected) {
+    std::ifstream input(path, std::ios::binary);
+    MixedShape result;
+    result.radices.resize(expected);
+    result.used_states.resize(expected);
+    for (std::size_t group = 0; group < expected; ++group) {
+        input.read(
+                reinterpret_cast<char*>(
+                        &result.radices[group]),
+                sizeof(std::uint16_t));
+        input.read(
+                reinterpret_cast<char*>(
+                        &result.used_states[group]),
+                sizeof(std::uint16_t));
+    }
+    if (!input ||
+        input.peek() != std::ifstream::traits_type::eof())
+        throw std::runtime_error("mixed-radix shape file");
+    return result;
+}
+
 struct State {
     std::string dataset;
     int budget = 0;
@@ -162,12 +194,17 @@ struct State {
     faiss::LinearTransform* opq = nullptr;
     structured2d::FullIndex s_index;
     std::vector<std::uint16_t> radices;
+    std::vector<std::uint16_t> used_states;
 
     bool is_s() const {
         return logical_id == "S128";
     }
     bool is_d() const {
         return logical_id == "D128";
+    }
+    bool is_mixed() const {
+        return logical_id == "A128" ||
+                logical_id == "D128_FULL";
     }
     bool is_head_regular() const {
         return dataset == "gist" &&
@@ -178,7 +215,8 @@ struct State {
         return logical_id.rfind("OPQ", 0) == 0;
     }
     bool custom_scan() const {
-        return is_s() || is_d() || is_head_regular() || is_opq();
+        return is_s() || is_d() || is_mixed() ||
+                is_head_regular() || is_opq();
     }
 };
 
@@ -287,7 +325,8 @@ State load_state(
             state.ivf->ntotal !=
                     static_cast<faiss::idx_t>(1000000))
             throw std::runtime_error("timing IVF");
-        if ((state.is_d() || state.is_head_regular() ||
+        if ((state.is_d() || state.is_mixed() ||
+             state.is_head_regular() ||
              state.is_opq()) &&
             state.ivfpq == nullptr)
             throw std::runtime_error("timing IVFPQ");
@@ -295,6 +334,21 @@ State load_state(
             state.radices = read_radices(
                     artifact.string() + ".radix.u16",
                     state.ivfpq->pq.M);
+        if (state.logical_id == "A128") {
+            auto shape = read_mixed_shape(
+                    artifact.string() + ".shape.u16",
+                    state.ivfpq->pq.M);
+            state.radices = std::move(shape.radices);
+            state.used_states = std::move(shape.used_states);
+        } else if (state.logical_id == "D128_FULL") {
+            state.radices = read_radices(
+                    artifact.string() + ".radix.u16",
+                    state.ivfpq->pq.M);
+            state.used_states.assign(
+                    state.ivfpq->pq.M,
+                    static_cast<std::uint16_t>(
+                            state.ivfpq->pq.ksub));
+        }
         if (state.is_opq()) {
             state.opq_owner =
                     faiss::read_VectorTransform_up(
@@ -360,7 +414,8 @@ structured2d::admission::TopKResult search_custom_one(
     }
     const std::size_t tail_start =
             state.dataset == "gist" &&
-                    (state.is_d() || state.is_head_regular() ||
+                    (state.is_d() || state.is_mixed() ||
+                     state.is_head_regular() ||
                      state.logical_id.rfind("OPQ128_", 0) == 0)
             ? 128
             : state.dimensions;
@@ -369,6 +424,11 @@ structured2d::admission::TopKResult search_custom_one(
                 *state.ivfpq, state.radices, query_vector,
                 full_centroids(state), state.dimensions,
                 tail_start, lists, kTopK);
+    if (state.is_mixed())
+        return structured2d::admission::search_mixed_radix_lists(
+                *state.ivfpq, state.radices, state.used_states,
+                query_vector, full_centroids(state),
+                state.dimensions, tail_start, lists, kTopK);
     return structured2d::admission::search_ivfpq_lists(
             *state.ivfpq, state.opq, query_vector,
             full_centroids(state), state.dimensions,

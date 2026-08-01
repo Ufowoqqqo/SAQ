@@ -45,6 +45,20 @@ TopKResult search_dyadic_lists(
         std::span<const faiss::idx_t> lists,
         std::size_t top_k);
 
+// Complete word-table consumer shared by arbitrary and dyadic mixed radix.
+// Every group builds exactly 2^B entries; invalid paid-for states are marked
+// unreachable, and every stored code is checked against used_states.
+TopKResult search_mixed_radix_lists(
+        const faiss::IndexIVFPQ& index,
+        std::span<const std::uint16_t> radices,
+        std::span<const std::uint16_t> used_states,
+        std::span<const float> full_query,
+        std::span<const float> full_centroids,
+        std::size_t full_dimensions,
+        std::size_t tail_start,
+        std::span<const faiss::idx_t> lists,
+        std::size_t top_k);
+
 std::uint64_t hash_topk(
         std::span<const TopKResult> results);
 

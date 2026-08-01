@@ -11,7 +11,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(FAISS_ENABLE_GPU OFF CACHE BOOL "" FORCE)
 set(FAISS_ENABLE_PYTHON OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/faiss
+set(FAISS_SOURCE_DIR
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/faiss
+    CACHE PATH "Pinned Faiss source directory")
+add_subdirectory(${FAISS_SOURCE_DIR}
                  ${CMAKE_CURRENT_BINARY_DIR}/faiss-build EXCLUDE_FROM_ALL)
 
 set(STRUCTURED_2D_FLAGS
@@ -52,6 +55,15 @@ add_executable(structured_2d_build_s_arm
 add_executable(structured_2d_build_dv_arms
   ../a4_or_b/models.cpp ../a4_or_b/panel.cpp ../a4_or_c/core.cpp
   admission.cpp dataset_io.cpp faiss_pool.cpp build_dv_arms.cpp)
+add_executable(mixed_radix_build_a_arm
+  ../a4_or_b/models.cpp ../a4_or_b/panel.cpp ../a4_or_c/core.cpp
+  dataset_io.cpp
+  ../mixed_radix_query/mixed_index.cpp
+  ../mixed_radix_query/build_a_arm.cpp)
+add_executable(mixed_radix_index_test
+  ../a4_or_b/models.cpp ../a4_or_b/panel.cpp ../a4_or_c/core.cpp
+  ../mixed_radix_query/mixed_index.cpp
+  ../mixed_radix_query/mixed_index_test.cpp)
 add_executable(structured_2d_build_opq_arm
   dataset_io.cpp faiss_pool.cpp build_opq_arm.cpp)
 add_executable(structured_2d_probe_opq_cost
@@ -85,6 +97,8 @@ foreach(target
     structured_2d_prepare_head
     structured_2d_build_s_arm
     structured_2d_build_dv_arms
+    mixed_radix_build_a_arm
+    mixed_radix_index_test
     structured_2d_build_opq_arm
     structured_2d_probe_opq_cost
     structured_2d_write_distributions
@@ -104,6 +118,7 @@ endforeach()
 
 target_link_libraries(structured_2d_build_s_arm PRIVATE OpenSSL::Crypto)
 target_link_libraries(structured_2d_build_dv_arms PRIVATE OpenSSL::Crypto)
+target_link_libraries(mixed_radix_build_a_arm PRIVATE OpenSSL::Crypto)
 target_link_libraries(
   structured_2d_run_synthetic_timing PRIVATE OpenMP::OpenMP_CXX)
 
@@ -128,3 +143,6 @@ add_test(
 add_test(
   NAME structured_2d_synthetic_timing_test
   COMMAND structured_2d_synthetic_timing_test)
+add_test(
+  NAME mixed_radix_index_test
+  COMMAND mixed_radix_index_test)

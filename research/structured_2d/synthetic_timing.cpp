@@ -135,6 +135,47 @@ std::uint32_t decode_label(
     throw std::invalid_argument("D packed bits");
 }
 
+void distance_four_b4(
+        std::size_t groups, const float* table,
+        const std::uint8_t* code0,
+        const std::uint8_t* code1, const std::uint8_t* code2,
+        const std::uint8_t* code3, float& d0, float& d1,
+        float& d2, float& d3) {
+    d0 = d1 = d2 = d3 = 0;
+    for (std::size_t byte = 0; byte < groups / 2; ++byte) {
+        const float* low = table + 32 * byte;
+        const float* high = low + 16;
+        d0 += low[code0[byte] & 0x0fU] + high[code0[byte] >> 4];
+        d1 += low[code1[byte] & 0x0fU] + high[code1[byte] >> 4];
+        d2 += low[code2[byte] & 0x0fU] + high[code2[byte] >> 4];
+        d3 += low[code3[byte] & 0x0fU] + high[code3[byte] >> 4];
+    }
+    if ((groups & 1U) != 0) {
+        const std::size_t byte = groups / 2;
+        const float* last = table + 16 * (groups - 1);
+        d0 += last[code0[byte] & 0x0fU];
+        d1 += last[code1[byte] & 0x0fU];
+        d2 += last[code2[byte] & 0x0fU];
+        d3 += last[code3[byte] & 0x0fU];
+    }
+}
+
+void distance_four_b8(
+        std::size_t groups, const float* table,
+        const std::uint8_t* code0,
+        const std::uint8_t* code1, const std::uint8_t* code2,
+        const std::uint8_t* code3, float& d0, float& d1,
+        float& d2, float& d3) {
+    d0 = d1 = d2 = d3 = 0;
+    for (std::size_t group = 0; group < groups; ++group) {
+        const float* current = table + 256 * group;
+        d0 += current[code0[group]];
+        d1 += current[code1[group]];
+        d2 += current[code2[group]];
+        d3 += current[code3[group]];
+    }
+}
+
 }  // namespace
 
 void normalize_topk(TopKResult& result, std::size_t top_k) {
@@ -194,6 +235,25 @@ TopKResult search_ivfpq_lists(
     if (transform == nullptr)
         scanner->set_query(full_query.data());
     for (const faiss::idx_t list : lists) {
+        // Faiss enables residual-IVFPQ precomputed tables when an index is
+        // loaded. In that mode set_list() needs ||q_head-centroid_head||^2;
+        // passing zero makes increasingly distant lists spuriously cheap.
+        // Compute only the encoded head here because tail_distance() is added
+        // separately for head-only GIST arms.
+        const float* centroid =
+                full_centroids.data() +
+                static_cast<std::size_t>(list) *
+                        full_dimensions;
+        double head_coarse_distance = 0;
+        for (std::size_t dimension = 0;
+             dimension < static_cast<std::size_t>(index.d);
+             ++dimension) {
+            const double delta =
+                    static_cast<double>(
+                            full_query[dimension]) -
+                    centroid[dimension];
+            head_coarse_distance += delta * delta;
+        }
         const float tail = tail_distance(
                 full_query, full_centroids, full_dimensions,
                 tail_start, list);
@@ -204,7 +264,9 @@ TopKResult search_ivfpq_lists(
                     1, residual.data(), rotated.data());
             scanner->set_query(rotated.data());
         }
-        scanner->set_list(list, 0);
+        scanner->set_list(
+                list,
+                static_cast<float>(head_coarse_distance));
         handler.begin_list(tail);
         faiss::InvertedLists::ScopedCodes codes(
                 index.invlists, list);
@@ -302,6 +364,145 @@ TopKResult search_dyadic_lists(
                         result.distances.data(),
                         result.ids.data(), distance,
                         ids.get()[candidate]);
+        }
+    }
+    faiss::maxheap_reorder(
+            result.ids.size(), result.distances.data(),
+            result.ids.data());
+    return result;
+}
+
+TopKResult search_mixed_radix_lists(
+        const faiss::IndexIVFPQ& index,
+        std::span<const std::uint16_t> radices,
+        std::span<const std::uint16_t> used_states,
+        std::span<const float> full_query,
+        std::span<const float> full_centroids,
+        std::size_t full_dimensions,
+        std::size_t tail_start,
+        std::span<const faiss::idx_t> lists,
+        std::size_t top_k) {
+    validate_common(
+            index, full_query, full_centroids, full_dimensions,
+            tail_start, lists, top_k);
+    if (!index.by_residual || index.pq.dsub != 2 ||
+        radices.size() != index.pq.M ||
+        used_states.size() != index.pq.M ||
+        (index.pq.nbits != 4 && index.pq.nbits != 8))
+        throw std::invalid_argument("mixed-radix timing semantics");
+
+    const std::size_t groups = index.pq.M;
+    const std::size_t capacity = index.pq.ksub;
+    for (std::size_t group = 0; group < groups; ++group)
+        if (radices[group] == 0 ||
+            used_states[group] == 0 ||
+            used_states[group] > capacity ||
+            used_states[group] % radices[group] != 0)
+            throw std::invalid_argument("mixed-radix timing shape");
+
+    TopKResult result =
+            initialize_result(candidate_count(index, lists), top_k);
+    if (result.ids.empty()) return result;
+    std::vector<float> residual(index.d);
+    std::vector<float> tables(groups * capacity);
+
+    for (const faiss::idx_t list : lists) {
+        index.quantizer->compute_residual(
+                full_query.data(), residual.data(), list);
+        for (std::size_t group = 0; group < groups; ++group) {
+            const float* codebook =
+                    index.pq.get_centroids(group, 0);
+            float* table = tables.data() + group * capacity;
+            for (std::size_t label = 0;
+                 label < used_states[group]; ++label) {
+                const double first =
+                        static_cast<double>(
+                                residual[2 * group]) -
+                        codebook[2 * label];
+                const double second =
+                        static_cast<double>(
+                                residual[2 * group + 1]) -
+                        codebook[2 * label + 1];
+                table[label] = static_cast<float>(
+                        first * first + second * second);
+            }
+            for (std::size_t label = used_states[group];
+                 label < capacity; ++label)
+                table[label] =
+                        std::numeric_limits<float>::infinity();
+        }
+        const float tail = tail_distance(
+                full_query, full_centroids, full_dimensions,
+                tail_start, list);
+        faiss::InvertedLists::ScopedCodes codes(
+                index.invlists, list);
+        faiss::InvertedLists::ScopedIds ids(
+                index.invlists, list);
+        const std::size_t count =
+                index.invlists->list_size(list);
+        const auto consider = [&](std::size_t candidate, float raw) {
+            const float distance = tail + raw;
+            if (!std::isfinite(distance))
+                throw std::runtime_error(
+                        "stored invalid mixed-radix label");
+            if (faiss::CMax<float, faiss::idx_t>::cmp2(
+                        result.distances[0], distance,
+                        result.ids[0], ids.get()[candidate]))
+                faiss::maxheap_replace_top(
+                        result.ids.size(),
+                        result.distances.data(),
+                        result.ids.data(), distance,
+                        ids.get()[candidate]);
+        };
+        std::size_t candidate = 0;
+        if (index.pq.nbits == 8) {
+            for (; candidate + 4 <= count; candidate += 4) {
+                float d0, d1, d2, d3;
+                const std::uint8_t* code =
+                        codes.get() + candidate * index.code_size;
+                distance_four_b8(
+                        groups, tables.data(),
+                        code, code + index.code_size,
+                        code + 2 * index.code_size,
+                        code + 3 * index.code_size,
+                        d0, d1, d2, d3);
+                consider(candidate, d0);
+                consider(candidate + 1, d1);
+                consider(candidate + 2, d2);
+                consider(candidate + 3, d3);
+            }
+        } else {
+            for (; candidate + 4 <= count; candidate += 4) {
+                float d0, d1, d2, d3;
+                const std::uint8_t* code =
+                        codes.get() + candidate * index.code_size;
+                distance_four_b4(
+                        groups, tables.data(),
+                        code, code + index.code_size,
+                        code + 2 * index.code_size,
+                        code + 3 * index.code_size,
+                        d0, d1, d2, d3);
+                consider(candidate, d0);
+                consider(candidate + 1, d1);
+                consider(candidate + 2, d2);
+                consider(candidate + 3, d3);
+            }
+        }
+        for (; candidate < count; ++candidate) {
+            float d0, d1, d2, d3;
+            const std::uint8_t* code =
+                    codes.get() + candidate * index.code_size;
+            if (index.pq.nbits == 8)
+                distance_four_b8(
+                        groups, tables.data(),
+                        code, code, code, code,
+                        d0, d1, d2, d3);
+            else
+                distance_four_b4(
+                        groups, tables.data(),
+                        code, code, code, code,
+                        d0, d1, d2, d3);
+            consider(candidate, d0);
         }
     }
     faiss::maxheap_reorder(

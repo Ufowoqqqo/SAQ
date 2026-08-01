@@ -5,9 +5,11 @@ from __future__ import annotations
 
 import argparse
 import csv
+import fcntl
 import hashlib
 import os
 import resource
+import shutil
 import subprocess
 import time
 from collections import defaultdict
@@ -26,6 +28,30 @@ QUERY_FILES = {
 
 class DeadlineReached(RuntimeError):
     pass
+
+
+def acquire_output_lock(output: Path):
+    """Hold one kernel-released writer lock for the full matrix run."""
+    output.mkdir(parents=True, exist_ok=True)
+    path = output / ".runner.lock"
+    handle = path.open("a+", encoding="utf-8")
+    try:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        handle.seek(0)
+        owner = handle.read().strip() or "unknown owner"
+        handle.close()
+        raise RuntimeError(
+            f"matrix output already has an active runner: {owner}"
+        ) from None
+    handle.seek(0)
+    handle.truncate()
+    handle.write(
+        f"pid={os.getpid()} started_epoch={time.time():.6f}\n"
+    )
+    handle.flush()
+    os.fsync(handle.fileno())
+    return handle
 
 
 def child_cpu() -> float:
@@ -87,7 +113,23 @@ def validate_cell(
     observed = {
         (int(row["nprobe"]), int(row["repetition"])) for row in rows
     }
-    if observed != expected or len(rows) != len(expected):
+    valid = {
+        (probe, repetition)
+        for repetition in range(REPETITIONS)
+        for probe in NPROBES[cell.nlist]
+    }
+    observed_repetitions = {repetition for _, repetition in observed}
+    complete_observed = {
+        (probe, repetition)
+        for repetition in observed_repetitions
+        for probe in NPROBES[cell.nlist]
+    }
+    if (
+        not expected.issubset(observed)
+        or observed != complete_observed
+        or not observed.issubset(valid)
+        or len(rows) != len(observed)
+    ):
         raise ValueError(f"{measured}: incomplete measured grid")
     combined = warm_rows + rows
     for probe in NPROBES[cell.nlist]:
@@ -101,7 +143,7 @@ def validate_cell(
                 )
     if mode == "single":
         queries = QUERY_FILES[cell.dataset][2]
-        expected_bytes = completed * len(NPROBES[cell.nlist]) * queries * 8
+        expected_bytes = len(rows) * queries * 8
         actual_bytes = Path(str(measured) + ".latency.f64").stat().st_size
         if actual_bytes != expected_bytes:
             raise ValueError(
@@ -157,6 +199,67 @@ def append_ledger(path: Path, row: dict[str, object]) -> None:
     write_tsv(path, list(row), rows)
 
 
+def discard_uncommitted_pass(
+    path: Path, repetition: int, queries: int | None
+) -> None:
+    """Remove output from an interrupted invocation before retrying it."""
+    rows = read_rows(path)
+    if not rows:
+        return
+    keep = [int(row["repetition"]) != repetition for row in rows]
+    if all(keep):
+        return
+    write_tsv(
+        path,
+        list(rows[0]),
+        [row for row, retain in zip(rows, keep) if retain],
+    )
+    if queries is None:
+        return
+    latency_path = Path(str(path) + ".latency.f64")
+    block_bytes = queries * 8
+    payload = latency_path.read_bytes()
+    if len(payload) != len(rows) * block_bytes:
+        raise ValueError(
+            f"{latency_path}: cannot recover interrupted pass because "
+            f"{len(payload)} bytes do not match {len(rows)} timing rows"
+        )
+    latency_path.write_bytes(
+        b"".join(
+            payload[index * block_bytes : (index + 1) * block_bytes]
+            for index, retain in enumerate(keep)
+            if retain
+        )
+    )
+
+
+def publish_staged_pass(
+    staged: Path, target: Path, append: bool, queries: int | None
+) -> None:
+    staged_rows = read_rows(staged)
+    existing_rows = read_rows(target) if append else []
+    merged_rows = existing_rows + staged_rows
+    merged = Path(str(target) + ".merge")
+    write_tsv(merged, list(staged_rows[0]), merged_rows)
+
+    staged_latency = Path(str(staged) + ".latency.f64")
+    target_latency = Path(str(target) + ".latency.f64")
+    merged_latency = Path(str(target_latency) + ".merge")
+    if queries is not None:
+        with merged_latency.open("wb") as stream:
+            if append and target_latency.exists():
+                with target_latency.open("rb") as source:
+                    shutil.copyfileobj(source, stream)
+            with staged_latency.open("rb") as source:
+                shutil.copyfileobj(source, stream)
+
+    os.replace(merged, target)
+    if queries is not None:
+        os.replace(merged_latency, target_latency)
+        staged_latency.unlink()
+    staged.unlink()
+
+
 def invoke(
     args: argparse.Namespace,
     cell: Cell,
@@ -166,7 +269,12 @@ def invoke(
     path: Path,
     append: bool,
 ) -> tuple[float, float]:
-    query_rel, truth_rel, _ = QUERY_FILES[cell.dataset]
+    query_rel, truth_rel, queries = QUERY_FILES[cell.dataset]
+    latency_queries = queries if mode == "single" else None
+    discard_uncommitted_pass(path, repetition, latency_queries)
+    staged = Path(str(path) + f".r{repetition}.staging")
+    staged.unlink(missing_ok=True)
+    Path(str(staged) + ".latency.f64").unlink(missing_ok=True)
     arm_argument = (
         cell.physical
         if cell.logical.startswith("RABITQ_")
@@ -189,8 +297,8 @@ def invoke(
         str(args.data_root / truth_rel),
         str(args.schedule_root),
         str(repetition),
-        "append" if append else "truncate",
-        str(path),
+        "truncate",
+        str(staged),
     ]
     environment = dict(os.environ)
     environment.update(
@@ -206,28 +314,29 @@ def invoke(
     completed = subprocess.run(command, env=environment, check=False)
     cpu_delta = child_cpu() - cpu_start
     wall_delta = time.monotonic() - wall_start
-    append_ledger(
-        args.output / "execution_ledger.tsv",
-        {
-            "phase": phase,
-            "dataset": cell.dataset,
-            "nlist": cell.nlist,
-            "budget": cell.budget,
-            "logical_arm_id": cell.logical,
-            "physical_arm_id": cell.physical,
-            "mode": mode,
-            "repetition": repetition,
-            "child_cpu_seconds": f"{cpu_delta:.9f}",
-            "wall_seconds": f"{wall_delta:.9f}",
-            "exit_code": completed.returncode,
-            "status": "PASS" if completed.returncode == 0 else "FAIL",
-            "timing_path": path,
-        },
-    )
+    ledger_row = {
+        "phase": phase,
+        "dataset": cell.dataset,
+        "nlist": cell.nlist,
+        "budget": cell.budget,
+        "logical_arm_id": cell.logical,
+        "physical_arm_id": cell.physical,
+        "mode": mode,
+        "repetition": repetition,
+        "child_cpu_seconds": f"{cpu_delta:.9f}",
+        "wall_seconds": f"{wall_delta:.9f}",
+        "exit_code": completed.returncode,
+        "status": "PASS" if completed.returncode == 0 else "FAIL",
+        "timing_path": path,
+    }
     if completed.returncode != 0:
+        append_ledger(args.output / "execution_ledger.tsv", ledger_row)
         raise RuntimeError(
             f"natural pass failed: {phase}/{cell}/{mode}/{repetition}"
         )
+    validate_pass(staged, cell.nlist, repetition)
+    publish_staged_pass(staged, path, append, latency_queries)
+    append_ledger(args.output / "execution_ledger.tsv", ledger_row)
     return cpu_delta, wall_delta
 
 
@@ -375,6 +484,7 @@ def main() -> int:
     parser.add_argument("--cap-wall-hours", type=float, default=120.0)
     parser.add_argument("--deadline-epoch", type=float)
     args = parser.parse_args()
+    output_lock = acquire_output_lock(args.output)
     registry = cells(args.finalized)
     write_context(args)
     write_tsv(
@@ -406,6 +516,8 @@ def main() -> int:
         f"COMPLETE aggregate_cpu_hours={cpu_hours:.9f} "
         f"aggregate_wall_hours={wall_hours:.9f}"
     )
+    # Keep the descriptor live until all output and terminal status is written.
+    del output_lock
     return 0
 
 

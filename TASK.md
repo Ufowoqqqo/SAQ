@@ -1,201 +1,147 @@
-# Current Task: frozen structured-2D natural-query evaluation
+# Completed Task: original mixed-radix Recall/QPS evaluation
 
 ## Branch and base
 
-- Active branch: `saq-structured-2d-modeling`
-- Base: `ce350f47aabb0f8ed972ec92ad78585571794291`
-- Mode: `EXPERIMENT` with focused implementation/debugging
+- Active branch: `saq-mixed-radix-query`
+- Base: `d2565dc7` (`saq-structured-2d-modeling`)
+- Status: completed and accepted on 2026-08-01
+- Mode: `REVIEW`
 
-## Research question and hypothesis
+## Research question
 
-At exactly 32 or 64 packed code bytes per database vector, can the independent
-shared-shape full-affine two-dimensional VQ representation (`S`) move the
-Recall@100--latency/QPS frontier against the best matched PQ/OPQ control under
-identical IVF candidates and complete end-to-end timing?
+At exactly 32 or 64 packed bytes per vector, does the original fixed-adjacent
+two-coordinate mixed-radix representation improve the real Recall@100--QPS
+frontier over the same representation restricted to power-of-two radices,
+and is either representation competitive with matched PQ/OPQ?
 
-The hypothesis is that S's reusable non-Cartesian 2D shape improves distance
-ordering enough to repay compact per-cell table construction. It fails if
-full-dimensional PQ/OPQ has equal or better quality, real IVF lists are too
-small to amortize tables, or any gain depends on weaker Recall, different
-candidates, omitted work, or extra storage.
+The hypothesis is deliberately about ranking, not reconstruction: allowing
+non-power-of-two scalar cardinalities may allocate a fixed word more closely
+to coordinate difficulty and may change nearest-neighbour ordering even when
+mean reconstruction improvement is small.
 
-## Authoritative design
+## Frozen method and comparisons
 
-- `docs/research/structured_2d_fair_query_evaluation_2026_07_24.md`
-- `docs/research/RESEARCH_CHARTER.md`
-- `docs/saq_structured_2d_base_only_result_2026_07_23.md`
-- `research/structured_2d/`
-- `research/a4_or_b/`
-- `third_party/faiss/` at
-  `0ca9df4792b173d573044ee14ca0704780176e82`
-- production SAQ/CAQ source at design base `76fb83a`
+- View: first 128 full-PCA residual coordinates, paired as
+  `(0,1), (2,3), ..., (126,127)`.
+- One global model per dataset, `nlist`, and byte budget, fitted without
+  benchmark queries.
+- `A128` candidate: arbitrary positive integer radices `(K1,K2)` with
+  `K1*K2 <= 2^B`, selected by the existing scalar allocation objective.
+- `D128_FULL` forced control: the same fitting, grouping, storage, and
+  consumer, with both radices restricted to powers of two.
+- Address: `label = z1 + K1*z2`; unused labels remain paid-for payload states
+  and are never emitted.
+- Consumer: a focused native IVFPQ scanner uses pinned Faiss distance-table
+  construction and packed-code decoders to construct the complete `2^B`
+  table once per selected IVF list and group, then perform one lookup per
+  group and candidate. A and D execute this exact scanner; D's separable fast
+  path is not admissible. Invalid addresses map to infinity and fail, while a
+  direct-reconstruction calculation provides the correctness reference.
+- Strong controls: matched `PQ128_M32X8`/`PQ128_M64X8` and
+  `OPQ128_M32X8`/`OPQ128_M64X8` under the same public runner.
 
-Historical A4 documents explain earlier evidence but do not authorize or
-change this task.
+The inherited S/V/structured-2D outcomes are not method evidence for this
+task and may not be used to tune A.
 
-## Frozen decisions
+## Data, metrics, and fixed workload
 
-- confirmatory datasets: standard SIFT1M and GIST1M learn/base/query/GT splits;
-- metric and output: full-dimensional L2, top 100, Recall@100;
-- code budgets: exactly 32 and 64 packed bytes per database vector;
-- coarse IVF: shared `nlist={1024,4096}` and identical preassigned lists;
-- probe schedules:
-  - 1024: `1,2,4,8,16,32,64,128,256`;
-  - 4096: `4,8,16,32,64,128,256,512,1024`;
-- S view: first 128 full-PCA residual coordinates, 64 adjacent pairs;
-- GIST tail: reconstruct the unencoded residual tail as the coarse centroid
-  and add its exact query-to-centroid tail norm once per selected list;
-- every measured arm recomputes the identical common PCA/coarse search inside
-  its end-to-end timer; saved preassignments are consistency references only;
-- OPQ is trained and applied to residuals after the common coarse assignment
-  and may not change probed lists;
-- primary controls: D128, V128, PQ128, OPQ128, full-dimensional IVFPQ,
-  IVFPQ FastScan, and OPQ-IVFPQ;
-- quality/context controls: IVF-Flat and actual-byte SAQ/CAQ/RaBitQ points
-  selected only from the finite source/config pools in the design;
-- complete table construction, transform, coarse assignment, scan, and top-k
-  work is included in end-to-end timing;
-- single-thread latency and 12-physical-core batch QPS use one warmup and seven
-  measured repetitions; and
-- the materiality rule is the exact discrete-frontier rule in the design
-  document, without interpolation or query-selected operating points.
+- Standard SIFT1M and GIST1M learn/base/query/ground-truth objects already
+  identity-bound by the inherited query evaluation.
+- Shared full PCA, `nlist={1024,4096}`, base assignments, query assignments,
+  IDs, and ordered preassigned lists from `/tmp/structured-2d-admission` and
+  `/tmp/structured-2d-natural/schedule`.
+- Probe schedules:
+  - `nlist=1024`: `1,2,4,8,16,32,64,128,256`;
+  - `nlist=4096`: `4,8,16,32,64,128,256,512,1024`.
+- Full-dimensional L2, top 100, Recall@100.
+- Complete end-to-end time includes query PCA, coarse assignment, all
+  selected-list table construction, packed scan, and top-k.
+- One-thread latency and 12-physical-core batch QPS, one warmup and seven
+  measured repetitions, fixed affinity and thread settings inherited from
+  `research/structured_2d/run_natural_matrix.py`.
+- Primary comparison uses discrete measured operating points without
+  interpolation. Report complete Recall--QPS curves and Pareto relations;
+  do not rescue the method by changing a threshold after seeing results.
 
-## Reads and writes
+## Paths and permissions
 
-Allowed reads now:
+Relevant source:
 
-- repository source, Git metadata, build definitions, and research documents;
-- official SIFT1M and GIST1M learn and base vectors;
-- public source metadata needed to bind those two objects;
-- newly built coarse assignments, PCA state, indexes, serialization records,
-  and synthetic-query outputs from this task; and
-- the official SIFT1M and GIST1M query and ground-truth objects after their
-  paths, byte sizes, shapes, and SHA-256 identities are recorded; and
-- already documented base-only summaries and synthetic fixture outputs.
+- `research/a4_or_b/models.{hpp,cpp}`: frozen scalar curves and allocation;
+- `research/structured_2d/{build_dv_arms.cpp,synthetic_timing.cpp,
+  run_synthetic_timing.cpp,run_natural_matrix.py}`: inherited public
+  infrastructure;
+- `research/mixed_radix_query/`: new focused builder, tests, and run helpers;
+- `docs/research/mixed_radix_query_design_2026_07_30.md`.
 
-Allowed writes now:
+Allowed reads:
+
+- repository source, documents, and Git metadata;
+- the identity-bound SIFT1M/GIST1M learn/base/query/ground-truth objects;
+- the named common PCA/coarse/schedule artifacts;
+- inherited PQ/OPQ index artifacts and frozen measurement summaries for
+  context, after the A/D method choices above are recorded.
+
+Allowed writes:
 
 - `TASK.md`;
-- focused source and tests under `research/structured_2d/`; and
-- focused result documentation under `docs/research/`; and
-- downloaded learn/base objects, builds, indexes, and query-free outputs
-  under `/tmp`; and
-- frozen natural-query timing, ID, Recall, and frontier outputs under `/tmp`.
+- focused code/tests under `research/mixed_radix_query/`;
+- minimal integration changes under `research/structured_2d/`;
+- focused notes under `docs/research/`;
+- builds, A/D indexes, timing outputs, and logs under `/tmp`.
 
-Forbidden now:
+Forbidden:
 
-- opening any natural benchmark query or ground-truth object other than the
-  bound official SIFT1M/GIST1M objects;
-- reading old Recall/QPS output or serialized indexes;
-- modifying production `saqlib/` or the frozen fair-query design;
-- using query/ground-truth outcomes to tune an encoder, arm registry, coarse
-  grid, probe schedule, threshold, metric, or claim; and
-- creating a new method, metric, baseline-selection rule, or authorization
-  stage.
+- production `saqlib/` changes;
+- query-trained radices, grouping, triggers, or thresholds;
+- changing datasets, PCA, IVF candidates, probe schedules, metric, byte
+  budgets, or baseline settings after observing A/D query outcomes;
+- reading any unbound dataset or unrelated branch output;
+- presenting reconstruction, pair proxies, consumer engineering, or a
+  nonzero Recall change alone as a contribution.
 
-Filename discovery and source-level path inspection do not authorize file
-content reads.
+## Commands and resource boundary
 
-## Commands and budget
+Allowed commands include repository inspection, CMake build/CTest, the focused
+index builder and query runner, `taskset`, and result summarization. Generated
+artifacts stay under `/tmp`.
 
-Allowed:
-
-```bash
-git status --short --branch
-git diff
-git diff --check
-git log
-rg ...
-sed -n ...
-find ... -type f
-wc ...
-curl -L ...                # only bound learn/base objects or source metadata
-sha256sum <learn-or-base>
-tar -xzf <archive> <learn-or-base-member>
-cmake -S research/structured_2d -B /tmp/saq-structured-2d-build \
-  -DCMAKE_BUILD_TYPE=Release
-cmake --build /tmp/saq-structured-2d-build -j2
-ctest --test-dir /tmp/saq-structured-2d-build --output-on-failure
-```
-
-This evaluation uses the user-revised ceilings: 16 GiB peak RSS, 256
-aggregate CPU-hours, and 120 hours wall time. The CPU ceiling was last raised
-on 2026-07-24 and the wall ceiling on 2026-07-25. One index arm may be
-resident at a time.
+Incremental target: at most 40 CPU-hours, 48 wall-hours, and 16 GiB peak RSS,
+with one large index resident at a time. This is a stop ceiling, not a target
+to consume. Run a tiny deterministic parity test and one representative
+natural pass before launching the complete A/D matrix. If the frozen full
+matrix is projected to exceed this ceiling, report the measured projection
+instead of silently reducing the workload.
 
 ## Deliverables and done criteria
 
 Deliver:
 
-- bound and shape/hash-validated SIFT1M/GIST1M learn/base objects;
-- full-dimensional PCA plus shared `nlist={1024,4096}` coarse state and
-  byte-identical database assignments;
-- every forced S/D/V/PQ/OPQ/FastScan/IVF-Flat arm and the finite
-  SAQ/CAQ/RaBitQ contextual pool, or an explicit source-level unavailability
-  finding that precedes all synthetic timing;
-- serialized bytes, method-owned bytes, build CPU/wall time, peak RSS,
-  load parity, and selected contextual low/high slots;
-- real list-size distributions for every frozen `nprobe`;
-- 64 deterministic finite synthetic queries per dataset; and
-- one warmup plus three measured passes in both one-thread latency and
-  12-thread batch modes, followed by the frozen 1.25x/7-repeat CPU projection;
-- bound official query/ground-truth identities and shapes;
-- all seven registered natural-query repetitions for every admitted logical
-  arm cell, `nprobe`, and timing mode; and
-- Recall@100, latency distributions, batch QPS, complete-byte joins, discrete
-  frontiers, materiality decisions, and limitations under the frozen rules.
+- deterministic mixed-radix packing, save/load, valid-label, direct-distance,
+  and full-table parity tests;
+- A128 and D128_FULL indexes for both datasets, both `nlist` values, and both
+  byte budgets, with build time, bytes, and peak memory;
+- actual Recall@100, single-thread latency, batch QPS, and dispersion over the
+  complete frozen probe schedules;
+- matched PQ/OPQ context and a clear frontier interpretation;
+- exact commands, source revision, artifact paths, hardware/thread settings,
+  limitations, and a decision-log entry.
 
-The synthetic vectors are fixed before any timing outcome: estimate each
-coordinate's mean and population variance from the complete PCA-transformed
-official learn split, draw 64 independent standard-normal coordinate vectors
-with the repository's SplitMix64 seed words and an explicit Box--Muller
-transform, form `mean + standard_deviation * z`, and reverse the trained
-orthonormal PCA to the original space. Save both forms and reject any
-non-finite value or PCA round-trip mismatch. These vectors are a cost probe,
-not a quality sample, and cannot be used for Recall or method selection.
+Done means the A/D consumer is correct and identical except for radices, every
+fixed A/D cell is measured without query-dependent tuning, results are stable
+across repetitions, resource accounting is complete, and `git diff --check`
+plus relevant tests pass.
 
-Done means:
+Current blocker: none.
 
-- the complete predeclared pool has been built and serialized without
-  outcome-dependent arm removal;
-- every arm uses the same PCA, centroids, assignments, IDs, and ordered
-  preassigned lists;
-- all query-free correctness, save/load, byte-accounting, and deterministic
-  output checks pass;
-- the synthetic projection covers every required arm, dataset, `nlist`,
-  budget, and `nprobe` in both timing modes;
-- the projected total includes already consumed build CPU and is compared
-  with the user-authorized 256 CPU-hour ceiling;
-- the tracked and projected wall total remains within 120 hours;
-- every fixed arm/operating-point output is stable across repetitions;
-- the final analysis applies the frozen discrete-frontier rules without
-  interpolation or outcome-dependent point removal;
-- `git diff --check` passes; and
-- no unbound query/ground truth, old QPS result, or old serialized index was
-  read.
+Outcome: the complete 512-pass matrix rejects a material or stable advantage
+for the frozen fixed-adjacent mixed-radix formulation. At 32 bytes A is exactly
+D; at 64 bytes its same-nprobe Recall delta is -0.00106 to +0.00054 with mixed
+signs and essentially equal query work. See
+`docs/research/mixed_radix_query_results_2026_08_01.md`.
 
-## Current state and next action
-
-The frozen natural-query matrix is complete. All 94 logical arm cells,
-188 warmups, 1,316 measured arm/mode passes, seven repetitions, and every
-registered `nprobe` passed coverage and deterministic output checks. Aggregate
-usage was 239.253 CPU-hours, 101.222 wall-hours, and 11.12 GiB peak RSS,
-within the authorized limits.
-
-The terminal result is **NO-GO**. Neither 32 nor 64 code bytes satisfies one
-common speed or quality route on both SIFT1M and GIST1M at both coarse-index
-sizes. GIST at `nlist=1024` and SIFT at `nlist=4096,64 B` contain local
-positive points, but they do not meet the predeclared cross-dataset,
-cross-index requirement. GIST at `nlist=4096` also fails complete-index byte
-parity.
-
-The authoritative final result is
-`docs/research/structured_2d_natural_query_result_2026_07_29.md`. Raw outputs
-remain under `/tmp/structured-2d-natural/matrix-v1/`; deterministic summaries
-are generated by
-`research/structured_2d/summarize_natural_matrix.py`.
-
-The immutable matrix summary passed bounded independent review with no
-remaining blocker, high, or medium finding. The one concrete next action is
-to present the negative terminal result. Do not change the frozen rule or
-start a successor mechanism as part of this task.
+There is no active experiment. The next action is a user-level research
+decision: preserve this negative result and either stop mixed-radix work or
+formulate a scientifically distinct question such as adaptive grouping or a
+different allocation objective. Do not treat those alternatives as already
+authorized by this completed task.

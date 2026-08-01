@@ -53,6 +53,8 @@ struct Fixture {
         add(0, 5, 4);
         add(1, 11, 0);
         add(1, 13, 15);
+        if (by_residual)
+            index.precompute_table();
     }
 };
 
@@ -116,6 +118,21 @@ void regular_and_d_test() {
     compare(structured2d::admission::search_dyadic_lists(
             fixture.index, radices, query, centroids,
             4, 2, lists, 4));
+    const std::vector<std::uint16_t> used{16};
+    compare(structured2d::admission::search_mixed_radix_lists(
+            fixture.index, radices, used, query, centroids,
+            4, 2, lists, 4));
+    bool rejected = false;
+    try {
+        const std::vector<std::uint16_t> arbitrary_radix{3};
+        const std::vector<std::uint16_t> arbitrary_used{12};
+        (void)structured2d::admission::search_mixed_radix_lists(
+                fixture.index, arbitrary_radix, arbitrary_used,
+                query, centroids, 4, 2, lists, 4);
+    } catch (const std::runtime_error&) {
+        rejected = true;
+    }
+    require(rejected, "invalid mixed-radix stored label");
 }
 
 void opq_test() {
