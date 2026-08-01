@@ -116,3 +116,23 @@ These are artifact correctness findings, not mixed-radix contributions.
   prevalence, PQ/OPQ superiority, or a reversal of the fixed-pair NO-GO.
 - Full result:
   `docs/research/mixed_radix_synthetic_witness_result_2026_08_01.md`.
+
+## 2026-08-01: natural near-neighbour collision diagnostic
+
+- Scope: existing 64-byte A128/D128_FULL indexes, all four SIFT/GIST and
+  `nlist` cells, and all 36 frozen probe points; no new method or QPS matrix.
+- Correctness: rerun A/D Recall matched the accepted matrix at every point
+  with zero absolute error; two executions were byte-identical.
+- Decisive evidence: among 1,147,139 candidate-present missed-ground-truth
+  query--probe events, none shared a complete D code with a returned false
+  positive while receiving a different complete A code. The direct synthetic
+  full-code collision mechanism is absent at the natural decision boundary.
+- Secondary evidence: a permissive one-group label-sharing witness was common
+  and exceeded the `+0.002` optimistic line at 34/36 points, but actual A-D
+  Recall stayed in `[-0.00106,+0.00054]`. One-group sharing is therefore
+  non-specific and cannot be interpreted as realizable Recall headroom.
+- Decision: preserve the fixed-adjacent natural NO-GO. Do not use raw collision
+  counts as a new objective. Any margin- or direction-aware counterfactual is
+  a distinct research question, not an authorized continuation of this run.
+- Full result:
+  `docs/research/mixed_radix_natural_collision_diagnostic_2026_08_01.md`.

@@ -69,6 +69,9 @@ add_executable(mixed_radix_synthetic_witness
   synthetic_timing.cpp
   ../mixed_radix_query/mixed_index.cpp
   ../mixed_radix_query/synthetic_witness.cpp)
+add_executable(mixed_radix_collision_diagnostic
+  dataset_io.cpp synthetic_timing.cpp
+  ../mixed_radix_query/collision_diagnostic.cpp)
 add_executable(structured_2d_build_opq_arm
   dataset_io.cpp faiss_pool.cpp build_opq_arm.cpp)
 add_executable(structured_2d_probe_opq_cost
@@ -105,6 +108,7 @@ foreach(target
     mixed_radix_build_a_arm
     mixed_radix_index_test
     mixed_radix_synthetic_witness
+    mixed_radix_collision_diagnostic
     structured_2d_build_opq_arm
     structured_2d_probe_opq_cost
     structured_2d_write_distributions
@@ -129,6 +133,8 @@ target_link_libraries(
   structured_2d_run_synthetic_timing PRIVATE OpenMP::OpenMP_CXX)
 target_link_libraries(
   mixed_radix_synthetic_witness PRIVATE OpenMP::OpenMP_CXX)
+target_link_libraries(
+  mixed_radix_collision_diagnostic PRIVATE OpenMP::OpenMP_CXX)
 
 set(BUILD_TESTING ON CACHE BOOL "" FORCE)
 enable_testing()
@@ -154,3 +160,6 @@ add_test(
 add_test(
   NAME mixed_radix_index_test
   COMMAND mixed_radix_index_test)
+add_test(
+  NAME mixed_radix_collision_diagnostic_test
+  COMMAND mixed_radix_collision_diagnostic --self-test)
