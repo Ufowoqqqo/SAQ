@@ -136,3 +136,24 @@ These are artifact correctness findings, not mixed-radix contributions.
   a distinct research question, not an authorized continuation of this run.
 - Full result:
   `docs/research/mixed_radix_natural_collision_diagnostic_2026_08_01.md`.
+
+## 2026-08-01: maximum-weight coordinate matching reopens one testable variant
+
+- Question: did fixed adjacent pairs hide complementary scalar cardinality
+  demands, without introducing a query-margin objective?
+- Method: fit separate A and D maximum-weight perfect matchings on 8,192
+  deterministic learn residuals and evaluate on the next disjoint 8,192 rows
+  in SIFT1M/GIST1M at `nlist=1024,4096`, B8 only.
+- Evidence: A-flex reduced held-out SSE by 20.86%--31.07% versus fixed-adjacent
+  A and by 3.98%--4.75% versus independently matched D-flex.  On the identical
+  A pairing, arbitrary radices beat dyadic radices by 4.16%--4.99%.  Both
+  accepted executions were byte-identical.
+- Decision: fixed adjacency is rejected as an adequate test of the broader
+  mixed-radix idea.  The matched variant merits one direct Recall experiment
+  with A-flex, D-on-A, and independently optimized D-flex.  This is not a
+  reversal of the fixed-adjacent NO-GO and is not yet Recall evidence.
+- Novelty boundary: most of the total gain comes from coordinate matching,
+  which overlaps with known decomposition/bit-allocation work; a future claim
+  must isolate the incremental arbitrary-radix effect and full systems cost.
+- Full result:
+  `docs/research/mixed_radix_max_weight_matching_offline_2026_08_01.md`.

@@ -1,135 +1,89 @@
-# Active Task: natural-data nearest-neighbour collision diagnostic
+# Active Task: maximum-weight matched mixed radix
 
-## Branch, base, and mode
+## State and question
 
-- Active branch: `saq-mixed-radix-query`
-- Base: `5611155c` (`Update mixed-radix meeting deck`)
-- Mode: `IMPLEMENT` then `EXPERIMENT` and `REVIEW`
-- Status: completed on 2026-08-01
+- Branch: `saq-mixed-radix-query`
+- Base evidence: fixed-adjacent A/D natural-query result at `ae42b64`
+- Mode: `IMPLEMENT`, then base-only `EXPERIMENT` and `REVIEW`
 
-## Research question and frozen hypothesis
+Test whether fixed adjacent coordinate pairs hid complementary scalar
+cardinality demands.  The proposed method chooses one global perfect matching
+of the 128 coordinates by minimizing its own base-only allocation SSE.  The
+arbitrary and power-of-two arms each receive an independently optimized
+matching; the power-of-two allocation on the arbitrary arm's matching is an
+additional mechanism-isolation control.
+It does not use query margins or benchmark-query outcomes for fitting.
 
-Why did the frozen 64-byte arbitrary-radix arm A128 fail to improve Recall
-materially over the identical power-of-two arm D128_FULL on SIFT1M/GIST1M?
-Specifically, are D labels that A splits rare at the actual top-100 decision
-boundary, or is there substantial collision-related Recall headroom that the
-reconstruction allocator fails to realize?
+The falsifiable hypothesis is that maximum-weight matching can recover
+pairings whose arbitrary-radix distortion advantage is materially larger than
+that of fixed adjacent pairs.  A synthetic fixture must first recover a known
+cross-pairing and show a strict arbitrary-versus-dyadic advantage.
 
-The frozen working hypothesis is that collision witnesses are too sparse near
-the true top-100 boundary to support a material `+0.002` Recall improvement.
-The diagnostic must report the result unchanged if this is false.
+## Authorized natural offline diagnostic
 
-This is an explanatory offline analysis of the completed fixed-adjacent
-method. It does not authorize adaptive grouping, a new allocator, a new
-consumer, parameter tuning, or another performance matrix.
+Analyze exactly four B8/64-byte cells: SIFT1M and GIST1M, each with
+`nlist=1024` and `4096`.  B4 is excluded because all four completed natural
+cells selected `4x4` everywhere and A was byte-equivalent to D.
 
-## Frozen scope and definitions
+Allowed:
 
-Analyze exactly the four 64-byte cells:
+- read repository source, committed research notes, and Git metadata;
+- add focused matching code and tests under `research/mixed_radix_matching/`;
+- make minimal CMake integration changes;
+- compile and run deterministic synthetic/tiny tests;
+- read the existing PCA learn vectors, learn assignments, and coarse centroids
+  under `/tmp/structured-2d-admission/{sift,gist_head128}/` for those four
+  cells;
+- write only diagnostic TSV/log output under
+  `/tmp/mixed-radix-query/matched-offline-v1/`;
+- update this task file.
 
-- SIFT1M with `nlist=1024` and `4096`;
-- GIST1M with `nlist=1024` and `4096`.
+Use the exact existing SHA-256 row ordering.  The first 8,192 ordered learn
+rows are fit data and the next disjoint 8,192 are held-out offline evaluation.
+Do not read base vectors, benchmark queries, ground truth, Recall outputs, or
+unrelated experiment outputs.  Do not modify production `saqlib/`, introduce
+query-aware/margin objectives, build indexes, run a query matrix, or claim
+Recall/QPS improvement.
 
-Use all nine previously frozen `nprobe` values for each `nlist`, the existing
-query order, exact top-100 ground truth, saved ordered IVF lists, and existing
-A128_B8/D128_B8 indexes. The 32-byte cells are a documented zero-effect
-control because A and D are byte-equivalent there; do not rerun them.
+The completed collision diagnostic's named artifacts remain readable only as
+prior evidence; they must not be used to fit the new matching.
 
-For each query and probe:
+## Implementation and verification
 
-1. rerun A and D through the existing complete-word consumer and verify their
-   aggregate Recall against the accepted matrix;
-2. define D false positives as returned IDs outside exact top-100;
-3. define candidate-present D misses as exact top-100 IDs absent from D output
-   but assigned to one of the selected IVF lists;
-4. count an exact full-code witness when such a miss and false positive have
-   identical complete D codes but different complete A codes;
-5. count a changed-group witness when they share a D label in at least one
-   group whose A/D shapes differ, but A assigns different labels in that
-   group; and
-6. report an explicitly optimistic collision ceiling that assumes every
-   witnessed candidate-present miss can replace one D false positive, capped
-   at Recall 1.0.
+Implement:
 
-The changed-group ceiling is intentionally generous and is not a realizable
-method. The exact-full-code statistic is the closest natural analogue of the
-synthetic prototype collision. Candidate Recall is the independent ceiling
-imposed by the frozen selected IVF lists.
+1. a deterministic maximum-weight perfect matching interface for a complete
+   even-order graph;
+2. edge weights equal to negative same-pair allocation SSE, separately for
+   arbitrary and dyadic allocation; same-pair `D-A` gain is reporting-only and
+   must not be optimized because that could deliberately weaken D;
+3. exact exhaustive comparison on small graphs;
+4. a synthetic cardinality fixture where the optimal cross-pairing is known;
+5. reporting that separates pairing gain from radix gain.
 
-The predeclared interpretation line is `+0.002` Recall over D:
+For every cell report fit and held-out SSE for fixed-adjacent A/D, A-flex,
+D-on-A, A-on-D, and D-flex; matching overlap; selected radix shapes; runtime;
+and memory.  Run all four cells twice and require byte-identical scientific
+outputs.  Use the existing CMake project under `research/structured_2d`.
+Allowed commands are repository inspection, CMake configure/build, focused
+tests, the diagnostic executable, deterministic comparison, `git diff
+--check`, and Git status/diff inspection.  Limit this stage to 2 aggregate
+CPU-hours, 2 wall-hours, one process and one computational thread, and 8 GiB
+peak RSS.
 
-- if even the optimistic changed-group ceiling adds less than `0.002` at all
-  frozen points, collision scarcity closes this explanation;
-- if it exceeds `0.002`, the current method remains negative but a distinct
-  base-only collision-aware objective may merit investigation;
-- query outcomes may diagnose headroom but may not train or select a method.
+Done means the matching result agrees with the tiny exhaustive optimum,
+recovers the synthetic cross-pairing, all four natural cells complete twice
+with identical outputs, tests pass, and the result separates pairing gain from
+radix gain.  This is base-only reconstruction evidence, not Recall or
+performance evidence.  The next action is to implement and run this frozen
+diagnostic.
 
-## Relevant paths and access
+Outcome: PASS as base-only reconstruction evidence.  Across all four cells,
+A-flex reduced held-out SSE by 3.98%--4.75% relative to independently matched
+D-flex and by 4.16%--4.99% relative to D-on-A.  Two accepted executions were
+byte-identical.  See
+`docs/research/mixed_radix_max_weight_matching_offline_2026_08_01.md`.
 
-Relevant source:
-
-- `research/mixed_radix_query/mixed_index.{hpp,cpp}`;
-- `research/structured_2d/{synthetic_timing,dataset_io}.{hpp,cpp}`;
-- `research/structured_2d/CMakeLists.txt`;
-- focused new diagnostic code under `research/mixed_radix_query/`.
-
-Allowed reads:
-
-- repository source, Git metadata, completed mixed-radix result documents;
-- `/tmp/structured-2d-admission/{sift,gist}/` PCA/coarse/base-assignment state;
-- `/tmp/structured-2d-admission/pool/{sift,gist}/nlist_{1024,4096}/`
-  A128_B8 and D128_B8 indexes and shape sidecars;
-- `/tmp/structured-2d-natural/schedule/` frozen PCA queries and selected lists;
-- `/tmp/structured-2d-admission-data/{sift,gist}/` frozen query and
-  ground-truth files only;
-- `/tmp/mixed-radix-query/matrix-v1/summary-v1/` accepted aggregate results
-  for parity checking.
-
-Forbidden reads are learn/base vector payloads, benchmark data outside the
-named objects, unrelated branch outputs, and any new dataset. Index codes and
-base assignments named above are allowed; raw base vectors are not needed and
-must not be read.
-
-Allowed writes are `TASK.md`, focused code/tests under
-`research/mixed_radix_query/`, minimal CMake integration, a focused result and
-decision-log update under `docs/research/`, and generated TSV/log output under
-`/tmp/mixed-radix-query/collision-diagnostic-v1/`. Do not modify `saqlib/`.
-
-## Commands and budget
-
-Allowed commands are repository inspection, CMake build, CTest, the focused
-diagnostic executable, deterministic rerun/comparison, result summarization,
-and `git diff --check`.
-
-Limits: 4 aggregate CPU-hours, 6 wall-hours, and 8 GiB peak RSS. Use one
-process and one thread. This is diagnostic analysis, not performance evidence.
-
-## Deliverables and done criteria
-
-Deliver:
-
-- a deterministic diagnostic with a tiny self-test;
-- one cell/probe table containing actual A/D Recall, candidate ceiling, exact
-  full-code collision ceiling, and changed-group collision ceiling;
-- per-group witness attribution and A/D shape information;
-- parity against the accepted A/D Recall values;
-- exact commands, resource cost, output hashes, limitations, and a concise
-  scientific interpretation;
-- an update to `docs/research/DECISION_LOG.md`.
-
-Done means all four cells and all frozen probes are covered, the tiny test and
-repository tests pass, two diagnostic executions are byte-identical, no
-budget is exceeded, and conclusions remain within the diagnostic claim.
-
-Outcome: all 36 A/D Recall points reproduced exactly and two diagnostic runs
-were byte-identical. There were zero exact full-code witnesses among
-1,147,139 candidate-present D-miss events. The permissive changed-group
-witness was instead abundant and crossed `+0.002` at 34/36 points, but it was
-non-specific and did not predict the tiny, mixed-sign realized A-D Recall.
-See
-`docs/research/mixed_radix_natural_collision_diagnostic_2026_08_01.md`.
-
-Current blocker: none. There is no active experiment. The next action is a
-user-level decision between stopping mixed-radix work or posing a distinct
-margin- or distance-direction-aware base-only question; neither is authorized
-by this completed diagnostic.
+Current blocker: none for this completed diagnostic.  A direct Recall test
+would be a subsequent implementation/experiment task and must preserve the
+now-frozen A-flex, D-on-A, and D-flex matching definitions.

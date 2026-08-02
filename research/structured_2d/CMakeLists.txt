@@ -72,6 +72,15 @@ add_executable(mixed_radix_synthetic_witness
 add_executable(mixed_radix_collision_diagnostic
   dataset_io.cpp synthetic_timing.cpp
   ../mixed_radix_query/collision_diagnostic.cpp)
+add_executable(mixed_radix_pair_matching_test
+  ../a4_or_c/core.cpp
+  ../mixed_radix_matching/pair_matching.cpp
+  ../mixed_radix_matching/pair_matching_test.cpp)
+add_executable(mixed_radix_natural_matching
+  ../a4_or_b/models.cpp ../a4_or_b/panel.cpp ../a4_or_c/core.cpp
+  dataset_io.cpp
+  ../mixed_radix_matching/pair_matching.cpp
+  ../mixed_radix_matching/natural_offline.cpp)
 add_executable(structured_2d_build_opq_arm
   dataset_io.cpp faiss_pool.cpp build_opq_arm.cpp)
 add_executable(structured_2d_probe_opq_cost
@@ -109,6 +118,8 @@ foreach(target
     mixed_radix_index_test
     mixed_radix_synthetic_witness
     mixed_radix_collision_diagnostic
+    mixed_radix_pair_matching_test
+    mixed_radix_natural_matching
     structured_2d_build_opq_arm
     structured_2d_probe_opq_cost
     structured_2d_write_distributions
@@ -129,6 +140,7 @@ endforeach()
 target_link_libraries(structured_2d_build_s_arm PRIVATE OpenSSL::Crypto)
 target_link_libraries(structured_2d_build_dv_arms PRIVATE OpenSSL::Crypto)
 target_link_libraries(mixed_radix_build_a_arm PRIVATE OpenSSL::Crypto)
+target_link_libraries(mixed_radix_natural_matching PRIVATE OpenSSL::Crypto)
 target_link_libraries(
   structured_2d_run_synthetic_timing PRIVATE OpenMP::OpenMP_CXX)
 target_link_libraries(
@@ -163,3 +175,6 @@ add_test(
 add_test(
   NAME mixed_radix_collision_diagnostic_test
   COMMAND mixed_radix_collision_diagnostic --self-test)
+add_test(
+  NAME mixed_radix_pair_matching_test
+  COMMAND mixed_radix_pair_matching_test)
