@@ -236,3 +236,46 @@ These are artifact correctness findings, not mixed-radix contributions.
   Recall, cross-dataset generality, or authorization for a joint mechanism.
 - Full result:
   `docs/research/saq_component_oracle_diagnostic_result_2026_08_03.md`.
+
+## 2026-08-03: joint-component oracle finds one actionable pair
+
+- Scope: the identical base-only population and thresholds, exhaustively
+  adding all 10 two-segment, 10 three-segment, and 5 four-segment exact
+  substitutions after a fresh stored/recomputed parity pass.
+- Evidence: replacing `192d@6b + 320d@4b` reduces inversion rate by
+  `0.003353/0.003554` across folds and repairs `71.10%/75.57%` of production
+  inversions.  It is the unique passing pair; primary and reproduction output
+  files are byte-identical.
+- Decision: `PAIR_ACTIONABLE`.  A small joint source of estimator headroom
+  exists.  This does not reverse the single-component negative result; it
+  refines it by showing that the minimum passing replacement has cardinality
+  two.  Exact substitution is not an implementable method or Recall evidence.
+- Next boundary: review closest work and the interaction mechanism before
+  proposing a query-unaware, matched-storage implementation.  Do not infer
+  permission to change the plan or read benchmark queries.
+- Full result:
+  `docs/research/saq_joint_component_oracle_result_2026_08_03.md`.
+
+## 2026-08-03: closest work and mechanism review blocks direct joint implementation
+
+- Mechanism finding: the accurate SAQ estimator is a sum of independent
+  segment terms, while inversion is a nonlinear sign decision.  The pair's
+  super-additive inversion repair therefore does not establish cross-segment
+  encoder coupling.
+- Scale correction: segments 1+2 cover 512/960 dimensions and 2,432 code bits,
+  or 53.3% of dimensions and 66.7% of the positive-bit payload.  Exact float
+  replacement would use 2,048 rather than 304 bytes/vector for those values.
+- Primary-work finding: SAQ/transform coding cover boundary and bit allocation;
+  AQ/CQ cover coupled codebooks and their query-cost problem; distance-encoded
+  PQ covers storing estimator-relevant radius information; anisotropic VQ and
+  White--Singal cover downstream inner-product-aware objectives.
+- Decision: `NO_GO_DIRECT_IMPLEMENTATION`.  Do not interpret the oracle as
+  authorization for bit reallocation, joint VQ, extra metadata, or a learned
+  query/workload loss.
+- Narrow open question: statically prove or refute whether the existing SAQ
+  code/rescale feasible set admits any base-only, matched-storage,
+  no-extra-query-work objective that is genuinely non-separable.  Close if all
+  allowed objectives decompose per segment; return to the user before coding
+  if one survives.
+- Full review:
+  `docs/research/saq_joint_component_closest_primary_work_mechanism_review_2026_08_03.md`.

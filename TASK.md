@@ -1,95 +1,85 @@
-# Active Task: SAQ component-wise base-only oracle diagnostic
+# Active Task: SAQ joint-component mechanism review
 
 ## State and question
 
 - Branch: `saq-mixed-radix-query`
-- Base snapshot: `15de1ad`
-- Modes: `IMPLEMENT`, `EXPERIMENT`, `REVIEW`
+- Base snapshot: `7be0f68`
+- Modes: `IDEATE`, `REVIEW`
 
-Determine which part of the unchanged production SAQ accurate-distance path,
-if any, materially causes ordering errors among nearby base vectors.  This is
-a limitation-localization diagnostic, not a new method, query experiment, or
-performance claim.
+The completed joint-component diagnostic returned `PAIR_ACTIONABLE` for exact
+replacement of `192d@6b + 320d@4b`.  The active question is now:
 
-Hypothesis: at least one of the current per-vector rescale or five frozen SAQ
-segments accounts for a consistent and material share of base-neighbour
-pairwise order reversals.  Failure means there is no localized estimator
-component worth optimizing under this decomposition.
+> Does the fixed SAQ representation admit a query-unaware, matched-storage,
+> non-separable joint encoding mechanism for these two segments, or is the
+> oracle gain explained by generic ranking interaction and already-covered
+> quantization mechanisms?
 
-Detailed design:
-`docs/research/saq_component_oracle_diagnostic_design_2026_08_03.md`.
+Working hypothesis: the super-additive inversion reduction does not prove
+encoder coupling because the production estimate is additive and inversion is
+a nonlinear sign decision.  Reconstruction-based joint optimization remains
+separable.  A continuation is justified only if a base-only estimator-error
+objective is non-separable while retaining the identical plan, bytes, and
+query operations.
 
-## Frozen inputs and data boundary
+The completed evidence and active review are:
 
-Read only:
+- `docs/research/saq_component_oracle_diagnostic_design_2026_08_03.md`;
+- `docs/research/saq_component_oracle_diagnostic_result_2026_08_03.md`;
+- `docs/research/saq_joint_component_oracle_result_2026_08_03.md`;
+- `docs/research/saq_joint_component_closest_primary_work_mechanism_review_2026_08_03.md`.
+
+## Read and write boundary
+
+Allowed reads are production SAQ source, focused diagnostic source/results,
+the research charter, and primary papers.  The two prior diagnostic artifacts
+may be referenced but need not be read again:
 
 - `/rwproject/kdd-db/kluaq/saq/data/gist_sample50k/gist_sample50k_base_pca.fvecs`;
-- `/rwproject/kdd-db/kluaq/saq/data/gist_sample50k/ivf512_b4_caq_adj_seg_pca.index`;
-- relevant repository source and current research documents.
+- `/rwproject/kdd-db/kluaq/saq/data/gist_sample50k/ivf512_b4_caq_adj_seg_pca.index`.
 
-The base file has 50,000 rows and 960 dimensions.  The persisted index fixes
-`K=512`, average four bits per dimension, production CAQ adjustment, random
-segment rotations, and this plan:
+Do not read benchmark queries, ground truth, query-result tables, another
+dataset/index, or generated result payloads beyond the accepted result notes.
+Do not modify production or diagnostic code.  Documentation writes are limited
+to this task file, the decision log, and the focused mechanism review.
 
-```text
-64d@11b | 192d@6b | 320d@4b | 256d@2b | 128d@0b
-```
+## Fixed scientific boundary
 
-Do not read benchmark queries, ground truth, query-result TSVs, another
-dataset, or another index.  Do not build a new index.  Base rows may act as
-query-like probes only inside this offline diagnostic.
+Keep the current PCA view, IVF assignments, five-segment plan, per-segment
+codes/factors, serialized storage, accurate estimator, and query work fixed.
+No per-vector dispatch, extra metadata, query-trained rule, bit/boundary sweep,
+or new codebook family is authorized.
 
-## Allowed implementation and commands
+The review must distinguish:
 
-Allowed writes:
+- additive estimator error from coupled encoder state;
+- oracle localization from implementable matched-storage improvement;
+- a genuinely SAQ-specific mechanism from direct composition, parameter
+  variation, AQ/CQ, distance-encoded PQ, or generic estimator-aware loss.
 
-- one minimal correction to the repeated-cluster loop in
-  `saqlib/index/ivf.hpp` plus a focused multi-cluster load regression test;
-- focused source, tests, and CMake integration under
-  `research/saq_component_oracle/`;
-- `TASK.md`, the design/result note, and the decision log;
-- generated output only under `/tmp/saq-component-oracle-v1/`.
+## Commands and budget
 
-Do not change the encoder, planner, rotations, index format, estimator, search
-path, production configuration, or scientific thresholds.  The loader repair
-is artifact correctness work, not evidence or a contribution.
-
-Allowed commands are the focused CMake configure/build/tests, one primary
-`frozen-v1` diagnostic execution, and at most one unchanged byte-reproduction
-run named in the design note.  Do not run ANN search, Recall/QPS, a parameter
-sweep, or an outcome-selected run.
-
-## Budget
-
-- at most 2 aggregate CPU-hours including build, tests, and execution;
-- at most 2 wall-hours;
-- one diagnostic process and one experimental thread;
-- at most 4 GiB peak RSS;
-- generated output below 100 MiB.
-
-Stop before exceeding a limit.  Ordinary compile/test failures should be
-fixed within scope.  Stop without scientific interpretation if index loading,
-ID coverage, stored-versus-recomputed estimator parity, or exact-distance
-parity cannot be established.
+Allowed commands are read-only repository inspection, Git diff/status checks,
+and primary-source retrieval.  Do not compile, run the diagnostic, build an
+index, or execute a method experiment.  Budget: 0.25 CPU-hours, 0.5 wall-hours,
+one thread, and no generated experiment output.
 
 ## Deliverables and done criteria
 
-Done means:
+Done means the focused review:
 
-- the focused loader and arithmetic tests pass;
-- the frozen 256 probes and 4,096 candidate pool are disjoint and reproducible;
-- every probe has exactly 64 exact-nearest evaluation candidates;
-- production, rescale-replacement, and five single-segment replacement arms
-  are complete on both 128-probe halves;
-- exact-all substitution reproduces float64 raw-vector distance within the
-  frozen tolerance;
-- pairwise inversion, repaired/new inversion, top-10 agreement, distance
-  error, CPU/wall time, RSS, hashes, and limitations are recorded;
-- the result identifies an actionable component using the frozen rule or
-  closes this localization attempt without inventing a new method.
+1. derives the current additive estimator and explains the oracle interaction;
+2. quantifies the pair's true dimension, bit, and exact-storage scope;
+3. checks SAQ, transform/PQ decomposition, distance-encoded PQ, AQ/CQ, and
+   estimator-aware primary work;
+4. classifies each plausible implementation as covered, boundary-changing, or
+   genuinely open;
+5. gives one smallest next action and a scientific stop condition.
 
-Current blocker: none.  The frozen diagnostic is complete and closes with
-`CLOSE_NO_ACTIONABLE_COMPONENT`; see
-`docs/research/saq_component_oracle_diagnostic_result_2026_08_03.md`.
-One concrete next action is a bounded diff review and user checkpoint; do not
-start another experiment or change the scientific question.
+Current blocker: none.  Review outcome is `NO_GO_DIRECT_IMPLEMENTATION` with
+one static question open: prove or refute non-separability of an allowed
+base-only objective over the existing code and rescale variables.
+
+One concrete next action is the static two-segment feasible-objective audit
+specified in the review.  Do not implement an encoder or read benchmark
+queries.  If a non-separable allowed objective is found, return to the user
+before changing the scientific question or closest-baseline set.

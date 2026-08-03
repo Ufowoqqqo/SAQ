@@ -1,10 +1,13 @@
 #pragma once
 
 #include <algorithm>
+#include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <string>
+#include <vector>
 
 namespace saq_component_oracle {
 
@@ -48,6 +51,40 @@ inline bool is_inversion(
         std::uint32_t left_id, std::uint32_t right_id) {
     return rank_before(exact_left, left_id, exact_right, right_id) !=
             rank_before(arm_left, left_id, arm_right, right_id);
+}
+
+inline const std::vector<std::uint8_t>& joint_subset_masks() {
+    static const std::vector<std::uint8_t> masks = [] {
+        std::vector<std::uint8_t> result{0};
+        for (int cardinality = 2; cardinality <= 4; ++cardinality) {
+            for (std::uint8_t mask = 1; mask < 31; ++mask) {
+                if (std::popcount(static_cast<unsigned>(mask)) == cardinality)
+                    result.push_back(mask);
+            }
+        }
+        result.push_back(31);
+        return result;
+    }();
+    return masks;
+}
+
+inline std::string joint_subset_name(std::uint8_t mask) {
+    if (mask == 0) return "PROD";
+    if (mask == 31) return "EXACT_ALL";
+    std::string name = "EXACT_SEGS";
+    for (unsigned segment = 0; segment < 5; ++segment) {
+        if ((mask & (1U << segment)) != 0)
+            name += "_" + std::to_string(segment);
+    }
+    return name;
+}
+
+inline std::string joint_decision(unsigned minimum_passing_cardinality) {
+    if (minimum_passing_cardinality == 2) return "PAIR_ACTIONABLE";
+    if (minimum_passing_cardinality == 3 ||
+        minimum_passing_cardinality == 4)
+        return "CLOSE_DIFFUSE_THREE_PLUS";
+    return "CLOSE_NO_SMALL_JOINT";
 }
 
 }  // namespace saq_component_oracle

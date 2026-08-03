@@ -147,6 +147,35 @@ void test_deterministic_ranking_helpers() {
             "inversion detection");
 }
 
+void test_joint_subset_enumeration() {
+    using namespace saq_component_oracle;
+    const auto& masks = joint_subset_masks();
+    require(masks.size() == 27, "joint arm count");
+    require(masks.front() == 0 && masks.back() == 31,
+            "joint boundary arms");
+    std::size_t pairs = 0;
+    std::size_t triples = 0;
+    std::size_t quads = 0;
+    for (std::size_t index = 1; index + 1 < masks.size(); ++index) {
+        const unsigned cardinality = std::popcount(
+                static_cast<unsigned>(masks[index]));
+        pairs += cardinality == 2;
+        triples += cardinality == 3;
+        quads += cardinality == 4;
+    }
+    require(pairs == 10 && triples == 10 && quads == 5,
+            "joint subset cardinalities");
+    require(joint_subset_name(0b00101) == "EXACT_SEGS_0_2",
+            "joint arm naming");
+    require(joint_decision(2) == "PAIR_ACTIONABLE",
+            "pair decision");
+    require(joint_decision(3) == "CLOSE_DIFFUSE_THREE_PLUS" &&
+                    joint_decision(4) == "CLOSE_DIFFUSE_THREE_PLUS",
+            "diffuse decision");
+    require(joint_decision(6) == "CLOSE_NO_SMALL_JOINT",
+            "no-small-joint decision");
+}
+
 }  // namespace
 
 int main() {
@@ -154,6 +183,7 @@ int main() {
         test_multicluster_round_trip();
         test_least_squares_scale();
         test_deterministic_ranking_helpers();
+        test_joint_subset_enumeration();
         std::cout << "saq_component_oracle_test: PASS\n";
         return 0;
     } catch (const std::exception& error) {

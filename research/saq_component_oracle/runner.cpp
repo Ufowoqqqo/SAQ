@@ -29,6 +29,9 @@ namespace {
 
 using saq_component_oracle::exact_tie;
 using saq_component_oracle::is_inversion;
+using saq_component_oracle::joint_decision;
+using saq_component_oracle::joint_subset_masks;
+using saq_component_oracle::joint_subset_name;
 using saq_component_oracle::least_squares_scale;
 using saq_component_oracle::rank_before;
 using saq_component_oracle::splitmix64;
@@ -555,6 +558,16 @@ const std::vector<std::string>& arm_names() {
     return names;
 }
 
+const std::vector<std::string>& joint_arm_names() {
+    static const std::vector<std::string> names = [] {
+        std::vector<std::string> result;
+        for (const std::uint8_t mask : joint_subset_masks())
+            result.push_back(joint_subset_name(mask));
+        return result;
+    }();
+    return names;
+}
+
 std::vector<double> arm_distances(
         const Contributions& production,
         const Contributions& least_squares,
@@ -574,6 +587,31 @@ std::vector<double> arm_distances(
                          exact[segment]);
     output.push_back(exact_sum);
     require(output.size() == arm_names().size(), "arm distance count");
+    return output;
+}
+
+std::vector<double> joint_arm_distances(
+        const Contributions& production,
+        const Contributions& exact) {
+    const double production_sum = std::accumulate(
+            production.begin(), production.end(), 0.0);
+    std::vector<double> output;
+    output.reserve(joint_subset_masks().size());
+    for (const std::uint8_t mask : joint_subset_masks()) {
+        if (mask == 31) {
+            output.push_back(std::accumulate(
+                    exact.begin(), exact.end(), 0.0));
+            continue;
+        }
+        double distance = production_sum;
+        for (std::size_t segment = 0; segment < kSegments; ++segment) {
+            if ((mask & (1U << segment)) != 0)
+                distance += exact[segment] - production[segment];
+        }
+        output.push_back(distance);
+    }
+    require(output.size() == joint_arm_names().size(),
+            "joint arm distance count");
     return output;
 }
 
@@ -604,10 +642,12 @@ ExperimentResult run_experiment(
         const std::vector<Location>& locations,
         const Population& population,
         const Reconstructions& reconstructions,
-        const std::filesystem::path& output_dir) {
+        const std::filesystem::path& output_dir,
+        bool joint) {
+    const auto& names = joint ? joint_arm_names() : arm_names();
     ExperimentResult result;
     for (auto& fold : result.aggregates)
-        fold.resize(arm_names().size());
+        fold.resize(names.size());
     std::ofstream per_probe(output_dir / "per_probe.tsv");
     per_probe << "fold\tprobe_id\tarm\tpairs\tinversions"
                  "\trepaired\tnewly_inverted\ttop10_agreement\n";
@@ -622,7 +662,7 @@ ExperimentResult run_experiment(
         const auto rotated = rotated_probe(base, index, probe);
         std::vector<PID> candidate_ids(kLocal);
         std::vector<std::vector<double>> distances(
-                arm_names().size(), std::vector<double>(kLocal));
+                names.size(), std::vector<double>(kLocal));
         for (std::size_t local = 0; local < kLocal; ++local) {
             const std::size_t pool_index = selected[local];
             const PID candidate = population.pool[pool_index];
@@ -637,7 +677,7 @@ ExperimentResult run_experiment(
                 exact[segment] = exact_distance(
                         base.row(probe), base.row(candidate),
                         offset, dimensions);
-                if (segment < 4) {
+                if (!joint && segment < 4) {
                     FloatVec query_residual = rotated[segment] -
                             index.get_pclusters()[location.cluster]
                                     .get_segment(segment).centroid();
@@ -651,13 +691,14 @@ ExperimentResult run_experiment(
                                     Eigen::Map<const FloatVec>(
                                             reconstruction,
                                             dimensions).cast<double>());
-                } else {
+                } else if (!joint) {
                     least_squares[segment] = stored[local][segment];
                 }
                 offset += dimensions;
             }
-            const auto arms = arm_distances(
-                    stored[local], least_squares, exact);
+            const auto arms = joint
+                    ? joint_arm_distances(stored[local], exact)
+                    : arm_distances(stored[local], least_squares, exact);
             for (std::size_t arm = 0; arm < arms.size(); ++arm)
                 distances[arm][local] = arms[arm];
         }
@@ -674,10 +715,10 @@ ExperimentResult run_experiment(
         for (std::size_t index = 0; index < 10; ++index)
             exact_top10[exact_order[index]] = true;
 
-        std::vector<std::uint64_t> local_pairs(arm_names().size(), 0);
-        std::vector<std::uint64_t> local_inversions(arm_names().size(), 0);
-        std::vector<std::uint64_t> local_repaired(arm_names().size(), 0);
-        std::vector<std::uint64_t> local_new(arm_names().size(), 0);
+        std::vector<std::uint64_t> local_pairs(names.size(), 0);
+        std::vector<std::uint64_t> local_inversions(names.size(), 0);
+        std::vector<std::uint64_t> local_repaired(names.size(), 0);
+        std::vector<std::uint64_t> local_new(names.size(), 0);
         for (std::size_t left = 0; left < kLocal; ++left) {
             for (std::size_t right = left + 1; right < kLocal; ++right) {
                 if (exact_tie(
@@ -688,7 +729,7 @@ ExperimentResult run_experiment(
                         distances[0][left], distances[0][right],
                         candidate_ids[left], candidate_ids[right]);
                 for (std::size_t arm = 0;
-                     arm < arm_names().size(); ++arm) {
+                     arm < names.size(); ++arm) {
                     const bool inversion = is_inversion(
                             distances.back()[left], distances.back()[right],
                             distances[arm][left], distances[arm][right],
@@ -701,7 +742,7 @@ ExperimentResult run_experiment(
             }
         }
 
-        for (std::size_t arm = 0; arm < arm_names().size(); ++arm) {
+        for (std::size_t arm = 0; arm < names.size(); ++arm) {
             std::vector<std::size_t> order(kLocal);
             std::iota(order.begin(), order.end(), 0);
             std::sort(order.begin(), order.end(),
@@ -714,7 +755,7 @@ ExperimentResult run_experiment(
             for (std::size_t index = 0; index < 10; ++index)
                 top10 += exact_top10[order[index]];
             const double top10_agreement = static_cast<double>(top10) / 10;
-            per_probe << fold << '\t' << probe << '\t' << arm_names()[arm]
+            per_probe << fold << '\t' << probe << '\t' << names[arm]
                       << '\t' << local_pairs[arm] << '\t'
                       << local_inversions[arm] << '\t'
                       << local_repaired[arm] << '\t' << local_new[arm]
@@ -792,7 +833,8 @@ void require_parity(
 
 void write_summary(
         const std::filesystem::path& output_dir,
-        const ExperimentResult& result) {
+        const ExperimentResult& result,
+        const std::vector<std::string>& names) {
     std::ofstream output(output_dir / "summary.tsv");
     output << "fold\tarm\tpairs\tinversions\tinversion_rate"
               "\tabsolute_reduction\trepair_fraction\tnew_inversion_fraction"
@@ -802,7 +844,7 @@ void write_summary(
         const auto& production = result.aggregates[fold][0];
         const double production_rate = production.pairs == 0 ? 0 :
                 static_cast<double>(production.inversions) / production.pairs;
-        for (std::size_t arm = 0; arm < arm_names().size(); ++arm) {
+        for (std::size_t arm = 0; arm < names.size(); ++arm) {
             const auto& aggregate = result.aggregates[fold][arm];
             const double rate = aggregate.pairs == 0 ? 0 :
                     static_cast<double>(aggregate.inversions) /
@@ -815,7 +857,7 @@ void write_summary(
                     static_cast<double>(aggregate.newly_inverted) /
                     (production.pairs - production.inversions);
             output << (fold == 2 ? "combined" : std::to_string(fold))
-                   << '\t' << arm_names()[arm] << '\t' << aggregate.pairs
+                   << '\t' << names[arm] << '\t' << aggregate.pairs
                    << '\t' << aggregate.inversions << '\t' << rate << '\t'
                    << production_rate - rate << '\t' << repair << '\t'
                    << newly << '\t'
@@ -827,7 +869,7 @@ void write_summary(
     require(output.good(), "write summary output");
 }
 
-void write_decision(
+void write_single_decision(
         const std::filesystem::path& output_dir,
         const ExperimentResult& result) {
     std::ofstream output(output_dir / "decision.txt");
@@ -867,6 +909,48 @@ void write_decision(
     }
 }
 
+void write_joint_decision(
+        const std::filesystem::path& output_dir,
+        const ExperimentResult& result) {
+    std::ofstream output(output_dir / "decision.txt");
+    const auto rate = [&](std::size_t fold, std::size_t arm) {
+        const auto& aggregate = result.aggregates[fold][arm];
+        return aggregate.pairs == 0 ? 0.0 :
+                static_cast<double>(aggregate.inversions) / aggregate.pairs;
+    };
+    output << std::setprecision(17)
+           << "production_fold0_inversion_rate=" << rate(0, 0) << '\n'
+           << "production_fold1_inversion_rate=" << rate(1, 0) << '\n';
+    unsigned minimum = 6;
+    std::vector<std::string> passing;
+    const auto& masks = joint_subset_masks();
+    const auto& names = joint_arm_names();
+    for (std::size_t arm = 1; arm + 1 < names.size(); ++arm) {
+        bool passes = true;
+        for (std::size_t fold = 0; fold < 2; ++fold) {
+            const auto& production = result.aggregates[fold][0];
+            const auto& candidate = result.aggregates[fold][arm];
+            const double reduction = rate(fold, 0) - rate(fold, arm);
+            const double repair = production.inversions == 0 ? 0 :
+                    static_cast<double>(candidate.repaired) /
+                    production.inversions;
+            passes = passes && reduction >= 0.002 && repair >= 0.20;
+        }
+        if (passes) {
+            minimum = std::min(
+                    minimum,
+                    static_cast<unsigned>(std::popcount(
+                            static_cast<unsigned>(masks[arm]))));
+            passing.push_back(names[arm]);
+        }
+    }
+    output << "decision=" << joint_decision(minimum) << '\n';
+    output << "minimum_passing_cardinality="
+           << (minimum <= 4 ? std::to_string(minimum) : "none") << '\n';
+    for (const auto& name : passing) output << "passing=" << name << '\n';
+    require(output.good(), "write joint decision output");
+}
+
 double process_cpu_seconds() {
     timespec value{};
     require(clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &value) == 0,
@@ -886,7 +970,8 @@ void run(
         const std::filesystem::path& index_path,
         const std::filesystem::path& output_dir,
         const std::string& mode) {
-    require(mode == "parity-v1" || mode == "frozen-v1", "frozen mode");
+    require(mode == "parity-v1" || mode == "frozen-v1" ||
+                    mode == "joint-v1", "frozen mode");
     std::filesystem::create_directories(output_dir);
     const double cpu_start = process_cpu_seconds();
     const auto wall_start = std::chrono::steady_clock::now();
@@ -916,12 +1001,17 @@ void run(
     write_parity(output_dir, parity, reconstructions);
     require_parity(parity, reconstructions);
 
-    if (mode == "frozen-v1") {
+    if (mode == "frozen-v1" || mode == "joint-v1") {
+        const bool joint = mode == "joint-v1";
         const auto experiment = run_experiment(
                 base, index, locations, population,
-                reconstructions, output_dir);
-        write_summary(output_dir, experiment);
-        write_decision(output_dir, experiment);
+                reconstructions, output_dir, joint);
+        const auto& names = joint ? joint_arm_names() : arm_names();
+        write_summary(output_dir, experiment, names);
+        if (joint)
+            write_joint_decision(output_dir, experiment);
+        else
+            write_single_decision(output_dir, experiment);
     }
 
     const double cpu_seconds = process_cpu_seconds() - cpu_start;
@@ -941,7 +1031,7 @@ int main(int argc, char** argv) {
         if (argc != 5)
             throw std::invalid_argument(
                     "usage: saq_component_oracle <base.fvecs> <index> "
-                    "<output-dir> <parity-v1|frozen-v1>");
+                    "<output-dir> <parity-v1|frozen-v1|joint-v1>");
         run(argv[1], argv[2], argv[3], argv[4]);
         std::cout << "saq_component_oracle: PASS\n";
         return 0;
