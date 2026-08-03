@@ -1,4 +1,4 @@
-# Active Task: SAQ joint-component mechanism review
+# Active Task: SAQ two-segment feasible-objective static audit
 
 ## State and question
 
@@ -7,26 +7,27 @@
 - Modes: `IDEATE`, `REVIEW`
 
 The completed joint-component diagnostic returned `PAIR_ACTIONABLE` for exact
-replacement of `192d@6b + 320d@4b`.  The active question is now:
+replacement of `192d@6b + 320d@4b`, and the closest-work review blocked direct
+implementation.  The active static question was:
 
-> Does the fixed SAQ representation admit a query-unaware, matched-storage,
-> non-separable joint encoding mechanism for these two segments, or is the
-> oracle gain explained by generic ranking interaction and already-covered
-> quantization mechanisms?
+> Does the fixed SAQ code/rescale feasible set admit any base-only,
+> matched-storage, no-extra-query-work objective that is genuinely
+> non-separable across the two segments?
 
-Working hypothesis: the super-additive inversion reduction does not prove
-encoder coupling because the production estimate is additive and inversion is
-a nonlinear sign decision.  Reconstruction-based joint optimization remains
-separable.  A continuation is justified only if a base-only estimator-error
-objective is non-separable while retaining the identical plan, bytes, and
-query operations.
+Static result: standard reconstruction and unseen-direction objectives are
+separable, but workload-conditioned objectives need not be.  Empirical
+base-direction estimator MSE is non-separable exactly when the cross-block
+second moment is nonzero on the feasible residual-difference spans.  Pairwise
+ranking loss also has a direct non-separable counterexample.  The coupling is
+introduced by a workload model, not by the SAQ representation itself.
 
 The completed evidence and active review are:
 
 - `docs/research/saq_component_oracle_diagnostic_design_2026_08_03.md`;
 - `docs/research/saq_component_oracle_diagnostic_result_2026_08_03.md`;
 - `docs/research/saq_joint_component_oracle_result_2026_08_03.md`;
-- `docs/research/saq_joint_component_closest_primary_work_mechanism_review_2026_08_03.md`.
+- `docs/research/saq_joint_component_closest_primary_work_mechanism_review_2026_08_03.md`;
+- `docs/research/saq_two_segment_feasible_objective_static_audit_2026_08_03.md`.
 
 ## Read and write boundary
 
@@ -65,21 +66,23 @@ one thread, and no generated experiment output.
 
 ## Deliverables and done criteria
 
-Done means the focused review:
+Done means the focused audit:
 
-1. derives the current additive estimator and explains the oracle interaction;
-2. quantifies the pair's true dimension, bit, and exact-storage scope;
-3. checks SAQ, transform/PQ decomposition, distance-encoded PQ, AQ/CQ, and
-   estimator-aware primary work;
-4. classifies each plausible implementation as covered, boundary-changing, or
-   genuinely open;
-5. gives one smallest next action and a scientific stop condition.
+1. defines the exact per-segment code/rescale feasible variables;
+2. proves separability for reconstruction, worst-case unseen direction, and
+   isotropic/block-diagonal average-case MSE;
+3. states a necessary and sufficient cross-moment condition for non-separable
+   quadratic estimator loss;
+4. gives CAQ-compatible counterexamples for base-direction and ranking losses;
+5. separates mathematical existence from an authorized or novel method.
 
-Current blocker: none.  Review outcome is `NO_GO_DIRECT_IMPLEMENTATION` with
-one static question open: prove or refute non-separability of an allowed
-base-only objective over the existing code and rescale variables.
+Current blocker: a scientific choice, not an implementation defect.  The audit
+is complete with `SEPARABLE_STANDARD_OBJECTIVES` and
+`NONSEPARABLE_WORKLOAD_OBJECTIVES_EXIST`.
 
-One concrete next action is the static two-segment feasible-objective audit
-specified in the review.  Do not implement an encoder or read benchmark
-queries.  If a non-separable allowed objective is found, return to the user
-before changing the scientific question or closest-baseline set.
+One concrete next action is for the user to choose whether to close the
+pair-oracle direction or pivot explicitly to base-trained estimator-aware
+joint code selection.  Do not implement an encoder, inspect data covariance,
+or read benchmark queries before that checkpoint.  If the pivot is selected,
+the cheapest next evidence is a frozen base-only projected-cross-term and tiny
+joint upper-bound diagnostic, not a production consumer.

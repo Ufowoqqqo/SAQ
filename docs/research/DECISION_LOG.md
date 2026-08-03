@@ -279,3 +279,27 @@ These are artifact correctness findings, not mixed-radix contributions.
   if one survives.
 - Full review:
   `docs/research/saq_joint_component_closest_primary_work_mechanism_review_2026_08_03.md`.
+
+## 2026-08-03: static feasible-objective audit finds workload-only coupling
+
+- Feasible-set finding: after the plan is fixed, segments 1 and 2 have a
+  Cartesian-product code/rescale feasible set.  Each encoded residual error is
+  orthogonal to its exact segment residual because CAQ rescale enforces
+  `<x_s,y_s>=||x_s||^2`.
+- Proof result: squared reconstruction, worst-case unseen-direction inner
+  product error, and isotropic or block-diagonal average-case MSE all decompose
+  exactly into independent segment objectives.
+- Counterexample result: empirical base-direction MSE is non-separable when
+  the cross-block second moment remains nonzero on both feasible residual
+  difference spans.  Pairwise inversion loss is also non-separable; explicit
+  CAQ-compatible two-state witnesses are recorded.
+- Interpretation: `SEPARABLE_STANDARD_OBJECTIVES` and
+  `NONSEPARABLE_WORKLOAD_OBJECTIVES_EXIST`.  Mathematical coupling is possible,
+  but it is supplied by a chosen workload/cross-covariance or ranking loss,
+  not by the SAQ representation or the exact-replacement oracle itself.
+- Decision boundary: do not implement from this result.  The user must choose
+  between closing the oracle-only limitation and an explicit pivot to
+  base-trained estimator-aware joint code selection.  The latter changes the
+  hypothesis and closest baselines.
+- Full audit:
+  `docs/research/saq_two_segment_feasible_objective_static_audit_2026_08_03.md`.
