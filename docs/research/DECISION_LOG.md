@@ -218,3 +218,21 @@ These are artifact correctness findings, not mixed-radix contributions.
   decompositions and does not reopen arbitrary mixed-radix cardinalities.
 - Full result:
   `docs/research/nonadjacent_pairing_closest_baseline_result_2026_08_03.md`.
+
+## 2026-08-03: component-wise base-only oracle diagnostic closes without a localized target
+
+- Scope: frozen GIST sample50k SAQ index, 256 deterministic base probes,
+  4,096 disjoint pool rows, exact-nearest 64 candidates, and stored production,
+  least-squares rescale, single exact-segment, and exact-all arms.
+- Correctness: stored/recomputed production parity passed before outcome
+  inspection; rescale and norm parity were below `1e-7`, exact segment sums
+  were within `8e-15`, and an unchanged reproduction was byte-identical.
+- Evidence: production inversion is 0.00598/0.00577 across folds.  Exact
+  replacement of 192d@6b or 320d@4b repairs about 43%--44% of inversions, but
+  absolute reductions are only 0.00134--0.00153, below the frozen 0.002 rule.
+  Least-squares rescale changes are an order of magnitude smaller.
+- Decision: `CLOSE_NO_ACTIONABLE_COMPONENT`.  The error is measurable but not
+  sufficiently localized to one frozen component.  Do not infer benchmark
+  Recall, cross-dataset generality, or authorization for a joint mechanism.
+- Full result:
+  `docs/research/saq_component_oracle_diagnostic_result_2026_08_03.md`.

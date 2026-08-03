@@ -97,7 +97,8 @@ class SaqCluEstimator : public SaqEstimatorBase<CaqCluEstimator<kDistType>> {
 
     virtual ~SaqCluEstimator() = default;
 
-    auto &getEstimators() const { return estimators_; }
+    auto &getEstimators() { return estimators_; }
+    const auto &getEstimators() const { return estimators_; }
 
     /**
      * @brief Prepare estimators for search on specific cluster data

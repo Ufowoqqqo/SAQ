@@ -1,104 +1,95 @@
-# Active Task: closest-baseline pairing discrimination
+# Active Task: SAQ component-wise base-only oracle diagnostic
 
-## State and research question
+## State and question
 
 - Branch: `saq-mixed-radix-query`
-- Base snapshot: `552fa7b`
-- Mode: `IMPLEMENT`, `EXPERIMENT`, then `REVIEW`
+- Base snapshot: `15de1ad`
+- Modes: `IMPLEMENT`, `EXPERIMENT`, `REVIEW`
 
-Test whether the completed empirical-SSE minimum-weight perfect matching
-(`D-MWM`, previously `D_FLEX`) improves the identical dyadic scalar-product
-consumer beyond established permutation-only grouping controls.  This is a
-pairing-objective test, not a mixed-radix test.
+Determine which part of the unchanged production SAQ accurate-distance path,
+if any, materially causes ordering errors among nearby base vectors.  This is
+a limitation-localization diagnostic, not a new method, query experiment, or
+performance claim.
 
-Hypothesis: `D-MWM` should beat OPQ's parametric Eigenvalue Allocation pairing
-(`D-EA`) and predeclared random pairings on both natural datasets.  Otherwise
-the positive pilot is adequately explained by known optimized decomposition.
+Hypothesis: at least one of the current per-vector rescale or five frozen SAQ
+segments accounts for a consistent and material share of base-neighbour
+pairwise order reversals.  Failure means there is no localized estimator
+component worth optimizing under this decomposition.
 
-## Frozen methods and inputs
+Detailed design:
+`docs/research/saq_component_oracle_diagnostic_design_2026_08_03.md`.
 
-- SIFT1M and GIST1M;
-- `nlist=4096`, 64-byte/B8 codes;
-- `nprobe={64,1024}`;
-- batch12, one warmup and three measured repetitions;
-- identical PCA residuals, first 8,192 SHA-ordered fitting rows, IVF
-  assignments, query order, selected lists, top-100 ground truth, scalar curve
-  fitter, dyadic allocator, complete-table consumer, and four-candidate scan.
+## Frozen inputs and data boundary
 
-Arms:
+Read only:
 
-- `D_MWM`: accepted `D_flex` pairs from the byte-identical offline result;
-- `D_EA`: Ge et al.'s parametric OPQ Eigenvalue Allocation, specialized to 64
-  buckets of capacity two, using the fitted residual-coordinate variances;
-- `D_RANDOM_0..2`: Fisher--Yates permutations using fixed 64-bit seeds
-  `2026080301`, `2026080302`, and `2026080303`, paired consecutively;
-- `D_ADJ`: `(0,1),(2,3),...,(126,127)` anchor.
+- `/rwproject/kdd-db/kluaq/saq/data/gist_sample50k/gist_sample50k_base_pca.fvecs`;
+- `/rwproject/kdd-db/kluaq/saq/data/gist_sample50k/ivf512_b4_caq_adj_seg_pca.index`;
+- relevant repository source and current research documents.
 
-All arms use dyadic allocation after pairing.  Do not build or evaluate an
-arbitrary-radix arm.  Do not select random seeds, probes, thresholds, or
-pairings from query outcomes.
+The base file has 50,000 rows and 960 dimensions.  The persisted index fixes
+`K=512`, average four bits per dimension, production CAQ adjustment, random
+segment rotations, and this plan:
 
-For Eigenvalue Allocation, use the OPQ primary-text rule: sort coordinate
-variances descending, then assign each coordinate to the non-full bucket with
-the smallest current product.  Empty buckets must be filled before any bucket
-receives its second coordinate; ties are resolved by bucket index.  Record the
-resulting pairing and fitted SSE.
+```text
+64d@11b | 192d@6b | 320d@4b | 256d@2b | 128d@0b
+```
 
-## Reads, writes, and commands
+Do not read benchmark queries, ground truth, query-result TSVs, another
+dataset, or another index.  Do not build a new index.  Base rows may act as
+query-like probes only inside this offline diagnostic.
 
-Allowed reads are current repository source/results, the accepted pair table
-under `/tmp/mixed-radix-query/matched-offline-v1/run7/pairs.tsv`, and the same
-SIFT1M/GIST1M admission/query/ground-truth artifacts used by the completed
-pilot.  Do not read another dataset or previously unexamined query outcome.
+## Allowed implementation and commands
 
-Allowed writes are focused source/tests under
-`research/mixed_radix_matching/` and minimal arm/mode integration in
-`research/structured_2d/`, plus `TASK.md`, the decision log, and one focused
-result note.  Generated indexes and results belong only under
-`/tmp/mixed-radix-query/closest-baseline-v1/`.
+Allowed writes:
 
-Allowed commands are the existing CMake build, focused unit tests, the focused
-baseline builder, and the natural query runner restricted to the frozen cells.
-No production `saqlib/` change, dependency change, full matrix, parameter
-sweep, or query-trained choice is allowed.
+- one minimal correction to the repeated-cluster loop in
+  `saqlib/index/ivf.hpp` plus a focused multi-cluster load regression test;
+- focused source, tests, and CMake integration under
+  `research/saq_component_oracle/`;
+- `TASK.md`, the design/result note, and the decision log;
+- generated output only under `/tmp/saq-component-oracle-v1/`.
 
-## Resources and correctness
+Do not change the encoder, planner, rotations, index format, estimator, search
+path, production configuration, or scientific thresholds.  The loader repair
+is artifact correctness work, not evidence or a contribution.
 
-Budget: 4 aggregate CPU-hours, 4 wall-hours, 16 GiB peak RSS, one build
-process, and at most 12 query threads.  Stop before exceeding a limit.
+Allowed commands are the focused CMake configure/build/tests, one primary
+`frozen-v1` diagnostic execution, and at most one unchanged byte-reproduction
+run named in the design note.  Do not run ANN search, Recall/QPS, a parameter
+sweep, or an outcome-selected run.
 
-Tests must verify the primary-text Eigenvalue Allocation order and tie rules,
-valid perfect pairings, fixed random reproducibility and seed separation,
-matched-sidecar round-trip, valid labels, direct/table distance parity, and
-stable query output hashes.  Reuse existing index/consumer tests where they
-already cover the latter properties.
+## Budget
 
-The scientific hot path remains table construction plus the unchanged B8
-candidate scan.  Pair generation, logging, and serialization remain outside
-timed query regions.
+- at most 2 aggregate CPU-hours including build, tests, and execution;
+- at most 2 wall-hours;
+- one diagnostic process and one experimental thread;
+- at most 4 GiB peak RSS;
+- generated output below 100 MiB.
 
-## Decision and completion state
+Stop before exceeding a limit.  Ordinary compile/test failures should be
+fixed within scope.  Stop without scientific interpretation if index loading,
+ID coverage, stored-versus-recomputed estimator parity, or exact-distance
+parity cannot be established.
 
-This is an early falsification gate, not a SOTA comparison.  Report all arms
-and both datasets unchanged.  Treat `D_MWM` as differentiated only if it beats
-`D_EA` on both datasets with a consistent positive Recall trend and reaches at
-least `+0.002` Recall@100 at one of the two frozen probes on each dataset,
-without more than 5% QPS regression.  Random and adjacent controls provide
-attribution but cannot substitute for beating `D_EA`.
+## Deliverables and done criteria
 
-Done means all focused tests pass; every arm builds with valid sidecars/codes;
-all 72 arm/dataset/probe/repetition measurement rows are stable; construction,
-bytes, memory, commands, hashes, Recall/QPS, and limitations are recorded; and
-the result says whether to proceed to DP-OPQ/full evaluation or close MWM as a
-standalone direction.
+Done means:
 
-Status: complete, with no blocker.  All 72 rows are present and stable, tests
-pass, and the resource limits were respected.  `D_MWM` misses the gate: its
-Recall delta over `D_EA` is below `+0.002` everywhere and changes sign on
-GIST1M.  The standalone MWM pairing direction is closed; do not proceed to
-DP-OPQ or a full matrix from this result.
+- the focused loader and arithmetic tests pass;
+- the frozen 256 probes and 4,096 candidate pool are disjoint and reproducible;
+- every probe has exactly 64 exact-nearest evaluation candidates;
+- production, rescale-replacement, and five single-segment replacement arms
+  are complete on both 128-probe halves;
+- exact-all substitution reproduces float64 raw-vector distance within the
+  frozen tolerance;
+- pairwise inversion, repaired/new inversion, top-10 agreement, distance
+  error, CPU/wall time, RSS, hashes, and limitations are recorded;
+- the result identifies an actionable component using the frozen rule or
+  closes this localization attempt without inventing a new method.
 
-Result: `docs/research/nonadjacent_pairing_closest_baseline_result_2026_08_03.md`.
-The meeting summary now includes this negative discrimination result.  One
-concrete next action is to select a scientifically different question before
-authorizing any further implementation or experiment.
+Current blocker: none.  The frozen diagnostic is complete and closes with
+`CLOSE_NO_ACTIONABLE_COMPONENT`; see
+`docs/research/saq_component_oracle_diagnostic_result_2026_08_03.md`.
+One concrete next action is a bounded diff review and user checkpoint; do not
+start another experiment or change the scientific question.
