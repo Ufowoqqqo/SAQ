@@ -381,7 +381,8 @@ TopKResult search_mixed_radix_lists(
         std::size_t full_dimensions,
         std::size_t tail_start,
         std::span<const faiss::idx_t> lists,
-        std::size_t top_k) {
+        std::size_t top_k,
+        std::span<const std::uint16_t> coordinates) {
     validate_common(
             index, full_query, full_centroids, full_dimensions,
             tail_start, lists, top_k);
@@ -393,6 +394,18 @@ TopKResult search_mixed_radix_lists(
 
     const std::size_t groups = index.pq.M;
     const std::size_t capacity = index.pq.ksub;
+    if (!coordinates.empty()) {
+        if (coordinates.size() != 2 * groups)
+            throw std::invalid_argument("mixed-radix coordinate shape");
+        std::vector<bool> seen(index.d, false);
+        for (const std::uint16_t coordinate : coordinates) {
+            if (coordinate >= static_cast<std::size_t>(index.d) ||
+                seen[coordinate])
+                throw std::invalid_argument(
+                        "mixed-radix coordinate permutation");
+            seen[coordinate] = true;
+        }
+    }
     for (std::size_t group = 0; group < groups; ++group)
         if (radices[group] == 0 ||
             used_states[group] == 0 ||
@@ -413,15 +426,19 @@ TopKResult search_mixed_radix_lists(
             const float* codebook =
                     index.pq.get_centroids(group, 0);
             float* table = tables.data() + group * capacity;
+            const std::size_t first_coordinate = coordinates.empty()
+                    ? 2 * group : coordinates[2 * group];
+            const std::size_t second_coordinate = coordinates.empty()
+                    ? 2 * group + 1 : coordinates[2 * group + 1];
             for (std::size_t label = 0;
                  label < used_states[group]; ++label) {
                 const double first =
                         static_cast<double>(
-                                residual[2 * group]) -
+                                residual[first_coordinate]) -
                         codebook[2 * label];
                 const double second =
                         static_cast<double>(
-                                residual[2 * group + 1]) -
+                                residual[second_coordinate]) -
                         codebook[2 * label + 1];
                 table[label] = static_cast<float>(
                         first * first + second * second);

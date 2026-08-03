@@ -157,3 +157,22 @@ These are artifact correctness findings, not mixed-radix contributions.
   must isolate the incremental arbitrary-radix effect and full systems cost.
 - Full result:
   `docs/research/mixed_radix_max_weight_matching_offline_2026_08_01.md`.
+
+## 2026-08-02: non-adjacent matching passes the natural-query pilot
+
+- Scope: frozen A-flex, D-on-A, and D-flex consumers on SIFT1M/GIST1M at
+  `nlist=4096`, 64 bytes, and `nprobe={4,64,1024}`, with the accepted D-adj,
+  PQ128, and OPQ128 evidence as controls.
+- Evidence: relative to D-adj, non-adjacent arms improve Recall@100 by about
+  `+0.0203` at SIFT/nprobe 64 and `+0.0247`--`+0.0249` at nprobe 1024; GIST
+  gains are `+0.0086`--`+0.0099` and `+0.0096`--`+0.0104`.  Maximum matched
+  QPS regression is 2.28%.  A duplicate GIST D-flex rerun reproduced
+  Recall, candidate counts, and output hashes.
+- Attribution: A-flex versus D-on-A differs by at most 0.00057 Recall with
+  mixed signs.  The positive result is a coordinate-pairing result, not an
+  arbitrary-radix result.
+- Decision: the non-adjacent pairing mechanism merits novelty review and a
+  fuller fair comparison.  Do not claim that mixed-radix cardinalities were
+  rescued, and do not tune pairings or radices from these query outcomes.
+- Full result:
+  `docs/research/mixed_radix_nonadjacent_pilot_2026_08_02.md`.

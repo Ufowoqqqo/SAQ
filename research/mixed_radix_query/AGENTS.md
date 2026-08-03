@@ -1,16 +1,16 @@
 # Mixed-radix query evaluation
 
-Implement only the fixed-adjacent two-coordinate A128 and power-of-two
-D128_FULL representations defined in `TASK.md`. Reuse the frozen scalar
-allocation code and inherited SIFT1M/GIST1M PCA, IVF, schedule, and timing
-infrastructure.
+Obey the active `TASK.md`.  This directory contains the fixed-adjacent
+consumer and may receive only minimal integration needed for the currently
+authorized matched-coordinate pilot.
 
-The two arms must differ only in the radix restriction. Use
-`label=z1+K1*z2`, reject invalid stored labels, and run both through the same
-complete `2^B` table consumer. Do not add adaptive grouping, query-trained
-choices, a separable D fast path, or production SAQ changes.
+Both fixed and matched arms use `label=z1+K1*z2`, one fixed-width label per
+group, and the same complete `2^B` table scan.  A matched sidecar may select
+which two of the 128 head coordinates feed each group, but it must be a full
+permutation, add no per-vector state, and never affect PCA, IVF assignment,
+candidate generation, the GIST tail, or the per-candidate scan loop.
 
-Write generated indexes and results only under `/tmp`. Tests must cover B4/B8
-packing, valid labels, direct reconstruction parity, deterministic save/load,
-and identical consumer dispatch. Natural-query runs must obey the data,
-thread, repetition, and resource boundaries in `TASK.md`.
+Generated indexes and results belong under `/tmp`.  Tests must cover packing,
+pair-sidecar validity and round-trip, direct-distance parity, stored labels,
+save/load, and matched consumer behavior.  Natural runs must use only the
+datasets, probes, arms, repetitions, and resource limits frozen in `TASK.md`.

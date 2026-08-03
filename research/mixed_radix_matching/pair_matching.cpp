@@ -137,4 +137,44 @@ std::vector<WeightedEdge> allocation_edges(
     return edges;
 }
 
+a4orb::Model allocate_paired_model(
+        const a4orb::Curves& curves,
+        const std::vector<std::pair<std::size_t, std::size_t>>& pairs,
+        int word_bits, bool dyadic) {
+    if (curves.coordinates.empty() ||
+        pairs.size() * 2 != curves.coordinates.size())
+        throw std::invalid_argument("paired model dimensions");
+    std::vector<bool> seen(curves.coordinates.size(), false);
+    a4orb::Model model;
+    model.arm = dyadic ? 'D' : 'A';
+    model.word_bits = word_bits;
+    model.blocks.reserve(pairs.size());
+    for (const auto& [first_dimension, second_dimension] : pairs) {
+        if (first_dimension >= curves.coordinates.size() ||
+            second_dimension >= curves.coordinates.size() ||
+            first_dimension == second_dimension || seen[first_dimension] ||
+            seen[second_dimension])
+            throw std::invalid_argument("paired model permutation");
+        seen[first_dimension] = seen[second_dimension] = true;
+        const auto allocation = a4or::allocate_pair(
+                curves.coordinates[first_dimension],
+                curves.coordinates[second_dimension], word_bits, dyadic);
+        a4orb::Block block{
+                2, allocation.used_states, allocation.k1, {},
+                allocation.ambiguity};
+        const auto& first = curves.coordinates[first_dimension]
+                [allocation.k1 - 1].centers;
+        const auto& second = curves.coordinates[second_dimension]
+                [allocation.k2 - 1].centers;
+        block.values.reserve(2 * block.centers);
+        for (std::size_t z2 = 0; z2 < allocation.k2; ++z2)
+            for (std::size_t z1 = 0; z1 < allocation.k1; ++z1) {
+                block.values.push_back(first[z1]);
+                block.values.push_back(second[z2]);
+            }
+        model.blocks.push_back(std::move(block));
+    }
+    return model;
+}
+
 }  // namespace mixedradix::matching

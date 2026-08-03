@@ -7,6 +7,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <span>
 #include <vector>
@@ -17,6 +18,26 @@ struct Shape {
     std::vector<std::uint16_t> radices;
     std::vector<std::uint16_t> used_states;
 };
+
+// coordinates[2*g:2*g+2] names the original residual coordinates encoded by
+// group g.  The vector must be a permutation of 0..127.
+struct Pairing {
+    std::vector<std::uint16_t> coordinates;
+};
+
+struct MatchedShape {
+    Pairing pairing;
+    Shape shape;
+};
+
+Pairing adjacent_pairing();
+void validate_pairing(const Pairing& pairing);
+
+void write_matched_shape(
+        const std::filesystem::path& path,
+        const MatchedShape& matched);
+MatchedShape read_matched_shape(
+        const std::filesystem::path& path);
 
 std::uint32_t decode_label(
         const std::uint8_t* code, int bits, std::size_t group);
@@ -32,12 +53,22 @@ std::vector<float> expanded_centers(const a4orb::Model& model);
 std::vector<std::uint8_t> encode_residual(
         std::span<const float> residual,
         const a4orb::Model& model);
+std::vector<std::uint8_t> encode_residual(
+        std::span<const float> residual,
+        const a4orb::Model& model,
+        const Pairing& pairing);
 
 std::unique_ptr<faiss::IndexIVFPQ> build_index(
         faiss::IndexFlatL2& coarse,
         std::span<const float> base,
         std::span<const std::uint32_t> assignments,
         const a4orb::Model& model);
+std::unique_ptr<faiss::IndexIVFPQ> build_index(
+        faiss::IndexFlatL2& coarse,
+        std::span<const float> base,
+        std::span<const std::uint32_t> assignments,
+        const a4orb::Model& model,
+        const Pairing& pairing);
 
 void validate_codes(
         const faiss::IndexIVFPQ& index, const Shape& shape);

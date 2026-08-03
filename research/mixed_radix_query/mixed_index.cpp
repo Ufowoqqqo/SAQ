@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -53,6 +54,79 @@ void validate_model(const a4orb::Model& model) {
 }
 
 }  // namespace
+
+Pairing adjacent_pairing() {
+    Pairing result;
+    result.coordinates.resize(kDimensions);
+    for (std::size_t dimension = 0; dimension < kDimensions; ++dimension)
+        result.coordinates[dimension] =
+                static_cast<std::uint16_t>(dimension);
+    return result;
+}
+
+void validate_pairing(const Pairing& pairing) {
+    if (pairing.coordinates.size() != kDimensions)
+        throw std::invalid_argument("mixed-radix pairing shape");
+    std::vector<bool> seen(kDimensions, false);
+    for (const std::uint16_t coordinate : pairing.coordinates) {
+        if (coordinate >= kDimensions || seen[coordinate])
+            throw std::invalid_argument("mixed-radix pairing permutation");
+        seen[coordinate] = true;
+    }
+}
+
+void write_matched_shape(
+        const std::filesystem::path& path,
+        const MatchedShape& matched) {
+    validate_pairing(matched.pairing);
+    if (matched.shape.radices.size() != kGroups ||
+        matched.shape.used_states.size() != kGroups)
+        throw std::invalid_argument("matched shape dimensions");
+    std::ofstream output(path, std::ios::binary | std::ios::trunc);
+    for (std::size_t group = 0; group < kGroups; ++group) {
+        const std::uint16_t values[]{
+                matched.pairing.coordinates[2 * group],
+                matched.pairing.coordinates[2 * group + 1],
+                matched.shape.radices[group],
+                matched.shape.used_states[group]};
+        output.write(
+                reinterpret_cast<const char*>(values), sizeof(values));
+    }
+    output.close();
+    if (!output || std::filesystem::file_size(path) !=
+                kGroups * 4 * sizeof(std::uint16_t))
+        throw std::runtime_error("write matched shape");
+}
+
+MatchedShape read_matched_shape(const std::filesystem::path& path) {
+    if (std::filesystem::file_size(path) !=
+            kGroups * 4 * sizeof(std::uint16_t))
+        throw std::runtime_error("matched shape file size");
+    std::ifstream input(path, std::ios::binary);
+    MatchedShape result;
+    result.pairing.coordinates.resize(kDimensions);
+    result.shape.radices.resize(kGroups);
+    result.shape.used_states.resize(kGroups);
+    for (std::size_t group = 0; group < kGroups; ++group) {
+        std::uint16_t values[4]{};
+        input.read(reinterpret_cast<char*>(values), sizeof(values));
+        result.pairing.coordinates[2 * group] = values[0];
+        result.pairing.coordinates[2 * group + 1] = values[1];
+        result.shape.radices[group] = values[2];
+        result.shape.used_states[group] = values[3];
+    }
+    if (!input || input.peek() != std::ifstream::traits_type::eof())
+        throw std::runtime_error("read matched shape");
+    validate_pairing(result.pairing);
+    for (std::size_t group = 0; group < kGroups; ++group)
+        if (result.shape.radices[group] == 0 ||
+            result.shape.used_states[group] == 0 ||
+            result.shape.used_states[group] > 256 ||
+            result.shape.used_states[group] %
+                    result.shape.radices[group] != 0)
+            throw std::runtime_error("invalid matched radix shape");
+    return result;
+}
 
 std::uint32_t decode_label(
         const std::uint8_t* code, int bits, std::size_t group) {
@@ -124,7 +198,15 @@ std::vector<float> expanded_centers(const a4orb::Model& model) {
 std::vector<std::uint8_t> encode_residual(
         std::span<const float> residual,
         const a4orb::Model& model) {
+    return encode_residual(residual, model, adjacent_pairing());
+}
+
+std::vector<std::uint8_t> encode_residual(
+        std::span<const float> residual,
+        const a4orb::Model& model,
+        const Pairing& pairing) {
     validate_model(model);
+    validate_pairing(pairing);
     if (residual.size() != kDimensions ||
         !std::all_of(
                 residual.begin(), residual.end(),
@@ -135,9 +217,9 @@ std::vector<std::uint8_t> encode_residual(
     for (std::size_t group = 0; group < kGroups; ++group) {
         const auto& block = model.blocks[group];
         const std::size_t z1 = nearest_scalar(
-                residual[2 * group], block, false);
+                residual[pairing.coordinates[2 * group]], block, false);
         const std::size_t z2 = nearest_scalar(
-                residual[2 * group + 1], block, true);
+                residual[pairing.coordinates[2 * group + 1]], block, true);
         const std::size_t label = z1 + block.radix * z2;
         if (label >= block.centers)
             throw std::runtime_error("invalid mixed-radix address");
@@ -153,7 +235,18 @@ std::unique_ptr<faiss::IndexIVFPQ> build_index(
         std::span<const float> base,
         std::span<const std::uint32_t> assignments,
         const a4orb::Model& model) {
+    return build_index(
+            coarse, base, assignments, model, adjacent_pairing());
+}
+
+std::unique_ptr<faiss::IndexIVFPQ> build_index(
+        faiss::IndexFlatL2& coarse,
+        std::span<const float> base,
+        std::span<const std::uint32_t> assignments,
+        const a4orb::Model& model,
+        const Pairing& pairing) {
     validate_model(model);
+    validate_pairing(pairing);
     if (coarse.d != static_cast<int>(kDimensions) ||
         coarse.ntotal <= 0 ||
         base.size() != assignments.size() * kDimensions)
@@ -176,7 +269,7 @@ std::unique_ptr<faiss::IndexIVFPQ> build_index(
         coarse.compute_residual(
                 base.data() + row * kDimensions,
                 residual.data(), list);
-        const auto code = encode_residual(residual, model);
+        const auto code = encode_residual(residual, model, pairing);
         index->invlists->add_entry(
                 list, static_cast<faiss::idx_t>(row),
                 code.data());

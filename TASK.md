@@ -1,89 +1,106 @@
-# Active Task: maximum-weight matched mixed radix
+# Active Task: matched mixed-radix Recall/QPS pilot
 
 ## State and question
 
 - Branch: `saq-mixed-radix-query`
-- Base evidence: fixed-adjacent A/D natural-query result at `ae42b64`
-- Mode: `IMPLEMENT`, then base-only `EXPERIMENT` and `REVIEW`
+- Base commit: `8ee35a2` (`Evaluate maximum-weight mixed-radix pairing`)
+- Mode: `IMPLEMENT`, `EXPERIMENT`, then `REVIEW`
 
-Test whether fixed adjacent coordinate pairs hid complementary scalar
-cardinality demands.  The proposed method chooses one global perfect matching
-of the 128 coordinates by minimizing its own base-only allocation SSE.  The
-arbitrary and power-of-two arms each receive an independently optimized
-matching; the power-of-two allocation on the arbitrary arm's matching is an
-additional mechanism-isolation control.
-It does not use query margins or benchmark-query outcomes for fitting.
+Test whether the frozen base-only maximum-weight coordinate matching transmits
+the 3.98%--4.75% held-out reconstruction advantage of arbitrary radix into a
+material natural-query Recall improvement without a material QPS regression.
+No query margin or query-trained choice is allowed.
 
-The falsifiable hypothesis is that maximum-weight matching can recover
-pairings whose arbitrary-radix distortion advantage is materially larger than
-that of fixed adjacent pairs.  A synthetic fixture must first recover a known
-cross-pairing and show a strict arbitrary-versus-dyadic advantage.
+Primary comparison: A-flex versus independently optimized D-flex.  D-on-A is
+the mechanism control using A-flex's identical coordinate pairs with dyadic
+radices.  A result is promising only if both datasets show a consistent
+positive trend and at least `+0.002` Recall@100 at one frozen point, with no
+more than 5% matched-consumer QPS regression.  Report negative results
+unchanged.
 
-## Authorized natural offline diagnostic
+## Frozen scope
 
-Analyze exactly four B8/64-byte cells: SIFT1M and GIST1M, each with
-`nlist=1024` and `4096`.  B4 is excluded because all four completed natural
-cells selected `4x4` everywhere and A was byte-equivalent to D.
+- datasets: SIFT1M and GIST1M;
+- `nlist=4096` only;
+- 64-byte/B8 codes only;
+- `nprobe={4,64,1024}`, the first, middle, and last values of the existing
+  frozen nine-point grid;
+- new arms: A-flex, D-on-A, D-flex;
+- one D-adj anchor; existing accepted fixed-adjacent A/D and PQ/OPQ results are
+  comparison evidence, not fitting input;
+- batch12, one warmup and three measured repetitions per new arm/probe;
+- exact existing query order, selected IVF lists, and top-100 ground truth.
 
-Allowed:
+The A-flex and D-flex coordinate pairs are exactly those in the byte-identical
+accepted offline output
+`/tmp/mixed-radix-query/matched-offline-v1/run7/pairs.tsv`.  D-on-A reuses
+A-flex pairs.  Refit scalar centers on the identical first 8,192 SHA-ordered
+learn residuals; do not rerun or change the matching from query outcomes.
 
-- read repository source, committed research notes, and Git metadata;
-- add focused matching code and tests under `research/mixed_radix_matching/`;
-- make minimal CMake integration changes;
-- compile and run deterministic synthetic/tiny tests;
-- read the existing PCA learn vectors, learn assignments, and coarse centroids
-  under `/tmp/structured-2d-admission/{sift,gist_head128}/` for those four
-  cells;
-- write only diagnostic TSV/log output under
-  `/tmp/mixed-radix-query/matched-offline-v1/`;
-- update this task file.
+## Reads and writes
 
-Use the exact existing SHA-256 row ordering.  The first 8,192 ordered learn
-rows are fit data and the next disjoint 8,192 are held-out offline evaluation.
-Do not read base vectors, benchmark queries, ground truth, Recall outputs, or
-unrelated experiment outputs.  Do not modify production `saqlib/`, introduce
-query-aware/margin objectives, build indexes, run a query matrix, or claim
-Recall/QPS improvement.
+Allowed reads:
 
-The completed collision diagnostic's named artifacts remain readable only as
-prior evidence; they must not be used to fit the new matching.
+- repository source, Git metadata, current research documents;
+- the named accepted offline pair table;
+- existing PCA learn/base vectors, learn/base assignments, coarse indexes,
+  and query schedules under `/tmp/structured-2d-admission/` and
+  `/tmp/structured-2d-natural/schedule/` for the two named cells;
+- existing SIFT1M/GIST1M query and ground-truth files used by the completed
+  matrix;
+- existing accepted fixed-adjacent/PQ/OPQ summaries for comparison.
 
-## Implementation and verification
+Allowed writes:
 
-Implement:
+- focused source/tests under `research/mixed_radix_matching/` and minimal
+  integration changes under `research/mixed_radix_query/` and
+  `research/structured_2d/`;
+- `TASK.md`, the local mixed-radix `AGENTS.md`, focused result documentation,
+  and the research decision log;
+- generated indexes, sidecars, TSVs, and logs only under
+  `/tmp/mixed-radix-query/matched-pilot-v1/`.
 
-1. a deterministic maximum-weight perfect matching interface for a complete
-   even-order graph;
-2. edge weights equal to negative same-pair allocation SSE, separately for
-   arbitrary and dyadic allocation; same-pair `D-A` gain is reporting-only and
-   must not be optimized because that could deliberately weaken D;
-3. exact exhaustive comparison on small graphs;
-4. a synthetic cardinality fixture where the optimal cross-pairing is known;
-5. reporting that separates pairing gain from radix gain.
+Do not modify production `saqlib/`, PCA, IVF assignments, candidate schedules,
+ground truth, query vectors, fixed matching pairs, code budget, top-k, or
+baselines.  Do not read another dataset or sweep another nprobe, matching,
+radix objective, threshold, or grouping after outcomes.
 
-For every cell report fit and held-out SSE for fixed-adjacent A/D, A-flex,
-D-on-A, A-on-D, and D-flex; matching overlap; selected radix shapes; runtime;
-and memory.  Run all four cells twice and require byte-identical scientific
-outputs.  Use the existing CMake project under `research/structured_2d`.
-Allowed commands are repository inspection, CMake configure/build, focused
-tests, the diagnostic executable, deterministic comparison, `git diff
---check`, and Git status/diff inspection.  Limit this stage to 2 aggregate
-CPU-hours, 2 wall-hours, one process and one computational thread, and 8 GiB
-peak RSS.
+## Implementation and correctness
 
-Done means the matching result agrees with the tiny exhaustive optimum,
-recovers the synthetic cross-pairing, all four natural cells complete twice
-with identical outputs, tests pass, and the result separates pairing gain from
-radix gain.  This is base-only reconstruction evidence, not Recall or
-performance evidence.  The next action is to implement and run this frozen
-diagnostic.
+Store one coordinate-pair sidecar per index.  It must be a permutation of
+`0..127`, contain exactly 64 pairs, and add no per-vector metadata.  The index
+still stores one B8 label per pair.  Candidate generation and the GIST tail
+term remain unchanged.
 
-Outcome: PASS as base-only reconstruction evidence.  Across all four cells,
-A-flex reduced held-out SSE by 3.98%--4.75% relative to independently matched
-D-flex and by 4.16%--4.99% relative to D-on-A.  Two accepted executions were
-byte-identical.  See
-`docs/research/mixed_radix_max_weight_matching_offline_2026_08_01.md`.
+Tests must cover sidecar round-trip and rejection, non-adjacent residual
+encoding, direct reconstructed-distance versus complete-table lookup, stored
+label validity, save/load, multi-list query behavior, and identical consumer
+dispatch across A-flex, D-on-A, and D-flex.  Compile and pass focused tests
+before reading query outcomes.
 
-Current blocker: none for this completed diagnostic.  A direct Recall test
-would be a subsequent implementation/experiment task and must preserve the
-now-frozen A-flex, D-on-A, and D-flex matching definitions.
+The scientific hot path is per-list construction of 64 complete 256-entry
+tables plus the existing four-candidate B8 scan.  Pair indirection belongs in
+table construction, not the per-candidate scan.  Logging, hashes, and output
+serialization stay outside timed regions.
+
+## Budget and done criteria
+
+Limits: 24 aggregate CPU-hours, 12 wall-hours, 16 GiB peak RSS, one build
+process, and at most 12 query threads.  Stop before exceeding a limit.
+
+Done means:
+
+- all correctness tests pass;
+- both datasets and all three new arms build with valid sidecars/codes;
+- all 18 arm/probe cells have one warmup and three stable measured batch12
+  repetitions, with stable Recall/output hash/candidate count;
+- the D-adj anchor agrees with accepted Recall and comparable QPS;
+- construction, index/sidecar bytes, peak memory, commands, hashes, failures,
+  Recall/QPS, and claim boundaries are reported;
+- the result states separately the pairing effect, arbitrary-radix effect,
+  and remaining novelty uncertainty.
+
+Current blocker: none.  The frozen pilot is complete and its result is in
+`docs/research/mixed_radix_nonadjacent_pilot_2026_08_02.md`.  One concrete
+next action is a closest-primary-work review of the coordinate-pairing
+mechanism before expanding the evaluation or making a novelty claim.

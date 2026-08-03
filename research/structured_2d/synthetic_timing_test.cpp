@@ -122,6 +122,19 @@ void regular_and_d_test() {
     compare(structured2d::admission::search_mixed_radix_lists(
             fixture.index, radices, used, query, centroids,
             4, 2, lists, 4));
+    const std::vector<std::uint16_t> swapped{1, 0};
+    const auto matched =
+            structured2d::admission::search_mixed_radix_lists(
+                    fixture.index, radices, used, query, centroids,
+                    4, 2, lists, 4, swapped);
+    const std::vector<faiss::idx_t> matched_ids{7, 3, 5, 11};
+    const std::vector<float> matched_distances{
+            0.13f, 0.53f, 0.73f, 112.13f};
+    require(matched.ids == matched_ids, "matched table IDs");
+    for (std::size_t index = 0; index < matched_distances.size(); ++index)
+        require(std::fabs(matched.distances[index] -
+                          matched_distances[index]) < 1e-4f,
+                "matched table distances");
     bool rejected = false;
     try {
         const std::vector<std::uint16_t> arbitrary_radix{3};

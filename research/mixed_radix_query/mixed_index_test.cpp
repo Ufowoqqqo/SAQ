@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <filesystem>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -75,6 +76,56 @@ void encoding_test(int bits) {
             "expanded center shape");
 }
 
+mixedradix::Pairing reversed_pairing() {
+    mixedradix::Pairing result;
+    result.coordinates.resize(128);
+    for (std::size_t group = 0; group < 64; ++group) {
+        result.coordinates[2 * group] =
+                static_cast<std::uint16_t>(126 - 2 * group);
+        result.coordinates[2 * group + 1] =
+                static_cast<std::uint16_t>(127 - 2 * group);
+    }
+    return result;
+}
+
+void matched_encoding_test() {
+    const auto candidate = model(8);
+    const auto pairing = reversed_pairing();
+    std::vector<float> residual(128, 0);
+    for (std::size_t group = 0; group < 64; ++group) {
+        residual[pairing.coordinates[2 * group]] = 1.1f;
+        residual[pairing.coordinates[2 * group + 1]] = 2.2f;
+    }
+    const auto code = mixedradix::encode_residual(
+            residual, candidate, pairing);
+    for (std::size_t group = 0; group < 64; ++group)
+        require(mixedradix::decode_label(code.data(), 8, group) == 31,
+                "matched nearest scalar address");
+
+    const std::filesystem::path sidecar =
+            "/tmp/mixed_radix_matched_shape_test.u16";
+    const mixedradix::MatchedShape expected{
+            pairing, mixedradix::shape_of(candidate)};
+    mixedradix::write_matched_shape(sidecar, expected);
+    const auto actual = mixedradix::read_matched_shape(sidecar);
+    require(actual.pairing.coordinates == pairing.coordinates,
+            "matched sidecar pairing round-trip");
+    require(actual.shape.radices == expected.shape.radices &&
+                    actual.shape.used_states == expected.shape.used_states,
+            "matched sidecar shape round-trip");
+    std::filesystem::remove(sidecar);
+
+    auto invalid = pairing;
+    invalid.coordinates[1] = invalid.coordinates[0];
+    bool rejected = false;
+    try {
+        mixedradix::validate_pairing(invalid);
+    } catch (const std::invalid_argument&) {
+        rejected = true;
+    }
+    require(rejected, "duplicate matched coordinate accepted");
+}
+
 void index_test() {
     const auto candidate = model(4);
     faiss::IndexFlatL2 coarse(128);
@@ -95,6 +146,13 @@ void index_test() {
             "index list one");
     mixedradix::validate_codes(
             *index, mixedradix::shape_of(candidate));
+
+    auto matched = mixedradix::build_index(
+            coarse, base, assignments, candidate,
+            reversed_pairing());
+    require(matched->ntotal == 3, "matched index ntotal");
+    mixedradix::validate_codes(
+            *matched, mixedradix::shape_of(candidate));
 }
 
 }  // namespace
@@ -105,6 +163,7 @@ int main() {
         packing_test(8);
         encoding_test(4);
         encoding_test(8);
+        matched_encoding_test();
         index_test();
         std::cout << "mixed_index_test: PASS\n";
         return 0;

@@ -27,4 +27,9 @@ Result maximum_weight_perfect_matching(
 std::vector<WeightedEdge> allocation_edges(
         const a4orb::Curves& curves, int word_bits, bool dyadic);
 
+a4orb::Model allocate_paired_model(
+        const a4orb::Curves& curves,
+        const std::vector<std::pair<std::size_t, std::size_t>>& pairs,
+        int word_bits, bool dyadic);
+
 }  // namespace mixedradix::matching

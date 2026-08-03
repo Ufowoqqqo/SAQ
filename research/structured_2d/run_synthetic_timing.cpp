@@ -2,6 +2,7 @@
 #include "dataset_io.hpp"
 #include "full_index.hpp"
 #include "synthetic_timing.hpp"
+#include "../mixed_radix_query/mixed_index.hpp"
 
 #include <faiss/IndexFlat.h>
 #include <faiss/IndexIVF.h>
@@ -12,6 +13,7 @@
 #include <omp.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -195,6 +197,7 @@ struct State {
     structured2d::FullIndex s_index;
     std::vector<std::uint16_t> radices;
     std::vector<std::uint16_t> used_states;
+    std::vector<std::uint16_t> coordinates;
 
     bool is_s() const {
         return logical_id == "S128";
@@ -204,7 +207,15 @@ struct State {
     }
     bool is_mixed() const {
         return logical_id == "A128" ||
-                logical_id == "D128_FULL";
+                logical_id == "D128_FULL" ||
+                logical_id == "A_FLEX" ||
+                logical_id == "D_ON_A" ||
+                logical_id == "D_FLEX";
+    }
+    bool is_matched() const {
+        return logical_id == "A_FLEX" ||
+                logical_id == "D_ON_A" ||
+                logical_id == "D_FLEX";
     }
     bool is_head_regular() const {
         return dataset == "gist" &&
@@ -334,7 +345,15 @@ State load_state(
             state.radices = read_radices(
                     artifact.string() + ".radix.u16",
                     state.ivfpq->pq.M);
-        if (state.logical_id == "A128") {
+        if (state.is_matched()) {
+            auto matched = mixedradix::read_matched_shape(
+                    artifact.string() + ".matched.u16");
+            state.coordinates =
+                    std::move(matched.pairing.coordinates);
+            state.radices = std::move(matched.shape.radices);
+            state.used_states =
+                    std::move(matched.shape.used_states);
+        } else if (state.logical_id == "A128") {
             auto shape = read_mixed_shape(
                     artifact.string() + ".shape.u16",
                     state.ivfpq->pq.M);
@@ -428,7 +447,8 @@ structured2d::admission::TopKResult search_custom_one(
         return structured2d::admission::search_mixed_radix_lists(
                 *state.ivfpq, state.radices, state.used_states,
                 query_vector, full_centroids(state),
-                state.dimensions, tail_start, lists, kTopK);
+                state.dimensions, tail_start, lists, kTopK,
+                state.coordinates);
     return structured2d::admission::search_ivfpq_lists(
             *state.ivfpq, state.opq, query_vector,
             full_centroids(state), state.dimensions,
@@ -1065,6 +1085,33 @@ void run_natural(
     }
 }
 
+void run_natural_pilot(
+        const std::string& dataset, std::size_t nlist,
+        int budget, const std::string& arm_id,
+        const std::string& mode_text,
+        const std::filesystem::path& admission_root,
+        const std::filesystem::path& pool_root,
+        const std::filesystem::path& query_path,
+        const std::filesystem::path& groundtruth_path,
+        const std::filesystem::path& schedule_root,
+        const std::filesystem::path& output_path) {
+    if (nlist != 4096 || budget != 64 || mode_text != "batch12")
+        throw std::invalid_argument("matched pilot frozen cell");
+    omp_set_dynamic(0);
+    omp_set_num_threads(12);
+    State state = load_natural_state(
+            dataset, nlist, budget, arm_id, Mode::Batch12,
+            admission_root, pool_root, query_path,
+            groundtruth_path, schedule_root);
+    constexpr std::array<std::size_t, 3> probes{4, 64, 1024};
+    bool append = false;
+    for (const std::size_t nprobe : probes) {
+        configure_nprobe(state, nprobe);
+        measure_current(state, output_path, append, 3);
+        append = true;
+    }
+}
+
 void run_natural_pass(
         const std::string& dataset, std::size_t nlist,
         int budget, const std::string& arm_id,
@@ -1122,8 +1169,12 @@ int main(int argc, char** argv) {
                     write_mode == "append", argv[14]);
             return 0;
         }
-        if (argc == 13 && std::string(argv[1]) == "natural") {
-            run_natural(
+        if (argc == 13 &&
+            (std::string(argv[1]) == "natural" ||
+             std::string(argv[1]) == "natural-pilot")) {
+            const bool pilot = std::string(argv[1]) == "natural-pilot";
+            const auto runner = pilot ? run_natural_pilot : run_natural;
+            runner(
                     argv[2], std::stoull(argv[3]),
                     std::stoi(argv[4]), argv[5], argv[6],
                     argv[7], argv[8], argv[9], argv[10],
@@ -1139,6 +1190,8 @@ int main(int argc, char** argv) {
                     "<32|64> <arm_id> <single|batch12> "
                     "<admission_root> <pool_root> <query_fvecs> "
                     "<groundtruth_ivecs> <schedule_root> <output_tsv>; "
+                    "or natural-pilot with the same arguments (frozen "
+                    "nlist=4096, 64-byte, batch12, nprobe 4/64/1024); "
                     "or natural-pass <sift|gist> <nlist> <32|64> "
                     "<arm_id> <single|batch12> <admission_root> "
                     "<pool_root> <query_fvecs> <groundtruth_ivecs> "

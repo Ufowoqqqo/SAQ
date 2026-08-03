@@ -57,7 +57,8 @@ TopKResult search_mixed_radix_lists(
         std::size_t full_dimensions,
         std::size_t tail_start,
         std::span<const faiss::idx_t> lists,
-        std::size_t top_k);
+        std::size_t top_k,
+        std::span<const std::uint16_t> coordinates = {});
 
 std::uint64_t hash_topk(
         std::span<const TopKResult> results);
