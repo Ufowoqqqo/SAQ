@@ -176,3 +176,25 @@ These are artifact correctness findings, not mixed-radix contributions.
   rescued, and do not tune pairings or radices from these query outcomes.
 - Full result:
   `docs/research/mixed_radix_nonadjacent_pilot_2026_08_02.md`.
+
+## 2026-08-03: closest work narrows the non-adjacent pairing claim
+
+- Primary-work finding: PQ already establishes the importance of component
+  grouping and anticipates automatic grouping; OPQ/CKM optimize the space
+  decomposition, and OPQ's parametric solution explicitly reallocates PCA
+  coordinates among subspaces.  DP-OPQ further treats stronger combinatorial
+  subspace partitioning as its contribution.
+- Exact-method finding: no reviewed ANN paper used fitted scalar
+  rate--distortion loss on every unordered coordinate pair followed by a
+  general-graph perfect matching.  This search absence is not proof of novelty.
+- Assessment: the method is a restricted, permutation-only optimized
+  decomposition with an exact pair solver.  It has possible narrow algorithmic
+  and systems value, but the general grouping mechanism is prior work and the
+  pilot does not establish an SAQ-specific or mixed-radix contribution.
+- Decision: do not expand the full matrix or make a novelty claim yet.  First
+  compare the identical consumer against random pairings, OPQ parametric
+  Eigenvalue Allocation restricted to two-coordinate buckets, the applicable
+  DP-OPQ partition, full OPQ with decomposed costs, and ordinary 2D PQ on the
+  selected pairs.
+- Full review:
+  `docs/research/nonadjacent_pairing_closest_primary_work_review_2026_08_03.md`.
