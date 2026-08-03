@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <numeric>
 #include <stdexcept>
 #include <vector>
 
@@ -175,6 +176,97 @@ a4orb::Model allocate_paired_model(
         model.blocks.push_back(std::move(block));
     }
     return model;
+}
+
+std::vector<std::pair<std::size_t, std::size_t>>
+eigenvalue_allocation_pairs(const a4orb::Curves& curves) {
+    const std::size_t dimensions = curves.coordinates.size();
+    if (dimensions == 0 || (dimensions & 1U) != 0)
+        throw std::invalid_argument("EA dimensions must be positive and even");
+    struct Coordinate {
+        double variance_proxy = 0;
+        std::size_t index = 0;
+    };
+    std::vector<Coordinate> order;
+    order.reserve(dimensions);
+    for (std::size_t index = 0; index < dimensions; ++index) {
+        if (curves.coordinates[index].empty())
+            throw std::invalid_argument("EA empty scalar curve");
+        const double proxy = curves.coordinates[index][0].sse;
+        if (!std::isfinite(proxy) || proxy < 0)
+            throw std::invalid_argument("EA invalid variance proxy");
+        order.push_back({proxy, index});
+    }
+    std::sort(order.begin(), order.end(), [](const auto& left,
+                                             const auto& right) {
+        return left.variance_proxy != right.variance_proxy
+                ? left.variance_proxy > right.variance_proxy
+                : left.index < right.index;
+    });
+
+    const std::size_t bucket_count = dimensions / 2;
+    struct Bucket {
+        long double product = 1;
+        std::vector<std::size_t> coordinates;
+    };
+    std::vector<Bucket> buckets(bucket_count);
+    // The primary text uses fixed-capacity buckets.  Fill every empty bucket
+    // before assigning a second coordinate so the rule is invariant to a
+    // global rescaling of eigenvalues.
+    for (std::size_t bucket = 0; bucket < bucket_count; ++bucket) {
+        const auto coordinate = order[bucket];
+        buckets[bucket].coordinates.push_back(coordinate.index);
+        buckets[bucket].product = coordinate.variance_proxy;
+    }
+    for (std::size_t position = bucket_count;
+         position < dimensions; ++position) {
+        const auto selected = std::min_element(
+                buckets.begin(), buckets.end(),
+                [](const Bucket& left, const Bucket& right) {
+                    if (left.coordinates.size() == 2)
+                        return false;
+                    if (right.coordinates.size() == 2)
+                        return true;
+                    return left.product < right.product;
+                });
+        if (selected == buckets.end() || selected->coordinates.size() == 2)
+            throw std::logic_error("EA has no non-full bucket");
+        selected->coordinates.push_back(order[position].index);
+        selected->product *= order[position].variance_proxy;
+    }
+
+    std::vector<std::pair<std::size_t, std::size_t>> pairs;
+    pairs.reserve(bucket_count);
+    for (const auto& bucket : buckets) {
+        if (bucket.coordinates.size() != 2)
+            throw std::logic_error("EA incomplete bucket");
+        pairs.emplace_back(std::minmax(
+                bucket.coordinates[0], bucket.coordinates[1]));
+    }
+    std::sort(pairs.begin(), pairs.end());
+    return pairs;
+}
+
+std::vector<std::pair<std::size_t, std::size_t>> random_pairs(
+        std::size_t dimensions, std::uint64_t seed) {
+    if (dimensions == 0 || (dimensions & 1U) != 0)
+        throw std::invalid_argument(
+                "random pairing dimensions must be positive and even");
+    std::vector<std::size_t> order(dimensions);
+    std::iota(order.begin(), order.end(), 0);
+    std::uint64_t state = seed;
+    for (std::size_t remaining = dimensions; remaining > 1; --remaining) {
+        state += 0x9e3779b97f4a7c15ULL;
+        const std::size_t selected = static_cast<std::size_t>(
+                a4or::splitmix64(state) % remaining);
+        std::swap(order[remaining - 1], order[selected]);
+    }
+    std::vector<std::pair<std::size_t, std::size_t>> pairs;
+    pairs.reserve(dimensions / 2);
+    for (std::size_t index = 0; index < dimensions; index += 2)
+        pairs.emplace_back(std::minmax(order[index], order[index + 1]));
+    std::sort(pairs.begin(), pairs.end());
+    return pairs;
 }
 
 }  // namespace mixedradix::matching

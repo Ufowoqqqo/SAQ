@@ -1,83 +1,104 @@
-# Active Task: non-adjacent pairing closest-work review
+# Active Task: closest-baseline pairing discrimination
 
-## State
+## State and research question
 
 - Branch: `saq-mixed-radix-query`
-- Current scientific snapshot: `f08f76c`
-- Branch base for this direction: `8ee35a2`
-- Mode: `REVIEW`
+- Base snapshot: `552fa7b`
+- Mode: `IMPLEMENT`, `EXPERIMENT`, then `REVIEW`
 
-The frozen non-adjacent pilot is complete.  It found a material pairing effect
-but no material arbitrary-radix effect.  The active question is whether the
-pairing mechanism is already covered by the closest primary work and what
-smallest comparison would discriminate a narrow contribution from a known
-decomposition variant.
+Test whether the completed empirical-SSE minimum-weight perfect matching
+(`D-MWM`, previously `D_FLEX`) improves the identical dyadic scalar-product
+consumer beyond established permutation-only grouping controls.  This is a
+pairing-objective test, not a mixed-radix test.
 
-## Question and hypothesis
+Hypothesis: `D-MWM` should beat OPQ's parametric Eigenvalue Allocation pairing
+(`D-EA`) and predeclared random pairings on both natural datasets.  Otherwise
+the positive pilot is adequately explained by known optimized decomposition.
 
-Question: does assigning every coordinate pair an empirical scalar
-rate--distortion loss and solving a perfect matching constitute a novel ANN
-method, or a restricted permutation-only instance of established optimized
-product-quantizer decomposition?
+## Frozen methods and inputs
 
-Working hypothesis: general learned coordinate grouping is prior work.  The
-exact pair-loss reduction may be a narrow unreported specialization, but it is
-scientifically useful only if it beats the closest permutation-only OPQ and
-DP-OPQ-style controls through the identical low-overhead consumer.
+- SIFT1M and GIST1M;
+- `nlist=4096`, 64-byte/B8 codes;
+- `nprobe={64,1024}`;
+- batch12, one warmup and three measured repetitions;
+- identical PCA residuals, first 8,192 SHA-ordered fitting rows, IVF
+  assignments, query order, selected lists, top-100 ground truth, scalar curve
+  fitter, dyadic allocator, complete-table consumer, and four-candidate scan.
 
-## Relevant evidence
+Arms:
 
-- `research/mixed_radix_matching/`: edge construction and perfect matching;
-- `research/mixed_radix_query/`: frozen non-adjacent consumer and tests;
-- `docs/research/mixed_radix_max_weight_matching_offline_2026_08_01.md`;
-- `docs/research/mixed_radix_nonadjacent_pilot_2026_08_02.md`;
-- `docs/research/nonadjacent_pairing_closest_primary_work_review_2026_08_03.md`;
-- `docs/research/DECISION_LOG.md`;
-- `docs/research/RESEARCH_CHARTER.md`.
+- `D_MWM`: accepted `D_flex` pairs from the byte-identical offline result;
+- `D_EA`: Ge et al.'s parametric OPQ Eigenvalue Allocation, specialized to 64
+  buckets of capacity two, using the fitted residual-coordinate variances;
+- `D_RANDOM_0..2`: Fisher--Yates permutations using fixed 64-bit seeds
+  `2026080301`, `2026080302`, and `2026080303`, paired consecutively;
+- `D_ADJ`: `(0,1),(2,3),...,(126,127)` anchor.
 
-Primary sources in the review include PQ, transform coding, OPQ, Cartesian
-k-means, DP-OPQ, LOPQ, SAQ, ITLUMM, and PQF.
+All arms use dyadic allocation after pairing.  Do not build or evaluate an
+arbitrary-radix arm.  Do not select random seeds, probes, thresholds, or
+pairings from query outcomes.
 
-## Current permissions and boundaries
+For Eigenvalue Allocation, use the OPQ primary-text rule: sort coordinate
+variances descending, then assign each coordinate to the non-full bucket with
+the smallest current product.  Empty buckets must be filled before any bucket
+receives its second coordinate; ties are resolved by bucket index.  Record the
+resulting pairing and fitted SSE.
 
-Allowed now:
+## Reads, writes, and commands
 
-- read repository source, current results, and primary publications;
-- write the focused closest-work review, `TASK.md`, and decision log;
-- run formatting, diff, and repository-status checks.
+Allowed reads are current repository source/results, the accepted pair table
+under `/tmp/mixed-radix-query/matched-offline-v1/run7/pairs.tsv`, and the same
+SIFT1M/GIST1M admission/query/ground-truth artifacts used by the completed
+pilot.  Do not read another dataset or previously unexamined query outcome.
 
-Not authorized by the current review task:
+Allowed writes are focused source/tests under
+`research/mixed_radix_matching/` and minimal arm/mode integration in
+`research/structured_2d/`, plus `TASK.md`, the decision log, and one focused
+result note.  Generated indexes and results belong only under
+`/tmp/mixed-radix-query/closest-baseline-v1/`.
 
-- changing scientific source code;
-- running another fitting, index build, or query experiment;
-- reading a new benchmark dataset or new query outcome;
-- changing the pairing, loss, bit budget, PCA, IVF assignments, consumer,
-  baseline, metric, or query schedule;
-- expanding the completed pilot into a full matrix.
+Allowed commands are the existing CMake build, focused unit tests, the focused
+baseline builder, and the natural query runner restricted to the frozen cells.
+No production `saqlib/` change, dependency change, full matrix, parameter
+sweep, or query-trained choice is allowed.
 
-The established scientific restrictions remain: grouping is fitted from
-base/index data only; held-out queries cannot choose pairings, objectives,
-thresholds, or claims; no query-trained policy, per-vector grouping metadata,
-or post-outcome rescue sweep is allowed.
+## Resources and correctness
 
-## Deliverables and done criteria
+Budget: 4 aggregate CPU-hours, 4 wall-hours, 16 GiB peak RSS, one build
+process, and at most 12 query threads.  Stop before exceeding a limit.
 
-Done means the review:
+Tests must verify the primary-text Eigenvalue Allocation order and tie rules,
+valid perfect pairings, fixed random reproducibility and seed separation,
+matched-sidecar round-trip, valid labels, direct/table distance parity, and
+stable query output hashes.  Reuse existing index/consumer tests where they
+already cover the latter properties.
 
-- defines the current method exactly rather than calling it generic matching;
-- identifies the closest primary work and what each paper already covers;
-- distinguishes general grouping, exact pair optimization, consumer design,
-  SAQ-specific contribution, and mixed-radix contribution;
-- states whether the method is a direct specialization or composition;
-- identifies the closest missing baselines and a falsifiable continuation
-  rule;
-- records search uncertainty without treating failure to find a paper as proof
-  of novelty;
-- passes `git diff --check` and leaves scientific code unchanged.
+The scientific hot path remains table construction plus the unchanged B8
+candidate scan.  Pair generation, logging, and serialization remain outside
+timed query regions.
 
-Current blocker: none for the review.  The scientific direction is blocked from
-a novelty claim and full-matrix expansion by missing permutation-only primary
-baselines.  One concrete next action, after the user chooses to continue, is to
-freeze the smallest identical-consumer comparison of random pairing and OPQ
-parametric Eigenvalue Allocation pairing.  That would be a new experiment
-task, not part of this review.
+## Decision and completion state
+
+This is an early falsification gate, not a SOTA comparison.  Report all arms
+and both datasets unchanged.  Treat `D_MWM` as differentiated only if it beats
+`D_EA` on both datasets with a consistent positive Recall trend and reaches at
+least `+0.002` Recall@100 at one of the two frozen probes on each dataset,
+without more than 5% QPS regression.  Random and adjacent controls provide
+attribution but cannot substitute for beating `D_EA`.
+
+Done means all focused tests pass; every arm builds with valid sidecars/codes;
+all 72 arm/dataset/probe/repetition measurement rows are stable; construction,
+bytes, memory, commands, hashes, Recall/QPS, and limitations are recorded; and
+the result says whether to proceed to DP-OPQ/full evaluation or close MWM as a
+standalone direction.
+
+Status: complete, with no blocker.  All 72 rows are present and stable, tests
+pass, and the resource limits were respected.  `D_MWM` misses the gate: its
+Recall delta over `D_EA` is below `+0.002` everywhere and changes sign on
+GIST1M.  The standalone MWM pairing direction is closed; do not proceed to
+DP-OPQ or a full matrix from this result.
+
+Result: `docs/research/nonadjacent_pairing_closest_baseline_result_2026_08_03.md`.
+The meeting summary now includes this negative discrimination result.  One
+concrete next action is to select a scientifically different question before
+authorizing any further implementation or experiment.

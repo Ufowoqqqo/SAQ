@@ -198,3 +198,23 @@ These are artifact correctness findings, not mixed-radix contributions.
   selected pairs.
 - Full review:
   `docs/research/nonadjacent_pairing_closest_primary_work_review_2026_08_03.md`.
+
+## 2026-08-03: closest-baseline experiment closes standalone MWM pairing
+
+- Scope: identical dyadic consumers for empirical-SSE matching (`D_MWM`),
+  OPQ-style Eigenvalue Allocation (`D_EA`), three frozen random pairings, and
+  adjacency on SIFT1M/GIST1M at `nlist=4096`, 64 bytes, and
+  `nprobe={64,1024}`.
+- Evidence: relative to `D_EA`, `D_MWM` changes Recall@100 by only
+  `+0.000253/+0.000349` on SIFT and `+0.000320/-0.000160` on GIST.  It never
+  reaches the frozen `+0.002` line, and GIST has mixed signs.  QPS remains
+  within the 5% allowance, so throughput is not the cause.
+- Attribution: random non-adjacent pairing beats adjacency, while Eigenvalue
+  Allocation captures nearly all of MWM's improvement.  The earlier positive
+  pilot primarily rejected adjacency; it did not show a material benefit from
+  the empirical pair-SSE graph or exact matching solver.
+- Decision: close MWM as a standalone direction and do not expand this result
+  to DP-OPQ or a full matrix.  This is not a negative result for all optimized
+  decompositions and does not reopen arbitrary mixed-radix cardinalities.
+- Full result:
+  `docs/research/nonadjacent_pairing_closest_baseline_result_2026_08_03.md`.

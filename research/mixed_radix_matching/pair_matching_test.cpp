@@ -156,6 +156,59 @@ void test_validation() {
     require(rejected, "odd graph was accepted");
 }
 
+a4orb::Curves variance_curves(std::initializer_list<double> proxies) {
+    a4orb::Curves curves;
+    for (double proxy : proxies)
+        curves.coordinates.push_back({entry(proxy)});
+    return curves;
+}
+
+void require_pairing(
+        const std::vector<std::pair<std::size_t, std::size_t>>& pairs,
+        std::size_t dimensions, const char* message) {
+    require(pairs.size() * 2 == dimensions, message);
+    std::vector<bool> seen(dimensions, false);
+    for (const auto& [first, second] : pairs) {
+        require(first < second && second < dimensions, message);
+        require(!seen[first] && !seen[second], message);
+        seen[first] = seen[second] = true;
+    }
+    require(std::all_of(seen.begin(), seen.end(), [](bool value) {
+                return value;
+            }), message);
+}
+
+void test_eigenvalue_allocation() {
+    const auto curves = variance_curves(
+            {100, 90, 80, 70, 60, 50, 40, 30});
+    const auto pairs =
+            mixedradix::matching::eigenvalue_allocation_pairs(curves);
+    require_pairing(pairs, 8, "EA invalid pairing");
+    require(pairs == decltype(pairs)({{0, 7}, {1, 6}, {2, 5}, {3, 4}}),
+            "EA primary-text ordering mismatch");
+
+    const auto ties = mixedradix::matching::eigenvalue_allocation_pairs(
+            variance_curves({1, 1, 1, 1}));
+    require(ties == decltype(ties)({{0, 2}, {1, 3}}),
+            "EA tie resolution mismatch");
+}
+
+void test_random_pairing() {
+    constexpr std::uint64_t seeds[] = {
+            2026080301ULL, 2026080302ULL, 2026080303ULL};
+    std::vector<std::vector<std::pair<std::size_t, std::size_t>>> outputs;
+    for (const auto seed : seeds) {
+        const auto pairs = mixedradix::matching::random_pairs(128, seed);
+        require_pairing(pairs, 128, "random invalid pairing");
+        require(pairs == mixedradix::matching::random_pairs(128, seed),
+                "random pairing is not reproducible");
+        outputs.push_back(pairs);
+    }
+    require(outputs[0] != outputs[1] && outputs[0] != outputs[2] &&
+                    outputs[1] != outputs[2],
+            "random seeds did not separate pairings");
+}
+
 }  // namespace
 
 int main() {
@@ -164,6 +217,8 @@ int main() {
         test_cardinality_cross_pairing();
         test_128_coordinate_scale();
         test_validation();
+        test_eigenvalue_allocation();
+        test_random_pairing();
         std::cout << "pair_matching_test: PASS\n";
         return 0;
     } catch (const std::exception& error) {

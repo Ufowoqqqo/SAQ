@@ -210,12 +210,20 @@ struct State {
                 logical_id == "D128_FULL" ||
                 logical_id == "A_FLEX" ||
                 logical_id == "D_ON_A" ||
-                logical_id == "D_FLEX";
+                logical_id == "D_FLEX" ||
+                logical_id == "D_MWM" ||
+                logical_id == "D_EA" ||
+                logical_id == "D_ADJ" ||
+                logical_id.rfind("D_RANDOM_", 0) == 0;
     }
     bool is_matched() const {
         return logical_id == "A_FLEX" ||
                 logical_id == "D_ON_A" ||
-                logical_id == "D_FLEX";
+                logical_id == "D_FLEX" ||
+                logical_id == "D_MWM" ||
+                logical_id == "D_EA" ||
+                logical_id == "D_ADJ" ||
+                logical_id.rfind("D_RANDOM_", 0) == 0;
     }
     bool is_head_regular() const {
         return dataset == "gist" &&
@@ -1112,6 +1120,37 @@ void run_natural_pilot(
     }
 }
 
+void run_natural_closest(
+        const std::string& dataset, std::size_t nlist,
+        int budget, const std::string& arm_id,
+        const std::string& mode_text,
+        const std::filesystem::path& admission_root,
+        const std::filesystem::path& pool_root,
+        const std::filesystem::path& query_path,
+        const std::filesystem::path& groundtruth_path,
+        const std::filesystem::path& schedule_root,
+        const std::filesystem::path& output_path) {
+    const bool arm_valid = arm_id == "D_MWM" || arm_id == "D_EA" ||
+            arm_id == "D_ADJ" || arm_id == "D_RANDOM_0" ||
+            arm_id == "D_RANDOM_1" || arm_id == "D_RANDOM_2";
+    if (nlist != 4096 || budget != 64 || mode_text != "batch12" ||
+        !arm_valid)
+        throw std::invalid_argument("closest baseline frozen cell");
+    omp_set_dynamic(0);
+    omp_set_num_threads(12);
+    State state = load_natural_state(
+            dataset, nlist, budget, arm_id, Mode::Batch12,
+            admission_root, pool_root, query_path,
+            groundtruth_path, schedule_root);
+    constexpr std::array<std::size_t, 2> probes{64, 1024};
+    bool append = false;
+    for (const std::size_t nprobe : probes) {
+        configure_nprobe(state, nprobe);
+        measure_current(state, output_path, append, 3);
+        append = true;
+    }
+}
+
 void run_natural_pass(
         const std::string& dataset, std::size_t nlist,
         int budget, const std::string& arm_id,
@@ -1171,9 +1210,14 @@ int main(int argc, char** argv) {
         }
         if (argc == 13 &&
             (std::string(argv[1]) == "natural" ||
-             std::string(argv[1]) == "natural-pilot")) {
+             std::string(argv[1]) == "natural-pilot" ||
+             std::string(argv[1]) == "natural-closest")) {
             const bool pilot = std::string(argv[1]) == "natural-pilot";
-            const auto runner = pilot ? run_natural_pilot : run_natural;
+            const bool closest =
+                    std::string(argv[1]) == "natural-closest";
+            const auto runner = pilot
+                    ? run_natural_pilot
+                    : closest ? run_natural_closest : run_natural;
             runner(
                     argv[2], std::stoull(argv[3]),
                     std::stoi(argv[4]), argv[5], argv[6],
@@ -1192,6 +1236,8 @@ int main(int argc, char** argv) {
                     "<groundtruth_ivecs> <schedule_root> <output_tsv>; "
                     "or natural-pilot with the same arguments (frozen "
                     "nlist=4096, 64-byte, batch12, nprobe 4/64/1024); "
+                    "or natural-closest with the same arguments (frozen "
+                    "closest arms and nprobe 64/1024); "
                     "or natural-pass <sift|gist> <nlist> <32|64> "
                     "<arm_id> <single|batch12> <admission_root> "
                     "<pool_root> <query_fvecs> <groundtruth_ivecs> "

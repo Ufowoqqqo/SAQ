@@ -3,6 +3,7 @@
 #include "../a4_or_b/models.hpp"
 
 #include <cstddef>
+#include <cstdint>
 #include <utility>
 #include <vector>
 
@@ -31,5 +32,11 @@ a4orb::Model allocate_paired_model(
         const a4orb::Curves& curves,
         const std::vector<std::pair<std::size_t, std::size_t>>& pairs,
         int word_bits, bool dyadic);
+
+std::vector<std::pair<std::size_t, std::size_t>>
+eigenvalue_allocation_pairs(const a4orb::Curves& curves);
+
+std::vector<std::pair<std::size_t, std::size_t>> random_pairs(
+        std::size_t dimensions, std::uint64_t seed);
 
 }  // namespace mixedradix::matching

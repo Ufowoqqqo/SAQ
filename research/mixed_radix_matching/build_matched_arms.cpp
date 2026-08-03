@@ -228,11 +228,42 @@ void build_arm(
               << " wall=" << build_wall << '\n';
 }
 
+std::vector<std::pair<std::size_t, std::size_t>> adjacent_pairs() {
+    std::vector<std::pair<std::size_t, std::size_t>> pairs;
+    pairs.reserve(kDimensions / 2);
+    for (std::size_t dimension = 0; dimension < kDimensions;
+         dimension += 2)
+        pairs.emplace_back(dimension, dimension + 1);
+    return pairs;
+}
+
+void write_pair_plan(
+        std::ofstream& output, const std::string& dataset,
+        const std::string& arm,
+        const std::vector<std::pair<std::size_t, std::size_t>>& pairs,
+        const a4orb::Curves& curves) {
+    (void)pairing_of(pairs);
+    for (std::size_t group = 0; group < pairs.size(); ++group) {
+        const auto [first, second] = pairs[group];
+        const auto allocation = a4or::allocate_pair(
+                curves.coordinates[first], curves.coordinates[second],
+                kBits, true);
+        output << dataset << '\t' << arm << '\t' << group << '\t'
+               << first << '\t' << second << '\t'
+               << std::setprecision(17)
+               << curves.coordinates[first][0].sse << '\t'
+               << curves.coordinates[second][0].sse << '\t'
+               << allocation.k1 << '\t' << allocation.k2 << '\t'
+               << allocation.sse << '\n';
+    }
+}
+
 void run(
         const std::string& dataset,
         const std::filesystem::path& admission_root,
         const std::filesystem::path& pair_table,
-        const std::filesystem::path& output_dir) {
+        const std::filesystem::path& output_dir,
+        const std::string& mode) {
     const bool sift = dataset == "sift";
     if (!sift && dataset != "gist")
         throw std::invalid_argument("matched dataset");
@@ -267,19 +298,56 @@ void run(
     const auto base = structured2d::admission::read_all(base_reader);
     const auto base_assignments = structured2d::admission::read_u32(
             nlist_dir / "base_assignments.u32", kBaseRows);
-    const auto a_pairs = read_pairs(pair_table, dataset_id, "A_flex");
     const auto d_pairs = read_pairs(pair_table, dataset_id, "D_flex");
 
     std::ofstream resources(output_dir / "build_resources.tsv");
     resources << "arm\tbuild_cpu_seconds\tbuild_wall_seconds"
                  "\twrite_cpu_seconds\twrite_wall_seconds"
                  "\tindex_bytes\tsidecar_bytes\tpeak_rss_bytes\n";
-    build_arm("A_FLEX", false, a_pairs, curves, *coarse,
-              base, base_assignments, output_dir, resources);
-    build_arm("D_ON_A", true, a_pairs, curves, *coarse,
-              base, base_assignments, output_dir, resources);
-    build_arm("D_FLEX", true, d_pairs, curves, *coarse,
-              base, base_assignments, output_dir, resources);
+    if (mode == "frozen") {
+        const auto a_pairs = read_pairs(
+                pair_table, dataset_id, "A_flex");
+        build_arm("A_FLEX", false, a_pairs, curves, *coarse,
+                  base, base_assignments, output_dir, resources);
+        build_arm("D_ON_A", true, a_pairs, curves, *coarse,
+                  base, base_assignments, output_dir, resources);
+        build_arm("D_FLEX", true, d_pairs, curves, *coarse,
+                  base, base_assignments, output_dir, resources);
+    } else if (mode == "closest-baseline-v1") {
+        struct Plan {
+            std::string arm;
+            std::vector<std::pair<std::size_t, std::size_t>> pairs;
+        };
+        std::vector<Plan> plans;
+        plans.push_back({"D_MWM", d_pairs});
+        plans.push_back({
+                "D_EA",
+                mixedradix::matching::eigenvalue_allocation_pairs(curves)});
+        constexpr std::uint64_t seeds[] = {
+                2026080301ULL, 2026080302ULL, 2026080303ULL};
+        for (std::size_t index = 0; index < std::size(seeds); ++index)
+            plans.push_back({
+                    "D_RANDOM_" + std::to_string(index),
+                    mixedradix::matching::random_pairs(
+                            kDimensions, seeds[index])});
+        plans.push_back({"D_ADJ", adjacent_pairs()});
+
+        std::ofstream pair_output(output_dir / "pairings.tsv");
+        pair_output << "dataset\tarm\tgroup\tdim1\tdim2"
+                       "\tvariance_proxy1\tvariance_proxy2"
+                       "\tk1\tk2\tfit_sse\n";
+        for (const auto& plan : plans) {
+            write_pair_plan(
+                    pair_output, dataset_id, plan.arm,
+                    plan.pairs, curves);
+            build_arm(plan.arm, true, plan.pairs, curves, *coarse,
+                      base, base_assignments, output_dir, resources);
+        }
+        if (!pair_output)
+            throw std::runtime_error("closest pairing output");
+    } else {
+        throw std::invalid_argument("matched builder mode");
+    }
     resources << "SHARED_FIT\t" << std::setprecision(17)
               << fit_cpu << '\t' << fit_wall
               << "\t0\t0\t0\t0\t" << peak_rss_bytes() << '\n';
@@ -290,12 +358,14 @@ void run(
 
 int main(int argc, char** argv) {
     try {
-        if (argc != 6 || std::string(argv[5]) != "frozen")
+        if (argc != 6 ||
+            (std::string(argv[5]) != "frozen" &&
+             std::string(argv[5]) != "closest-baseline-v1"))
             throw std::invalid_argument(
                     "usage: mixed_radix_build_matched_arms "
                     "<sift|gist> <admission-root> <pair-table> "
-                    "<output-dir> frozen");
-        run(argv[1], argv[2], argv[3], argv[4]);
+                    "<output-dir> <frozen|closest-baseline-v1>");
+        run(argv[1], argv[2], argv[3], argv[4], argv[5]);
         return 0;
     } catch (const std::exception& error) {
         std::cerr << "mixed_radix_build_matched_arms: "
