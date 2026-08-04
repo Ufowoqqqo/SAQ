@@ -303,3 +303,26 @@ These are artifact correctness findings, not mixed-radix contributions.
   hypothesis and closest baselines.
 - Full audit:
   `docs/research/saq_two_segment_feasible_objective_static_audit_2026_08_03.md`.
+
+## 2026-08-04: base-trained joint-objective diagnostic closes local coupling lead
+
+- Scope: fixed GIST sample50k SAQ index, two 128-direction base-only cross-fit
+  folds, 32 disjoint targets, and production plus every legal one-coordinate
+  `+1/-1` alternative for segments `192d@6b` and `320d@4b`.
+- Correctness: existing estimator/rescale/norm/exact parity and new analytical
+  production-alternative parity passed before outcomes; Release and ASan tests
+  passed; two scientific executions are byte-identical.
+- Evidence: relative to independent training on identical alternatives,
+  held-out joint MSE changes by only `+0.0805%` in one direction and worsens by
+  `1.3644%` in the other.  Joint improves 15/32 and 13/32 targets, failing the
+  frozen 5% and 60% rules in both folds.
+- Attribution: a post-hoc evaluation oracle improves about 16%, while learned
+  joint choices differ from independent choices for 29/32--31/32 targets.
+  The local headroom is direction-fold-specific cancellation and does not
+  generalize as a stable base-trained rule.
+- Decision: `JOINT_LOCAL_NO_GO`.  Do not expand the neighborhood, tune folds or
+  thresholds, implement a consumer, or read benchmark queries to rescue this
+  lead.  The result closes this direct estimator-aware continuation of the
+  segment-1/segment-2 exact-replacement oracle.
+- Full result:
+  `docs/research/saq_joint_objective_viability_result_2026_08_04.md`.

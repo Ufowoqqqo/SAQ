@@ -5,12 +5,19 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace saq_component_oracle {
 
+struct ObjectiveChoice {
+    std::size_t left = 0;
+    std::size_t right = 0;
+    double loss = 0;
+};
 inline std::uint64_t splitmix64(std::uint64_t value) {
     value += 0x9e3779b97f4a7c15ULL;
     value = (value ^ (value >> 30)) * 0xbf58476d1ce4e5b9ULL;
@@ -85,6 +92,83 @@ inline std::string joint_decision(unsigned minimum_passing_cardinality) {
         minimum_passing_cardinality == 4)
         return "CLOSE_DIFFUSE_THREE_PLUS";
     return "CLOSE_NO_SMALL_JOINT";
+}
+inline ObjectiveChoice independent_objective_choice(
+        std::span<const double> left, std::size_t left_count,
+        std::span<const double> right, std::size_t right_count,
+        std::size_t samples) {
+    if (samples == 0 || left.size() != left_count * samples ||
+        right.size() != right_count * samples)
+        throw std::invalid_argument("invalid objective projection shape");
+    ObjectiveChoice result;
+    double best_left = std::numeric_limits<double>::infinity();
+    double best_right = std::numeric_limits<double>::infinity();
+    for (std::size_t alternative = 0; alternative < left_count; ++alternative) {
+        double loss = 0;
+        for (std::size_t sample = 0; sample < samples; ++sample) {
+            const double value = left[alternative * samples + sample];
+            loss += value * value;
+        }
+        if (loss < best_left) {
+            best_left = loss;
+            result.left = alternative;
+        }
+    }
+    for (std::size_t alternative = 0; alternative < right_count; ++alternative) {
+        double loss = 0;
+        for (std::size_t sample = 0; sample < samples; ++sample) {
+            const double value = right[alternative * samples + sample];
+            loss += value * value;
+        }
+        if (loss < best_right) {
+            best_right = loss;
+            result.right = alternative;
+        }
+    }
+    result.loss = best_left + best_right;
+    return result;
+}
+inline ObjectiveChoice joint_objective_choice(
+        std::span<const double> left, std::size_t left_count,
+        std::span<const double> right, std::size_t right_count,
+        std::size_t samples) {
+    if (samples == 0 || left.size() != left_count * samples ||
+        right.size() != right_count * samples)
+        throw std::invalid_argument("invalid objective projection shape");
+    ObjectiveChoice result;
+    result.loss = std::numeric_limits<double>::infinity();
+    for (std::size_t left_index = 0; left_index < left_count; ++left_index) {
+        for (std::size_t right_index = 0; right_index < right_count; ++right_index) {
+            double loss = 0;
+            for (std::size_t sample = 0; sample < samples; ++sample) {
+                const double value = left[left_index * samples + sample] +
+                        right[right_index * samples + sample];
+                loss += value * value;
+            }
+            if (loss < result.loss) {
+                result = {left_index, right_index, loss};
+            }
+        }
+    }
+    return result;
+}
+
+inline double combined_objective_loss(
+        std::span<const double> left, std::size_t left_index,
+        std::span<const double> right, std::size_t right_index,
+        std::size_t samples) {
+    if (samples == 0 || left.size() % samples != 0 ||
+        right.size() % samples != 0 ||
+        left_index >= left.size() / samples ||
+        right_index >= right.size() / samples)
+        throw std::invalid_argument("invalid selected projection shape");
+    double loss = 0;
+    for (std::size_t sample = 0; sample < samples; ++sample) {
+        const double value = left[left_index * samples + sample] +
+                right[right_index * samples + sample];
+        loss += value * value;
+    }
+    return loss;
 }
 
 }  // namespace saq_component_oracle

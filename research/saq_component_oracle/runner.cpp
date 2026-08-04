@@ -28,8 +28,11 @@
 namespace {
 
 using saq_component_oracle::exact_tie;
+using saq_component_oracle::combined_objective_loss;
+using saq_component_oracle::independent_objective_choice;
 using saq_component_oracle::is_inversion;
 using saq_component_oracle::joint_decision;
+using saq_component_oracle::joint_objective_choice;
 using saq_component_oracle::joint_subset_masks;
 using saq_component_oracle::joint_subset_name;
 using saq_component_oracle::least_squares_scale;
@@ -49,6 +52,8 @@ constexpr std::size_t kProbes = 256;
 constexpr std::size_t kParityProbes = 32;
 constexpr std::size_t kPool = 4096;
 constexpr std::size_t kLocal = 64;
+constexpr std::size_t kObjectiveTargets = 32;
+constexpr std::size_t kDirectionFold = 128;
 constexpr std::uint64_t kSeed = 2026080304ULL;
 constexpr std::array<std::size_t, kSegments> kSegmentDimensions{
         64, 192, 320, 256, 128};
@@ -951,6 +956,381 @@ void write_joint_decision(
     require(output.good(), "write joint decision output");
 }
 
+using DirectionMatrix = Eigen::Matrix<double, Eigen::Dynamic,
+        Eigen::Dynamic, Eigen::RowMajor>;
+
+struct ObjectiveAlternatives {
+    std::size_t count = 0;
+    std::vector<double> projections;
+    std::vector<double> stored_projections;
+    double max_production_relative_error = 0;
+};
+
+std::vector<std::uint16_t> decode_stored_code(
+        const saqlib::CAQClusterData& segment, std::size_t position,
+        std::size_t dimensions, std::size_t bits,
+        const std::vector<PackedBit>& compacted_map) {
+    require(bits > 0, "decode positive-bit code");
+    std::vector<std::uint16_t> code(dimensions);
+    const std::size_t low_bits = bits - 1;
+    const std::uint8_t* packed = segment.long_code(position);
+    for (std::size_t dimension = 0; dimension < dimensions; ++dimension) {
+        code[dimension] = decode_low_code(
+                packed, dimension, low_bits, compacted_map);
+        if (decode_fastscan_msb(segment, position, dimension))
+            code[dimension] |= static_cast<std::uint16_t>(1U << low_bits);
+    }
+    return code;
+}
+
+DirectionMatrix objective_directions(
+        const Dataset& base, const IVF& index,
+        const std::vector<Location>& locations,
+        const Population& population, std::size_t pool_index,
+        std::size_t segment) {
+    const auto location = locations[population.pool[pool_index]];
+    const auto& centroid = index.get_pclusters()[location.cluster]
+            .get_segment(segment).centroid();
+    const std::size_t dimensions = kSegmentDimensions[segment];
+    DirectionMatrix result(kProbes, dimensions);
+    for (std::size_t probe_index = 0; probe_index < kProbes; ++probe_index) {
+        const auto rotated = rotated_probe(
+                base, index, population.probes[probe_index]);
+        result.row(probe_index) =
+                (rotated[segment] - centroid).cast<double>();
+    }
+    return result;
+}
+
+ObjectiveAlternatives objective_alternatives(
+        const Dataset& base, const IVF& index,
+        const std::vector<Location>& locations,
+        const Population& population,
+        const Reconstructions& reconstructions,
+        std::size_t pool_index, std::size_t segment,
+        const DirectionMatrix& directions,
+        const std::vector<PackedBit>& compacted_map) {
+    require(segment == 1 || segment == 2, "objective target segment");
+    const std::size_t dimensions = kSegmentDimensions[segment];
+    const std::size_t bits = kSegmentBits[segment];
+    const PID id = population.pool[pool_index];
+    const auto location = locations[id];
+    const auto& stored_segment = index.get_pclusters()[location.cluster]
+            .get_segment(segment);
+
+    std::size_t offset = 0;
+    for (std::size_t current = 0; current < segment; ++current)
+        offset += kSegmentDimensions[current];
+    FloatVec rotated = map_segment(base.row(id), offset, dimensions);
+    const auto& quantizer_data = index.get_saq_data()->base_datas[segment];
+    if (quantizer_data.rotator)
+        rotated = rotated * quantizer_data.rotator->get_P();
+    const Eigen::VectorXd residual = (rotated - stored_segment.centroid())
+            .cast<double>();
+    const double residual_norm2 = residual.squaredNorm();
+    auto code = decode_stored_code(
+            stored_segment, location.position, dimensions, bits,
+            compacted_map);
+    const auto production_code = code;
+    const std::uint16_t code_max = static_cast<std::uint16_t>(
+            (1U << bits) - 1);
+    const double delta = 2.0 / static_cast<double>(1U << bits);
+
+    ObjectiveAlternatives result;
+    result.projections.reserve((1 + 2 * dimensions) * kProbes);
+    const float* stored_reconstruction =
+            reconstructions.production[segment].data() +
+            pool_index * dimensions;
+    const Eigen::VectorXd stored_error =
+            Eigen::Map<const FloatVec>(stored_reconstruction, dimensions)
+                    .cast<double>().transpose() - residual;
+    const Eigen::VectorXd stored_projection =
+            -2.0 * (directions * stored_error);
+    result.stored_projections.assign(
+            stored_projection.data(),
+            stored_projection.data() + stored_projection.size());
+
+    const auto append = [&] {
+        Eigen::VectorXd direction(dimensions);
+        for (std::size_t dimension = 0; dimension < dimensions; ++dimension) {
+            direction[dimension] = -1.0 +
+                    (static_cast<double>(code[dimension]) + 0.5) * delta;
+        }
+        const double inner_product = residual.dot(direction);
+        if (!std::isfinite(inner_product) || inner_product <= 0) return false;
+        const double scale = residual_norm2 / inner_product;
+        require(std::isfinite(scale) && scale > 0,
+                "finite positive analytical rescale");
+        const Eigen::VectorXd error = scale * direction - residual;
+        const Eigen::VectorXd projection = -2.0 * (directions * error);
+        if (result.count == 0) {
+            for (Eigen::Index index = 0; index < projection.size(); ++index) {
+                result.max_production_relative_error = std::max(
+                        result.max_production_relative_error,
+                        std::abs(projection[index] - stored_projection[index]) /
+                                std::max(1.0,
+                                         std::abs(stored_projection[index])));
+            }
+        }
+        result.projections.insert(
+                result.projections.end(), projection.data(),
+                projection.data() + projection.size());
+        ++result.count;
+        return true;
+    };
+
+    require(append(), "production alternative analytical rescale");
+    for (std::size_t dimension = 0; dimension < dimensions; ++dimension) {
+        const auto original = code[dimension];
+        if (original > 0) {
+            code[dimension] = static_cast<std::uint16_t>(original - 1);
+            (void)append();
+        }
+        if (original < code_max) {
+            code[dimension] = static_cast<std::uint16_t>(original + 1);
+            (void)append();
+        }
+        code[dimension] = original;
+    }
+    require(code == production_code, "alternative code restoration");
+    require(result.projections.size() == result.count * kProbes,
+            "objective projection shape");
+    return result;
+}
+
+std::vector<double> projection_fold(
+        const ObjectiveAlternatives& alternatives, std::size_t fold) {
+    require(fold < 2, "direction fold");
+    std::vector<double> result(alternatives.count * kDirectionFold);
+    const std::size_t source_offset = fold * kDirectionFold;
+    for (std::size_t alternative = 0; alternative < alternatives.count; ++alternative) {
+        std::copy_n(
+                alternatives.projections.data() +
+                        alternative * kProbes + source_offset,
+                kDirectionFold,
+                result.data() + alternative * kDirectionFold);
+    }
+    return result;
+}
+
+std::vector<double> stored_projection_fold(
+        const ObjectiveAlternatives& alternatives, std::size_t fold) {
+    const std::size_t offset = fold * kDirectionFold;
+    return {alternatives.stored_projections.begin() + offset,
+            alternatives.stored_projections.begin() + offset +
+                    kDirectionFold};
+}
+
+double projection_cross_term(
+        std::span<const double> left, std::size_t left_index,
+        std::span<const double> right, std::size_t right_index,
+        std::size_t samples) {
+    double result = 0;
+    for (std::size_t sample = 0; sample < samples; ++sample) {
+        result += 2.0 * left[left_index * samples + sample] *
+                right[right_index * samples + sample];
+    }
+    return result;
+}
+
+struct ObjectiveFoldAggregate {
+    double production_loss = 0;
+    double independent_loss = 0;
+    double joint_loss = 0;
+    double oracle_loss = 0;
+    double joint_train_cross = 0;
+    double joint_evaluation_cross = 0;
+    std::size_t improved_targets = 0;
+    std::size_t different_choices = 0;
+    std::uint64_t alternative_pairs = 0;
+};
+
+struct ObjectiveResult {
+    std::array<ObjectiveFoldAggregate, 2> folds;
+    double max_production_relative_error = 0;
+};
+
+ObjectiveResult run_objective_diagnostic(
+        const Dataset& base, const IVF& index,
+        const std::vector<Location>& locations,
+        const Population& population,
+        const Reconstructions& reconstructions,
+        const std::filesystem::path& output_dir,
+        bool outcomes) {
+    std::array<std::vector<PackedBit>, 2> maps{
+            build_compacted_bit_map(
+                    kSegmentDimensions[1], kSegmentBits[1] - 1),
+            build_compacted_bit_map(
+                    kSegmentDimensions[2], kSegmentBits[2] - 1)};
+    ObjectiveResult result;
+    std::ofstream per_target;
+    if (outcomes) {
+        per_target.open(output_dir / "objective_per_target.tsv");
+        per_target << "train_fold\teval_fold\ttarget_index\ttarget_id"
+                      "\tleft_alternatives\tright_alternatives"
+                      "\tpairs\tind_left\tind_right\tjoint_left"
+                      "\tjoint_right\toracle_left\toracle_right"
+                      "\tprod_eval_loss\tind_eval_loss\tjoint_eval_loss"
+                      "\toracle_eval_loss\tjoint_train_cross"
+                      "\tjoint_eval_cross\n";
+    }
+
+    for (std::size_t target = 0; target < kObjectiveTargets; ++target) {
+        std::array<ObjectiveAlternatives, 2> alternatives;
+        for (std::size_t local = 0; local < 2; ++local) {
+            const std::size_t segment = local + 1;
+            const auto directions = objective_directions(
+                    base, index, locations, population, target, segment);
+            alternatives[local] = objective_alternatives(
+                    base, index, locations, population, reconstructions,
+                    target, segment, directions, maps[local]);
+            result.max_production_relative_error = std::max(
+                    result.max_production_relative_error,
+                    alternatives[local].max_production_relative_error);
+        }
+        if (!outcomes) continue;
+
+        for (std::size_t train_fold = 0; train_fold < 2; ++train_fold) {
+            const std::size_t eval_fold = 1 - train_fold;
+            const auto left_train = projection_fold(
+                    alternatives[0], train_fold);
+            const auto right_train = projection_fold(
+                    alternatives[1], train_fold);
+            const auto left_eval = projection_fold(
+                    alternatives[0], eval_fold);
+            const auto right_eval = projection_fold(
+                    alternatives[1], eval_fold);
+            const auto stored_left = stored_projection_fold(
+                    alternatives[0], eval_fold);
+            const auto stored_right = stored_projection_fold(
+                    alternatives[1], eval_fold);
+            const auto independent = independent_objective_choice(
+                    left_train, alternatives[0].count,
+                    right_train, alternatives[1].count, kDirectionFold);
+            const auto joint = joint_objective_choice(
+                    left_train, alternatives[0].count,
+                    right_train, alternatives[1].count, kDirectionFold);
+            const auto oracle = joint_objective_choice(
+                    left_eval, alternatives[0].count,
+                    right_eval, alternatives[1].count, kDirectionFold);
+            const double production_loss = combined_objective_loss(
+                    stored_left, 0, stored_right, 0, kDirectionFold);
+            const double independent_loss = combined_objective_loss(
+                    left_eval, independent.left,
+                    right_eval, independent.right, kDirectionFold);
+            const double joint_loss = combined_objective_loss(
+                    left_eval, joint.left,
+                    right_eval, joint.right, kDirectionFold);
+            auto& aggregate = result.folds[train_fold];
+            aggregate.production_loss += production_loss;
+            aggregate.independent_loss += independent_loss;
+            aggregate.joint_loss += joint_loss;
+            aggregate.oracle_loss += oracle.loss;
+            aggregate.joint_train_cross += projection_cross_term(
+                    left_train, joint.left, right_train, joint.right,
+                    kDirectionFold);
+            aggregate.joint_evaluation_cross += projection_cross_term(
+                    left_eval, joint.left, right_eval, joint.right,
+                    kDirectionFold);
+            aggregate.improved_targets += joint_loss < independent_loss;
+            aggregate.different_choices +=
+                    joint.left != independent.left ||
+                    joint.right != independent.right;
+            const std::uint64_t pairs = alternatives[0].count *
+                    alternatives[1].count;
+            aggregate.alternative_pairs += pairs;
+            per_target << train_fold << '\t' << eval_fold << '\t'
+                       << target << '\t' << population.pool[target] << '\t'
+                       << alternatives[0].count << '\t'
+                       << alternatives[1].count << '\t' << pairs << '\t'
+                       << independent.left << '\t' << independent.right
+                       << '\t' << joint.left << '\t' << joint.right << '\t'
+                       << oracle.left << '\t' << oracle.right << '\t'
+                       << std::setprecision(17) << production_loss << '\t'
+                       << independent_loss << '\t' << joint_loss << '\t'
+                       << oracle.loss << '\t'
+                       << projection_cross_term(
+                                  left_train, joint.left, right_train,
+                                  joint.right, kDirectionFold) << '\t'
+                       << projection_cross_term(
+                                  left_eval, joint.left, right_eval,
+                                  joint.right, kDirectionFold) << '\n';
+        }
+    }
+
+    std::ofstream parity(output_dir / "objective_parity.tsv");
+    parity << "check\tvalue\tlimit\tpass\n"
+           << "production_alternative_relative_error\t"
+           << std::setprecision(17) << result.max_production_relative_error
+           << "\t1e-5\t"
+           << (result.max_production_relative_error <= 1e-5 ? 1 : 0)
+           << '\n';
+    require(parity.good(), "write objective parity");
+    require(result.max_production_relative_error <= 1e-5,
+            "objective production alternative parity");
+    if (outcomes) require(per_target.good(), "write objective per-target");
+    return result;
+}
+
+void write_objective_summary(
+        const std::filesystem::path& output_dir,
+        const ObjectiveResult& result) {
+    std::ofstream summary(output_dir / "objective_summary.tsv");
+    summary << "fold\tarm\tmse\trelative_vs_prod"
+               "\trelative_vs_ind\timproved_target_fraction"
+               "\tdifferent_choice_fraction\ttrain_cross"
+               "\teval_cross\talternative_pairs\n";
+    bool passes = true;
+    for (std::size_t fold = 0; fold < 2; ++fold) {
+        const auto& value = result.folds[fold];
+        const double denominator = kObjectiveTargets * kDirectionFold;
+        const double improved = static_cast<double>(value.improved_targets) /
+                kObjectiveTargets;
+        const double different =
+                static_cast<double>(value.different_choices) /
+                kObjectiveTargets;
+        const double relative = value.independent_loss == 0 ? 0 :
+                (value.independent_loss - value.joint_loss) /
+                        value.independent_loss;
+        passes = passes && relative >= 0.05 && improved >= 0.60 &&
+                std::isfinite(value.joint_loss);
+        const std::array<std::pair<const char*, double>, 4> arms{{
+                {"PROD", value.production_loss},
+                {"IND_TRAIN", value.independent_loss},
+                {"JOINT_TRAIN", value.joint_loss},
+                {"JOINT_EVAL_ORACLE", value.oracle_loss}}};
+        for (const auto& [name, loss] : arms) {
+            const double vs_prod = value.production_loss == 0 ? 0 :
+                    (value.production_loss - loss) / value.production_loss;
+            const double vs_ind = value.independent_loss == 0 ? 0 :
+                    (value.independent_loss - loss) / value.independent_loss;
+            summary << fold << '\t' << name << '\t'
+                    << std::setprecision(17) << loss / denominator << '\t'
+                    << vs_prod << '\t' << vs_ind << '\t' << improved << '\t'
+                    << different << '\t' << value.joint_train_cross << '\t'
+                    << value.joint_evaluation_cross << '\t'
+                    << value.alternative_pairs << '\n';
+        }
+    }
+    require(summary.good(), "write objective summary");
+    std::ofstream decision(output_dir / "decision.txt");
+    decision << "decision="
+             << (passes ? "JOINT_LOCAL_ACTIONABLE" : "JOINT_LOCAL_NO_GO")
+             << '\n';
+    for (std::size_t fold = 0; fold < 2; ++fold) {
+        const auto& value = result.folds[fold];
+        const double relative = value.independent_loss == 0 ? 0 :
+                (value.independent_loss - value.joint_loss) /
+                        value.independent_loss;
+        decision << "fold" << fold << "_relative_reduction="
+                 << std::setprecision(17) << relative << '\n'
+                 << "fold" << fold << "_improved_target_fraction="
+                 << static_cast<double>(value.improved_targets) /
+                            kObjectiveTargets << '\n';
+    }
+    require(decision.good(), "write objective decision");
+}
+
 double process_cpu_seconds() {
     timespec value{};
     require(clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &value) == 0,
@@ -971,7 +1351,9 @@ void run(
         const std::filesystem::path& output_dir,
         const std::string& mode) {
     require(mode == "parity-v1" || mode == "frozen-v1" ||
-                    mode == "joint-v1", "frozen mode");
+                    mode == "joint-v1" ||
+                    mode == "objective-parity-v1" ||
+                    mode == "objective-v1", "frozen mode");
     std::filesystem::create_directories(output_dir);
     const double cpu_start = process_cpu_seconds();
     const auto wall_start = std::chrono::steady_clock::now();
@@ -1013,6 +1395,13 @@ void run(
         else
             write_single_decision(output_dir, experiment);
     }
+    if (mode == "objective-parity-v1" || mode == "objective-v1") {
+        const bool outcomes = mode == "objective-v1";
+        const auto objective = run_objective_diagnostic(
+                base, index, locations, population,
+                reconstructions, output_dir, outcomes);
+        if (outcomes) write_objective_summary(output_dir, objective);
+    }
 
     const double cpu_seconds = process_cpu_seconds() - cpu_start;
     const double wall_seconds = std::chrono::duration<double>(
@@ -1031,7 +1420,8 @@ int main(int argc, char** argv) {
         if (argc != 5)
             throw std::invalid_argument(
                     "usage: saq_component_oracle <base.fvecs> <index> "
-                    "<output-dir> <parity-v1|frozen-v1|joint-v1>");
+                    "<output-dir> <parity-v1|frozen-v1|joint-v1|"
+                    "objective-parity-v1|objective-v1>");
         run(argv[1], argv[2], argv[3], argv[4]);
         std::cout << "saq_component_oracle: PASS\n";
         return 0;

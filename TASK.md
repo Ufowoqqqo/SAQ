@@ -1,88 +1,137 @@
-# Active Task: SAQ two-segment feasible-objective static audit
+# Active Task: SAQ base-trained joint-objective viability diagnostic
 
 ## State and question
 
 - Branch: `saq-mixed-radix-query`
-- Base snapshot: `7be0f68`
-- Modes: `IDEATE`, `REVIEW`
+- Base snapshot: `15f8617`
+- Modes: `IMPLEMENT`, `EXPERIMENT`, `REVIEW`
 
-The completed joint-component diagnostic returned `PAIR_ACTIONABLE` for exact
-replacement of `192d@6b + 320d@4b`, and the closest-work review blocked direct
-implementation.  The active static question was:
+The user selected the explicit pivot identified by the static audit:
 
-> Does the fixed SAQ code/rescale feasible set admit any base-only,
-> matched-storage, no-extra-query-work objective that is genuinely
-> non-separable across the two segments?
+> Does a base-trained, estimator-aware joint choice of existing segment-1 and
+> segment-2 CAQ codes obtain material held-out estimator-error improvement over
+> independently chosen codes, without changing the SAQ plan, stored format, or
+> query consumer?
 
-Static result: standard reconstruction and unseen-direction objectives are
-separable, but workload-conditioned objectives need not be.  Empirical
-base-direction estimator MSE is non-separable exactly when the cross-block
-second moment is nonzero on the feasible residual-difference spans.  Pairwise
-ranking loss also has a direct non-separable counterexample.  The coupling is
-introduced by a workload model, not by the SAQ representation itself.
+The smallest hypothesis is that cross-segment workload information is
+actionable rather than merely nonzero.  On a frozen local alternative-code
+set, joint training should reduce held-out estimator MSE relative to
+independent training by at least 5% in both cross-fit folds and improve at
+least 60% of target vectors.  The 5% line is deliberately below, but of the
+same order as, the approximately 9% interaction excess relative to production
+inversion rate in the preceding exact-replacement diagnostic.
 
-The completed evidence and active review are:
+This is an offline base-only mechanism diagnostic.  It is not a production
+encoder, Recall/QPS result, novelty claim, or performance comparison.
 
-- `docs/research/saq_component_oracle_diagnostic_design_2026_08_03.md`;
-- `docs/research/saq_component_oracle_diagnostic_result_2026_08_03.md`;
-- `docs/research/saq_joint_component_oracle_result_2026_08_03.md`;
-- `docs/research/saq_joint_component_closest_primary_work_mechanism_review_2026_08_03.md`;
-- `docs/research/saq_two_segment_feasible_objective_static_audit_2026_08_03.md`.
+## Frozen inputs and population
 
-## Read and write boundary
-
-Allowed reads are production SAQ source, focused diagnostic source/results,
-the research charter, and primary papers.  The two prior diagnostic artifacts
-may be referenced but need not be read again:
+Read only:
 
 - `/rwproject/kdd-db/kluaq/saq/data/gist_sample50k/gist_sample50k_base_pca.fvecs`;
 - `/rwproject/kdd-db/kluaq/saq/data/gist_sample50k/ivf512_b4_caq_adj_seg_pca.index`.
 
-Do not read benchmark queries, ground truth, query-result tables, another
-dataset/index, or generated result payloads beyond the accepted result notes.
-Do not modify production or diagnostic code.  Documentation writes are limited
-to this task file, the decision log, and the focused mechanism review.
+Reuse the deterministic population from the component oracle with seed
+`2026080304`: 256 probes and a disjoint 4,096-row pool.  Use probes `0..127`
+and `128..255` as the two direction folds.  Use the first 32 pool rows as
+fixed target vectors.  Cross-fit twice: train code choices on one direction
+fold and evaluate unchanged choices on the other, then swap folds.
 
-## Fixed scientific boundary
+For each target, construct query residual directions relative to that target's
+stored IVF centroid and apply the existing segment-local rotation exactly as
+the accurate consumer does.
 
-Keep the current PCA view, IVF assignments, five-segment plan, per-segment
-codes/factors, serialized storage, accurate estimator, and query work fixed.
-No per-vector dispatch, extra metadata, query-trained rule, bit/boundary sweep,
-or new codebook family is authorized.
+Forbidden reads: benchmark queries, ground truth, query-result tables, another
+dataset/index, or any previous generated payload beyond accepted notes.
 
-The review must distinguish:
+## Frozen feasible alternatives and arms
 
-- additive estimator error from coupled encoder state;
-- oracle localization from implementable matched-storage improvement;
-- a genuinely SAQ-specific mechanism from direct composition, parameter
-  variation, AQ/CQ, distance-encoded PQ, or generic estimator-aware loss.
+Target only segment 1 (`192d@6b`) and segment 2 (`320d@4b`).  For each segment
+and target, decode the stored production code and include:
 
-## Commands and budget
+1. the production code;
+2. every code obtained by changing exactly one coordinate by `-1`, when legal;
+3. every code obtained by changing exactly one coordinate by `+1`, when legal.
 
-Allowed commands are read-only repository inspection, Git diff/status checks,
-and primary-source retrieval.  Do not compile, run the diagnostic, build an
-index, or execute a method experiment.  Budget: 0.25 CPU-hours, 0.5 wall-hours,
-one thread, and no generated experiment output.
+For every alternative, recompute `rescale=||x||^2/<x,z>` in float64 from the
+decoded normalized grid direction.  Reject only a non-finite or non-positive
+inner product.  Do not add multi-coordinate search, random alternatives,
+learned codebooks, bit changes, rescale fitting, thresholds, or query-trained
+features.
+
+Report these arms at identical serialized bytes and query arithmetic:
+
+- `PROD`: stored codes and rescale;
+- `IND_TRAIN`: independently minimize training direction MSE in each segment,
+  then combine the selected codes;
+- `JOINT_TRAIN`: minimize combined training direction MSE over the Cartesian
+  product of the two alternative sets;
+- `JOINT_EVAL_ORACLE`: minimize on the evaluation directions, reported only as
+  a local diagnostic ceiling and never as a learned method.
+
+## Metrics and decision
+
+Before outcome inspection, require the existing stored/recomputed production,
+norm, rescale, and exact-distance parity checks.  Additionally require the
+decoded production alternative to reproduce the stored segment contribution
+within relative error `1e-5` for all targets and directions.
+
+For each cross-fit fold and combined, report:
+
+- squared accurate-estimator error and relative change versus `PROD` and
+  `IND_TRAIN`;
+- fraction of targets where `JOINT_TRAIN` beats `IND_TRAIN` on evaluation;
+- fraction of targets where joint and independent code choices differ;
+- local-alternative counts and evaluated Cartesian pairs per target;
+- train/evaluation cross-term contributions for the selected alternatives;
+- CPU, wall time, peak RSS, and output bytes.
+
+Decision:
+
+- `JOINT_LOCAL_ACTIONABLE`: in both cross-fit folds, `JOINT_TRAIN` reduces
+  evaluation MSE versus `IND_TRAIN` by at least 5%, improves at least 60% of
+  targets, and has finite deterministic output;
+- otherwise `JOINT_LOCAL_NO_GO`.
+
+The evaluation oracle cannot pass the gate.  A pass authorizes only a later
+method-design review; a fail closes this workload-coupling lead under the
+frozen one-coordinate neighborhood.
+
+## Allowed changes, commands, and budget
+
+Modify only `research/saq_component_oracle/`, this task file, the decision log,
+one design note, and one result note.  Do not modify production `saqlib/`.
+Generated outputs belong under `/tmp/saq-joint-objective-v1/` and must not be
+committed.
+
+Allowed commands are the focused CMake configure/build/test, `parity-v1`, the
+new frozen diagnostic mode, byte reproduction, resource inspection, and Git
+diff/status checks.  Do not build a new index.
+
+Budget: 2 aggregate CPU-hours, 1 wall-hour, one thread, 4 GiB peak RSS, and
+10 MiB generated output.  Stop on parity failure, non-finite arithmetic, or a
+resource-limit breach.
+
+Expected scientific-core change: roughly 200--350 lines in the focused runner
+and 30--80 test lines.  Support should remain below the scientific core and
+reuse the existing reader, parity, population, and resource reporting.
 
 ## Deliverables and done criteria
 
-Done means the focused audit:
+Done means the frozen population and alternatives are recorded; focused tests
+and parity pass before outcome inspection; both cross-fit folds and all four
+arms are complete for 32 targets; one unchanged run reproduces byte-identical
+scientific outputs; costs and limitations are reported; and exactly one frozen
+decision is selected.
 
-1. defines the exact per-segment code/rescale feasible variables;
-2. proves separability for reconstruction, worst-case unseen direction, and
-   isotropic/block-diagonal average-case MSE;
-3. states a necessary and sufficient cross-moment condition for non-separable
-   quadratic estimator loss;
-4. gives CAQ-compatible counterexamples for base-direction and ranking losses;
-5. separates mathematical existence from an authorized or novel method.
+Current blocker: none.  The diagnostic is complete with
+`JOINT_LOCAL_NO_GO`.  In the two cross-fit directions, joint selection changes
+held-out MSE versus independent selection by `+0.0805%` and `-1.3644%`, and
+improves only 15/32 and 13/32 targets.  Primary and unchanged reproduction
+scientific files are byte-identical.  Full result:
+`docs/research/saq_joint_objective_viability_result_2026_08_04.md`.
 
-Current blocker: a scientific choice, not an implementation defect.  The audit
-is complete with `SEPARABLE_STANDARD_OBJECTIVES` and
-`NONSEPARABLE_WORKLOAD_OBJECTIVES_EXIST`.
-
-One concrete next action is for the user to choose whether to close the
-pair-oracle direction or pivot explicitly to base-trained estimator-aware
-joint code selection.  Do not implement an encoder, inspect data covariance,
-or read benchmark queries before that checkpoint.  If the pivot is selected,
-the cheapest next evidence is a frozen base-only projected-cross-term and tiny
-joint upper-bound diagnostic, not a production consumer.
+One concrete next action: record this terminal local negative result in the
+meeting summary when requested.  Do not enlarge the code neighborhood, tune
+the direction split, lower the gate, implement a production consumer, or read
+benchmark queries to rescue this workload-coupling lead.

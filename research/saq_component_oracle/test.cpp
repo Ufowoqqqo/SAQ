@@ -176,6 +176,29 @@ void test_joint_subset_enumeration() {
             "no-small-joint decision");
 }
 
+void test_objective_selection() {
+    using namespace saq_component_oracle;
+    constexpr std::size_t samples = 2;
+    const std::vector<double> left{
+            1.0, 0.0,
+           -1.0, 0.0};
+    const std::vector<double> right{
+            1.0, 0.0,
+           -1.0, 0.0};
+    const auto independent = independent_objective_choice(
+            left, 2, right, 2, samples);
+    require(independent.left == 0 && independent.right == 0,
+            "independent deterministic tie choice");
+    require(independent.loss == 2.0, "independent objective loss");
+    const auto joint = joint_objective_choice(
+            left, 2, right, 2, samples);
+    require(joint.left == 0 && joint.right == 1 && joint.loss == 0.0,
+            "joint cross-term choice");
+    require(combined_objective_loss(
+                    left, joint.left, right, joint.right, samples) == 0.0,
+            "selected joint objective loss");
+}
+
 }  // namespace
 
 int main() {
@@ -184,6 +207,7 @@ int main() {
         test_least_squares_scale();
         test_deterministic_ranking_helpers();
         test_joint_subset_enumeration();
+        test_objective_selection();
         std::cout << "saq_component_oracle_test: PASS\n";
         return 0;
     } catch (const std::exception& error) {
