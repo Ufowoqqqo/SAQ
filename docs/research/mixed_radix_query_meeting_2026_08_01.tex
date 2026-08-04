@@ -8,13 +8,13 @@
 \usepackage{lmodern}
 \usepackage{booktabs,tabularx,array}
 \usepackage{xcolor}
-\hypersetup{hidelinks,pdftitle={Mixed-radix: Natural-data Result and Synthetic Witness}}
+\hypersetup{hidelinks,pdftitle={Mixed-radix: Final Evidence and Closure}}
 \newcommand{\good}[1]{\textcolor{green!45!black}{\textbf{#1}}}
 \newcommand{\bad}[1]{\textcolor{red!75!black}{\textbf{#1}}}
-\title{Original Mixed-radix: What Worked and What Did Not}
-\subtitle{A real mechanism, but no useful natural-data frontier improvement}
+\title{Original Mixed-radix: Final Evidence and Closure}
+\subtitle{A real mechanism, but no stable natural-data method}
 \author{}
-\date{2026-08-01}
+\date{2026-08-04}
 
 \begin{document}
 \begin{frame}\titlepage\end{frame}
@@ -270,19 +270,128 @@ negative result; it does not reverse it.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{13. Claim Boundary and Next Question}
-\begin{block}{What we can now say}
-Fixed-word mixed-radix coding can preserve cardinalities that binary rounding
-cannot, and this can prevent query-result collisions.
-\end{block}
-\begin{alertblock}{What we cannot say}
-We have not shown that the condition is common in real vector data, that it
-improves end-to-end QPS, or that it beats an unrestricted PQ/VQ model.
+\begin{frame}{13. Coordinate Regrouping Was Not the Missing Contribution}
+\small
+Allowing non-adjacent coordinate pairs improved Recall substantially over the
+fixed pairing \((0,1),(2,3),\ldots\).  We then compared our minimum-cost
+perfect matching with OPQ's existing variance-based grouping rule.
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+& search 64 cells & search 1,024 cells\\
+\midrule
+SIFT1M: matching minus OPQ grouping & +0.000253 & +0.000349\\
+GIST1M: matching minus OPQ grouping & +0.000320 & -0.000160\\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{alertblock}{Interpretation}
+``Do not pair coordinates mechanically'' is useful, but already explained by
+known transform-coding practice.  Arbitrary integer radices still add at most
+about 0.00057 Recall over the identical power-of-two pairing.
 \end{alertblock}
-\begin{block}{If we continue}
-The next distinct question is whether base data alone can identify coordinate
-groups whose quantization collisions affect near-neighbour ordering. First
-compute an oracle upper bound; do not immediately build another large system.
+\end{frame}
+
+\begin{frame}{14. Why Reconstruction Error Was Not Enough}
+\footnotesize
+Recall depends on the ordering of complete estimated distances, not on the
+average reconstruction error of one coordinate or segment.
+\begin{block}{The diagnostic question}
+For each database target, replace one stored segment contribution by its exact
+distance while leaving every other estimated contribution unchanged.  How
+many wrong pairwise orderings disappear?
+\end{block}
+\begin{itemize}
+  \item This is an \textbf{oracle upper bound}: it uses information that a
+  deployable compressed code does not store.
+  \item A single segment repaired only about 43--44\% of inversions and missed
+  the frozen absolute-improvement rule.
+  \item Replacing the 192-dimensional, 6-bit segment together with the
+  320-dimensional, 4-bit segment repaired \good{71.1--75.6\%}.
+\end{itemize}
+\begin{alertblock}{What this did and did not establish}
+Two segments jointly contain ranking headroom.  Exact replacement is not an
+encoder, and the nonlinear Recall ordering test can make independent errors
+appear jointly important through cancellation.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{15. Can a Query-unaware Joint Encoder Use That Headroom?}
+\small
+After the SAQ plan is fixed, the two segments' legal codes form a Cartesian
+product.  Reconstruction error and unseen-direction worst-case error separate
+into one objective per segment.  Coupling requires a chosen direction
+distribution.
+\begin{block}{Illustrative cancellation}
+On training directions, two segment errors might be (+2) and (-2), so the
+total error is zero.  On different directions they might become (+2) and
+(+2), so the same jointly selected pair has total error four.  A cancellation
+seen during training need not survive new directions.
+\end{block}
+\begin{alertblock}{Falsifiable hypothesis}
+Choose the two codes jointly using one set of base-derived directions, freeze
+the choices, and evaluate on a disjoint set.  Require at least 5\% lower MSE
+than independent selection in both directions and improvement on at least
+60\% of targets.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}[fragile]{16. Frozen Base-only Cross-fit Test}
+\small
+No benchmark query or ground truth was read.
+\begin{verbatim}
+for each of 32 held-out database targets:
+  alternatives = stored code + every legal one-coordinate +/-1 move
+  train on base directions 0..127:
+    IND   = best code for each segment separately
+    JOINT = best pair over the Cartesian product
+  freeze both choices; evaluate on directions 128..255
+repeat with the two direction folds swapped
+\end{verbatim}
+Both arms use the same alternatives, bytes, analytical rescale, and estimator.
+The evaluation oracle chooses after seeing the held-out directions and is
+reported only as a ceiling, never as a method.
+\end{frame}
+
+\begin{frame}{17. Joint Selection Did Not Generalize}
+\small
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+& train fold 0 & train fold 1\\
+\midrule
+joint MSE change vs independent & +0.0805\% & \bad{-1.3644\%}\\
+targets improved & 15/32 & 13/32\\
+joint and independent choices differ & 31/32 & 29/32\\
+held-out oracle improvement & 16.83\% & 15.92\%\\
+\bottomrule
+\end{tabular}
+\end{center}
+Positive MSE change means an improvement; the negative value means the joint
+choice is worse.
+\begin{alertblock}{Decision: JOINT\_LOCAL\_NO\_GO}
+Good code pairs exist after seeing evaluation directions, but a pair learned
+from disjoint base directions does not predict them.  The observed headroom is
+direction-specific cancellation, not a stable query-unaware rule.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{18. Final Claim Boundary}
+\begin{block}{What remains valid}
+Mixed-radix packing can preserve non-power-of-two Cartesian cardinalities and
+prevent collisions in data deliberately having that structure.
+\end{block}
+\begin{alertblock}{What the natural-data evidence rejects}
+Neither fixed adjacent mixed-radix, optimized coordinate pairing, nor the
+tested base-trained two-segment joint objective produces a stable new
+Recall--speed method beyond the closest controls.
+\end{alertblock}
+\begin{block}{Research decision}
+Close this direct line.  Do not enlarge the local code neighbourhood, tune the
+folds or threshold, or inspect benchmark queries to rescue it.  Continuing
+would require a genuinely new question---for example changing the estimator
+or storing cross-segment information---followed by a new closest-work and
+cost review.
 \end{block}
 \end{frame}
 
@@ -300,6 +409,14 @@ compute an oracle upper bound; do not immediately build another large system.
   \texttt{mixed\_radix\_query\_results\_2026\_08\_01.md}.
   \item Synthetic mechanism result:
   \texttt{mixed\_radix\_synthetic\_witness\_result\_2026\_08\_01.md}.
+  \item Closest grouping baseline:
+  \texttt{nonadjacent\_pairing\_closest\_baseline\_result\_2026\_08\_03.md}.
+  \item Exact component and joint-component oracle results:
+  \texttt{saq\_component\_oracle\_diagnostic\_result\_2026\_08\_03.md};
+  \texttt{saq\_joint\_component\_oracle\_result\_2026\_08\_03.md}.
+  \item Static objective audit and base-trained cross-fit result:
+  \texttt{saq\_two\_segment\_feasible\_objective\_static\_audit\_2026\_08\_03.md};
+  \texttt{saq\_joint\_objective\_viability\_result\_2026\_08\_04.md}.
 \end{itemize}
 \end{frame}
 

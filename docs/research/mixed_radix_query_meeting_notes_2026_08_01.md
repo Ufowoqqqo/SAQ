@@ -1,8 +1,65 @@
 # Mixed-radix meeting 逐页讲稿
 
 对应 deck：`docs/research/mixed_radix_query_meeting_2026_08_01.tex`。
-建议总时间 10--12 分钟。核心是把“机制成立”和“自然数据上没有形成贡献”
-同时讲清楚。
+建议总时间 14--16 分钟。核心是把“机制成立”“自然数据上没有形成贡献”
+以及“后续 oracle 为什么看似有希望、为什么仍不能形成可训练方法”同时讲清楚。
+
+## 2026-08-04 更新：联合目标的终局判断
+
+这部分已经整合进新版 deck 第 14--18 页，不再只是附加分析。
+
+### 一句话结论
+
+两个较大 SAQ segment 的确共同包含显著的事后排序修复空间，但在一组
+base directions 上学到的联合代码选择，不能泛化到另一组 disjoint base
+directions。因此存在的是“看完评估方向后可以利用的误差抵消”，而不是
+稳定、query-unaware、可以部署的联合编码规则。
+
+### 为什么 exact replacement 一开始看起来有希望
+
+我们没有用 reconstruction error 直接推断 Recall，而是做了更接近排序错误
+的诊断。对每个数据库 target，把某个 segment 的近似距离贡献替换成精确
+距离贡献，同时保留其他所有 segment 的近似贡献，再观察原来排错的向量对
+有多少恢复正确顺序。
+
+单独替换 `192d@6b` 或 `320d@4b` segment，只修复约 43%--44% 的 inversion，
+没有达到预先冻结的绝对改善标准；同时替换两者则修复 71.10%--75.57%。
+这说明完整 estimator 中确有两段联合 headroom，但 exact replacement 使用了
+压缩代码中不存在的真实值，只能作为上界，不能直接变成 encoder。
+
+### 为什么需要静态分析和 cross-fit
+
+固定 SAQ plan 后，两段的合法代码集合是 Cartesian product。reconstruction、
+对未知方向的 worst-case inner-product error，以及各 segment 独立的平均误差，
+都会严格分解为两个单独目标。能让它们发生联合选择的，只能是训练方向中
+观察到的跨段误差相关性。
+
+这种相关性容易产生 cancellation：训练方向上第一段误差为 `+2`、第二段为
+`-2` 时，总误差为零；换一组方向后，两者可能都变成 `+2`，总误差就变成
+四。因此不能在同一组方向上训练和验证，必须 cross-fit。
+
+### 冻结实验和结果
+
+- 只读取既有 GIST sample50k base/index，不读取 benchmark query 或 ground truth；
+- 固定 32 个 target，两组各 128 个 disjoint base directions；
+- 每段候选只包含 production code 和所有合法的单坐标 `+1/-1` move；
+- `IND_TRAIN` 分别选择两段代码；`JOINT_TRAIN` 穷举相同候选的 Cartesian
+  product；选择后在另一组 directions 上冻结评估，再交换两折；
+- 通过条件是两折都比 independent 至少降低 5% MSE，并改善至少 60% target。
+
+结果如下：
+
+| train/eval | joint 相对 independent 的 held-out MSE 改善 | 改善 target | held-out oracle 改善 |
+| --- | ---: | ---: | ---: |
+| fold 0 → fold 1 | +0.0805% | 15/32 | 16.83% |
+| fold 1 → fold 0 | -1.3644% | 13/32 | 15.92% |
+
+第二折的负数表示 joint 反而更差。joint 与 independent 虽然在 29/32 和
+31/32 target 上选择了不同代码，却没有稳定收益。held-out oracle 的约 16%
+只能说明“看完答案以后能选得更好”，不能说明训练规则有效。
+
+决定为 `JOINT_LOCAL_NO_GO`。不扩大邻域、不调 folds 或门槛，也不读取
+benchmark queries 来救这条路线。
 
 ## 2026-08-03 更新：非相邻配对的终局判断
 
@@ -203,15 +260,59 @@ Recall，说明已知的简单方差分组已经解释了最大权匹配的大�
 
 ## PDF 第 14 页
 
-> 目前可以声称 mixed-radix 能避免二次幂取整造成的某些代码碰撞，而且
-> 这种差别可以到达 Recall。
+> 接下来我们试过重新安排坐标配对。它相对固定相邻配对确实明显改善
+> Recall，但这里必须补最接近的已有对照。OPQ 已经提出按坐标方差进行
+> 分组；它与我们的最大权匹配虽然产生几乎完全不同的配对，Recall 却只差
+> 万分之几，而且 GIST 上出现符号反转。
 >
-> 不能声称它在真实数据中普遍存在、提高端到端 QPS，或者优于任意 PQ
-> 和 VQ。这个 synthetic 数据本身就是规则的笛卡尔积，强 PQ 也可能做得
-> 很好。
+> 所以有价值的是“不要机械地相邻配对”，而不是最大权匹配或 mixed-radix
+> 形成了新贡献。
+
+## PDF 第 15 页
+
+> reconstruction error 不能直接回答 Recall，所以我们进一步做了排序相关的
+> exact replacement oracle。做法是只把一个 segment 的近似距离贡献换成
+> 精确值，其他部分完全不动，再数能修复多少排错的向量对。
 >
-> 如果继续，下一问题应该是能否只根据 base 数据找到真正影响近邻排序
-> 的碰撞。先算 oracle 上界，再决定是否值得实现新方法。
+> 单段只能修复大约四成三到四成四；两段一起能修复七成一到七成六。这说明
+> 两段共同有 headroom，但 exact value 根本不在压缩代码里，因此它只是
+> 事后上界，不是一个可部署方法。
+
+## PDF 第 16 页
+
+> 静态分析告诉我们，固定 SAQ plan 后，常见的 reconstruction 和未知方向
+> 误差目标都会按 segment 分解。联合性只能来自训练 directions 中观察到的
+> 误差相关性。
+>
+> 举个简单例子：训练方向上两段误差是正二和负二，刚好抵消；换一组方向，
+> 它们可能都变成正二。这就是为什么必须在一组 base directions 上选代码，
+> 冻结后去另一组 directions 上验证，而不能用同一批方向证明自己。
+
+## PDF 第 17 页
+
+> 实验只用 base/index 数据。每段候选是原 production code 加所有合法的
+> 单坐标加一或减一。independent arm 分别为两段选最优代码；joint arm 在
+> 完全相同的候选集合上找最优代码对。然后交换两组各 128 个 directions
+> 做 cross-fit。benchmark query 和 ground truth 都没有读取。
+
+## PDF 第 18 页
+
+> joint 相对 independent 在第一折只改善百分之零点零八，第二折反而下降
+> 百分之一点三六；改善的 target 也只有十五个和十三个，远低于冻结门槛。
+>
+> 有意思的是，看完 held-out directions 再选代码的 oracle 仍能改善约百分之
+> 十六。这恰恰说明好代码依赖当前 directions，训练时看到的 cancellation
+> 不能泛化，而不是我们缺少一次更大的搜索。
+
+## PDF 第 19 页
+
+> 最终边界是：mixed-radix 的编码机制真实，synthetic 正例成立；但固定
+> 相邻版本、坐标重分组以及当前 base-trained 两段联合目标，都没有形成超过
+> closest controls 的稳定自然数据方法。
+>
+> 这条 direct line 现在关闭。继续扩大邻域、修改 fold 或降低门槛都是事后
+> 救结果。如果以后继续，必须明确放宽科学问题，例如允许改变 estimator
+> 或保存少量跨段信息，并重新做 closest-work 和成本审查。
 
 ## 一页问答卡
 
@@ -250,3 +351,24 @@ A：它在训练重构误差上确实更精确，但 Recall 只关心近邻排�
 A：不是。非相邻配对明显优于固定相邻配对；被否定的是“当前经验量化误差
 最大权匹配具有独立优势”。现有证据支持使用合理的坐标分组优化，不支持
 把当前匹配器作为新方法继续包装。
+
+**Q：两段 exact replacement 能修复七成以上排序错误，为什么还要关闭？**
+
+A：因为 exact replacement 使用了压缩代码里没有保存的真实 segment 距离。
+它回答“如果这些误差消失，最多可能怎样”，不回答“encoder 如何只用相同
+字节消除它们”。真正用 base directions 学联合代码后，held-out 改善没有
+通过，因此 oracle headroom 没有转化成方法。
+
+**Q：held-out oracle 还有约 16% 收益，是不是应该扩大候选邻域？**
+
+A：不是。held-out oracle 在看过评估 directions 后选答案，本来就会受益。
+关键对照是用另一组 directions 训练后能否泛化；两折都没有达到 5%，其中
+一折还变差。扩大邻域会增加事后可选答案，也可能加重过拟合，不能修复这个
+因果缺口。
+
+**Q：这是否证明所有 estimator-aware quantization 都不可能？**
+
+A：没有。结论只覆盖冻结的两段、单坐标 `+1/-1` 候选、相同 SAQ plan、
+相同存储和不增加查询工作的 base-trained joint objective。改变 estimator、
+增加跨段 metadata 或提出不同表示都是新问题，需要重新比较 closest work
+和完整成本，不能算当前结果的自然延伸。
