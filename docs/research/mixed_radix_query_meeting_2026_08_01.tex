@@ -25,8 +25,9 @@ The original fixed-adjacent mixed-radix method is \textbf{not competitive on
 SIFT1M or GIST1M} under the frozen Recall--speed evaluation.
 \end{alertblock}
 \begin{itemize}
-  \item At 32 bytes, it becomes exactly the power-of-two control.
-  \item At 64 bytes, Recall changes by at most about one tenth of one
+  \item At 32 bytes per database vector, it becomes exactly the power-of-two
+  control.
+  \item At 64 bytes per database vector, Recall changes by at most about one tenth of one
   percentage point, with both positive and negative signs.
   \item A synthetic positive control now confirms that the intended mechanism
   itself is real and reaches the query result.
@@ -40,7 +41,7 @@ natural data simply does not contain enough of this structure for a useful win.
 \begin{frame}{2. Scope Correction: Which ``Attempt 4'' Is This?}
 \begin{columns}[T]
 \column{0.47\textwidth}
-\begin{block}{Original target: this deck}
+\begin{block}{Original idea: this deck}
 Two adjacent scalar quantizers share one packed word. Their numbers of levels
 may be arbitrary positive integers.
 \end{block}
@@ -108,7 +109,7 @@ two real prototypes can receive the same stored code.
 \end{frame}
 
 \begin{frame}[fragile]{5. Training, Encoding, and Querying}
-\small
+\footnotesize
 \begin{verbatim}
 Training, using base/index data only:
   for each adjacent coordinate pair:
@@ -125,23 +126,25 @@ Querying:
   decode one label per pair, add table values, keep the best 100 IDs
 \end{verbatim}
 \begin{alertblock}{Controlled difference}
-Arbitrary arm A and power-of-two arm D use the same pairs, bytes, candidates,
-table builder, and scan loop. Only the allowed values of \(K_1,K_2\) differ.
+From here on, A means arbitrary integer level counts and D means the
+power-of-two control. They use the same pairs, bytes, candidates, table builder,
+and scan loop. Only the allowed values of \(K_1,K_2\) differ.
 \end{alertblock}
 \end{frame}
 
 \begin{frame}{6. What We Actually Compared}
-\small
+\footnotesize
 \begin{tabularx}{\textwidth}{>{\bfseries}p{0.26\textwidth} X}
-A128 & arbitrary integer radices, such as \(15\times17=255\)\\
-D128 FULL & identical method, but each radix must be a power of two\\
-PQ / OPQ & standard product-quantization baselines for deployability context\\
+A: arbitrary & arbitrary integer level counts, such as \(15\times17=255\)\\
+D: power-of-two & identical method, but each level count must be a power of two\\
+PQ / OPQ & Product Quantization / Optimized Product Quantization baselines\\
+coordinate view & first 128 PCA residual coordinates, forming 64 pairs\\
 data & SIFT1M and GIST1M\\
 payload & exactly 32 or 64 code bytes per database vector\\
-index sizes & 1,024 and 4,096 coarse database cells\\
+index partitions & database divided into 1,024 or 4,096 coarse regions\\
 quality & Recall@100: how many of the true nearest 100 are returned\\
 speed & single-query latency and 12-core queries per second\\
-search range & nine fixed numbers of cells searched per query\\
+search effort & nine fixed numbers of regions searched per query\\
 \end{tabularx}
 \begin{block}{Fairness rule}
 A and D search exactly the same candidates and perform the same table work.
@@ -150,15 +153,19 @@ The allocation was fixed before reading query results.
 \end{frame}
 
 \begin{frame}{7. What the Natural-data Allocator Chose}
+The 128-coordinate view forms 64 coordinate pairs; each pair contains two PCA
+coordinates and shares one packed label.
+\medskip
 \begin{columns}[T]
 \column{0.47\textwidth}
 \begin{block}{32-byte vectors: 4 bits per pair}
-Every A group selected \(4\times4\). Therefore A and D were literally the
-same representation and returned identical rankings.
+All 64 coordinate pairs selected \(4\times4\). Therefore A and D were
+literally the same representation and returned identical rankings.
 \end{block}
 \column{0.47\textwidth}
 \begin{block}{64-byte vectors: 8 bits per pair}
-Only 10--24 of 64 groups differed from \(16\times16\). Almost all were
+Depending on the dataset and index configuration, only 10--24 of the 64
+coordinate pairs differed from \(16\times16\). Almost all were
 \(15\times17\) or \(17\times15\), using 255 of 256 paid states.
 \end{block}
 \end{columns}
@@ -171,11 +178,11 @@ to its partner.
 
 \begin{frame}{8. Natural-data Recall Result}
 \small
-At the same number of searched cells, A-minus-D Recall@100 was:
+At the same number of searched database regions, A-minus-D Recall@100 was:
 \begin{center}
 \begin{tabular}{lrrr}
 \toprule
-Dataset & coarse cells & minimum & maximum\\
+Dataset & total index partitions & minimum & maximum\\
 \midrule
 GIST1M & 1,024 & -0.00096 & +0.00054\\
 GIST1M & 4,096 & -0.00106 & +0.00017\\
@@ -193,17 +200,18 @@ ranges, so there is no stable quality improvement.
 
 \begin{frame}{9. Speed and Baseline Result}
 \begin{itemize}
-  \item A/D throughput ratio: \(0.9918\) to \(1.0069\); group medians are
+  \item A/D throughput ratio: \(0.9918\) to \(1.0069\); configuration medians are
   essentially 1.
   \item A/D p95 latency ratio: \(0.9897\) to \(1.0251\).
   \item This is expected: A and D deliberately execute the same complete-table
-  consumer and nearly the same representation.
+  query routine and nearly the same representation.
   \item PQ and OPQ generally reach higher Recall in the useful high-quality
   region.
 \end{itemize}
 \begin{alertblock}{Natural-data decision}
-The fixed-adjacent mixed-radix method did not move a useful Recall--speed
-frontier. A tiny nonzero difference is not a database-systems contribution.
+The fixed-adjacent mixed-radix method provided neither clearly higher Recall
+at similar speed nor clearly higher speed at similar Recall. A tiny nonzero
+difference is not a database-systems contribution.
 \end{alertblock}
 \scriptsize Complete matrix: 512 accepted passes; 32.36 CPU-hours;
 17.09 wall-hours; all eight correctness tests pass.
@@ -232,7 +240,7 @@ Matching \(4\times4\) and \(16\times16\) cases are zero-effect controls.
 \begin{center}
 \begin{tabular}{lcccc}
 \toprule
-Case & A shape & D shape & code collisions A/D & Recall A/D\\
+Case & A shape & D shape & merged prototype pairs A/D & Recall A/D\\
 \midrule
 positive B4 & \(3\times5\) & \(4\times4\) & 0 / 3 & \good{1.000 / 0.800}\\
 null B4 & \(4\times4\) & \(4\times4\) & 0 / 0 & 1.000 / 1.000\\
@@ -259,7 +267,7 @@ exactly \(3\times5\) and \(15\times17\)\\
 Does this avoid collisions? & no material measured benefit & yes, 3 and 15
 control collisions removed\\
 Does it improve Recall? & tiny, mixed-sign changes & yes, by 0.200 and 0.0588\\
-Does it beat PQ/OPQ? & no useful frontier movement & not tested or claimed\\
+Does it beat PQ/OPQ? & no better Recall--speed trade-off & not tested or claimed\\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -274,7 +282,8 @@ negative result; it does not reverse it.
 \small
 Allowing non-adjacent coordinate pairs improved Recall substantially over the
 fixed pairing \((0,1),(2,3),\ldots\).  We then compared our minimum-cost
-perfect matching with OPQ's existing variance-based grouping rule.
+perfect matching with the variance-based grouping rule from Optimized Product
+Quantization (OPQ).
 \begin{center}
 \begin{tabular}{lrr}
 \toprule
@@ -295,62 +304,65 @@ about 0.00057 Recall over the identical power-of-two pairing.
 \begin{frame}{14. Why Reconstruction Error Was Not Enough}
 \footnotesize
 Recall depends on the ordering of complete estimated distances, not on the
-average reconstruction error of one coordinate or segment.
+average reconstruction error of one coordinate block.  Here a segment means
+a block of coordinates encoded and scored together.
 \begin{block}{The diagnostic question}
-For each database target, replace one stored segment contribution by its exact
-distance while leaving every other estimated contribution unchanged.  How
-many wrong pairwise orderings disappear?
+For each database vector being re-encoded, replace one block's approximate
+distance by its true distance while leaving every other block approximate.
+How many wrongly ordered vector pairs become correct?
 \end{block}
 \begin{itemize}
-  \item This is an \textbf{oracle upper bound}: it uses information that a
-  deployable compressed code does not store.
-  \item A single segment repaired only about 43--44\% of inversions and missed
+  \item This is an \textbf{idealized exact-distance control}: it uses
+  information that a deployable compressed code does not store.
+  \item A single coordinate block repaired only about 43--44\% of ordering errors and missed
   the frozen absolute-improvement rule.
-  \item Replacing the 192-dimensional, 6-bit segment together with the
-  320-dimensional, 4-bit segment repaired \good{71.1--75.6\%}.
+  \item Jointly replacing a 192-coordinate block at 6 bits per coordinate and
+  a 320-coordinate block at 4 bits per coordinate repaired \good{71.1--75.6\%}.
 \end{itemize}
 \begin{alertblock}{What this did and did not establish}
-Two segments jointly contain ranking headroom.  Exact replacement is not an
-encoder, and the nonlinear Recall ordering test can make independent errors
-appear jointly important through cancellation.
+The two blocks jointly contain many potentially removable ordering errors.
+True-distance replacement is not an encoder; the Recall ordering test can make
+separate errors look jointly important when they cancel each other.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{15. Can a Query-unaware Joint Encoder Use That Headroom?}
+\begin{frame}{15. Can Base Data Learn a Joint Encoder?}
 \small
-After the SAQ plan is fixed, the two segments' legal codes form a Cartesian
-product.  Reconstruction error and unseen-direction worst-case error separate
-into one objective per segment.  Coupling requires a chosen direction
-distribution.
+With the existing SAQ index layout fixed, every legal code for the first block
+can be combined with every legal code for the second block. Standard
+reconstruction and worst-case errors still split into one objective per block;
+joint benefit can only come from error correlations in chosen test directions.
 \begin{block}{Illustrative cancellation}
-On training directions, two segment errors might be (+2) and (-2), so the
+On training directions, two block errors might be (+2) and (-2), so the
 total error is zero.  On different directions they might become (+2) and
 (+2), so the same jointly selected pair has total error four.  A cancellation
 seen during training need not survive new directions.
 \end{block}
 \begin{alertblock}{Falsifiable hypothesis}
-Choose the two codes jointly using one set of base-derived directions, freeze
-the choices, and evaluate on a disjoint set.  Require at least 5\% lower MSE
-than independent selection in both directions and improvement on at least
-60\% of targets.
+Choose the two codes jointly using directions constructed from base vectors,
+not benchmark queries. Freeze the choices and test them on a disjoint half.
+Require at least 5\% lower mean squared estimator error than separate selection
+in both train/test swaps, and improvement on at least 60\% of database vectors.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}[fragile]{16. Frozen Base-only Cross-fit Test}
+\begin{frame}[fragile]{16. Train on One Half, Test on the Other, Then Swap}
 \small
-No benchmark query or ground truth was read.
+No benchmark query or ground truth was read. Each listed database vector is
+one whose two stored block codes are being reconsidered.
 \begin{verbatim}
-for each of 32 held-out database targets:
+for each of 32 fixed database vectors:
   alternatives = stored code + every legal one-coordinate +/-1 move
-  train on base directions 0..127:
-    IND   = best code for each segment separately
-    JOINT = best pair over the Cartesian product
-  freeze both choices; evaluate on directions 128..255
-repeat with the two direction folds swapped
+  train on base-derived directions 0..127:
+    SEPARATE = best code for each block separately
+    JOINT    = best of every possible two-block code combination
+  freeze both choices; test on directions 128..255
+repeat after swapping the two direction halves
 \end{verbatim}
-Both arms use the same alternatives, bytes, analytical rescale, and estimator.
-The evaluation oracle chooses after seeing the held-out directions and is
-reported only as a ceiling, never as a method.
+Both methods use the same alternatives, bytes, scaling calculation, and
+distance formula.
+The post-hoc test-set ceiling chooses only after seeing the test directions;
+it shows remaining local opportunity but is not a deployable method.
 \end{frame}
 
 \begin{frame}{17. Joint Selection Did Not Generalize}
@@ -358,40 +370,40 @@ reported only as a ceiling, never as a method.
 \begin{center}
 \begin{tabular}{lrr}
 \toprule
-& train fold 0 & train fold 1\\
+& train half 0 & train half 1\\
 \midrule
-joint MSE change vs independent & +0.0805\% & \bad{-1.3644\%}\\
-targets improved & 15/32 & 13/32\\
-joint and independent choices differ & 31/32 & 29/32\\
-held-out oracle improvement & 16.83\% & 15.92\%\\
+mean squared error reduction vs separate & +0.0805\% & \bad{-1.3644\%}\\
+database vectors improved & 15/32 & 13/32\\
+joint and separate choices differ & 31/32 & 29/32\\
+post-hoc test-set ceiling & 16.83\% & 15.92\%\\
 \bottomrule
 \end{tabular}
 \end{center}
-Positive MSE change means an improvement; the negative value means the joint
-choice is worse.
-\begin{alertblock}{Decision: JOINT\_LOCAL\_NO\_GO}
-Good code pairs exist after seeing evaluation directions, but a pair learned
-from disjoint base directions does not predict them.  The observed headroom is
-direction-specific cancellation, not a stable query-unaware rule.
+The first row is error reduction, so larger is better; the negative value
+means that joint selection made the error worse.
+\begin{alertblock}{Decision: the joint rule failed on the separate test half}
+Good code pairs exist after seeing the test directions, but choices learned
+from the other half do not predict them. The apparent opportunity comes from
+direction-specific error cancellation, not a stable base-trained rule.
 \end{alertblock}
 \end{frame}
 
 \begin{frame}{18. Final Claim Boundary}
 \begin{block}{What remains valid}
-Mixed-radix packing can preserve non-power-of-two Cartesian cardinalities and
-prevent collisions in data deliberately having that structure.
+Mixed-radix packing can preserve combinations of non-power-of-two level counts
+and prevent collisions in data deliberately having that structure.
 \end{block}
 \begin{alertblock}{What the natural-data evidence rejects}
 Neither fixed adjacent mixed-radix, optimized coordinate pairing, nor the
-tested base-trained two-segment joint objective produces a stable new
-Recall--speed method beyond the closest controls.
+tested base-trained two-block joint objective produces a stable new method
+with a better Recall--speed trade-off than the established comparisons.
 \end{alertblock}
 \begin{block}{Research decision}
-Close this direct line.  Do not enlarge the local code neighbourhood, tune the
-folds or threshold, or inspect benchmark queries to rescue it.  Continuing
-would require a genuinely new question---for example changing the estimator
-or storing cross-segment information---followed by a new closest-work and
-cost review.
+Close this line. Do not enlarge the local candidate set, change the data split
+or threshold, or inspect benchmark queries to rescue it. Continuing would
+require a genuinely new question---for example changing the distance formula
+or storing information shared across coordinate blocks---followed by a fresh
+review of the closest prior work and its costs.
 \end{block}
 \end{frame}
 
