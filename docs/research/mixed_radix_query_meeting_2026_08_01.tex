@@ -132,7 +132,52 @@ and scan loop. Only the allowed values of \(K_1,K_2\) differ.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{6. What We Actually Compared}
+\begin{frame}{6. Closest Work Already Covers Most Primitives}
+\footnotesize
+\begin{tabularx}{\textwidth}{>{\bfseries}p{0.24\textwidth} X}
+Muresan--Effros & exact one-dimensional quantization with an arbitrary
+integer number of reconstruction levels\\
+Brandt transform coding & PCA, bit allocation, trained scalar quantizers,
+packed words, and table-based ANN scanning\\
+Adaptive Bit Allocation PQ & unequal integer bit budgets across independent
+PQ subspaces\\
+Finite Scalar Quantization & Cartesian products of scalar level sets,
+including non-power-of-two factor sizes, mapped to one integer index\\
+Quicker ADC & packed irregular-width PQ codes and the resulting lookup/SIMD
+costs\\
+PQ / OPQ / block VQ & more general subspace codebooks or learned space
+decompositions under comparable payloads\\
+\end{tabularx}
+\begin{alertblock}{Important boundary}
+No one paper is byte-for-byte identical to our implementation, but arbitrary
+level counts, bit allocation, mixed-radix indexing, packed lookup, and learned
+space decomposition are established primitives.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{7. What Could Still Count as a Contribution?}
+\small
+\begin{block}{Not enough by itself}
+A new combination of integer cardinalities, a lower reconstruction objective,
+or a different packing layout is vulnerable to the objection that it directly
+composes known quantization and lookup techniques.
+\end{block}
+\begin{alertblock}{The narrow remaining empirical claim}
+Under the same database payload and a fully counted query consumer, arbitrary
+cardinalities must produce a material, reproducible Recall--speed Pareto point
+that strong PQ/OPQ and power-of-two controls do not reach.
+\end{alertblock}
+\begin{itemize}
+  \item Count codebooks, radix metadata, table construction, lookup work,
+  index build time, and memory---not payload bytes alone.
+  \item Show that the gain comes from arbitrary cardinalities, not a stronger
+  transform, coordinate grouping, optimizer, or extra query work.
+  \item The following experiments test this narrow claim; they do not claim
+  that the mixed-radix formula itself is new.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{8. What We Actually Compared}
 \footnotesize
 \begin{tabularx}{\textwidth}{>{\bfseries}p{0.26\textwidth} X}
 A: arbitrary & arbitrary integer level counts, such as \(15\times17=255\)\\
@@ -152,7 +197,7 @@ The allocation was fixed before reading query results.
 \end{block}
 \end{frame}
 
-\begin{frame}{7. What the Natural-data Allocator Chose}
+\begin{frame}{9. What the Natural-data Allocator Chose}
 The 128-coordinate view forms 64 coordinate pairs; each pair contains two PCA
 coordinates and shares one packed label.
 \medskip
@@ -176,7 +221,7 @@ to its partner.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{8. Natural-data Recall Result}
+\begin{frame}{10. Natural-data Recall Result}
 \small
 At the same number of searched database regions, A-minus-D Recall@100 was:
 \begin{center}
@@ -198,7 +243,7 @@ ranges, so there is no stable quality improvement.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{9. Speed and Baseline Result}
+\begin{frame}{11. Speed and Baseline Result}
 \begin{itemize}
   \item A/D throughput ratio: \(0.9918\) to \(1.0069\); configuration medians are
   essentially 1.
@@ -217,7 +262,7 @@ difference is not a database-systems contribution.
 17.09 wall-hours; all eight correctness tests pass.
 \end{frame}
 
-\begin{frame}{10. Why Add a Synthetic Positive Control?}
+\begin{frame}{12. Why Add a Synthetic Positive Control?}
 The natural result left two different explanations:
 \begin{enumerate}
   \item the mixed-radix mechanism is valid, but the required data structure is
@@ -235,7 +280,7 @@ Positive cases are \(3\times5\) in 4 bits and \(15\times17\) in 8 bits.
 Matching \(4\times4\) and \(16\times16\) cases are zero-effect controls.
 \end{frame}
 
-\begin{frame}{11. Synthetic Result: The Mechanism Reaches Recall}
+\begin{frame}{13. Synthetic Result: The Mechanism Reaches Recall}
 \small
 \begin{center}
 \begin{tabular}{lcccc}
@@ -256,7 +301,7 @@ runs were byte-for-byte identical.
 \end{block}
 \end{frame}
 
-\begin{frame}{12. Put the Two Results Together}
+\begin{frame}{14. Put the Two Results Together}
 \begin{center}
 \begin{tabularx}{0.94\textwidth}{>{\bfseries}p{0.24\textwidth} X X}
 \toprule
@@ -278,7 +323,7 @@ negative result; it does not reverse it.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{13. Coordinate Regrouping Was Not the Missing Contribution}
+\begin{frame}{15. Coordinate Regrouping Was Not the Missing Contribution}
 \small
 Allowing non-adjacent coordinate pairs improved Recall substantially over the
 fixed pairing \((0,1),(2,3),\ldots\).  We then compared our minimum-cost
@@ -302,7 +347,7 @@ Arbitrary integer radices still add at most about 0.00057 Recall.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{14. Why Reconstruction Error Was Not Enough}
+\begin{frame}{16. Why Reconstruction Error Was Not Enough}
 \footnotesize
 Recall depends on the ordering of complete estimated distances, not on the
 average reconstruction error of one coordinate block.  Here a segment means
@@ -327,7 +372,7 @@ separate errors look jointly important when they cancel each other.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{15. Can Base Data Learn a Joint Encoder?}
+\begin{frame}{17. Can Base Data Learn a Joint Encoder?}
 \small
 With the existing SAQ index layout fixed, every legal code for the first block
 can be combined with every legal code for the second block. Standard
@@ -347,7 +392,7 @@ in both train/test swaps, and improvement on at least 60\% of database vectors.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}[fragile]{16. Train on One Half, Test on the Other, Then Swap}
+\begin{frame}[fragile]{18. Train on One Half, Test on the Other, Then Swap}
 \small
 No benchmark query or ground truth was read. Each listed database vector is
 one whose two stored block codes are being reconsidered.
@@ -366,7 +411,7 @@ The post-hoc test-set ceiling chooses only after seeing the test directions;
 it shows remaining local opportunity but is not a deployable method.
 \end{frame}
 
-\begin{frame}{17. Joint Selection Did Not Generalize}
+\begin{frame}{19. Joint Selection Did Not Generalize}
 \small
 \begin{center}
 \begin{tabular}{lrr}
@@ -389,7 +434,7 @@ direction-specific error cancellation, not a stable base-trained rule.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{18. Final Claim Boundary}
+\begin{frame}{20. Final Claim Boundary}
 \begin{block}{What remains valid}
 Mixed-radix packing can preserve combinations of non-power-of-two level counts
 and prevent collisions in data deliberately having that structure.
@@ -410,13 +455,26 @@ review of the closest prior work and its costs.
 
 \begin{frame}{References and Evidence}
 \tiny
+\begin{columns}[T]
+\column{0.49\textwidth}
 \begin{itemize}
+  \item Muresan and Effros. ``Quantization as Histogram Segmentation.''
+  DCC 2002.
+  \item Brandt. ``Transform Coding for Fast Approximate Nearest Neighbor
+  Search.'' CVPR 2010.
   \item J\'egou, Douze, and Schmid. ``Product Quantization for Nearest
   Neighbor Search.'' TPAMI 2011.
   \item Ge et al. ``Optimized Product Quantization.'' CVPR 2013,
   Section 3.2.4, ``Eigenvalue Allocation.''
+  \item Guo et al. ``Adaptive Bit Allocation Product Quantization.''
+  Neurocomputing 2016.
+  \item Andr\'e et al. ``Quicker ADC.'' TPAMI 2021.
+  \item Mentzer et al. ``Finite Scalar Quantization.'' ICLR 2024.
   \item Gao and Long. ``RaBitQ.'' SIGMOD 2024.
   \item Li et al. ``SAQ.'' 2025.
+\end{itemize}
+\column{0.49\textwidth}
+\begin{itemize}
   \item Frozen mixed-radix design:
   \texttt{mixed\_radix\_query\_design\_2026\_07\_30.md}.
   \item Natural-query result:
@@ -432,6 +490,7 @@ review of the closest prior work and its costs.
   \texttt{saq\_two\_segment\_feasible\_objective\_static\_audit\_2026\_08\_03.md};
   \texttt{saq\_joint\_objective\_viability\_result\_2026\_08\_04.md}.
 \end{itemize}
+\end{columns}
 \end{frame}
 
 \end{document}
