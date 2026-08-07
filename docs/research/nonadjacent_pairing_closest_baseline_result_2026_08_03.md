@@ -10,7 +10,8 @@ not pass the frozen closest-baseline gate.  It is therefore closed as a
 standalone pairing contribution, and this result does not justify a DP-OPQ or
 full-matrix expansion.
 
-Against Eigenvalue Allocation (`D_EA`), `D_MWM` changes Recall@100 by only
+Against our Eigenvalue Allocation specialization (`D_EA`), `D_MWM` changes
+Recall@100 by only
 `+0.000253/+0.000349` on SIFT1M and `+0.000320/-0.000160` on GIST1M at
 `nprobe=64/1024`.  The GIST signs are inconsistent, and no dataset reaches
 the predeclared `+0.002` improvement.  Query throughput remains within the
@@ -32,18 +33,26 @@ allocator, table consumer, and four-candidate scan are identical across arms.
 The six arms are:
 
 - `D_MWM`: exact minimum-weight perfect matching under fitted pair SSE;
-- `D_EA`: OPQ's variance-based Eigenvalue Allocation specialized to 64
-  two-coordinate buckets;
+- `D_EA`: our two-coordinate specialization of the Eigenvalue Allocation rule
+  in Ge et al.'s parametric OPQ method (OPQ-P), using 64 buckets of capacity
+  two;
 - `D_RANDOM_0..2`: three preregistered Fisher--Yates permutations, paired
   consecutively;
 - `D_ADJ`: fixed adjacent pairs.
 
-The OPQ paper specifies descending eigenvalue assignment to the currently
-smallest non-full product.  The paper does not fully specify how an empty
-bucket's product is represented.  This experiment records its deterministic,
-scale-invariant two-coordinate specialization: fill every bucket once before
-assigning second coordinates, then use bucket-index tie breaking.  It should
-not be described as byte-level parity with an official OPQ implementation.
+Section 3.2.4, "Eigenvalue Allocation," of the OPQ paper specifies descending
+eigenvalue assignment to the non-full bucket with the smallest current
+eigenvalue product.  It describes allocation, buckets, and subspaces; it does
+not name a "grouping rule."  The paper also does not fully specify how an
+empty bucket's product is represented.  This experiment therefore records our
+deterministic, scale-invariant two-coordinate specialization: fill every
+bucket once before assigning second coordinates, then use bucket-index tie
+breaking.  The implementation uses each coordinate's one-level scalar SSE as
+the eigenvalue/variance proxy; for the fixed fitting sample this differs from
+variance only by a common scale factor.  It is neither full OPQ nor byte-level
+parity with an official OPQ implementation.  Primary source: [Ge et al.,
+Section 3.2.4, CVPR
+2013](https://openaccess.thecvf.com/content_cvpr_2013/papers/Ge_Optimized_Product_Quantization_2013_CVPR_paper.pdf).
 
 ## Base-only fit evidence
 
@@ -60,8 +69,8 @@ required nearest-neighbour benefit.
 
 The two methods are not accidentally producing the same pair table: only
 2/64 SIFT pairs and 1/64 GIST pairs are identical.  Their near-equal Recall is
-therefore evidence that very different variance-balancing pairings are already
-equivalent at the tested decision boundary, not a duplicate-arm artifact.
+therefore evidence that very different coordinate pairings are equivalent at
+the tested decision boundary, not a duplicate-arm artifact.
 
 ## Recall and throughput
 
@@ -84,10 +93,11 @@ and output hash were identical across all three repetitions in each cell.
 | GIST1M | D_ADJ | 0.609280 | 3,853.9 | 0.658050 | 412.5 |
 
 The controls are informative.  Non-adjacent random pairing already improves
-over adjacency, while Eigenvalue Allocation captures nearly all of MWM's
-remaining gain.  Thus the earlier `D_FLEX` improvement mainly demonstrated
-that adjacent grouping was weak; it did not isolate a material benefit from
-the empirical pair-SSE graph or its exact matching solver.
+over adjacency, while the two-coordinate Eigenvalue Allocation specialization
+captures nearly all of MWM's remaining gain.  Thus the earlier `D_FLEX`
+improvement mainly demonstrated that adjacent grouping was weak; it did not
+isolate a material benefit from the empirical pair-SSE graph or its exact
+matching solver.
 
 ## Correctness, reproducibility, and cost
 
@@ -130,8 +140,9 @@ Generated indexes and measurements remain under
 The result supports three bounded statements:
 
 1. non-adjacent pairing is materially better than fixed adjacency here;
-2. a known variance-allocation baseline explains almost all of the accepted
-   MWM pilot improvement;
+2. the tested two-coordinate specialization of OPQ-P's Eigenvalue Allocation
+   explains almost all of the accepted MWM pilot improvement under this
+   scalar consumer;
 3. the extra fitted-SSE optimality of MWM does not pass through to a material,
    stable Recall improvement under the unchanged consumer.
 

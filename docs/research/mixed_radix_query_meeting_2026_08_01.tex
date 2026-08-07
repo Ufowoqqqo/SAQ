@@ -282,22 +282,23 @@ negative result; it does not reverse it.
 \small
 Allowing non-adjacent coordinate pairs improved Recall substantially over the
 fixed pairing \((0,1),(2,3),\ldots\).  We then compared our minimum-cost
-perfect matching with the variance-based grouping rule from Optimized Product
-Quantization (OPQ).
+perfect matching with our two-coordinate specialization of the Eigenvalue
+Allocation rule in parametric OPQ (Ge et al., Section 3.2.4).
 \begin{center}
 \begin{tabular}{lrr}
 \toprule
 & search 64 cells & search 1,024 cells\\
 \midrule
-SIFT1M: matching minus OPQ grouping & +0.000253 & +0.000349\\
-GIST1M: matching minus OPQ grouping & +0.000320 & -0.000160\\
+SIFT1M: matching minus 2D allocation control & +0.000253 & +0.000349\\
+GIST1M: matching minus 2D allocation control & +0.000320 & -0.000160\\
 \bottomrule
 \end{tabular}
 \end{center}
 \begin{alertblock}{Interpretation}
-``Do not pair coordinates mechanically'' is useful, but already explained by
-known transform-coding practice.  Arbitrary integer radices still add at most
-about 0.00057 Recall over the identical power-of-two pairing.
+Under our frozen two-coordinate scalar consumer, ``do not pair coordinates
+mechanically'' is useful, but the tested OPQ-P-inspired control already
+explains nearly all of the gain.  This is not a comparison with full OPQ.
+Arbitrary integer radices still add at most about 0.00057 Recall.
 \end{alertblock}
 \end{frame}
 
@@ -412,7 +413,8 @@ review of the closest prior work and its costs.
 \begin{itemize}
   \item J\'egou, Douze, and Schmid. ``Product Quantization for Nearest
   Neighbor Search.'' TPAMI 2011.
-  \item Ge et al. ``Optimized Product Quantization.'' CVPR 2013.
+  \item Ge et al. ``Optimized Product Quantization.'' CVPR 2013,
+  Section 3.2.4, ``Eigenvalue Allocation.''
   \item Gao and Long. ``RaBitQ.'' SIGMOD 2024.
   \item Li et al. ``SAQ.'' 2025.
   \item Frozen mixed-radix design:

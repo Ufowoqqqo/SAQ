@@ -99,11 +99,12 @@ orthogonal matrix representing the space decomposition.  The paper states
 explicitly that any coordinate reordering is representable by that orthogonal
 matrix, so its search space contains every pairing/permutation used here.
 
-The parametric method is especially close.  It first aligns data by PCA, then
-solves a combinatorial balanced-partition problem by greedy Eigenvalue
-Allocation: sorted principal components are assigned to fixed-capacity
-subspace buckets to balance products of eigenvalues.  Thus it already learns
-which non-adjacent PCA coordinates should share a subspace.  Its
+The parametric method is especially close.  Section 3.2.4, "Eigenvalue
+Allocation," first aligns data by PCA and then applies a greedy balanced
+partition: sorted principal components are assigned to fixed-capacity
+subspace buckets to balance products of eigenvalues.  The paper calls this
+allocation into buckets or subspaces, not a "grouping rule."  Thus it already
+learns which non-adjacent PCA coordinates should share a subspace.  Its
 non-parametric method learns a general dense rotation and codebooks and is
 reported as equivalent to Cartesian k-means under the same initialization.
 
@@ -121,7 +122,9 @@ empirical scalar curves, and solving that restricted partition exactly.
 Those restrictions are useful for a low-overhead consumer, but they make the
 method a specialization rather than a broader decomposition model.
 
-Primary source: [Ge et al., Optimized Product Quantization](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/opq_tr.pdf).
+Primary source: [Ge et al., *Optimized Product Quantization*, Section 3.2.4,
+PDF page 5 / proceedings page 2950 (CVPR
+2013)](https://openaccess.thecvf.com/content_cvpr_2013/papers/Ge_Optimized_Product_Quantization_2013_CVPR_paper.pdf).
 
 ### 3. Cartesian K-Means
 

@@ -201,10 +201,10 @@ These are artifact correctness findings, not mixed-radix contributions.
 
 ## 2026-08-03: closest-baseline experiment closes standalone MWM pairing
 
-- Scope: identical dyadic consumers for empirical-SSE matching (`D_MWM`),
-  OPQ-style Eigenvalue Allocation (`D_EA`), three frozen random pairings, and
-  adjacency on SIFT1M/GIST1M at `nlist=4096`, 64 bytes, and
-  `nprobe={64,1024}`.
+- Scope: identical dyadic consumers for empirical-SSE matching (`D_MWM`), our
+  two-coordinate specialization of OPQ-P Eigenvalue Allocation (`D_EA`),
+  three frozen random pairings, and adjacency on SIFT1M/GIST1M at
+  `nlist=4096`, 64 bytes, and `nprobe={64,1024}`.
 - Evidence: relative to `D_EA`, `D_MWM` changes Recall@100 by only
   `+0.000253/+0.000349` on SIFT and `+0.000320/-0.000160` on GIST.  It never
   reaches the frozen `+0.002` line, and GIST has mixed signs.  QPS remains

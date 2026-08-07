@@ -36,8 +36,9 @@ production consumer, or inspect benchmark queries to rescue it.
   and prevent collisions in deliberately structured synthetic data.
 - Fixed adjacent mixed-radix did not move a useful natural-data
   Recall--speed frontier on SIFT1M or GIST1M.
-- Non-adjacent pairing helped relative to fixed adjacency, but the closest OPQ
-  variance-grouping control explained nearly all of that gain.
+- Non-adjacent pairing helped relative to fixed adjacency, but our
+  two-coordinate specialization of OPQ-P's Eigenvalue Allocation explained
+  nearly all of that gain under the frozen scalar consumer.
 - Exact two-segment replacement exposed ranking headroom, but it is an oracle,
   not an encoder.
 - The frozen base-only joint objective did not generalize across direction
