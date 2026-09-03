@@ -52,6 +52,7 @@ struct CoarseState {
     std::unique_ptr<faiss::Index> owner;
     faiss::IndexFlatL2* index = nullptr;
     std::unique_ptr<structured2d::admission::FvecsWriter> writer;
+    std::unique_ptr<structured2d::admission::FvecsWriter> full_writer;
 };
 
 void extract(
@@ -91,11 +92,18 @@ void extract(
                         output / ("residual_nlist" + std::to_string(nlist) +
                                   ".fvecs"),
                         kHead);
+        state.full_writer =
+                std::make_unique<structured2d::admission::FvecsWriter>(
+                        output / ("residual_nlist" + std::to_string(nlist) +
+                                  "_full.fvecs"),
+                        dimensions);
         states.push_back(std::move(state));
     }
 
     structured2d::admission::FvecsWriter pca_writer(
             output / "pca_head128.fvecs", kHead);
+    structured2d::admission::FvecsWriter pca_full_writer(
+            output / "pca_full.fvecs", dimensions);
     std::ifstream base(common / "base_pca.fvecs", std::ios::binary);
     std::ifstream raw(raw_path, std::ios::binary);
     if (!base || !raw) throw std::runtime_error("open base input");
@@ -112,6 +120,7 @@ void extract(
     std::vector<float> parity_vectors(kParityRows * dimensions);
     std::vector<float> head(kHead);
     std::vector<float> residual(kHead);
+    std::vector<float> full_residual(dimensions);
     double maximum_pca_difference = 0;
     for (std::size_t position = 0; position < indices.size(); ++position) {
         const auto row = indices[position];
@@ -153,6 +162,7 @@ void extract(
         }
         std::copy_n(vector.begin(), kHead, head.begin());
         pca_writer.write(head);
+        pca_full_writer.write(vector);
 
         for (auto& state : states) {
             const std::uint32_t list = state.assignments[row];
@@ -163,10 +173,17 @@ void extract(
             for (std::size_t coordinate = 0; coordinate < kHead; ++coordinate)
                 residual[coordinate] = head[coordinate] - centroid[coordinate];
             state.writer->write(residual);
+            for (std::size_t coordinate = 0; coordinate < dimensions; ++coordinate)
+                full_residual[coordinate] = vector[coordinate] - centroid[coordinate];
+            state.full_writer->write(full_residual);
         }
     }
     pca_writer.close();
-    for (auto& state : states) state.writer->close();
+    pca_full_writer.close();
+    for (auto& state : states) {
+        state.writer->close();
+        state.full_writer->close();
+    }
 
     for (const auto& state : states) {
         std::vector<float> distances(kParityRows);
@@ -184,6 +201,7 @@ void extract(
     std::ofstream note(output / "STAGE_SOURCE.txt");
     note << "Rows follow the supplied frozen u64 index order.\n"
             "PCA is the first 128 coordinates of the full-dimensional transform.\n"
+            "Full-dimensional PCA and residual panels are also included.\n"
             "Residual routing uses the corresponding full-dimensional coarse index "
             "and saved base assignment.\n"
          << "raw_to_saved_pca_max_abs_difference="

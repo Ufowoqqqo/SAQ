@@ -5,10 +5,10 @@
 - Active branch: `saq-correlated-pair-allocation`
 - Branch base: `d305578`; completed raw-base diagnostic: `8a8cb7c`;
   completed representation-stage attribution: `ad1018e`
-- Active mode: base-only experiment and closest-primary-work review completed
-- Current blocker: the result has not shown an opportunity relative to SAQ's
-  existing segmentation/bit-allocation planner. A production consumer is not
-  justified by the uniform-group comparison.
+- Active mode: base-only experiment, closest-primary-work review, and SAQ
+  opportunity decomposition completed
+- Current blocker: the matched-byte post-rotation opportunity is 0%, below the
+  frozen 5% threshold. A production consumer is not scientifically justified.
 
 The completed raw diagnostic found stable strong pairwise association but
 failed the 5% correlation-selected allocation screen. GIST fixed-adjacent
@@ -136,10 +136,17 @@ established prior work. The current diagnostic is a direct composition and is
 not a standalone method contribution. Only a narrower shared-factor,
 fine-grained SAQ representation/consumer question remains open.
 
+That narrower question was tested in
+`docs/research/correlated_pair_allocation_saq_opportunity_decomposition_2026_09_03.md`.
+At matched payload and factor bytes, a fixed segment-local rotation removes
+the apparent pair-allocation opportunity: both the SAQ surrogate and empirical
+uniform-lattice curves select the existing uniform width for every pair on
+both residual stages, datasets, and fold directions. The frozen decision is
+`STOP_CURRENT_POST_ROTATION_PAIR_ALLOCATION`.
+
 ## Concrete next action
 
-Using the already restored base-derived state, compare the current SAQ planner
-with a CAQ-representable, shared-factor mixed-width oracle at matched payload
-and factor bytes. Stop if the remaining held-out reconstruction opportunity is
-below 5% on either dataset; do not implement the local-PCA/Lloyd query
-consumer.
+Do not implement the local-PCA/Lloyd or post-rotation mixed-width consumer.
+Any continuation would have to change the scientific question to a joint
+transform/allocation design and first distinguish it from transform coding,
+OPQ, BAPQ, and DSPQ; no such continuation is active.
