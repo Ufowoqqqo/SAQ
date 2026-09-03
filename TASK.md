@@ -3,11 +3,12 @@
 ## Branch, base, and current state
 
 - Active branch: `saq-correlated-pair-allocation`
-- Branch base: `d305578`; completed raw-base diagnostic: `8a8cb7c`
-- Active mode: base-only experiment completed; scientific interpretation
-  checkpoint
-- Current blocker: none for the frozen diagnostic. A production consumer is
-  outside this task and requires closest-primary-work and SAQ mapping review.
+- Branch base: `d305578`; completed raw-base diagnostic: `8a8cb7c`;
+  completed representation-stage attribution: `ad1018e`
+- Active mode: base-only experiment and closest-primary-work review completed
+- Current blocker: the result has not shown an opportunity relative to SAQ's
+  existing segmentation/bit-allocation planner. A production consumer is not
+  justified by the uniform-group comparison.
 
 The completed raw diagnostic found stable strong pairwise association but
 failed the 5% correlation-selected allocation screen. GIST fixed-adjacent
@@ -128,9 +129,17 @@ GIST adjacent-group allocation remains positive after PCA and IVF
 residualization, but strongest-correlation pairing is not the supported
 mechanism.
 
+The closest-primary-work decision is documented in
+`docs/research/correlated_pair_allocation_closest_primary_work_review_2026_09_03.md`.
+Unequal bit allocation between transformed components or PQ subspaces is
+established prior work. The current diagnostic is a direct composition and is
+not a standalone method contribution. Only a narrower shared-factor,
+fine-grained SAQ representation/consumer question remains open.
+
 ## Concrete next action
 
-Perform a closest-primary-work review of transform coding and block-level
-adaptive bit allocation, then statically identify what—if anything—is
-SAQ-specific about applying the confirmed residual-group signal. Do not build
-a query consumer before that distinction is clear.
+Using the already restored base-derived state, compare the current SAQ planner
+with a CAQ-representable, shared-factor mixed-width oracle at matched payload
+and factor bytes. Stop if the remaining held-out reconstruction opportunity is
+below 5% on either dataset; do not implement the local-PCA/Lloyd query
+consumer.
