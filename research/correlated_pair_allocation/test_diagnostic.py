@@ -19,7 +19,14 @@ class DiagnosticTest(unittest.TestCase):
         for group in range(subject.GROUPS):
             scale = 100.0 if group == 0 else 1.0
             fit = {bits: scale * 2.0 ** (-bits) for bits in range(6, 11)}
-            curves.append(subject.PairCurve(fit, fit.copy(), {bits: (bits // 2, bits - bits // 2) for bits in range(6, 11)}))
+            curves.append(subject.PairCurve(
+                fit,
+                fit.copy(),
+                {bits: (bits // 2, bits - bits // 2) for bits in range(6, 11)},
+                scale,
+                scale,
+                1.0,
+            ))
         allocation = subject.allocate_bits(curves)
         self.assertEqual(sum(allocation), subject.TOTAL_BITS)
         self.assertGreater(allocation[0], subject.UNIFORM_BITS)
@@ -51,6 +58,18 @@ class DiagnosticTest(unittest.TestCase):
         second = subject.pair_curve(fit, evaluation, (0, 1))
         self.assertEqual(first.fit_sse, second.fit_sse)
         self.assertEqual(first.splits, second.splits)
+
+    def test_ordered_stage_panel(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "stage.fvecs"
+            vector = np.arange(subject.DIMENSIONS, dtype="<f4")
+            with path.open("wb") as output:
+                for row in range(subject.SAMPLE_ROWS):
+                    output.write(np.array([subject.DIMENSIONS], dtype="<i4").tobytes())
+                    output.write((vector + row).tobytes())
+            values = subject.read_ordered_panel(path)
+            self.assertEqual(values.shape, (subject.SAMPLE_ROWS, subject.DIMENSIONS))
+            self.assertEqual(values[7, 11], 18.0)
 
 
 if __name__ == "__main__":

@@ -43,6 +43,9 @@ class PairCurve:
     fit_sse: dict[int, float]
     eval_sse: dict[int, float]
     splits: dict[int, tuple[int, int]]
+    total_variance: float
+    determinant: float
+    eigenvalue_ratio: float
 
 
 def read_sample(path: Path, indices: np.ndarray) -> np.ndarray:
@@ -68,6 +71,21 @@ def read_sample(path: Path, indices: np.ndarray) -> np.ndarray:
     if not np.all(headers == source_dimensions):
         raise ValueError(f"{path}: inconsistent selected-row dimensions")
     return np.asarray(mapped[indices, 1 : DIMENSIONS + 1], dtype=np.float64)
+
+
+def read_ordered_panel(path: Path) -> np.ndarray:
+    expected_bytes = SAMPLE_ROWS * (DIMENSIONS + 1) * 4
+    if path.stat().st_size != expected_bytes:
+        raise ValueError(f"{path}: stage panel size")
+    mapped = np.memmap(
+        path, dtype="<f4", mode="r", shape=(SAMPLE_ROWS, DIMENSIONS + 1)
+    )
+    if not np.all(mapped[:, 0].view("<i4") == DIMENSIONS):
+        raise ValueError(f"{path}: stage panel dimensions")
+    values = np.asarray(mapped[:, 1:], dtype=np.float64)
+    if not np.all(np.isfinite(values)):
+        raise ValueError(f"{path}: non-finite stage value")
+    return values
 
 
 def sample_indices(dataset_offset: int) -> np.ndarray:
@@ -150,17 +168,20 @@ def eigenvalue_allocation_pairs(variance: np.ndarray) -> list[Pair]:
     return result
 
 
-def canonical_basis(fit_pair: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def canonical_basis(
+    fit_pair: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     mean = fit_pair.mean(axis=0, dtype=np.float64)
     centered = fit_pair - mean
     covariance = centered.T @ centered / (fit_pair.shape[0] - 1)
-    _, basis = np.linalg.eigh(covariance)
+    eigenvalues, basis = np.linalg.eigh(covariance)
+    eigenvalues = np.maximum(eigenvalues[::-1], 0.0)
     basis = basis[:, ::-1]
     for column in range(2):
         pivot = int(np.argmax(np.abs(basis[:, column])))
         if basis[pivot, column] < 0:
             basis[:, column] *= -1
-    return mean, basis
+    return mean, basis, eigenvalues
 
 
 def labels_for(values: np.ndarray, centers: np.ndarray) -> np.ndarray:
@@ -196,7 +217,7 @@ def scalar_curve(fit: np.ndarray, evaluation: np.ndarray) -> ScalarCurve:
 
 
 def pair_curve(fit: np.ndarray, evaluation: np.ndarray, pair: Pair) -> PairCurve:
-    mean, basis = canonical_basis(fit[:, pair])
+    mean, basis, eigenvalues = canonical_basis(fit[:, pair])
     fit_projected = (fit[:, pair] - mean) @ basis
     eval_projected = (evaluation[:, pair] - mean) @ basis
     axes = [
@@ -225,7 +246,16 @@ def pair_curve(fit: np.ndarray, evaluation: np.ndarray, pair: Pair) -> PairCurve
             axes[0].eval_sse[first_bits] + axes[1].eval_sse[second_bits]
         )
         splits[group_bits] = (first_bits, second_bits)
-    return PairCurve(fit_sse, eval_sse, splits)
+    smaller = float(eigenvalues[1])
+    ratio = float(eigenvalues[0] / smaller) if smaller > 0 else float("inf")
+    return PairCurve(
+        fit_sse,
+        eval_sse,
+        splits,
+        float(eigenvalues.sum()),
+        float(eigenvalues.prod()),
+        ratio,
+    )
 
 
 def allocate_bits(curves: list[PairCurve]) -> list[int]:
@@ -282,8 +312,20 @@ def overlap(first: list[Pair], second: list[Pair]) -> int:
     return len(set(first) & set(second))
 
 
+def finite_correlation(first: np.ndarray, second: np.ndarray) -> float:
+    finite = np.isfinite(first) & np.isfinite(second)
+    if np.count_nonzero(finite) < 2:
+        return float("nan")
+    selected_first = first[finite]
+    selected_second = second[finite]
+    if np.std(selected_first) == 0 or np.std(selected_second) == 0:
+        return float("nan")
+    return float(np.corrcoef(selected_first, selected_second)[0, 1])
+
+
 def analyze_direction(
     dataset: str,
+    stage: str,
     fold: str,
     fit: np.ndarray,
     evaluation: np.ndarray,
@@ -307,6 +349,7 @@ def analyze_direction(
     correlation_rows = [
         {
             "dataset": dataset,
+            "stage": stage,
             "fold": fold,
             "dim1": first,
             "dim2": second,
@@ -334,9 +377,22 @@ def analyze_direction(
             curve.eval_sse[bits] for curve, bits in zip(curves, allocated)
         )
         association = association_row(pairs, fit_correlation, eval_correlation)
+        heldout_gain_78 = np.array(
+            [curve.eval_sse[7] - curve.eval_sse[8] for curve in curves]
+        )
+        heldout_gain_89 = np.array(
+            [curve.eval_sse[8] - curve.eval_sse[9] for curve in curves]
+        )
+        pair_association = np.array(
+            [abs(float(fit_correlation[pair])) for pair in pairs]
+        )
+        total_variance = np.array([curve.total_variance for curve in curves])
+        determinants = np.array([curve.determinant for curve in curves])
+        eigenvalue_ratios = np.array([curve.eigenvalue_ratio for curve in curves])
         summary_rows.append(
             {
                 "dataset": dataset,
+                "stage": stage,
                 "fold": fold,
                 "plan": plan_name,
                 **association,
@@ -357,6 +413,14 @@ def analyze_direction(
                 "all_pair_eval_abs_p50": float(np.quantile(all_eval_absolute, 0.50)),
                 "all_pair_eval_abs_p90": float(np.quantile(all_eval_absolute, 0.90)),
                 "all_pair_eval_abs_p99": float(np.quantile(all_eval_absolute, 0.99)),
+                "corr_assoc_gain78": finite_correlation(pair_association, heldout_gain_78),
+                "corr_variance_gain78": finite_correlation(total_variance, heldout_gain_78),
+                "corr_determinant_gain78": finite_correlation(determinants, heldout_gain_78),
+                "corr_eigenratio_gain78": finite_correlation(eigenvalue_ratios, heldout_gain_78),
+                "corr_assoc_gain89": finite_correlation(pair_association, heldout_gain_89),
+                "corr_variance_gain89": finite_correlation(total_variance, heldout_gain_89),
+                "corr_determinant_gain89": finite_correlation(determinants, heldout_gain_89),
+                "corr_eigenratio_gain89": finite_correlation(eigenvalue_ratios, heldout_gain_89),
             }
         )
         for group, (pair, curve, bits) in enumerate(zip(pairs, curves, allocated)):
@@ -364,6 +428,7 @@ def analyze_direction(
             pair_rows.append(
                 {
                     "dataset": dataset,
+                    "stage": stage,
                     "fold": fold,
                     "plan": plan_name,
                     "group": group,
@@ -371,6 +436,11 @@ def analyze_direction(
                     "dim2": pair[1],
                     "fit_correlation": float(fit_correlation[pair]),
                     "eval_correlation": float(eval_correlation[pair]),
+                    "fit_total_variance": curve.total_variance,
+                    "fit_covariance_determinant": curve.determinant,
+                    "fit_eigenvalue_ratio": curve.eigenvalue_ratio,
+                    "heldout_gain_7_to_8": curve.eval_sse[7] - curve.eval_sse[8],
+                    "heldout_gain_8_to_9": curve.eval_sse[8] - curve.eval_sse[9],
                     "group_bits": bits,
                     "pc1_bits": first_bits,
                     "pc2_bits": second_bits,
@@ -385,6 +455,7 @@ def analyze_direction(
                 curve_rows.append(
                     {
                         "dataset": dataset,
+                        "stage": stage,
                         "fold": fold,
                         "plan": plan_name,
                         "group": group,
@@ -416,30 +487,54 @@ def write_tsv(path: Path, rows: list[dict[str, object]]) -> None:
         writer.writerows(rows)
 
 
-def run_dataset(dataset: str, path: Path, offset: int, output: Path) -> None:
+def run_dataset(
+    dataset: str,
+    path: Path,
+    offset: int,
+    output: Path,
+    stages_directory: Path | None,
+) -> None:
     started_cpu = time.process_time()
     started_wall = time.monotonic()
     indices = sample_indices(offset)
-    values = read_sample(path, indices)
-    folds = {"A_TO_B": (values[:FOLD_ROWS], values[FOLD_ROWS:]),
-             "B_TO_A": (values[FOLD_ROWS:], values[:FOLD_ROWS])}
+    stage_values = {"RAW": read_sample(path, indices)}
+    if stages_directory is not None:
+        stage_values.update(
+            {
+                "PCA_HEAD128": read_ordered_panel(
+                    stages_directory / "pca_head128.fvecs"
+                ),
+                "RESIDUAL_NLIST1024": read_ordered_panel(
+                    stages_directory / "residual_nlist1024.fvecs"
+                ),
+                "RESIDUAL_NLIST4096": read_ordered_panel(
+                    stages_directory / "residual_nlist4096.fvecs"
+                ),
+            }
+        )
     all_summary: list[dict[str, object]] = []
     all_pairs: list[dict[str, object]] = []
     all_curves: list[dict[str, object]] = []
     all_correlations: list[dict[str, object]] = []
-    correlation_plans: dict[str, list[Pair]] = {}
-    for fold, (fit, evaluation) in folds.items():
-        summary, pairs, curves, correlations, correlation_plan = analyze_direction(
-            dataset, fold, fit, evaluation
-        )
-        all_summary.extend(summary)
-        all_pairs.extend(pairs)
-        all_curves.extend(curves)
-        all_correlations.extend(correlations)
-        correlation_plans[fold] = correlation_plan
+    correlation_plans: dict[tuple[str, str], list[Pair]] = {}
+    for stage, values in stage_values.items():
+        folds = {
+            "A_TO_B": (values[:FOLD_ROWS], values[FOLD_ROWS:]),
+            "B_TO_A": (values[FOLD_ROWS:], values[:FOLD_ROWS]),
+        }
+        for fold, (fit, evaluation) in folds.items():
+            summary, pairs, curves, correlations, correlation_plan = analyze_direction(
+                dataset, stage, fold, fit, evaluation
+            )
+            all_summary.extend(summary)
+            all_pairs.extend(pairs)
+            all_curves.extend(curves)
+            all_correlations.extend(correlations)
+            correlation_plans[(stage, fold)] = correlation_plan
     for row in all_summary:
         row["corr_pair_overlap_across_folds"] = overlap(
-            correlation_plans["A_TO_B"], correlation_plans["B_TO_A"]
+            correlation_plans[(row["stage"], "A_TO_B")],
+            correlation_plans[(row["stage"], "B_TO_A")],
         )
     write_tsv(output / f"{dataset}_summary.tsv", all_summary)
     write_tsv(output / f"{dataset}_pairs.tsv", all_pairs)
@@ -459,6 +554,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--sift", type=Path, required=True)
     parser.add_argument("--gist", type=Path, required=True)
+    parser.add_argument("--sift-stages", type=Path)
+    parser.add_argument("--gist-stages", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--frozen", action="store_true", required=True)
     return parser.parse_args()
@@ -466,6 +563,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if (args.sift_stages is None) != (args.gist_stages is None):
+        raise ValueError("both stage directories must be provided together")
     if args.output.exists():
         raise ValueError(f"output already exists: {args.output}")
     args.output.mkdir(parents=True)
@@ -481,11 +580,14 @@ def main() -> int:
         f"openblas_num_threads={os.environ.get('OPENBLAS_NUM_THREADS', 'unset')}",
         "correlation_pairing=deterministic_strongest_edge_first_greedy",
         "quantizer=local_2d_pca_plus_deterministic_1d_lloyd",
-        "claim_limit=raw_base_coordinates_not_saq_residuals_or_query_evidence",
+        "stages=raw_only" if args.sift_stages is None else
+        "stages=raw,pca_head128,residual_nlist1024,residual_nlist4096",
+        "claim_limit=base_only_reconstruction_not_query_evidence",
     ]
     (args.output / "metadata.txt").write_text("\n".join(metadata) + "\n")
-    run_dataset("SIFT1M", args.sift, 0, args.output)
-    run_dataset("GIST1M_HEAD128", args.gist, 1, args.output)
+    run_dataset("SIFT1M" if args.sift_stages else "SIFT10M_SLICE1M",
+                args.sift, 0, args.output, args.sift_stages)
+    run_dataset("GIST1M_HEAD128", args.gist, 1, args.output, args.gist_stages)
     return 0
 
 

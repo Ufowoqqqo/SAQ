@@ -49,6 +49,9 @@ add_executable(structured_2d_build_faiss_arm
   dataset_io.cpp faiss_pool.cpp build_faiss_arm.cpp)
 add_executable(structured_2d_prepare_head
   dataset_io.cpp prepare_head.cpp)
+add_executable(correlated_pair_extract_stages
+  dataset_io.cpp
+  ../correlated_pair_allocation/extract_stage_panels.cpp)
 add_executable(structured_2d_build_s_arm
   ${SHARED_SOURCES}
   admission.cpp dataset_io.cpp full_index.cpp build_s_arm.cpp)
@@ -119,6 +122,7 @@ foreach(target
     structured_2d_faiss_pool_test
     structured_2d_build_faiss_arm
     structured_2d_prepare_head
+    correlated_pair_extract_stages
     structured_2d_build_s_arm
     structured_2d_build_dv_arms
     mixed_radix_build_a_arm

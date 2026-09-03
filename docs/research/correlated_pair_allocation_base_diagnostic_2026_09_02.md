@@ -21,7 +21,9 @@ block.
 ## Frozen boundary
 
 The runner uses only the first 1,000,000 base rows and the first 128 raw
-coordinates of SIFT10M and GIST1M.  A fixed seed selects 16,384 rows and splits
+coordinates of SIFT10M and GIST1M. The SIFT input is explicitly a
+`SIFT10M_SLICE1M` object; its prefix hash does not match official SIFT1M and it
+must not be labeled SIFT1M. A fixed seed selects 16,384 rows and splits
 them into two folds of 8,192 rows.  Each fold is used once for fitting and once
 for held-out evaluation.  No query, ground truth, Recall, QPS result, IVF
 assignment, or previous outcome is read.
@@ -58,8 +60,8 @@ The allocation hypothesis nevertheless fails its frozen screen:
 
 | Dataset | Fit direction | Pairing | Held-out gain from allocation |
 | --- | --- | --- | ---: |
-| SIFT1M | A to B | CORR_GREEDY | 3.110% |
-| SIFT1M | B to A | CORR_GREEDY | 4.139% |
+| SIFT10M slice1m | A to B | CORR_GREEDY | 3.110% |
+| SIFT10M slice1m | B to A | CORR_GREEDY | 4.139% |
 | GIST1M head128 | A to B | CORR_GREEDY | 1.487% |
 | GIST1M head128 | B to A | CORR_GREEDY | 1.541% |
 

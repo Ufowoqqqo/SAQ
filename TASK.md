@@ -1,128 +1,136 @@
-# Current Task: correlated-pair resource-allocation diagnostic
+# Current Task: SAQ representation-stage pair-allocation attribution
 
-## Branch and base
+## Branch, base, and current state
 
 - Active branch: `saq-correlated-pair-allocation`
-- Base: `d305578` (`saq-mixed-radix-query`)
-- The mixed-radix result at the base remains closed evidence. This task tests a
-  different independent variable and does not reopen within-pair radix tuning.
+- Branch base: `d305578`; completed raw-base diagnostic: `8a8cb7c`
+- Active mode: base-only experiment completed; scientific interpretation
+  checkpoint
+- Current blocker: none for the frozen diagnostic. A production consumer is
+  outside this task and requires closest-primary-work and SAQ mapping review.
 
-## Research question
+The completed raw diagnostic found stable strong pairwise association but
+failed the 5% correlation-selected allocation screen. GIST fixed-adjacent
+groups nevertheless gained 5.731%/5.872%, motivating this attribution task.
 
-Do base vectors contain stable pairs of strongly associated dimensions, and
-do the resulting two-dimensional blocks have sufficiently different marginal
-rate--distortion curves to justify allocating a fixed total bit budget across
-dimension pairs rather than fixing the same budget for every pair?
+## Research question and hypothesis
 
-The allocation unit is a two-dimensional block such as `(D1,D2)`. The first
-diagnostic must not optimize the split between `D1` and `D2` using arbitrary
-mixed radices and present that as the tested mechanism.
+At which representation stage does GIST's adjacent-group budget
+heterogeneity arise, and is a group's marginal return predicted by association
+strength, total variance, covariance determinant, or eigenvalue imbalance?
 
-## Falsifiable hypothesis and decision
+The stages are the same deterministically selected base rows represented as:
 
-On disjoint deterministic base-only folds:
+1. raw coordinates;
+2. full-dimensional PCA coordinates, restricted to the first 128 only after
+   the full transform;
+3. IVF residual coordinates for `nlist=1024`; and
+4. IVF residual coordinates for `nlist=4096`.
 
-1. correlation-selected pairs retain the sign and substantial magnitude of
-   their fitted association on the held-out fold; and
-2. under the same total bit budget, fit-fold allocation across those pairs
-   lowers held-out reconstruction error relative to eight bits per pair by a
-   material amount, rather than merely moving bits among unstable pairs.
+The working hypothesis is that the positive GIST-adjacent result persists in
+at least one actual SAQ residual view and is explained more directly by
+block-level rate--distortion statistics than by Pearson correlation alone.
+Failure means the raw-view lead does not survive the production-relevant
+transform/routing representation and should not proceed to a consumer.
 
-For this first diagnostic, `5%` held-out reconstruction reduction in both
-cross-fit directions is the materiality screen. Failure is evidence against
-this simple correlation-driven allocation mechanism, not against every
-block-quantization or estimator-aware method. Passing permits a later
-closest-primary-work and exact-consumer design; it is not Recall or systems
-performance evidence.
+## Authoritative input identity
 
-## Inputs and relevant paths
+The historical common state used official TexMex ANN_SIFT1M and ANN_GIST1M
+members. Required identities are:
 
-Allowed base inputs:
+- SIFT learn: `331bc82b6a0e89465776a3ba0c2113e0bd0cceaa014ec3ed639bc8b981af72ea`;
+- SIFT base: `21f66e2975057b5728ba56de1c825bac4f4d89d596609ae985741c6242631816`;
+- GIST learn: `9b864d69993ffea89f8547c0a1f993727c39152ee040fb48b6de28f5c986ed17`;
+- GIST base: `73418110328f5aa522d9f6b0cd9115a6c515dc44e3c48420e506ddeddbdbdbc0`.
 
-- `/rwproject/kdd-db/kluaq/dataset/sift10m/sift10m_base.fvecs`, restricted to
-  its first 1,000,000 rows and first 128 dimensions;
-- `/rwproject/kdd-db/kluaq/dataset/gist/gist_base.fvecs`, restricted initially
-  to its first 128 dimensions so the two datasets have the same 64-pair,
-  512-bit diagnostic boundary.
+The persistent GIST base matches its historical hash. The first one million
+rows of the locally available `sift10m_base.fvecs` hash to
+`dfe8337c52e5250f6e824c0389a027c5d39d30a243a59e949463462f446503c9`
+and are not SIFT1M. The earlier raw diagnostic's SIFT label must therefore be
+treated as `SIFT10M_SLICE1M`; it cannot stand in for historical SIFT1M.
 
-Relevant reusable source and evidence:
+Official archive identities from the historical binding are:
 
-- `research/mixed_radix_matching/` for deterministic matching utilities and
-  earlier pair controls;
-- `research/a4_or_c/core.*` for scalar allocation semantics when useful;
-- `research/structured_2d/dataset_io.*` for fvecs validation when useful;
-- `docs/research/nonadjacent_pairing_closest_baseline_result_2026_08_03.md`;
-- `docs/research/mixed_radix_max_weight_matching_offline_2026_08_01.md`;
-- `docs/research/RESEARCH_CHARTER.md`.
+- TexMex `sift.tar.gz`, 168,280,445 bytes, SHA-256
+  `92f1270c5e3a0cb46b89983e72b0511e4df065c31a9fa0276d8c9b1fca5bc81a`;
+- TexMex `gist.tar.gz`, 2,740,172,684 bytes, SHA-256
+  `01469a7f1c3768853525e543d537e2dfa1adece927616405e360952e3f67df73`.
 
-## Read/write boundary
+## Allowed reads, writes, and commands
 
-Allowed reads are repository source/documents, the two base files above, and
-generated outputs from this task. Allowed writes are focused source/tests and
-current research notes in this branch, build products and measurements under
-`/tmp`, and this current-state `TASK.md`.
+Allowed reads:
 
-Forbidden reads include every query file, ground-truth file, prior Recall/QPS
-artifact for outcome selection, and dimensions 128--959 of GIST in this first
-matched-boundary diagnostic. Do not modify production SAQ code, build an ANN
-index, or create a query consumer in this task.
+- repository source and research documents;
+- the exact official learn/base members above;
+- the existing hash-matched GIST base;
+- outputs generated by this task.
 
-## Frozen first diagnostic
+Allowed writes:
 
-- Deterministically sample 16,384 rows from the permitted first 1,000,000 base
-  rows of each dataset and split them into two 8,192-row folds.
-- Measure train/held-out Pearson association and compare correlation-selected,
-  adjacent, and OPQ-P-style variance-balanced pairings.
-- For each two-dimensional block, derive a fit-fold local PCA basis and a
-  reconstruction curve for integer group budgets from 6 through 10 bits.
-- Compare uniform eight bits per pair with a deterministic dynamic program
-  that assigns exactly 512 total bits across the 64 blocks. Evaluate every
-  fitted choice unchanged on the opposite fold and run both fold directions.
-- Record pair stability, budget histograms, fit and held-out reconstruction,
-  commands, seeds, runtime, peak memory, and limitations. Label the result
-  `BASE_ONLY_RECONSTRUCTION_DIAGNOSTIC`, not query-performance evidence.
+- focused preparation/extraction and diagnostic source, tests, `TASK.md`, and
+  one current research result note;
+- official archive downloads, extracted required members, build products,
+  prepared PCA/IVF state, stage panels, and results under
+  `/tmp/correlated-pair-allocation/`.
 
-## Commands and resource budget
+Allowed commands include exact-hash download and extraction of only required
+learn/base members, the existing structured-2D CMake preparation targets,
+focused Python tests, the stage diagnostic, and standard verification tools.
 
-Allowed commands are focused Python syntax/unit tests, CMake builds or C++
-tests needed by reused code, the diagnostic runner over the two allowed base
-files, and standard read-only inspection commands.
+Forbidden reads remain all query members, ground-truth members, query/Recall/
+QPS outputs, and old serialized indexes. Do not extract or inspect query or
+ground-truth members from downloaded archives. Do not modify production SAQ,
+build an ANN query index, or implement a query consumer.
 
-- Total ceiling: 2 CPU-hours and 2 wall-hours.
-- Peak RSS ceiling: 16 GiB.
-- Generated outputs must stay under `/tmp/correlated-pair-allocation/`.
-- BLAS thread count must be recorded; provenance and output writing remain
-  outside any reported scientific timing region.
+## Frozen reconstruction and diagnostic
+
+1. Verify official archive and extracted-member hashes before preparation.
+2. Reuse `research/structured_2d/prepare_common.cpp` to train the historical
+   full-dimensional PCA and `nlist={1024,4096}` coarse quantizers and to
+   transform/assign the one-million-row base. For GIST, preserve full-960
+   routing and take the first 128 coordinates only after PCA/residualization.
+3. Use the same deterministic 16,384 base row indices and A/B folds at every
+   stage. Never select rows or stages from observed reconstruction outcomes.
+4. Reuse the existing `CORR_GREEDY`, `EA`, and `ADJ` pairings, local 2D PCA
+   diagnostic curves, group budgets 6--10, exact 512-bit DP, and 5% held-out
+   screen without changing thresholds.
+5. Record all-pair correlations, block covariance statistics, marginal
+   7-to-8 and 8-to-9-bit returns, allocation results, pair stability, exact
+   commands, hashes, CPU/wall time, peak memory, and limitations.
+
+## Resource budget
+
+- Total task ceiling: 4 CPU-hours, 6 wall-hours, and 16 GiB peak RSS.
+- The historical two-dataset common-state construction used about 0.653
+  CPU-hours; network transfer time is included in the wall ceiling.
+- BLAS/OpenMP settings must match the historical preparation command and be
+  recorded. Diagnostic runs use one BLAS/OpenMP thread.
+- Generated archives, data, transforms, indexes, and results stay under
+  `/tmp` and are not committed.
 
 ## Deliverables and done criteria
 
 Deliver:
 
-- a focused, tested diagnostic runner;
-- one reproducible result directory under `/tmp`;
-- a concise research note stating evidence, decision, costs, and claim limits.
+- verified restored learn/base identities and minimal common PCA/IVF state;
+- a tested stage extractor/runner with raw/PCA/residual parity checks;
+- complete SIFT1M and GIST1M stage-by-stage base-only results;
+- a concise mechanism and decision note.
 
-Status: completed. Both datasets and both fold directions finished within
-budget, focused tests passed, a repeated run produced byte-identical scientific
-tables, and every allocation totals exactly 512 bits. The correlation-selected
-allocation gains were 3.110%/4.139% on SIFT and 1.487%/1.541% on GIST-head128,
-so the frozen 5% rule gives `CORRELATION_DRIVEN_ALLOCATION_SCREEN_FAIL`.
+Done means both datasets, four stages, and both fold directions complete
+within budget; scientific outputs reproduce deterministically; the note
+separates association, pairing, and cross-pair allocation effects; and no
+query or ground-truth content was read.
 
-The result note is
-`docs/research/correlated_pair_allocation_base_diagnostic_2026_09_02.md`.
-Accepted generated evidence is under
-`/tmp/correlated-pair-allocation/base-v3/`; its deterministic repetition is
-under `base-v4/`.
-
-There is no blocker for this completed raw-base diagnostic. The old derived
-SAQ residual panel under `/tmp` has expired, so a residual-space continuation
-would first need to recreate only the necessary base-derived input. This task
-does not authorize that continuation and does not claim residual-space or
-query evidence.
+All done criteria are satisfied. The accepted result is documented in
+`docs/research/correlated_pair_allocation_stage_attribution_2026_09_03.md`.
+GIST adjacent-group allocation remains positive after PCA and IVF
+residualization, but strongest-correlation pairing is not the supported
+mechanism.
 
 ## Concrete next action
 
-Review the completed result with the user. If the direction continues, the
-smallest new question is why fixed adjacent GIST blocks pass the allocation
-screen while strongest-correlation blocks do not, measured in the actual SAQ
-residual space before any index or query consumer is implemented.
+Perform a closest-primary-work review of transform coding and block-level
+adaptive bit allocation, then statically identify what—if anything—is
+SAQ-specific about applying the confirmed residual-group signal. Do not build
+a query consumer before that distinction is clear.
