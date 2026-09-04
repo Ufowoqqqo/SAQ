@@ -326,3 +326,72 @@ These are artifact correctness findings, not mixed-radix contributions.
   segment-1/segment-2 exact-replacement oracle.
 - Full result:
   `docs/research/saq_joint_objective_viability_result_2026_08_04.md`.
+
+## 2026-09-02: reframe allocation between coordinate pairs
+
+- Research correction: the intended question was whether resources should be
+  allocated *between two-coordinate groups*, for example between `(D1,D2)`
+  and `(D3,D4)`, rather than merely redistributed between the two coordinates
+  inside each pair.
+- Scope: start a separate `saq-correlated-pair-allocation` branch from
+  `d305578` and use learn/base data only. Held-out benchmark queries,
+  ground truth, Recall, and QPS remained unread.
+- Initial evidence: strong coordinate association was stable, but pairing the
+  most correlated coordinates failed the frozen 5% allocation-gain rule.
+  Fixed adjacent GIST groups did pass, so the source of that signal required
+  representation-stage attribution rather than immediate consumer work.
+- Full result:
+  `docs/research/correlated_pair_allocation_base_diagnostic_2026_09_02.md`.
+
+## 2026-09-03: residual allocation signal is variance-driven, not correlation-driven
+
+- Scope: restore hash-verified official TexMex SIFT1M/GIST1M learn/base
+  inputs and compare the same frozen rows at raw, full-PCA, and IVF-residual
+  stages for `nlist={1024,4096}`.
+- Evidence: adjacent-pair allocation gains survive in both residual views:
+  about 20.1%--22.5% on SIFT and 11.7%--13.9% on GIST. Across adjacent
+  residual groups, total variance correlates `0.966--0.995` with marginal bit
+  return, while absolute Pearson correlation is much weaker.
+- Interpretation: the effect is real, but it is ordinary rate--distortion
+  heterogeneity between groups. Strong pairwise correlation is not the
+  supported mechanism.
+- Full result:
+  `docs/research/correlated_pair_allocation_stage_attribution_2026_09_03.md`.
+
+## 2026-09-03: closest work blocks a standalone two-dimensional allocation claim
+
+- Primary-work finding: Transform Coding and Optimized Transform Coding cover
+  transformed scalar rate--distortion allocation; OPQ covers learned
+  transforms/decomposition; BAPQ and DSPQ cover unequal bits between PQ
+  subspaces; SAQ already performs dynamic-programming segmentation and bit
+  allocation.
+- Decision: local two-dimensional PCA, scalar curves, and exact budget DP are
+  a direct composition, not a standalone contribution. Exact DP improves the
+  artifact but does not introduce a new feasible code family or query model.
+- Narrow remaining question: test whether different pair widths retain a
+  material opportunity inside an existing factor-sharing SAQ segment, with
+  identical payload/factor bytes and the normal segment rotation.
+- Full review:
+  `docs/research/correlated_pair_allocation_closest_primary_work_review_2026_09_03.md`.
+
+## 2026-09-03: SAQ segment rotation closes post-rotation pair allocation
+
+- Matched-byte plans: SIFT uses `128d@4b` for 72 bytes/vector; GIST uses
+  `64@11 | 192@6 | 320@4 | 256@2 | 128@0` for 488 bytes/vector.
+- Evidence before rotation: the planner surrogate shows residual allocation
+  opportunity of about 28.2%--30.8% on SIFT and 6.3%--6.4% on GIST.
+- Decisive evidence after rotation: both the SAQ variance surrogate and
+  empirical uniform-lattice curves select the original uniform width inside
+  every positive segment. Zero coordinate pairs change width in either fold,
+  dataset, or `nlist`; after the six-round CAQ adjustment, the matched-byte
+  angular-loss gain is exactly 0%.
+- Reproduction: accepted `v3/v4` metadata and full summaries are
+  byte-identical. Ten focused tests and the extractor build pass. No query,
+  ground-truth, Recall, QPS, or old ANN index result was read.
+- Decision: `STOP_CURRENT_POST_ROTATION_PAIR_ALLOCATION`. Do not implement the
+  local-PCA/Lloyd or post-rotation mixed-width consumer. Jointly changing the
+  transform and allocation would be a new question under strong prior-work
+  pressure, not a rescue of this result.
+- Archived commit: `08ac7c7` on `saq-correlated-pair-allocation`.
+- Full result:
+  `docs/research/correlated_pair_allocation_saq_opportunity_decomposition_2026_09_03.md`.
