@@ -1,0 +1,45 @@
+$ git diff --check
+exit=0
+$ git diff --exit-code
+exit=0
+$ git -C /rwproject/kdd-db/kluaq/archive/projects/ann/saq status --porcelain=v1
+?? docs/sources/
+?? results/caq_co0_v2_b1_registered_2da5e9f/
+exit=0
+$ git -C /rwproject/kdd-db/kluaq/archive/projects/ann/saq rev-parse --short=7 HEAD
+4695de2
+exit=0
+$ git branch --show-current
+data-aware-minimal-20260923
+exit=0
+$ git rev-parse HEAD
+ca05b90e3767c0945ed7a5b5b73f7cc1423da665
+exit=0
+$ sha256sum -c /rwproject/kdd-db/kluaq/worktrees/saq-data-aware-minimal-20260923/results/data_aware_minimal_2026_09_23/source_hashes.sha256
+AGENTS.md: OK
+TASK.md: OK
+research/correlated_pair_allocation/diagnostic.py: OK
+research/correlated_pair_allocation/extract_stage_panels.cpp: OK
+research/correlated_pair_allocation/write_indices.py: OK
+results/data_aware_minimal_2026_09_23/requested_design.md: OK
+exit=0
+PASS: source unchanged; original status preserved; recovered indices hashes/record layout valid; 10 availability rows.
+$ sha256sum -c /rwproject/kdd-db/kluaq/worktrees/saq-data-aware-minimal-20260923/results/data_aware_minimal_2026_09_23/SHA256SUMS
+results/data_aware_minimal_2026_09_23/REPORT.md: OK
+results/data_aware_minimal_2026_09_23/STATUS.txt: OK
+results/data_aware_minimal_2026_09_23/audit.log: OK
+results/data_aware_minimal_2026_09_23/audit.sh: OK
+results/data_aware_minimal_2026_09_23/audit_resources.txt: OK
+results/data_aware_minimal_2026_09_23/availability.tsv: OK
+results/data_aware_minimal_2026_09_23/cache_audit.log: OK
+results/data_aware_minimal_2026_09_23/cache_audit.py: OK
+results/data_aware_minimal_2026_09_23/cache_audit_resources.txt: OK
+results/data_aware_minimal_2026_09_23/config.tsv: OK
+results/data_aware_minimal_2026_09_23/independent_cache_review.md: OK
+results/data_aware_minimal_2026_09_23/inputs/gist_indices.u64: OK
+results/data_aware_minimal_2026_09_23/inputs/recovered_indices.tsv: OK
+results/data_aware_minimal_2026_09_23/inputs/sift_indices.u64: OK
+results/data_aware_minimal_2026_09_23/requested_design.md: OK
+results/data_aware_minimal_2026_09_23/source_hashes.sha256: OK
+exit=0
+PASS: all listed durable artifacts hash-verified; no experiment results exist or are claimed.

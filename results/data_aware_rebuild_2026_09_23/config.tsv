@@ -1,0 +1,57 @@
+key	value
+evidence_reference	ca05b90e3767c0945ed7a5b5b73f7cc1423da665
+work_branch	data-aware-minimal-20260923
+representation_identity	REBUILT; not historical-panel byte reproduction
+user_authorized_retraining	2026-09-23: retry search; if unavailable rerun
+user_authorized_GIST_download	2026-09-23: official ~2.74GB archive; only learn extraction
+user_authorized_recovery_limit_minutes	90 cumulative
+recovery_deadline_HKT	2026-09-23T23:42:31+08:00
+cpu_limit_seconds	7200 cumulative
+threads_limit	4
+peak_memory_limit_bytes	17179869184
+unmetered_preflight_CPU_reserve_seconds	240
+datasets	SIFT1M,GIST1M_HEAD128
+full_preprocessing_dimensions	128,960
+learn_rows	100000,500000
+base_rows	1000000
+frozen_selected_rows	16384 each
+frozen_fold_rows	8192 fit and 8192 evaluation; A_TO_B,B_TO_A
+sample_seed_sift	20260902
+sample_seed_gist	20260903
+faiss_commit	0ca9df4792b173d573044ee14ca0704780176e82
+faiss_source_recovery	local original submodule Git object archive
+compiler	GNU C++ 11.5.0
+build_type	Release
+blas_lapack	/usr/lib64/libopenblaso.so.0
+preprocessing	full-dimensional PCAMatrix(d,d,0,false); nearest coarse; residual head128
+coarse_nlist	1024 only
+coarse_seed	1234
+coarse_iterations	25
+coarse_redo	1
+coarse_training_data	all official learn rows
+selected_batch_rows	16384
+local_models	fit-only local 2D PCA and scalar Lloyd; 30 iterations; no eval tuning
+pairings	ADJ,CORR_GREEDY,EA
+arms	U,V,E,S
+payload_bits_per_vector	512
+U	8 bits per group; fit-optimal internal split
+V	fit_axis_variance*2^(-2*bits); group sums6..10; axis1..9
+E	legacy empirical group DP; group sums6..10; axis1..9
+S	free empirical scalar DP; axis1..9
+tie_rule_grouped	prefer smaller last group sum then smaller first-axis bits
+tie_rule_free	prefer smaller last axis bits
+candidate	CORR_GREEDY-E
+comparators	CORR_GREEDY-S,CORR_GREEDY-V,ADJ-S,EA-S
+eligibility	all16 gains>=0.05
+park	at least one dataset/fold beats all four controls but global eligibility fails
+stop	no dataset/fold beats all four controls
+pairing_effect	CORR-S versus ADJ-S and EA-S; report separately from allocation
+raw_result_rows_expected	48
+follow_on_experiment	forbidden without new user instruction
+commit_push_email	no
+final_decision	STOP_CURRENT_FORMULATION
+completed_summary_rows	48
+recovery_complete_by_HKT	2026-09-23T23:33:36+08:00; official archive/learn and persistent learn hash PASS
+rebuild_threads_per_job	OMP2,OMP_THREAD_LIMIT2,OPENBLAS2,MKL1
+diagnostic_threads	1
+diagnostic_CPU_allowance_seconds	2000; actual118.19

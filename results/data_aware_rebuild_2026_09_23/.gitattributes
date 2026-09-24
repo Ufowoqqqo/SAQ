@@ -1,0 +1,5 @@
+# Keep original machine output bytes, including the CSV writer's CRLF endings.
+*.tsv -text whitespace=cr-at-eol
+*.log -text -whitespace
+logs/*_headers.txt -text whitespace=cr-at-eol,-blank-at-eof
+download_headers.txt -text whitespace=cr-at-eol

@@ -1,0 +1,2 @@
+snapshot_utc	completed_gnu_time_records	completed_cpu_seconds	unmetered_cpu_reserve_seconds	completed_plus_reserve_seconds	allowance_after_completed_and_reserve_seconds	largest_reported_job_rss_bytes	unfinalized_resource_logs
+2026-09-23T15:38:28.872243+00:00	27	648.45	240	888.45	6311.55	4188999680	0

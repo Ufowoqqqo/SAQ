@@ -1,0 +1,10 @@
+Scope: all data_aware* result directories in this worktree, including earlier recovery attempts.
+Sum each completed GNU time record once by filesystem inode; retries and repeated tests count separately.
+Do not add diagnostic resources.tsv or per-arm compute times to GNU-time wrappers: these overlap.
+Empty/unfinished resource logs are active-or-interrupted, not completed zero-cost work. Their consumed CPU is unknown until GNU time closes.
+240 CPU seconds is the configured reserve for unmetered commands; it is an allowance, not a measured cost or proof all unknown work fits.
+Remaining allowance excludes currently active unreported CPU and must be recomputed before another job starts.
+GNU time records are rounded to 0.01 seconds. Failed or timed-out commands still consume CPU and are included.
+Largest reported RSS is the largest single-job GNU-time maximum, not aggregate simultaneous task RSS.
+Summing wall durations would double-count overlaps; elapsed recovery deadline is enforced separately.
+Read-only snapshot is not a completion assertion or an experimental decision.

@@ -1,0 +1,8 @@
+# Generated data and binaries remain in the durable local result directory.
+/bin/
+/downloads/*.part
+/inputs/*.fvecs
+/panels/**/*.fvecs
+/panels/**/*.faiss
+/panels/**/*.u32
+/strong_baselines_v1/models/*.npz

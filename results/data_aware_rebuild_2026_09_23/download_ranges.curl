@@ -1,0 +1,47 @@
+url = "ftp://ftp.irisa.fr/local/texmex/corpus/gist.tar.gz"
+range = "849494016-1322163682"
+output = "/tmp/saq-data-aware-rebuild-20260923/gist_segment_0.part"
+fail
+silent
+show-error
+connect-timeout = 15
+max-time = 1000
+speed-time = 120
+speed-limit = 32768
+write-out = "%{filename_effective}\t%{size_download}\t%{speed_download}\t%{time_total}\n"
+next
+url = "ftp://ftp.irisa.fr/local/texmex/corpus/gist.tar.gz"
+range = "1322163683-1794833349"
+output = "/tmp/saq-data-aware-rebuild-20260923/gist_segment_1.part"
+fail
+silent
+show-error
+connect-timeout = 15
+max-time = 1000
+speed-time = 120
+speed-limit = 32768
+write-out = "%{filename_effective}\t%{size_download}\t%{speed_download}\t%{time_total}\n"
+next
+url = "ftp://ftp.irisa.fr/local/texmex/corpus/gist.tar.gz"
+range = "1794833350-2267503016"
+output = "/tmp/saq-data-aware-rebuild-20260923/gist_segment_2.part"
+fail
+silent
+show-error
+connect-timeout = 15
+max-time = 1000
+speed-time = 120
+speed-limit = 32768
+write-out = "%{filename_effective}\t%{size_download}\t%{speed_download}\t%{time_total}\n"
+next
+url = "ftp://ftp.irisa.fr/local/texmex/corpus/gist.tar.gz"
+range = "2267503017-2740172683"
+output = "/tmp/saq-data-aware-rebuild-20260923/gist_segment_3.part"
+fail
+silent
+show-error
+connect-timeout = 15
+max-time = 1000
+speed-time = 120
+speed-limit = 32768
+write-out = "%{filename_effective}\t%{size_download}\t%{speed_download}\t%{time_total}\n"

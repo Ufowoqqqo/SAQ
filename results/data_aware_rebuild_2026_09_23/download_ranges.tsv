@@ -1,0 +1,5 @@
+segment	start	end	expected_bytes	output
+0	849494016	1322163682	472669667	/tmp/saq-data-aware-rebuild-20260923/gist_segment_0.part
+1	1322163683	1794833349	472669667	/tmp/saq-data-aware-rebuild-20260923/gist_segment_1.part
+2	1794833350	2267503016	472669667	/tmp/saq-data-aware-rebuild-20260923/gist_segment_2.part
+3	2267503017	2740172683	472669667	/tmp/saq-data-aware-rebuild-20260923/gist_segment_3.part

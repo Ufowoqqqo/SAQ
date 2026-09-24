@@ -1,0 +1,4 @@
+331bc82b6a0e89465776a3ba0c2113e0bd0cceaa014ec3ed639bc8b981af72ea  /rwproject/kdd-db/kluaq/quant-hardness/runs/phase4a_gap_guided_refinement_v1/sift_learn.fvecs
+21f66e2975057b5728ba56de1c825bac4f4d89d596609ae985741c6242631816  /rwproject/kdd-db/kluaq/dataset/sift1m/hf_download/sift_base.fvecs
+73418110328f5aa522d9f6b0cd9115a6c515dc44e3c48420e506ddeddbdbdbc0  /rwproject/kdd-db/kluaq/dataset/gist/gist_base.fvecs
+9b864d69993ffea89f8547c0a1f993727c39152ee040fb48b6de28f5c986ed17  /rwproject/kdd-db/kluaq/worktrees/saq-data-aware-minimal-20260923/results/data_aware_rebuild_2026_09_23/inputs/gist_learn.fvecs

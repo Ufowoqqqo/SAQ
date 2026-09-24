@@ -1,0 +1,122 @@
++ date -Is
+2026-09-23T20:37:55+08:00
++ hostname
+rwcpu8.cse.ust.hk
++ pwd
+/rwproject/kdd-db/kluaq/worktrees/saq-data-aware-minimal-20260923
++ git rev-parse HEAD
+ca05b90e3767c0945ed7a5b5b73f7cc1423da665
++ git status --short --branch
+## data-aware-minimal-20260923
+?? results/data_aware_minimal_2026_09_23/
++ git -C /rwproject/kdd-db/kluaq/archive/projects/ann/saq status --short --branch
+## backup/codex-config-20260718
+?? docs/sources/
+?? results/caq_co0_v2_b1_registered_2da5e9f/
++ git -C /rwproject/kdd-db/kluaq/archive/projects/ann/saq rev-parse HEAD
+4695de233672cf0102c2bd95fec4f4cb3ccadf82
++ git worktree list
+/rwproject/kdd-db/kluaq/archive/projects/ann/saq                   4695de2 [backup/codex-config-20260718]
+/rwproject/kdd-db/kluaq/worktrees/saq-data-aware-minimal-20260923  ca05b90 [data-aware-minimal-20260923]
+/tmp/saq-a4-original-reopening-protocol                            5503e87 [saq-a4-original-reopening-protocol] prunable
+/tmp/saq-a4-prefix-novelty-gate                                    7f4c001 [saq-a4-prefix-novelty-gate] prunable
+/tmp/saq-a4-r0-static-gate                                         617ad25 [saq-a4-r0-static-gate] prunable
+/tmp/saq-arbitrary-cardinality-analysis                            f1b464b [saq-arbitrary-cardinality-analysis] prunable
+/tmp/saq-arbitrary-cardinality-feasibility-v2                      3577edd [saq-arbitrary-cardinality-feasibility-v2] prunable
+/tmp/saq-caq-corrected-oracle-v2                                   433e8ea [saq-caq-one-shell-repair] prunable
+/tmp/saq-caq-corrected-oracle-v2-config                            c7b9add [saq-caq-corrected-oracle-v2] prunable
+/tmp/saq-correlated-pair-allocation                                ca05b90 [saq-correlated-pair-allocation] prunable
+/tmp/saq-graph-phase2                                              a03ee40 [saq-graph-traversal-analysis] prunable
+/tmp/saq-meeting-summary                                           8438cc5 [saq-meeting-summary] prunable
+/tmp/saq-mixed-radix-query                                         d305578 [saq-mixed-radix-query] prunable
+/tmp/saq-ratio-metric-analysis                                     146dc16 [saq-ratio-metric-analysis] prunable
+/tmp/saq-structured-2d-modeling                                    d2565dc [saq-structured-2d-modeling] prunable
+/tmp/saq-upstream-main-2163ebc                                     2163ebc (detached HEAD) prunable
++ nproc
+1
++ free -b
+               total        used        free      shared  buff/cache   available
+Mem:     33047748608  4125040640  4202442752   347348992 25546903552 28922707968
+Swap:    68719472640  4260888576 64458584064
++ df -B1 . /tmp
+Filesystem                      1B-blocks          Used    Available Use% Mounted on
+rwcpu4:/export/kdd-db/kluaq 7998309138432 7124086161408 874222977024  90% /rwproject/kdd-db/kluaq
+/dev/nvme0n1p2               137371844608   68256280576  69115564032  50% /tmp
++ cat /proc/loadavg
+22.03 11.31 5.11 1/2334 64
++ sed -n '/Cpus_allowed_list/p; /Mems_allowed_list/p' /proc/self/status
+Cpus_allowed_list:	0-3
+Mems_allowed_list:	0
++ python3 -c 'import platform, numpy; print("python=" + platform.python_version()); print("numpy=" + numpy.__version__)'
+python=3.9.25
+numpy=1.23.5
++ find /tmp/correlated-pair-allocation /tmp/saq-correlated-pair-allocation -maxdepth 5 -type f -printf '%p\t%s bytes\n'
++ for dataset in sift gist
++ for object in "stages-v2/$dataset/residual_nlist1024.fvecs" "stages-v2/$dataset/STAGE_SOURCE.txt" "indices/${dataset}_indices.u64" "common/$dataset/pca.faiss" "common/$dataset/base_pca.fvecs" "common/$dataset/nlist_1024/coarse.faiss" "common/$dataset/nlist_1024/base_assignments.u32"
++ stat '--printf=%n\t%s bytes\n' /tmp/correlated-pair-allocation/stages-v2/sift/residual_nlist1024.fvecs
+stat: cannot statx '/tmp/correlated-pair-allocation/stages-v2/sift/residual_nlist1024.fvecs': No such file or directory
++ true
++ for object in "stages-v2/$dataset/residual_nlist1024.fvecs" "stages-v2/$dataset/STAGE_SOURCE.txt" "indices/${dataset}_indices.u64" "common/$dataset/pca.faiss" "common/$dataset/base_pca.fvecs" "common/$dataset/nlist_1024/coarse.faiss" "common/$dataset/nlist_1024/base_assignments.u32"
++ stat '--printf=%n\t%s bytes\n' /tmp/correlated-pair-allocation/stages-v2/sift/STAGE_SOURCE.txt
+stat: cannot statx '/tmp/correlated-pair-allocation/stages-v2/sift/STAGE_SOURCE.txt': No such file or directory
++ true
++ for object in "stages-v2/$dataset/residual_nlist1024.fvecs" "stages-v2/$dataset/STAGE_SOURCE.txt" "indices/${dataset}_indices.u64" "common/$dataset/pca.faiss" "common/$dataset/base_pca.fvecs" "common/$dataset/nlist_1024/coarse.faiss" "common/$dataset/nlist_1024/base_assignments.u32"
++ stat '--printf=%n\t%s bytes\n' /tmp/correlated-pair-allocation/indices/sift_indices.u64
+stat: cannot statx '/tmp/correlated-pair-allocation/indices/sift_indices.u64': No such file or directory
++ true
++ for object in "stages-v2/$dataset/residual_nlist1024.fvecs" "stages-v2/$dataset/STAGE_SOURCE.txt" "indices/${dataset}_indices.u64" "common/$dataset/pca.faiss" "common/$dataset/base_pca.fvecs" "common/$dataset/nlist_1024/coarse.faiss" "common/$dataset/nlist_1024/base_assignments.u32"
++ stat '--printf=%n\t%s bytes\n' /tmp/correlated-pair-allocation/common/sift/pca.faiss
+stat: cannot statx '/tmp/correlated-pair-allocation/common/sift/pca.faiss': No such file or directory
++ true
++ for object in "stages-v2/$dataset/residual_nlist1024.fvecs" "stages-v2/$dataset/STAGE_SOURCE.txt" "indices/${dataset}_indices.u64" "common/$dataset/pca.faiss" "common/$dataset/base_pca.fvecs" "common/$dataset/nlist_1024/coarse.faiss" "common/$dataset/nlist_1024/base_assignments.u32"
++ stat '--printf=%n\t%s bytes\n' /tmp/correlated-pair-allocation/common/sift/base_pca.fvecs
+stat: cannot statx '/tmp/correlated-pair-allocation/common/sift/base_pca.fvecs': No such file or directory
++ true
++ for object in "stages-v2/$dataset/residual_nlist1024.fvecs" "stages-v2/$dataset/STAGE_SOURCE.txt" "indices/${dataset}_indices.u64" "common/$dataset/pca.faiss" "common/$dataset/base_pca.fvecs" "common/$dataset/nlist_1024/coarse.faiss" "common/$dataset/nlist_1024/base_assignments.u32"
++ stat '--printf=%n\t%s bytes\n' /tmp/correlated-pair-allocation/common/sift/nlist_1024/coarse.faiss
+stat: cannot statx '/tmp/correlated-pair-allocation/common/sift/nlist_1024/coarse.faiss': No such file or directory
++ true
++ for object in "stages-v2/$dataset/residual_nlist1024.fvecs" "stages-v2/$dataset/STAGE_SOURCE.txt" "indices/${dataset}_indices.u64" "common/$dataset/pca.faiss" "common/$dataset/base_pca.fvecs" "common/$dataset/nlist_1024/coarse.faiss" "common/$dataset/nlist_1024/base_assignments.u32"
++ stat '--printf=%n\t%s bytes\n' /tmp/correlated-pair-allocation/common/sift/nlist_1024/base_assignments.u32
+stat: cannot statx '/tmp/correlated-pair-allocation/common/sift/nlist_1024/base_assignments.u32': No such file or directory
++ true
++ for dataset in sift gist
++ for object in "stages-v2/$dataset/residual_nlist1024.fvecs" "stages-v2/$dataset/STAGE_SOURCE.txt" "indices/${dataset}_indices.u64" "common/$dataset/pca.faiss" "common/$dataset/base_pca.fvecs" "common/$dataset/nlist_1024/coarse.faiss" "common/$dataset/nlist_1024/base_assignments.u32"
++ stat '--printf=%n\t%s bytes\n' /tmp/correlated-pair-allocation/stages-v2/gist/residual_nlist1024.fvecs
+stat: cannot statx '/tmp/correlated-pair-allocation/stages-v2/gist/residual_nlist1024.fvecs': No such file or directory
++ true
++ for object in "stages-v2/$dataset/residual_nlist1024.fvecs" "stages-v2/$dataset/STAGE_SOURCE.txt" "indices/${dataset}_indices.u64" "common/$dataset/pca.faiss" "common/$dataset/base_pca.fvecs" "common/$dataset/nlist_1024/coarse.faiss" "common/$dataset/nlist_1024/base_assignments.u32"
++ stat '--printf=%n\t%s bytes\n' /tmp/correlated-pair-allocation/stages-v2/gist/STAGE_SOURCE.txt
+stat: cannot statx '/tmp/correlated-pair-allocation/stages-v2/gist/STAGE_SOURCE.txt': No such file or directory
++ true
++ for object in "stages-v2/$dataset/residual_nlist1024.fvecs" "stages-v2/$dataset/STAGE_SOURCE.txt" "indices/${dataset}_indices.u64" "common/$dataset/pca.faiss" "common/$dataset/base_pca.fvecs" "common/$dataset/nlist_1024/coarse.faiss" "common/$dataset/nlist_1024/base_assignments.u32"
++ stat '--printf=%n\t%s bytes\n' /tmp/correlated-pair-allocation/indices/gist_indices.u64
+stat: cannot statx '/tmp/correlated-pair-allocation/indices/gist_indices.u64': No such file or directory
++ true
++ for object in "stages-v2/$dataset/residual_nlist1024.fvecs" "stages-v2/$dataset/STAGE_SOURCE.txt" "indices/${dataset}_indices.u64" "common/$dataset/pca.faiss" "common/$dataset/base_pca.fvecs" "common/$dataset/nlist_1024/coarse.faiss" "common/$dataset/nlist_1024/base_assignments.u32"
++ stat '--printf=%n\t%s bytes\n' /tmp/correlated-pair-allocation/common/gist/pca.faiss
+stat: cannot statx '/tmp/correlated-pair-allocation/common/gist/pca.faiss': No such file or directory
++ true
++ for object in "stages-v2/$dataset/residual_nlist1024.fvecs" "stages-v2/$dataset/STAGE_SOURCE.txt" "indices/${dataset}_indices.u64" "common/$dataset/pca.faiss" "common/$dataset/base_pca.fvecs" "common/$dataset/nlist_1024/coarse.faiss" "common/$dataset/nlist_1024/base_assignments.u32"
++ stat '--printf=%n\t%s bytes\n' /tmp/correlated-pair-allocation/common/gist/base_pca.fvecs
+stat: cannot statx '/tmp/correlated-pair-allocation/common/gist/base_pca.fvecs': No such file or directory
++ true
++ for object in "stages-v2/$dataset/residual_nlist1024.fvecs" "stages-v2/$dataset/STAGE_SOURCE.txt" "indices/${dataset}_indices.u64" "common/$dataset/pca.faiss" "common/$dataset/base_pca.fvecs" "common/$dataset/nlist_1024/coarse.faiss" "common/$dataset/nlist_1024/base_assignments.u32"
++ stat '--printf=%n\t%s bytes\n' /tmp/correlated-pair-allocation/common/gist/nlist_1024/coarse.faiss
+stat: cannot statx '/tmp/correlated-pair-allocation/common/gist/nlist_1024/coarse.faiss': No such file or directory
++ true
++ for object in "stages-v2/$dataset/residual_nlist1024.fvecs" "stages-v2/$dataset/STAGE_SOURCE.txt" "indices/${dataset}_indices.u64" "common/$dataset/pca.faiss" "common/$dataset/base_pca.fvecs" "common/$dataset/nlist_1024/coarse.faiss" "common/$dataset/nlist_1024/base_assignments.u32"
++ stat '--printf=%n\t%s bytes\n' /tmp/correlated-pair-allocation/common/gist/nlist_1024/base_assignments.u32
+stat: cannot statx '/tmp/correlated-pair-allocation/common/gist/nlist_1024/base_assignments.u32': No such file or directory
++ true
++ stat '--printf=%n\t%s bytes\n' /rwproject/kdd-db/kluaq/dataset/sift1m/sift_base.fvecs /rwproject/kdd-db/kluaq/dataset/gist/gist_base.fvecs
+/rwproject/kdd-db/kluaq/dataset/sift1m/sift_base.fvecs	8708096 bytes
+/rwproject/kdd-db/kluaq/dataset/gist/gist_base.fvecs	3844000000 bytes
++ python3 -
+sift	16384	a5ef3954b0d240e9b5fcf59690a559d458b6f05b7c55ca3c0e6bdb648c61a104	True	16384	0
+gist	16384	5cb6868406e6f184abe689058992ab9e8aba52a312c64aa34345a51e7826966d	True	16384	0
+Recovered sample identities only; residual panels and transform provenance remain required.
++ sha256sum AGENTS.md TASK.md research/correlated_pair_allocation/diagnostic.py research/correlated_pair_allocation/extract_stage_panels.cpp research/correlated_pair_allocation/write_indices.py results/data_aware_minimal_2026_09_23/requested_design.md
++ git diff --check
++ date -Is
+2026-09-23T20:37:59+08:00

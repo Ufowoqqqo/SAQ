@@ -1,0 +1,11 @@
+dataset	item	status	bytes	detail
+SIFT1M	residual_nlist1024_panel	MISSING		Historical 16384x128 panel unavailable; expected fvecs size 8454144
+GIST1M_HEAD128	residual_nlist1024_panel	MISSING		Historical 16384x128 panel unavailable; expected fvecs size 8454144
+SIFT1M	frozen_indices	RECOVERED_HASH_MATCHED	131072	Regenerated from unchanged sample_indices(seed=20260902); historical SHA-256 matched
+GIST1M_HEAD128	frozen_indices	RECOVERED_HASH_MATCHED	131072	Regenerated from unchanged sample_indices(seed=20260903); historical SHA-256 matched
+SIFT1M	base	VERIFIED	516000000	/rwproject/kdd-db/kluaq/dataset/sift1m/hf_download/sift_base.fvecs; SHA-256 matches official historical member
+GIST1M_HEAD128	base	SIZE_ONLY	3844000000	/rwproject/kdd-db/kluaq/dataset/gist/gist_base.fvecs; not rehashed this session
+SIFT1M	pca_coarse_assignments_provenance	MISSING		No original pca.faiss/coarse.faiss/base_pca.fvecs/base_assignments.u32/STAGE_SOURCE.txt found
+GIST1M_HEAD128	pca_coarse_assignments_provenance	MISSING		No original pca.faiss/coarse.faiss/base_pca.fvecs/base_assignments.u32/STAGE_SOURCE.txt found
+SIFT1M	learn	NOT_FOUND		Not needed if original panels with provenance are restored; retraining forbidden
+GIST1M_HEAD128	learn	NOT_FOUND		Not needed if original panels with provenance are restored; retraining forbidden

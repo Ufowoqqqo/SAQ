@@ -1,0 +1,15 @@
+decision=BLOCKED
+reason=Both historical residual_nlist1024 panels and their transform/source caches are missing in the audited locations.
+cache_search_started=2026-09-23T20:31:23+08:00
+cache_search_finished=2026-09-23T20:39:57+08:00
+cache_search_wall_seconds=514
+expected_experiment_rows=48
+completed_experiment_rows=0
+experiment_cpu_seconds=0
+scientific_source_modified=false
+pairing_effect=NOT_MEASURED
+allocation_effect=NOT_MEASURED
+next_experiment_started=false
+committed=false
+pushed=false
+email_sent=false

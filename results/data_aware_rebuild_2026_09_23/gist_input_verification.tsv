@@ -1,0 +1,3 @@
+kind	path	bytes	sha256
+official_archive	/tmp/saq-data-aware-rebuild-20260923/gist.tar.gz	2740172684	01469a7f1c3768853525e543d537e2dfa1adece927616405e360952e3f67df73
+official_learn	/tmp/saq-data-aware-rebuild-20260923/inputs/gist_learn.fvecs	1922000000	9b864d69993ffea89f8547c0a1f993727c39152ee040fb48b6de28f5c986ed17

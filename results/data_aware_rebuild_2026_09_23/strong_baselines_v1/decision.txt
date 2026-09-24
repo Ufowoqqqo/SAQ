@@ -1,0 +1,2 @@
+STOP_CURRENT_FORMULATION
+No confirmation experiment launched.

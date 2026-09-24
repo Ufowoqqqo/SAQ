@@ -1,0 +1,16 @@
+results/data_aware_minimal_2026_09_23/REPORT.md: OK
+results/data_aware_minimal_2026_09_23/STATUS.txt: OK
+results/data_aware_minimal_2026_09_23/audit.log: OK
+results/data_aware_minimal_2026_09_23/audit.sh: OK
+results/data_aware_minimal_2026_09_23/audit_resources.txt: OK
+results/data_aware_minimal_2026_09_23/availability.tsv: OK
+results/data_aware_minimal_2026_09_23/cache_audit.log: OK
+results/data_aware_minimal_2026_09_23/cache_audit.py: OK
+results/data_aware_minimal_2026_09_23/cache_audit_resources.txt: OK
+results/data_aware_minimal_2026_09_23/config.tsv: OK
+results/data_aware_minimal_2026_09_23/independent_cache_review.md: OK
+results/data_aware_minimal_2026_09_23/inputs/gist_indices.u64: OK
+results/data_aware_minimal_2026_09_23/inputs/recovered_indices.tsv: OK
+results/data_aware_minimal_2026_09_23/inputs/sift_indices.u64: OK
+results/data_aware_minimal_2026_09_23/requested_design.md: OK
+results/data_aware_minimal_2026_09_23/source_hashes.sha256: OK

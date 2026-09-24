@@ -1,0 +1,2 @@
+# Frozen index binaries are retained locally; identity and regeneration are documented.
+/inputs/*.u64

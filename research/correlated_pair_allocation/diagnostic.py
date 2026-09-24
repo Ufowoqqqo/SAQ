@@ -11,7 +11,7 @@ import platform
 import resource
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
@@ -36,6 +36,7 @@ Pair = tuple[int, int]
 class ScalarCurve:
     fit_sse: dict[int, float]
     eval_sse: dict[int, float]
+    centers: dict[int, np.ndarray] = field(default_factory=dict)
 
 
 @dataclass
@@ -46,6 +47,10 @@ class PairCurve:
     total_variance: float
     determinant: float
     eigenvalue_ratio: float
+    axes: list[ScalarCurve] = field(default_factory=list)
+    mean: np.ndarray | None = None
+    basis: np.ndarray | None = None
+    eigenvalues: np.ndarray | None = None
 
 
 def read_sample(path: Path, indices: np.ndarray) -> np.ndarray:
@@ -192,6 +197,7 @@ def labels_for(values: np.ndarray, centers: np.ndarray) -> np.ndarray:
 def scalar_curve(fit: np.ndarray, evaluation: np.ndarray) -> ScalarCurve:
     fit_sse: dict[int, float] = {}
     eval_sse: dict[int, float] = {}
+    codebooks: dict[int, np.ndarray] = {}
     for bits in range(1, MAX_GROUP_BITS):
         center_count = 1 << bits
         probabilities = (np.arange(center_count, dtype=np.float64) + 0.5) / center_count
@@ -213,7 +219,8 @@ def scalar_curve(fit: np.ndarray, evaluation: np.ndarray) -> ScalarCurve:
         eval_delta = evaluation - centers[eval_labels]
         fit_sse[bits] = float(fit_delta @ fit_delta)
         eval_sse[bits] = float(eval_delta @ eval_delta)
-    return ScalarCurve(fit_sse, eval_sse)
+        codebooks[bits] = centers.copy()
+    return ScalarCurve(fit_sse, eval_sse, codebooks)
 
 
 def pair_curve(fit: np.ndarray, evaluation: np.ndarray, pair: Pair) -> PairCurve:
@@ -255,6 +262,10 @@ def pair_curve(fit: np.ndarray, evaluation: np.ndarray, pair: Pair) -> PairCurve
         float(eigenvalues.sum()),
         float(eigenvalues.prod()),
         ratio,
+        axes,
+        mean,
+        basis,
+        eigenvalues,
     )
 
 

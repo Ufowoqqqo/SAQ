@@ -1,0 +1,15 @@
+read_bytes=134217728 wall_seconds=0.26
+read_bytes=268435456 wall_seconds=0.51
+read_bytes=402653184 wall_seconds=0.77
+read_bytes=536870912 wall_seconds=1.02
+read_bytes=671088640 wall_seconds=1.28
+read_bytes=805306368 wall_seconds=1.53
+read_bytes=939524096 wall_seconds=1.78
+read_bytes=1073741824 wall_seconds=2.04
+read_bytes=1207959552 wall_seconds=2.29
+read_bytes=1342177280 wall_seconds=2.54
+read_bytes=1476395008 wall_seconds=2.80
+read_bytes=1610612736 wall_seconds=3.05
+read_bytes=1744830464 wall_seconds=3.31
+read_bytes=1879048192 wall_seconds=3.56
+PASS 1922000000 bytes 9b864d69993ffea89f8547c0a1f993727c39152ee040fb48b6de28f5c986ed17

@@ -1,0 +1,17 @@
+usage: strong_baselines.py [-h] --sift-panel SIFT_PANEL --sift-indices
+                           SIFT_INDICES --gist-panel GIST_PANEL --gist-indices
+                           GIST_INDICES --output OUTPUT --cpu-seconds
+                           CPU_SECONDS --frozen
+
+Frozen 48-row residual-panel audit; no raw data or query inputs are read.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --sift-panel SIFT_PANEL
+  --sift-indices SIFT_INDICES
+  --gist-panel GIST_PANEL
+  --gist-indices GIST_INDICES
+  --output OUTPUT
+  --cpu-seconds CPU_SECONDS
+                        remaining task CPU budget, including this runner
+  --frozen

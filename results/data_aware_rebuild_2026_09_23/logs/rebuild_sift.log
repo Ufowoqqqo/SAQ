@@ -1,0 +1,4 @@
+train_full_pca sift
+train_coarse_nlist1024 sift
+transform_and_route_selected sift
+rebuilt_panel_complete "results/data_aware_rebuild_2026_09_23/panels/sift"

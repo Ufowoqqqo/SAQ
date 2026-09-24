@@ -1,0 +1,8 @@
+HTTP/1.1 403 Forbidden
+Date: Wed, 23 Sep 2026 14:59:07 GMT
+Server: Apache
+Content-Type: text/html; charset=iso-8859-1
+Cache-Status: proxy.cse.ust.hk;detail=no-cache
+Via: 1.1 proxy.cse.ust.hk (squid/6.14)
+Connection: keep-alive
+

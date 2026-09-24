@@ -1,0 +1,12 @@
+completed SIFT1M A_TO_B ADJ; 4/48 rows
+completed SIFT1M A_TO_B CORR_GREEDY; 8/48 rows
+completed SIFT1M A_TO_B EA; 12/48 rows
+completed SIFT1M B_TO_A ADJ; 16/48 rows
+completed SIFT1M B_TO_A CORR_GREEDY; 20/48 rows
+completed SIFT1M B_TO_A EA; 24/48 rows
+completed GIST1M_HEAD128 A_TO_B ADJ; 28/48 rows
+completed GIST1M_HEAD128 A_TO_B CORR_GREEDY; 32/48 rows
+completed GIST1M_HEAD128 A_TO_B EA; 36/48 rows
+completed GIST1M_HEAD128 B_TO_A ADJ; 40/48 rows
+completed GIST1M_HEAD128 B_TO_A CORR_GREEDY; 44/48 rows
+completed GIST1M_HEAD128 B_TO_A EA; 48/48 rows

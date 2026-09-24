@@ -1,0 +1,16 @@
+Final handoff checks, 2026-09-23 23:38 HKT
+
+PASS: frozen scientific source/binary SHA-256 checks (code_hashes.sha256).
+PASS: SIFT PCA, coarse and residual SHA-256 checks (sift_model_hashes.sha256).
+PASS: GIST PCA, coarse, residual and assignments SHA-256 checks (gist_model_hashes.sha256).
+PASS: persistent GIST learn complete SHA-256 readback; see logs/verify_persistent_buffered.log.
+PASS: git diff --check.
+PASS: 48 summary rows, 16 predeclared comparisons; diagnostic exit status 0.
+PASS: independent provenance and result arithmetic reviews; see provenance_review.md and result_review.md.
+PASS: all 27 GNU-time records finalized; measured CPU 648.45 seconds, plus configured unmetered reserve 240 seconds.
+PASS: original repository remains on backup/codex-config-20260718 with only its two pre-existing untracked directories.
+
+No source changes were made after the final 9-test pass.
+New work remains uncommitted in isolated branch data-aware-minimal-20260923.
+No download, experiment, push, publication or email is left running.
+Decision: STOP_CURRENT_FORMULATION. No next experiment started.

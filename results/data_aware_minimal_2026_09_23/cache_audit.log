@@ -1,0 +1,16 @@
+time=2026-09-23T20:39:56+0800
+Filename inventory only; no query, ground truth or serialized ANN index content read.
+ROOT	/tmp/correlated-pair-allocation	exists=True	files=0	errors=0
+ROOT	/tmp/saq-correlated-pair-allocation	exists=True	files=0	errors=0
+ROOT	/tmp/saq-structured-2d-modeling	exists=True	files=0	errors=0
+ROOT	/rwproject/kdd-db/kluaq/archive/projects/ann/saq	exists=True	files=1336	errors=0
+ROOT	/rwproject/kdd-db/kluaq/dataset	exists=True	files=264	errors=0
+ROOT	/rwproject/kdd-db/kluaq/resources	exists=True	files=0	errors=0
+ROOT	/rwproject/kdd-db/kluaq/worktrees	exists=True	files=674	errors=0
+MATCH	/rwproject/kdd-db/kluaq/worktrees/saq-data-aware-minimal-20260923/results/data_aware_minimal_2026_09_23/inputs/gist_indices.u64	131072 bytes
+MATCH	/rwproject/kdd-db/kluaq/worktrees/saq-data-aware-minimal-20260923/results/data_aware_minimal_2026_09_23/inputs/sift_indices.u64	131072 bytes
+ROOT	/rwproject/kdd-db/kluaq/.cache/huggingface	exists=True	files=84	errors=0
+ROOT	/rwproject/kdd-db/kluaq/.codex/worktrees	exists=False	files=0	errors=1
+ERROR	[Errno 2] No such file or directory: '/rwproject/kdd-db/kluaq/.codex/worktrees'
+SIFT_OFFICIAL_BASE	/rwproject/kdd-db/kluaq/dataset/sift1m/hf_download/sift_base.fvecs	516000000	21f66e2975057b5728ba56de1c825bac4f4d89d596609ae985741c6242631816	PASS
+time=2026-09-23T20:39:57+0800

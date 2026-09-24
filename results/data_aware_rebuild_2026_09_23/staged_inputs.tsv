@@ -1,0 +1,4 @@
+name	sha256	source	local_copy	bytes	wall_seconds
+sift_learn.fvecs	331bc82b6a0e89465776a3ba0c2113e0bd0cceaa014ec3ed639bc8b981af72ea	/rwproject/kdd-db/kluaq/quant-hardness/runs/phase4a_gap_guided_refinement_v1/sift_learn.fvecs	/tmp/saq-data-aware-rebuild-20260923/inputs/sift_learn.fvecs	51600000	0.119919
+sift_base.fvecs	21f66e2975057b5728ba56de1c825bac4f4d89d596609ae985741c6242631816	/rwproject/kdd-db/kluaq/dataset/sift1m/hf_download/sift_base.fvecs	/tmp/saq-data-aware-rebuild-20260923/inputs/sift_base.fvecs	516000000	1.132763
+gist_base.fvecs	73418110328f5aa522d9f6b0cd9115a6c515dc44e3c48420e506ddeddbdbdbc0	/rwproject/kdd-db/kluaq/dataset/gist/gist_base.fvecs	/tmp/saq-data-aware-rebuild-20260923/inputs/gist_base.fvecs	3844000000	437.558800

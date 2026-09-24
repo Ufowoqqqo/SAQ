@@ -1,0 +1,33 @@
+key	value
+evidence_commit	ca05b90e3767c0945ed7a5b5b73f7cc1423da665
+branch	data-aware-minimal-20260923
+host	rwcpu8.cse.ust.hk
+scope	residual_nlist1024 only; historical diagnostic panels
+datasets	SIFT1M,GIST1M_HEAD128
+dimensions	128
+sample_rows_per_dataset	16384
+fit_rows_per_fold	8192
+eval_rows_per_fold	8192
+folds	A_TO_B,B_TO_A
+seed_sift	20260902
+seed_gist	20260903
+pairings	ADJ,CORR_GREEDY,EA
+arms	U,V,E,S
+payload_bits	512
+axis_bits	1..9
+constrained_group_bits	6..10
+uniform_group_bits	8
+variance_proxy	variance_i*2^(-2*b_i)
+candidate	CORR_GREEDY-E
+comparators	CORR_GREEDY-S,CORR_GREEDY-V,ADJ-S,EA-S
+continuation_gate	>=5% held-out SSE reduction versus all four comparators in both folds of both datasets
+expected_result_rows	48
+cpu_limit_seconds	7200
+thread_limit	4
+memory_limit_bytes	17179869184
+cache_search_start	2026-09-23T20:31:23+08:00
+cache_search_deadline	2026-09-23T21:01:23+08:00
+audit_threads	1
+audit_affinity	0-3
+source_changes	conditional on recoverable input/provenance
+forbidden	large downloads; IVF retraining; query/GT reads; Recall/QPS; additional experiments; push; email

@@ -1,0 +1,21 @@
+-- The CXX compiler identification is GNU 11.5.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found OpenSSL: /usr/lib64/libcrypto.so (found version "3.5.8") found components: Crypto
+-- Found OpenMP_CXX: -fopenmp (found version "4.5")
+-- Found OpenMP: TRUE (found version "4.5")
+-- Performing Test COMPILER_SUPPORTS_BMI2
+-- Performing Test COMPILER_SUPPORTS_BMI2 - Success
+-- Found OpenMP_CXX: -fopenmp (found version "4.5")
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Could NOT find MKL (missing: MKL_LIBRARIES) 
+-- Using user-provided BLAS libraries: /usr/lib64/libopenblaso.so.0
+-- Using user-provided LAPACK libraries: /usr/lib64/libopenblaso.so.0
+-- Configuring done (11.0s)
+-- Generating done (13.4s)
+-- Build files have been written to: /rwproject/kdd-db/kluaq/worktrees/saq-data-aware-minimal-20260923/build/data-aware-minimal
