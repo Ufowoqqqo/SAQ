@@ -1,6 +1,115 @@
-# Current Task: SAQ representation-stage pair-allocation attribution
+# Current Task: completed data-aware and no-rotation diagnostics
 
-## Branch, base, and current state
+Last synchronized: 2026-09-24.
+
+## Branch and current state
+
+- Active branch: `no-rotation-2x2-20260924`.
+- Branch base and archived scalar-baseline result: `35f38aa7ae668a4734d7a08a9bcf73aa00da9a75`
+  (`data-aware-minimal-20260923`).
+- Archived no-rotation experiment: `3ba002e81cd7d72a0c807917b642d88aa49a86fd`.
+- Both bounded experiments and their result reviews are complete and archived.
+  There is no active experiment or unresolved execution blocker.
+- Current action: synchronize this task record. The tested scalar formulation
+  and the tested no-QR/nearest-lattice-allocation formulation are stopped;
+  no production consumer or further experiment is scheduled.
+
+## Completed evidence and decisions
+
+### 2026-09-23: data-aware strong-baseline check
+
+[Report](results/data_aware_rebuild_2026_09_23/REPORT.md);
+[archive scope](results/data_aware_rebuild_2026_09_23/ARCHIVE.md).
+
+- Completed 48 result rows and 16 prespecified candidate comparisons using
+  official SIFT1M/GIST1M, the frozen 16,384 rows, two 8,192-row fold directions,
+  and `nlist=1024`.
+- Full-dimensional PCA/coarse models were rebuilt from official learn data.
+  The downstream scalar diagnostic uses 128 residual dimensions for both
+  datasets: GIST was routed in 960 dimensions before taking its head 128.
+  It retains fit-only local 2D PCA and scalar Lloyd codebooks.
+- At an exact 512-bit payload, group-constrained empirical allocation
+  (CORR-E) equals free scalar allocation (CORR-S) in three contexts and is
+  0.3676% worse on GIST A-to-B. Its gains over the variance baseline are
+  only 0.0331%-0.7522%; it loses to EA-S in all four contexts.
+- Pairing/local-transform effects do not show a stable advantage over the
+  specified alternatives. No candidate comparison reaches the prespecified
+  5% continuation threshold.
+- Recorded decision: `STOP_CURRENT_FORMULATION`. This closes the tested
+  scalar formulation, not all data-aware quantization. Nine focused tests
+  and the recorded budget, input, fit/evaluation, and result checks passed.
+
+### 2026-09-24: segment-random-rotation 2x2 ablation
+
+[Report](results/no_rotation_2x2_2026_09_24/REPORT.md);
+[result review](results/no_rotation_2x2_2026_09_24/review.md);
+[summary](results/no_rotation_2x2_2026_09_24/measurement/summary.tsv);
+[contrasts](results/no_rotation_2x2_2026_09_24/measurement/contrasts.tsv);
+[archive scope](results/no_rotation_2x2_2026_09_24/ARCHIVE.md).
+
+- Recorded execution status: `COMPLETE_ENCODER_DIAGNOSTIC`. All 16 rows
+  (two datasets x two folds x IDENTITY/QR x UNIFORM/ADAPTIVE) and four
+  contrasts are complete; six focused tests and recorded result checks passed.
+- Uses SIFT 128 dimensions and full GIST 960 dimensions, fixed global PCA
+  and `nlist=1024` residualization. IDENTITY removes segment-local random
+  rotation and applies no local PCA, centering, or coordinate reordering.
+  This is not an experiment that removes global PCA.
+- Four arms share segment boundaries, per-segment payload, factor allowance,
+  rows, and encoder settings. The zero-bit GIST tail is included in error.
+  Adaptive shared width metadata is accounted separately; matched vector
+  budgets are not a measurement of complete production memory.
+- Adaptive allocation changes no coordinate-pair widths in any of the eight
+  dataset/fold/rotation contexts. Its measured gain is exactly 0% in both
+  rotation conditions, not a rounded near-zero improvement.
+- Removing QR increases actual held-out CAQ-rescaled reconstruction SSE by
+  67.8834%-68.1379% on SIFT and 18.6823%-18.7839% on GIST, relative to the
+  fixed QR control. Neither prespecified 5% continuation signal is met.
+- Decision: stop the current combination of removing segment QR and fitting
+  widths with this nearest-lattice SSE allocator. The fit proxy is additive;
+  final adjusted/rescaled encoder error is coupled. This result is not an
+  optimum or impossibility claim for all allocations or data-aware methods.
+
+Both studies reuse historical diagnostic rows; fold directions are not
+independent datasets or a fresh final test. Their different representations,
+quantizers, and losses must not be conflated. Neither establishes Recall/QPS,
+production bitwise parity, or a novel SIGMOD/VLDB/ICDE contribution.
+
+## Current scope and remaining work
+
+The current user request authorizes updating `TASK.md` and committing/pushing
+that documentation change to `no-rotation-2x2-20260924`. Existing results and
+source code remain evidence for this update. The historical protocol below
+does not authorize a new run, download, rebuild, parameter sweep, or consumer.
+
+Preserve the base-only data boundary: do not read query members, ground truth,
+query/Recall/QPS outputs, or old serialized search indexes; do not modify
+production SAQ or build an ANN query consumer as part of this status sync.
+
+Experiment execution, review, and archival are complete. No mandatory
+additional experiment remains for these bounded questions. The reporting
+follow-up is to include these results and their scope in the next advisor
+progress update. This repository update does not send that message or assert
+that it has already been sent. If the intended no-rotation question also
+excludes global PCA, that setting is untested and should first be clarified;
+it is not an automatically scheduled experiment.
+
+No extra seeds, datasets, optimizers, Recall/QPS runs, or production consumer
+are scheduled. Any future research task needs a concrete, distinct question
+and a minimal discriminating comparison; the present stop decisions alone
+do not select the next direction.
+
+Done for this synchronization means the branch state, both completed studies,
+stop boundaries, evidence links, and reporting follow-up are recorded here,
+the documentation diff is checked, and the update is verified on GitHub.
+
+## Historical protocol: 2026-09-03 (non-active)
+
+The prior task record is retained below for provenance. Every branch label,
+permission, budget, command, deliverable, and next action in this historical
+section refers to the completed September 3 work. It does not override the
+current state and scope above.
+
+### Branch, base, and current state
 
 - Active branch: `saq-correlated-pair-allocation`
 - Branch base: `d305578`; completed raw-base diagnostic: `8a8cb7c`;
@@ -14,7 +123,7 @@ The completed raw diagnostic found stable strong pairwise association but
 failed the 5% correlation-selected allocation screen. GIST fixed-adjacent
 groups nevertheless gained 5.731%/5.872%, motivating this attribution task.
 
-## Research question and hypothesis
+### Research question and hypothesis
 
 At which representation stage does GIST's adjacent-group budget
 heterogeneity arise, and is a group's marginal return predicted by association
@@ -34,7 +143,7 @@ block-level rate--distortion statistics than by Pearson correlation alone.
 Failure means the raw-view lead does not survive the production-relevant
 transform/routing representation and should not proceed to a consumer.
 
-## Authoritative input identity
+### Authoritative input identity
 
 The historical common state used official TexMex ANN_SIFT1M and ANN_GIST1M
 members. Required identities are:
@@ -57,7 +166,7 @@ Official archive identities from the historical binding are:
 - TexMex `gist.tar.gz`, 2,740,172,684 bytes, SHA-256
   `01469a7f1c3768853525e543d537e2dfa1adece927616405e360952e3f67df73`.
 
-## Allowed reads, writes, and commands
+### Allowed reads, writes, and commands
 
 Allowed reads:
 
@@ -83,7 +192,7 @@ QPS outputs, and old serialized indexes. Do not extract or inspect query or
 ground-truth members from downloaded archives. Do not modify production SAQ,
 build an ANN query index, or implement a query consumer.
 
-## Frozen reconstruction and diagnostic
+### Frozen reconstruction and diagnostic
 
 1. Verify official archive and extracted-member hashes before preparation.
 2. Reuse `research/structured_2d/prepare_common.cpp` to train the historical
@@ -99,7 +208,7 @@ build an ANN query index, or implement a query consumer.
    7-to-8 and 8-to-9-bit returns, allocation results, pair stability, exact
    commands, hashes, CPU/wall time, peak memory, and limitations.
 
-## Resource budget
+### Resource budget
 
 - Total task ceiling: 4 CPU-hours, 6 wall-hours, and 16 GiB peak RSS.
 - The historical two-dataset common-state construction used about 0.653
@@ -109,7 +218,7 @@ build an ANN query index, or implement a query consumer.
 - Generated archives, data, transforms, indexes, and results stay under
   `/tmp` and are not committed.
 
-## Deliverables and done criteria
+### Deliverables and done criteria
 
 Deliver:
 
@@ -144,7 +253,7 @@ uniform-lattice curves select the existing uniform width for every pair on
 both residual stages, datasets, and fold directions. The frozen decision is
 `STOP_CURRENT_POST_ROTATION_PAIR_ALLOCATION`.
 
-## Concrete next action
+### Concrete next action
 
 Do not implement the local-PCA/Lloyd or post-rotation mixed-width consumer.
 Any continuation would have to change the scientific question to a joint
