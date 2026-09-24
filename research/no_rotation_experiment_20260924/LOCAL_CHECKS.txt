@@ -1,0 +1,24 @@
+$ bash -n run_remote.sh
+exit_status=0
+
+$ python3 -m py_compile no_rotation.py opportunity_reference.py test_no_rotation.py
+exit_status=0
+
+$ python3 -m unittest -v test_no_rotation
+test_actual_rescaled_error_independent_formula (test_no_rotation.NoRotationTest.test_actual_rescaled_error_independent_formula) ... ok
+test_held_out_values_cannot_change_allocation (test_no_rotation.NoRotationTest.test_held_out_values_cannot_change_allocation) ... ok
+test_invalid_full_panel_is_rejected (test_no_rotation.NoRotationTest.test_invalid_full_panel_is_rejected) ... ok
+test_no_rotation_arm_reaches_encoder_unchanged (test_no_rotation.NoRotationTest.test_no_rotation_arm_reaches_encoder_unchanged) ... ok
+test_zero_input_is_zero_error (test_no_rotation.NoRotationTest.test_zero_input_is_zero_error) ... ok
+test_zero_tail_is_charged_identically (test_no_rotation.NoRotationTest.test_zero_tail_is_charged_identically) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.039s
+
+OK
+exit_status=0
+
+PASS: git diff --no-index --check has no whitespace diagnostics for new files.
+
+BLOCKED: SSH hostname resolution failed from this session.
+NOT RUN: real SIFT/GIST experiment; C++ exporter compilation / model replay.

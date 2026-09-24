@@ -1,0 +1,5 @@
+dataset	dimensions	fold	allocation_gain_identity_pct	allocation_gain_qr_pct	identity_uniform_vs_qr_uniform_pct	identity_adaptive_vs_qr_uniform_pct	identity_adaptive_vs_qr_adaptive_pct	extra_absolute_allocation_benefit_without_qr
+sift	128	A_TO_B	0.0	0.0	-68.13786203860101	-68.13786203860101	-68.13786203860101	0.0
+sift	128	B_TO_A	0.0	0.0	-67.88339021418233	-67.88339021418233	-67.88339021418233	0.0
+gist	960	A_TO_B	0.0	0.0	-18.783915533702245	-18.783915533702245	-18.783915533702245	0.0
+gist	960	B_TO_A	0.0	0.0	-18.68225640090515	-18.68225640090515	-18.68225640090515	0.0

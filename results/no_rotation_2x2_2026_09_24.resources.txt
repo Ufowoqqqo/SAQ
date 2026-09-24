@@ -1,0 +1,23 @@
+	Command being timed: "timeout --signal=TERM --kill-after=15s 3600s taskset -c 0 env NO_ROTATION_BOUNDED_RUN=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 OMP_THREAD_LIMIT=1 NUMEXPR_NUM_THREADS=1 bash /rwproject/kdd-db/kluaq/worktrees/saq-no-rotation-20260924/research/no_rotation_experiment_20260924/run_remote.sh /rwproject/kdd-db/kluaq/worktrees/saq-data-aware-minimal-20260923 /rwproject/kdd-db/kluaq/worktrees/saq-no-rotation-20260924/results/no_rotation_2x2_2026_09_24"
+	User time (seconds): 67.11
+	System time (seconds): 4.82
+	Percent of CPU this job got: 3%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 34:46.35
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 514980
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 28
+	Minor (reclaiming a frame) page faults: 1189802
+	Voluntary context switches: 12401
+	Involuntary context switches: 357
+	Swaps: 0
+	File system inputs: 6563656
+	File system outputs: 304080
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

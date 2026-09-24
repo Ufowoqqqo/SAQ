@@ -1,0 +1,23 @@
+key	value
+reference_commit	35f38aa7ae668a4734d7a08a9bcf73aa00da9a75
+python	3.9.25
+numpy	1.23.5
+upstream	full PCA retained; fixed nlist1024 residuals
+within_segment_identity	no random rotation; no local PCA; no reordering
+pairs	adjacent; equal width within pair; 1..11 bits per coordinate
+adaptive_fit_objective	nearest lattice SSE proxy; fit-only
+evaluation	actual six-round adjusted codes; CAQ-rescaled squared error
+factor_budget	64 bits per positive segment; payload+factors equal across arms
+implementation	float64 encoder prototype; production bitwise parity not established
+rotation	frozen Gaussian-QR seed20260903; not every production rotation
+shared_metadata	adaptive one uint8 per positive coordinate pair; outside vector payload
+sampling	reused historical rows; not independent final test
+status	COMPLETE_ENCODER_DIAGNOSTIC
+allocation_identity_all4_ge5pct	False
+identity_adaptive_vs_qr_uniform_all4_ge5pct	False
+claim_limit	not oracle; no Recall/QPS; no general impossibility or novelty claim
+cpu_seconds	59.606547896
+wall_seconds	60.564417097717524
+peak_rss_bytes	527339520
+runner_sha256	b7e78f525564615034c183730e4df2c670c3f83907754e9514496e74a15d259a
+reference_sha256	0e42ae203eadf0ea890c47d57839bc0a31b253944f9b49cfa97328a541cf9cd3

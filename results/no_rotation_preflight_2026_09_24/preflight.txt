@@ -1,0 +1,10 @@
+Host: rwcpu8.cse.ust.hk
+Source baseline: 35f38aa7ae668a4734d7a08a9bcf73aa00da9a75
+New branch: no-rotation-2x2-20260924
+Original data-aware worktree remains clean and is read-only input/cache root.
+All seven archive member SHA-256 checks PASS.
+Reference snapshot differs from Git only by one additional trailing LF; semantic source identical. Attachment sources preserved byte-for-byte.
+24 visible CPUs; available RAM approximately26.96GiB; persistent disk free811GB.
+Official base file sizes and both archived full PCA/coarse/head128 models present; execution script re-verifies hashes.
+Cached fixed-version Faiss static library and source present; no dependency rebuild or download.
+Execution cap: one CPU,3600s wall,16GiB address space. No automatic follow-up experiment or push.

@@ -1,0 +1,4 @@
+# Generated panels, original array containers and executable stay durable locally.
+/export_panels
+/panels/**/*.fvecs
+/measurement/*.npz

@@ -1,0 +1,3 @@
+# Preserve original machine-readable output, including Python CSV CRLF endings.
+*.tsv -text whitespace=cr-at-eol
+*.log -text -whitespace

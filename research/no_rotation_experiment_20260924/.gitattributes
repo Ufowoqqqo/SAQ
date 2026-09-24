@@ -1,0 +1,2 @@
+# Preserve the attached source bundle's exact bytes and intentional final blank lines.
+* -text whitespace=cr-at-eol,-blank-at-eof

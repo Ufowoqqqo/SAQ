@@ -1,0 +1,11 @@
+source=REEXTRACTED_FROM_ARCHIVED_FULL_MODELS
+upstream_full_PCA=retained
+local_PCA=none
+nlist=1024
+dimensions=128
+rows=16384
+base="/rwproject/kdd-db/kluaq/dataset/sift1m/hf_download/sift_base.fvecs"
+indices=results/data_aware_minimal_2026_09_23/inputs/sift_indices.u64
+models="results/data_aware_rebuild_2026_09_23/panels/sift"
+head128_parity_max_abs_difference=0
+head128_parity_tolerance=2e-5*max(1,abs(reference))

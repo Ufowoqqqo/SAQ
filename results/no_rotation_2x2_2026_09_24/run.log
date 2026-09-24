@@ -1,0 +1,42 @@
+## data-aware-minimal-20260923...origin/data-aware-minimal-20260923
+35f38aa7ae668a4734d7a08a9bcf73aa00da9a75
+2026-09-24T03:15:11Z
+Linux rwcpu8.cse.ust.hk 5.14.0-687.24.1.el9_8.x86_64 #1 SMP PREEMPT_DYNAMIC Thu Jul 9 18:14:06 EDT 2026 x86_64 x86_64 x86_64 GNU/Linux
+Python 3.9.25
+results/data_aware_rebuild_2026_09_23/panels/sift/residual_nlist1024.fvecs: OK
+results/data_aware_rebuild_2026_09_23/panels/sift/pca.faiss: OK
+results/data_aware_rebuild_2026_09_23/panels/sift/nlist_1024/coarse.faiss: OK
+results/data_aware_rebuild_2026_09_23/panels/gist/pca.faiss: OK
+results/data_aware_rebuild_2026_09_23/panels/gist/nlist_1024/coarse.faiss: OK
+results/data_aware_rebuild_2026_09_23/panels/gist/residual_nlist1024.fvecs: OK
+results/data_aware_rebuild_2026_09_23/panels/gist/selected_assignments.u32: OK
+PASS base hash /rwproject/kdd-db/kluaq/dataset/sift1m/hf_download/sift_base.fvecs
+PASS base hash /rwproject/kdd-db/kluaq/dataset/gist/gist_base.fvecs
+PASS frozen indices sift
+PASS frozen indices gist
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-14)
+Copyright (C) 2021 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
++ g++ -std=c++17 -O2 -fno-fast-math -ffp-contract=off -fopenmp -I /rwproject/kdd-db/kluaq/worktrees/saq-data-aware-minimal-20260923/third_party/faiss /rwproject/kdd-db/kluaq/worktrees/saq-no-rotation-20260924/research/no_rotation_experiment_20260924/export_panels.cpp /tmp/saq-data-aware-rebuild-20260923/build/faiss-build/faiss/libfaiss.a /usr/lib64/libopenblaso.so.0 -lpthread -o /rwproject/kdd-db/kluaq/worktrees/saq-no-rotation-20260924/results/no_rotation_2x2_2026_09_24/export_panels
++ set +x
+test_actual_rescaled_error_independent_formula (test_no_rotation.NoRotationTest) ... ok
+test_held_out_values_cannot_change_allocation (test_no_rotation.NoRotationTest) ... ok
+test_invalid_full_panel_is_rejected (test_no_rotation.NoRotationTest) ... ok
+test_no_rotation_arm_reaches_encoder_unchanged (test_no_rotation.NoRotationTest) ... ok
+test_zero_input_is_zero_error (test_no_rotation.NoRotationTest) ... ok
+test_zero_tail_is_charged_identically (test_no_rotation.NoRotationTest) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.035s
+
+OK
+exported 128 dimensions; head parity max abs 0
+exported 960 dimensions; head parity max abs 0
+sift A_TO_B: identity allocation gain 0.000000%; identity-adaptive vs QR-uniform -68.137862%
+sift B_TO_A: identity allocation gain 0.000000%; identity-adaptive vs QR-uniform -67.883390%
+gist A_TO_B: identity allocation gain 0.000000%; identity-adaptive vs QR-uniform -18.783916%
+gist B_TO_A: identity allocation gain 0.000000%; identity-adaptive vs QR-uniform -18.682256%
+## data-aware-minimal-20260923...origin/data-aware-minimal-20260923
+2026-09-24T03:49:57Z
